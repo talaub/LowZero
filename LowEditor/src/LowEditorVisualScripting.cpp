@@ -299,6 +299,183 @@ namespace Low {
 
           return Util::String(l_Value + strlen(p_Prefix));
         }
+
+        static void serialize_pin_metadata(const Pin &p_Pin,
+                                           Util::Serial::Node &p_Node)
+        {
+          p_Node["display_name"] = p_Pin.display_name;
+          p_Node["type"] = pin_type_to_string(p_Pin.type);
+          p_Node["string_subtype"] =
+              p_Pin.string_subtype == StringSubtype::Name ? "Name"
+                                                          : "String";
+
+          switch (p_Pin.number_subtype) {
+          case NumberSubtype::Int32:
+            p_Node["number_subtype"] = "Int32";
+            break;
+          case NumberSubtype::UInt32:
+            p_Node["number_subtype"] = "UInt32";
+            break;
+          case NumberSubtype::UInt64:
+            p_Node["number_subtype"] = "UInt64";
+            break;
+          case NumberSubtype::Float:
+          default:
+            p_Node["number_subtype"] = "Float";
+            break;
+          }
+
+          p_Node["container_type"] =
+              p_Pin.container_type == PinContainerType::List ? "List"
+                                                             : "None";
+          p_Node["widget"] =
+              p_Pin.widget == PinWidget::DefaultValue ? "DefaultValue"
+                                                      : "None";
+          p_Node["show_default_value_when_unlinked"] =
+              p_Pin.show_default_value_when_unlinked;
+
+          if ((u64)p_Pin.handle_type != 0) {
+            p_Node["handle_type"] = (Util::String)p_Pin.handle_type;
+          }
+
+          Util::Serial::serialize_variant(p_Node["default_value"],
+                                          p_Pin.default_value);
+        }
+
+        static void deserialize_pin_metadata(Util::Serial::Node &p_Node,
+                                             Pin &p_Pin)
+        {
+          if (p_Node["display_name"]) {
+            p_Pin.display_name =
+                p_Node["display_name"].as<Util::String>();
+          }
+          if (p_Node["type"]) {
+            p_Pin.type = string_to_pin_type(
+                p_Node["type"].as<Util::String>());
+          }
+          if (p_Node["string_subtype"]) {
+            p_Pin.string_subtype =
+                p_Node["string_subtype"].as<Util::String>() == "Name"
+                    ? StringSubtype::Name
+                    : StringSubtype::String;
+          }
+          if (p_Node["number_subtype"]) {
+            const Util::String l_Subtype =
+                p_Node["number_subtype"].as<Util::String>();
+            if (l_Subtype == "Int32") {
+              p_Pin.number_subtype = NumberSubtype::Int32;
+            } else if (l_Subtype == "UInt32") {
+              p_Pin.number_subtype = NumberSubtype::UInt32;
+            } else if (l_Subtype == "UInt64") {
+              p_Pin.number_subtype = NumberSubtype::UInt64;
+            } else {
+              p_Pin.number_subtype = NumberSubtype::Float;
+            }
+          }
+          if (p_Node["container_type"]) {
+            p_Pin.container_type =
+                p_Node["container_type"].as<Util::String>() == "List"
+                    ? PinContainerType::List
+                    : PinContainerType::None;
+          }
+          if (p_Node["widget"]) {
+            p_Pin.widget =
+                p_Node["widget"].as<Util::String>() == "DefaultValue"
+                    ? PinWidget::DefaultValue
+                    : PinWidget::None;
+          }
+          if (p_Node["show_default_value_when_unlinked"]) {
+            p_Pin.show_default_value_when_unlinked =
+                p_Node["show_default_value_when_unlinked"]
+                    .as<bool>();
+          }
+          if (p_Node["handle_type"]) {
+            p_Pin.handle_type = Util::TypeIdentifier::from_string(
+                p_Node["handle_type"].as<Util::String>());
+          }
+          if (p_Node["default_value"]) {
+            p_Pin.default_value =
+                Util::Serial::deserialize_variant(
+                    p_Node["default_value"]);
+          }
+        }
+
+        static void serialize_variable(const Variable &p_Variable,
+                                       Util::Serial::Node &p_Node)
+        {
+          p_Node["name"] = p_Variable.name;
+          p_Node["type"] = pin_type_to_string(p_Variable.type);
+          p_Node["string_subtype"] =
+              p_Variable.string_subtype == StringSubtype::Name ? "Name"
+                                                               : "String";
+          switch (p_Variable.number_subtype) {
+          case NumberSubtype::Int32:
+            p_Node["number_subtype"] = "Int32";
+            break;
+          case NumberSubtype::UInt32:
+            p_Node["number_subtype"] = "UInt32";
+            break;
+          case NumberSubtype::UInt64:
+            p_Node["number_subtype"] = "UInt64";
+            break;
+          case NumberSubtype::Float:
+          default:
+            p_Node["number_subtype"] = "Float";
+            break;
+          }
+          p_Node["container_type"] =
+              p_Variable.container_type == PinContainerType::List
+                  ? "List"
+                  : "None";
+          if ((u64)p_Variable.handle_type != 0) {
+            p_Node["handle_type"] =
+                (Util::String)p_Variable.handle_type;
+          }
+          Util::Serial::serialize_variant(p_Node["default_value"],
+                                          p_Variable.default_value);
+        }
+
+        static void deserialize_variable(Util::Serial::Node &p_Node,
+                                         Variable &p_Variable)
+        {
+          p_Variable.name = p_Node["name"].as<Util::String>();
+          p_Variable.type = string_to_pin_type(
+              p_Node["type"].as<Util::String>());
+          if (p_Node["string_subtype"]) {
+            p_Variable.string_subtype =
+                p_Node["string_subtype"].as<Util::String>() == "Name"
+                    ? StringSubtype::Name
+                    : StringSubtype::String;
+          }
+          if (p_Node["number_subtype"]) {
+            const Util::String l_Subtype =
+                p_Node["number_subtype"].as<Util::String>();
+            if (l_Subtype == "Int32") {
+              p_Variable.number_subtype = NumberSubtype::Int32;
+            } else if (l_Subtype == "UInt32") {
+              p_Variable.number_subtype = NumberSubtype::UInt32;
+            } else if (l_Subtype == "UInt64") {
+              p_Variable.number_subtype = NumberSubtype::UInt64;
+            } else {
+              p_Variable.number_subtype = NumberSubtype::Float;
+            }
+          }
+          if (p_Node["container_type"]) {
+            p_Variable.container_type =
+                p_Node["container_type"].as<Util::String>() == "List"
+                    ? PinContainerType::List
+                    : PinContainerType::None;
+          }
+          if (p_Node["handle_type"]) {
+            p_Variable.handle_type = Util::TypeIdentifier::from_string(
+                p_Node["handle_type"].as<Util::String>());
+          }
+          if (p_Node["default_value"]) {
+            p_Variable.default_value =
+                Util::Serial::deserialize_variant(
+                    p_Node["default_value"]);
+          }
+        }
       } // namespace
 
       NodeGraphMutationResult<Editor::Node>
@@ -942,6 +1119,228 @@ namespace Low {
 
         append_default_value_expression(*l_InputPinMetadata,
                                         p_CompileContext);
+      }
+
+      void Graph::serialize(Util::Serial::Node &p_Node) const
+      {
+        p_Node["id_counter"] = Util::U64Id{id_counter};
+
+        for (const Variable &i_Variable : variables) {
+          Util::Serial::Node i_VariableNode;
+          serialize_variable(i_Variable, i_VariableNode);
+          p_Node["variables"].push_back(i_VariableNode);
+        }
+
+        for (const Editor::Node &i_Node : graph.nodes) {
+          const Node *l_NodeMetadata = find_node(i_Node.id);
+          if (!l_NodeMetadata) {
+            continue;
+          }
+
+          Util::Serial::Node i_NodeNode;
+          i_NodeNode["id"] = Util::U64Id{i_Node.id.value};
+          i_NodeNode["position"] = i_Node.position;
+          i_NodeNode["node_class"] = l_NodeMetadata->node_class;
+
+          if (l_NodeMetadata->spawn_entry.is_valid()) {
+            i_NodeNode["spawn_entry"] = l_NodeMetadata->spawn_entry;
+          }
+          if (!l_NodeMetadata->title.empty()) {
+            i_NodeNode["title"] = l_NodeMetadata->title;
+          }
+          if (!l_NodeMetadata->subtitle.empty()) {
+            i_NodeNode["subtitle"] = l_NodeMetadata->subtitle;
+          }
+          if (!l_NodeMetadata->category.empty()) {
+            i_NodeNode["category"] = l_NodeMetadata->category;
+          }
+          if (!l_NodeMetadata->variable_name.empty()) {
+            i_NodeNode["variable_name"] =
+                l_NodeMetadata->variable_name;
+          }
+          if ((u64)l_NodeMetadata->handle_type != 0) {
+            i_NodeNode["handle_type"] =
+                (Util::String)l_NodeMetadata->handle_type;
+          }
+          if (l_NodeMetadata->member_name.is_valid()) {
+            i_NodeNode["member_name"] = l_NodeMetadata->member_name;
+          }
+
+          const NodeClass *l_NodeClass =
+              find_node_class(l_NodeMetadata->node_class);
+          if (l_NodeClass) {
+            l_NodeClass->serialize(*const_cast<Graph *>(this), i_Node.id,
+                                   i_NodeNode["node_data"]);
+          }
+
+          for (const Editor::Pin *i_Pin : graph.get_node_pins(i_Node.id)) {
+            const Pin *l_PinMetadata = find_pin(i_Pin->id);
+            if (!l_PinMetadata) {
+              continue;
+            }
+
+            Util::Serial::Node i_PinNode;
+            i_PinNode["id"] = Util::U64Id{i_Pin->id.value};
+            i_PinNode["direction"] =
+                i_Pin->direction == PinDirection::Input ? "Input"
+                                                        : "Output";
+            serialize_pin_metadata(*l_PinMetadata, i_PinNode);
+            i_NodeNode["pins"].push_back(i_PinNode);
+          }
+
+          p_Node["nodes"].push_back(i_NodeNode);
+        }
+
+        for (const Editor::Link &i_Link : graph.links) {
+          Util::Serial::Node i_LinkNode;
+          i_LinkNode["id"] = Util::U64Id{i_Link.id.value};
+          i_LinkNode["start_pin"] =
+              Util::U64Id{i_Link.start_pin.value};
+          i_LinkNode["end_pin"] = Util::U64Id{i_Link.end_pin.value};
+          p_Node["links"].push_back(i_LinkNode);
+        }
+      }
+
+      void Graph::deserialize(Util::Serial::Node &p_Node)
+      {
+        graph.nodes.clear();
+        graph.pins.clear();
+        graph.links.clear();
+        node_metadata.clear();
+        pin_metadata.clear();
+        variables.clear();
+
+        id_counter =
+            p_Node["id_counter"]
+                ? (u64)p_Node["id_counter"].as<Util::U64Id>()
+                : 1ull;
+
+        if (p_Node["variables"]) {
+          for (auto [_, i_VariableNode] : p_Node["variables"]) {
+            Variable i_Variable;
+            deserialize_variable(i_VariableNode, i_Variable);
+            add_variable(i_Variable);
+          }
+        }
+
+        u64 l_MaxId = 0;
+
+        if (p_Node["nodes"]) {
+          for (auto [_, i_NodeNode] : p_Node["nodes"]) {
+            const Util::Name l_NodeClassName =
+                i_NodeNode["node_class"].as<Util::Name>();
+            const NodeClass *l_NodeClass =
+                find_node_class(l_NodeClassName);
+            LOW_ASSERT(l_NodeClass,
+                       "Could not find node class during VisualScript "
+                       "graph deserialization");
+            if (!l_NodeClass) {
+              continue;
+            }
+
+            Editor::Node l_Node;
+            l_Node.id = NodeId{
+                (u64)i_NodeNode["id"].as<Util::U64Id>()};
+            l_Node.position =
+                i_NodeNode["position"].as<Math::Vector2>();
+            l_MaxId = LOW_MATH_MAX(l_MaxId, l_Node.id.value);
+
+            Node l_Metadata;
+            l_Metadata.node = l_Node.id;
+            l_Metadata.node_class = l_NodeClassName;
+            if (i_NodeNode["spawn_entry"]) {
+              l_Metadata.spawn_entry =
+                  i_NodeNode["spawn_entry"].as<Util::Name>();
+            }
+            if (i_NodeNode["title"]) {
+              l_Metadata.title =
+                  i_NodeNode["title"].as<Util::String>();
+            }
+            if (i_NodeNode["subtitle"]) {
+              l_Metadata.subtitle =
+                  i_NodeNode["subtitle"].as<Util::String>();
+            }
+            if (i_NodeNode["category"]) {
+              l_Metadata.category =
+                  i_NodeNode["category"].as<Util::String>();
+            }
+            if (i_NodeNode["variable_name"]) {
+              l_Metadata.variable_name =
+                  i_NodeNode["variable_name"].as<Util::String>();
+            }
+            if (i_NodeNode["handle_type"]) {
+              l_Metadata.handle_type =
+                  Util::TypeIdentifier::from_string(
+                      i_NodeNode["handle_type"].as<Util::String>());
+            }
+            if (i_NodeNode["member_name"]) {
+              l_Metadata.member_name =
+                  i_NodeNode["member_name"].as<Util::Name>();
+            }
+
+            NodeGraphMutationResult<Editor::Node> l_AddNodeResult =
+                add_node(l_Node, l_Metadata, nullptr);
+            if (!l_AddNodeResult.succeeded()) {
+              continue;
+            }
+
+            if (i_NodeNode["node_data"]) {
+              l_NodeClass->deserialize(*this, l_Node.id,
+                                       i_NodeNode["node_data"]);
+            }
+
+            l_NodeClass->setup_default_pins(*this, l_Node.id, nullptr);
+
+            Util::List<Editor::Pin *> l_NodePins =
+                graph.get_node_pins(l_Node.id);
+            const u32 l_SerializedPinCount =
+                (u32)i_NodeNode["pins"].size();
+            LOW_ASSERT(l_NodePins.size() == l_SerializedPinCount,
+                       "Node pin count mismatch during VisualScript "
+                       "graph deserialization");
+
+            Util::List<PinId> l_OldPinIds;
+            for (Editor::Pin *i_Pin : l_NodePins) {
+              l_OldPinIds.push_back(i_Pin->id);
+            }
+            for (PinId i_OldPinId : l_OldPinIds) {
+              pin_metadata.erase(i_OldPinId);
+            }
+
+            const u32 l_PinCount =
+                LOW_MATH_MIN((u32)l_NodePins.size(),
+                             l_SerializedPinCount);
+            for (u32 i = 0; i < l_PinCount; ++i) {
+              Editor::Pin *l_Pin = l_NodePins[i];
+              Util::Serial::Node &l_PinNode = i_NodeNode["pins"][i];
+              Pin l_PinMetadata;
+              deserialize_pin_metadata(l_PinNode, l_PinMetadata);
+
+              const PinId l_PinId = PinId{
+                  (u64)l_PinNode["id"].as<Util::U64Id>()};
+              l_Pin->id = l_PinId;
+              l_PinMetadata.pin = l_PinId;
+              pin_metadata[l_PinId] = l_PinMetadata;
+              l_MaxId = LOW_MATH_MAX(l_MaxId, l_PinId.value);
+            }
+          }
+        }
+
+        if (p_Node["links"]) {
+          for (auto [_, i_LinkNode] : p_Node["links"]) {
+            Editor::Link l_Link;
+            l_Link.id = LinkId{
+                (u64)i_LinkNode["id"].as<Util::U64Id>()};
+            l_Link.start_pin = PinId{
+                (u64)i_LinkNode["start_pin"].as<Util::U64Id>()};
+            l_Link.end_pin = PinId{
+                (u64)i_LinkNode["end_pin"].as<Util::U64Id>()};
+            graph.add_link(l_Link, nullptr);
+            l_MaxId = LOW_MATH_MAX(l_MaxId, l_Link.id.value);
+          }
+        }
+
+        id_counter = LOW_MATH_MAX(id_counter, l_MaxId + 1);
       }
 
       NodeId Graph::allocate_node_id()
@@ -1893,6 +2292,42 @@ namespace Low {
         }
 
         return "Unknown";
+      }
+
+      PinType string_to_pin_type(const Util::String &p_Type)
+      {
+        if (p_Type == "Execution") {
+          return PinType::Execution;
+        }
+        if (p_Type == "Bool") {
+          return PinType::Bool;
+        }
+        if (p_Type == "Number") {
+          return PinType::Number;
+        }
+        if (p_Type == "Vector2") {
+          return PinType::Vector2;
+        }
+        if (p_Type == "Vector3") {
+          return PinType::Vector3;
+        }
+        if (p_Type == "Vector4") {
+          return PinType::Vector4;
+        }
+        if (p_Type == "Quaternion") {
+          return PinType::Quaternion;
+        }
+        if (p_Type == "String") {
+          return PinType::String;
+        }
+        if (p_Type == "Handle") {
+          return PinType::Handle;
+        }
+        if (p_Type == "Dynamic") {
+          return PinType::Dynamic;
+        }
+
+        return PinType::Dynamic;
       }
 
       PinType variant_type_to_pin_type(u8 p_VariantType)

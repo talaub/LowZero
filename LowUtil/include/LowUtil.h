@@ -3,6 +3,7 @@
 #include "LowUtilApi.h"
 
 #include "LowUtilContainers.h"
+#include "LowUtilString.h"
 
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
@@ -19,12 +20,46 @@ namespace Low {
       String rootPath;
       String assetCachePath;
       String editorImagesPath;
-
       String engineRootPath;
       String engineDataPath;
+      String managedPath;
+    };
+    LOW_EXPORT const Project &get_project();
+
+    struct LOW_EXPORT ProjectPathBuilder
+    {
+      ProjectPathBuilder() = default;
+      ProjectPathBuilder(String p_RootPath);
+
+      ProjectPathBuilder &join(const String &p_PathPart);
+      ProjectPathBuilder &join(const char *p_PathPart);
+
+      String get() const;
+      operator String() const;
+
+    private:
+      StringBuilder m_Builder;
+      bool m_HasPath = false;
     };
 
-    LOW_EXPORT const Project &get_project();
+    LOW_EXPORT ProjectPathBuilder project_data_path();
+    LOW_EXPORT ProjectPathBuilder project_root_path();
+    LOW_EXPORT ProjectPathBuilder project_asset_cache_path();
+    LOW_EXPORT ProjectPathBuilder project_managed_path();
+    LOW_EXPORT ProjectPathBuilder project_editor_images_path();
+    LOW_EXPORT ProjectPathBuilder engine_root_path();
+    LOW_EXPORT ProjectPathBuilder engine_data_path();
+
+    LOW_EXPORT String project_data_path(const String &p_RelativePath);
+    LOW_EXPORT String project_root_path(const String &p_RelativePath);
+    LOW_EXPORT String
+    project_asset_cache_path(const String &p_RelativePath);
+    LOW_EXPORT String
+    project_editor_images_path(const String &p_RelativePath);
+    LOW_EXPORT String
+    project_managed_path(const String &p_RelativePath);
+    LOW_EXPORT String engine_root_path(const String &p_RelativePath);
+    LOW_EXPORT String engine_data_path(const String &p_RelativePath);
 
     struct LOW_EXPORT Window
     {

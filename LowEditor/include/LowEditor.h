@@ -30,7 +30,8 @@ namespace Low {
       Flode,
       Texture,
       Font,
-      UiWidget
+      UiWidget,
+      VisualScript
     };
 
     struct DirectoryWatchers

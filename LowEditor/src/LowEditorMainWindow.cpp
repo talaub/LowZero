@@ -38,6 +38,7 @@
 #include "LowEditorNodeGraph.h"
 #include "LowEditorVisualScripting.h"
 #include "LowEditorVisualScriptingHandleNodes.h"
+#include "LowEditorVisualScriptBuilder.h"
 #include "LowEditorVisualScriptEditor.h"
 #include "LowEditorVisualScriptingBoolNodes.h"
 #include "LowEditorVisualScriptingCastNodes.h"
@@ -804,89 +805,54 @@ namespace Low {
       }
 
       g_TestVisualScriptDocument.initialize();
-      g_TestVisualScriptEditor.load_document(
-          g_TestVisualScriptDocument);
 
       register_test_visual_script_nodes(
           g_TestVisualScriptDocument.graph);
 
-      {
-        VisualScript::Variable l_HealthVariable;
-        l_HealthVariable.name = "Health";
-        l_HealthVariable.type = VisualScript::PinType::Number;
-        l_HealthVariable.number_subtype =
-            VisualScript::NumberSubtype::Float;
-        l_HealthVariable.default_value = Util::Variant(100.0f);
-        g_TestVisualScriptDocument.graph.add_variable(
-            l_HealthVariable);
-      }
+      const Util::String l_VisualScriptPath =
+          Util::project_data_path("test.vs.yaml");
 
-      {
-        VisualScript::Variable l_IsAliveVariable;
-        l_IsAliveVariable.name = "IsAlive";
-        l_IsAliveVariable.type = VisualScript::PinType::Bool;
-        l_IsAliveVariable.default_value = Util::Variant(true);
-        g_TestVisualScriptDocument.graph.add_variable(
-            l_IsAliveVariable);
-      }
+      const bool l_LoadedVisualScript =
+          g_TestVisualScriptDocument.load_from_path(
+              l_VisualScriptPath);
 
-      auto l_BeginNodeResult =
-          g_TestVisualScriptDocument.graph
-              .create_node_from_spawn_entry(
-                  N(vs_spawn_begin_event),
-                  Math::Vector2(120.0f, 120.0f),
-                  &g_TestVisualScriptDocument.schema);
-      auto l_PrintNodeResult =
-          g_TestVisualScriptDocument.graph
-              .create_node_from_spawn_entry(
-                  N(vs_spawn_print_string),
-                  Math::Vector2(460.0f, 220.0f),
-                  &g_TestVisualScriptDocument.schema);
-
-      if (!l_BeginNodeResult.succeeded() ||
-          !l_PrintNodeResult.succeeded()) {
+      if (l_LoadedVisualScript &&
+          !g_TestVisualScriptDocument.graph.graph.nodes.empty()) {
+        g_TestVisualScriptEditor.load_document(
+            g_TestVisualScriptDocument);
         return;
       }
 
-      Util::List<Editor::Pin *> l_BeginPins =
-          g_TestVisualScriptDocument.graph.graph.get_node_pins(
-              l_BeginNodeResult.value->id);
-      Util::List<Editor::Pin *> l_PrintPins =
-          g_TestVisualScriptDocument.graph.graph.get_node_pins(
-              l_PrintNodeResult.value->id);
-
-      PinId l_BeginExecOut;
-      PinId l_PrintExecIn;
-
-      for (Editor::Pin *i_Pin : l_BeginPins) {
-        const VisualScript::Pin *l_PinMetadata =
-            g_TestVisualScriptDocument.graph.find_pin(i_Pin->id);
-        if (l_PinMetadata &&
-            l_PinMetadata->type == VisualScript::PinType::Execution &&
-            i_Pin->direction == PinDirection::Output) {
-          l_BeginExecOut = i_Pin->id;
-        }
+      if (l_LoadedVisualScript) {
+        LOW_LOG_WARN
+            << "Loaded visual script test file did not contain any "
+               "nodes. Rebuilding the test graph template."
+            << LOW_LOG_END;
       }
 
-      for (Editor::Pin *i_Pin : l_PrintPins) {
-        const VisualScript::Pin *l_PinMetadata =
-            g_TestVisualScriptDocument.graph.find_pin(i_Pin->id);
-        if (l_PinMetadata &&
-            l_PinMetadata->type == VisualScript::PinType::Execution &&
-            i_Pin->direction == PinDirection::Input) {
-          l_PrintExecIn = i_Pin->id;
-        }
+      /*
+      VisualScript::GraphBuilder l_Builder(
+          g_TestVisualScriptDocument.graph,
+          &g_TestVisualScriptDocument.schema);
+
+      l_Builder.add_number_variable("Health", 100.0f);
+      l_Builder.add_bool_variable("IsAlive", true);
+
+      VisualScript::NodeHandle l_BeginNode = l_Builder.add_spawn_node(
+          N(vs_spawn_begin_event), Math::Vector2(120.0f, 120.0f));
+      VisualScript::NodeHandle l_PrintNode = l_Builder.add_spawn_node(
+          N(vs_spawn_print_string), Math::Vector2(460.0f, 220.0f));
+
+      if (!l_BeginNode.is_valid() || !l_PrintNode.is_valid()) {
+        return;
       }
 
-      if (l_BeginExecOut.is_valid() && l_PrintExecIn.is_valid()) {
-        Editor::Link l_Link;
-        l_Link.id =
-            LinkId{g_TestVisualScriptDocument.graph.id_counter++};
-        l_Link.start_pin = l_BeginExecOut;
-        l_Link.end_pin = l_PrintExecIn;
-        g_TestVisualScriptDocument.graph.add_link(
-            l_Link, &g_TestVisualScriptDocument.schema);
-      }
+      l_Builder.connect_exec(l_BeginNode, l_PrintNode);
+
+      g_TestVisualScriptDocument.save_as(l_VisualScriptPath);
+      g_TestVisualScriptEditor.load_document(
+          g_TestVisualScriptDocument);
+          */
     }
 
     void initialize_main_window()
@@ -895,8 +861,6 @@ namespace Low {
 
       initialize_billboard_materials();
       initialize_test_visual_script_graph();
-      g_TestVisualScriptEditor.load_document(
-          g_TestVisualScriptDocument);
 
       LogWidget::initialize();
 

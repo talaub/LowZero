@@ -59,6 +59,9 @@ namespace Low {
         } else if (p_Variant.m_Type == VariantType::Name) {
           p_Node["type"] = "Name";
           p_Node["value"] = p_Variant.as_name();
+        } else if (p_Variant.m_Type == VariantType::String) {
+          p_Node["type"] = "String";
+          p_Node["value"] = p_Variant.as_string();
         } else if (p_Variant.m_Type == VariantType::Handle) {
           Handle l_Handle = p_Variant.m_Uint64;
           RTTI::TypeInfo &l_TypeInfo =
@@ -176,6 +179,9 @@ namespace Low {
         }
         if (p_Node["type"].as<String>() == "Name") {
           return Variant(p_Node["value"].as<Name>());
+        }
+        if (p_Node["type"].as<String>() == "String") {
+          return Variant(p_Node["value"].as<String>());
         }
         if (p_Node["type"].as<String>() == "Handle") {
           return Variant::from_handle(find_handle_by_unique_id(

@@ -7,13 +7,69 @@
 #include "IconsLucide.h"
 #include "LowEditorThemes.h"
 #include "LowMath.h"
+#include "LowUtil.h"
+#include "LowUtilFileIO.h"
 #include "LowUtilLogger.h"
+#include "LowUtilSerialization.h"
 
 #include <imgui.h>
 
 namespace Low {
   namespace Editor {
     namespace VisualScript {
+      bool Document::load_from_path(const Util::String &p_Path)
+      {
+        if (p_Path.empty()) {
+          return false;
+        }
+
+        if (!Util::FileIO::file_exists_sync(p_Path.c_str())) {
+          LOW_LOG_WARN
+              << "Could not load visual script document. File "
+                 "does not exist: "
+              << p_Path << LOW_LOG_END;
+          return false;
+        }
+
+        initialize();
+
+        Util::Serial::Node l_Root =
+            Util::Serial::load_yaml_file(p_Path.c_str());
+        if (l_Root["graph"]) {
+          graph.deserialize(l_Root["graph"]);
+        } else {
+          graph.deserialize(l_Root);
+        }
+
+        path = p_Path;
+        return true;
+      }
+
+      bool Document::save()
+      {
+        if (path.empty()) {
+          return false;
+        }
+
+        return save_as(path);
+      }
+
+      bool Document::save_as(const Util::String &p_Path)
+      {
+        if (p_Path.empty()) {
+          return false;
+        }
+
+        Util::Serial::Node l_Root;
+        l_Root["type"] = "LowVisualScript";
+        l_Root["version"] = Util::U64Id{1ull};
+        graph.serialize(l_Root["graph"]);
+
+        Util::Serial::write_yaml_file(p_Path.c_str(), l_Root);
+        path = p_Path;
+        return true;
+      }
+
       namespace {
         static const char *get_pin_type_label(PinType p_Type)
         {
@@ -372,8 +428,6 @@ namespace Low {
 
         static void render_toolbar(Editor &p_Editor)
         {
-          (void)p_Editor;
-
           ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
                               ImVec2(8.0f, 6.0f));
           ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
@@ -385,8 +439,7 @@ namespace Low {
                                 ImGuiWindowFlags_NoSavedSettings);
 
           if (Gui::SaveButton()) {
-            LOW_LOG_DEBUG << "VisualScript save requested"
-                          << LOW_LOG_END;
+            p_Editor.document->save();
           }
 
           ImGui::SameLine();

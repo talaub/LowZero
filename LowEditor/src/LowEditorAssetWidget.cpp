@@ -76,7 +76,8 @@ namespace Low {
               l_AssetType = AssetType::Texture;
             } else if (p_Watcher.subtype == "fontresource") {
               l_AssetType = AssetType::Font;
-            } else if (p_Watcher.subtype == "flode") {
+            } else if (p_Watcher.subtype == "flode" ||
+                       p_Watcher.subtype == "vs") {
               l_AssetType = AssetType::Flode;
             } else if (p_Watcher.subtype == "uiwidget") {
               l_AssetType = AssetType::UiWidget;

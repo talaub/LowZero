@@ -7,6 +7,7 @@ namespace Low {
     namespace VisualScript {
       struct Document
       {
+        Util::String path;
         Graph graph;
         Schema schema;
         GraphRenderer renderer;
@@ -22,6 +23,10 @@ namespace Low {
           schema.set_graph(graph);
           renderer.set_graph(graph);
         }
+
+        bool load_from_path(const Util::String &p_Path);
+        bool save();
+        bool save_as(const Util::String &p_Path);
       };
 
       struct Editor

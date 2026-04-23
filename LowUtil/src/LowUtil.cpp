@@ -27,6 +27,7 @@ namespace Low {
       g_Project.rootPath = "./";
       g_Project.assetCachePath = "./data/.asset_cache";
       g_Project.editorImagesPath = "./data/.editor_images";
+      g_Project.managedPath = "./data/.managed";
 
       g_Project.engineRootPath = "./";
       g_Project.engineDataPath = "./LowData";
@@ -116,6 +117,145 @@ namespace Low {
     const Project &get_project()
     {
       return g_Project;
+    }
+
+    namespace {
+      static String trim_path_separators(const String &p_Path)
+      {
+        if (p_Path.empty()) {
+          return p_Path;
+        }
+
+        u32 l_Start = 0;
+        u32 l_End = (u32)p_Path.size();
+
+        while (l_Start < l_End &&
+               (p_Path[l_Start] == '/' || p_Path[l_Start] == '\\')) {
+          ++l_Start;
+        }
+
+        while (l_End > l_Start && (p_Path[l_End - 1] == '/' ||
+                                   p_Path[l_End - 1] == '\\')) {
+          --l_End;
+        }
+
+        return p_Path.substr(l_Start, l_End - l_Start);
+      }
+    } // namespace
+
+    ProjectPathBuilder::ProjectPathBuilder(String p_RootPath)
+    {
+      String l_Root = p_RootPath;
+      while (!l_Root.empty() &&
+             (l_Root.back() == '/' || l_Root.back() == '\\')) {
+        l_Root.pop_back();
+      }
+
+      m_Builder.append(l_Root);
+      m_HasPath = !l_Root.empty();
+    }
+
+    ProjectPathBuilder &
+    ProjectPathBuilder::join(const String &p_PathPart)
+    {
+      String l_Part = trim_path_separators(p_PathPart);
+      if (l_Part.empty()) {
+        return *this;
+      }
+
+      if (m_HasPath) {
+        m_Builder.append("/");
+      }
+
+      m_Builder.append(l_Part);
+      m_HasPath = true;
+      return *this;
+    }
+
+    ProjectPathBuilder &
+    ProjectPathBuilder::join(const char *p_PathPart)
+    {
+      return join(String(p_PathPart));
+    }
+
+    String ProjectPathBuilder::get() const
+    {
+      return m_Builder.get();
+    }
+
+    ProjectPathBuilder::operator String() const
+    {
+      return get();
+    }
+
+    ProjectPathBuilder project_data_path()
+    {
+      return ProjectPathBuilder(get_project().dataPath);
+    }
+
+    ProjectPathBuilder project_managed_path()
+    {
+      return ProjectPathBuilder(get_project().managedPath);
+    }
+
+    ProjectPathBuilder project_root_path()
+    {
+      return ProjectPathBuilder(get_project().rootPath);
+    }
+
+    ProjectPathBuilder project_asset_cache_path()
+    {
+      return ProjectPathBuilder(get_project().assetCachePath);
+    }
+
+    ProjectPathBuilder project_editor_images_path()
+    {
+      return ProjectPathBuilder(get_project().editorImagesPath);
+    }
+
+    ProjectPathBuilder engine_root_path()
+    {
+      return ProjectPathBuilder(get_project().engineRootPath);
+    }
+
+    ProjectPathBuilder engine_data_path()
+    {
+      return ProjectPathBuilder(get_project().engineDataPath);
+    }
+
+    String project_data_path(const String &p_RelativePath)
+    {
+      return project_data_path().join(p_RelativePath).get();
+    }
+
+    String project_root_path(const String &p_RelativePath)
+    {
+      return project_root_path().join(p_RelativePath).get();
+    }
+
+    String project_managed_path(const String &p_RelativePath)
+    {
+      return project_managed_path().join(p_RelativePath).get();
+    }
+
+    String project_asset_cache_path(const String &p_RelativePath)
+    {
+      return project_asset_cache_path().join(p_RelativePath).get();
+    }
+
+    String project_editor_images_path(const String &p_RelativePath)
+    {
+      return project_editor_images_path().join(p_RelativePath).get();
+    }
+
+    String engine_root_path(const String &p_RelativePath)
+    {
+      return engine_root_path().join(p_RelativePath).get();
+    }
+
+    String engine_data_path(const String &p_RelativePath)
+    {
+      return engine_data_path().join(p_RelativePath).get();
     }
 
     Window &Window::get_main_window()

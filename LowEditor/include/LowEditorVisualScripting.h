@@ -6,6 +6,7 @@
 #include "LowUtilAssert.h"
 #include "LowUtilContainers.h"
 #include "LowUtilHandle.h"
+#include "LowUtilHashing.h"
 #include "LowUtilName.h"
 #include "LowUtilString.h"
 #include "LowUtilVariant.h"
@@ -327,6 +328,9 @@ namespace Low {
         compile_input_pin(PinId p_InputPinId,
                           CompileContext &p_CompileContext) const;
 
+        void serialize(Util::Serial::Node &p_Node) const;
+        void deserialize(Util::Serial::Node &p_Node);
+
         NodeId allocate_node_id();
         PinId allocate_pin_id();
       };
@@ -454,6 +458,8 @@ namespace Low {
       };
 
       LOW_EDITOR_API const char *pin_type_to_string(PinType p_Type);
+      LOW_EDITOR_API PinType
+      string_to_pin_type(const Util::String &p_Type);
 
       LOW_EDITOR_API PinType
       variant_type_to_pin_type(u8 p_VariantType);
