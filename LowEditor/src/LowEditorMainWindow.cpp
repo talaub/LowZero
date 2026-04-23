@@ -36,17 +36,6 @@
 #include "LowEditorEditWidget.h"
 #include "LowEditor.h"
 #include "LowEditorNodeGraph.h"
-#include "LowEditorVisualScripting.h"
-#include "LowEditorVisualScriptingHandleNodes.h"
-#include "LowEditorVisualScriptBuilder.h"
-#include "LowEditorVisualScriptEditor.h"
-#include "LowEditorVisualScriptingBoolNodes.h"
-#include "LowEditorVisualScriptingCastNodes.h"
-#include "LowEditorVisualScriptingDebugNodes.h"
-#include "LowEditorVisualScriptingMathNodes.h"
-#include "LowEditorVisualScriptingOperatorNodes.h"
-#include "LowEditorVisualScriptingSyntaxNodes.h"
-
 #include "LowUtil.h"
 #include "LowUtilContainers.h"
 #include "LowUtilString.h"
@@ -83,197 +72,8 @@ void *operator new[](size_t size, size_t alignment,
 
 namespace Low {
   namespace Editor {
-    namespace {
-      struct BeginEventNodeClass : public VisualScript::NodeClass
-      {
-        virtual Util::Name get_name() const override
-        {
-          return N(vs_begin_event);
-        }
-
-        virtual Util::String
-        get_title(const VisualScript::Graph &p_Graph,
-                  NodeId p_NodeId) const override
-        {
-          (void)p_Graph;
-          (void)p_NodeId;
-          return "On Begin";
-        }
-
-        virtual Util::String
-        get_subtitle(const VisualScript::Graph &p_Graph,
-                     NodeId p_NodeId) const override
-        {
-          (void)p_Graph;
-          (void)p_NodeId;
-          return "Event";
-        }
-
-        virtual Util::String
-        get_category(const VisualScript::Graph &p_Graph,
-                     NodeId p_NodeId) const override
-        {
-          (void)p_Graph;
-          (void)p_NodeId;
-          return "Events";
-        }
-
-        virtual Util::String
-        get_icon(const VisualScript::Graph &p_Graph,
-                 NodeId p_NodeId) const override
-        {
-          (void)p_Graph;
-          (void)p_NodeId;
-          return ICON_LC_PLAY;
-        }
-
-        virtual ImU32 get_color(const VisualScript::Graph &p_Graph,
-                                NodeId p_NodeId) const override
-        {
-          (void)p_Graph;
-          (void)p_NodeId;
-          return IM_COL32(177, 61, 156, 255);
-        }
-
-        virtual void setup_default_pins(
-            VisualScript::Graph &p_Graph, NodeId p_NodeId,
-            const NodeGraphSchema *p_Schema) const override
-        {
-          Editor::Pin l_ExecOut =
-              VisualScript::make_output_pin(p_Graph, p_NodeId);
-          VisualScript::Pin l_ExecOutMetadata =
-              VisualScript::make_execution_pin_metadata("Exec");
-
-          p_Graph.add_pin(l_ExecOut, l_ExecOutMetadata, p_Schema);
-        }
-      };
-
-      struct PrintStringNodeClass : public VisualScript::NodeClass
-      {
-        virtual Util::Name get_name() const override
-        {
-          return N(vs_print_string);
-        }
-
-        virtual Util::String
-        get_title(const VisualScript::Graph &p_Graph,
-                  NodeId p_NodeId) const override
-        {
-          (void)p_Graph;
-          (void)p_NodeId;
-          return "Print String";
-        }
-
-        virtual Util::String
-        get_subtitle(const VisualScript::Graph &p_Graph,
-                     NodeId p_NodeId) const override
-        {
-          (void)p_Graph;
-          (void)p_NodeId;
-          return "Debug";
-        }
-
-        virtual Util::String
-        get_category(const VisualScript::Graph &p_Graph,
-                     NodeId p_NodeId) const override
-        {
-          (void)p_Graph;
-          (void)p_NodeId;
-          return "Debug";
-        }
-
-        virtual Util::String
-        get_icon(const VisualScript::Graph &p_Graph,
-                 NodeId p_NodeId) const override
-        {
-          (void)p_Graph;
-          (void)p_NodeId;
-          return LOW_EDITOR_ICON_TEXT;
-        }
-
-        virtual ImU32 get_color(const VisualScript::Graph &p_Graph,
-                                NodeId p_NodeId) const override
-        {
-          (void)p_Graph;
-          (void)p_NodeId;
-          return IM_COL32(68, 129, 214, 255);
-        }
-
-        virtual void setup_default_pins(
-            VisualScript::Graph &p_Graph, NodeId p_NodeId,
-            const NodeGraphSchema *p_Schema) const override
-        {
-          Editor::Pin l_ExecIn =
-              VisualScript::make_input_pin(p_Graph, p_NodeId);
-          VisualScript::Pin l_ExecInMetadata =
-              VisualScript::make_execution_pin_metadata("Exec");
-          p_Graph.add_pin(l_ExecIn, l_ExecInMetadata, p_Schema);
-
-          Editor::Pin l_MessageIn =
-              VisualScript::make_input_pin(p_Graph, p_NodeId);
-          VisualScript::Pin l_MessageInMetadata =
-              VisualScript::make_string_pin_metadata("Message");
-          l_MessageInMetadata.default_value =
-              Util::Variant(Util::String("Hello from LowEditor"));
-          p_Graph.add_pin(l_MessageIn, l_MessageInMetadata, p_Schema);
-
-          Editor::Pin l_EnabledIn =
-              VisualScript::make_input_pin(p_Graph, p_NodeId);
-          VisualScript::Pin l_EnabledInMetadata =
-              VisualScript::make_bool_pin_metadata("Enabled", true);
-          p_Graph.add_pin(l_EnabledIn, l_EnabledInMetadata, p_Schema);
-
-          Editor::Pin l_ExecOut =
-              VisualScript::make_output_pin(p_Graph, p_NodeId);
-          VisualScript::Pin l_ExecOutMetadata =
-              VisualScript::make_execution_pin_metadata("Then");
-          p_Graph.add_pin(l_ExecOut, l_ExecOutMetadata, p_Schema);
-        }
-      };
-
-      BeginEventNodeClass g_BeginEventNodeClass;
-      PrintStringNodeClass g_PrintStringNodeClass;
-
-      static void
-      register_test_visual_script_nodes(VisualScript::Graph &p_Graph)
-      {
-        p_Graph.register_node_class(g_BeginEventNodeClass);
-        p_Graph.register_node_class(g_PrintStringNodeClass);
-        VisualScript::BoolNodes::register_nodes(p_Graph);
-        VisualScript::CastNodes::register_nodes(p_Graph);
-        VisualScript::DebugNodes::register_nodes(p_Graph);
-        VisualScript::HandleNodes::register_nodes(p_Graph);
-        VisualScript::MathNodes::register_nodes(p_Graph);
-        VisualScript::OperatorNodes::register_nodes(p_Graph);
-        VisualScript::SyntaxNodes::register_nodes(p_Graph);
-
-        VisualScript::NodeSpawnEntry l_BeginEventEntry;
-        l_BeginEventEntry.id = N(vs_spawn_begin_event);
-        l_BeginEventEntry.category = "Events";
-        l_BeginEventEntry.title = "On Begin";
-        l_BeginEventEntry.subtitle = "Event";
-        l_BeginEventEntry.search_text = "on begin event start";
-        l_BeginEventEntry.node_class =
-            g_BeginEventNodeClass.get_name();
-        p_Graph.register_spawn_entry(l_BeginEventEntry);
-
-        VisualScript::NodeSpawnEntry l_PrintStringEntry;
-        l_PrintStringEntry.id = N(vs_spawn_print_string);
-        l_PrintStringEntry.category = "Debug";
-        l_PrintStringEntry.title = "Print String";
-        l_PrintStringEntry.subtitle = "Debug";
-        l_PrintStringEntry.search_text = "print string debug log";
-        l_PrintStringEntry.node_class =
-            g_PrintStringNodeClass.get_name();
-        p_Graph.register_spawn_entry(l_PrintStringEntry);
-      }
-    } // namespace
-
     const int g_DockSpaceId = 4785;
     bool g_CentralDockOpen = true;
-
-    VisualScript::Document g_TestVisualScriptDocument;
-    VisualScript::Editor g_TestVisualScriptEditor;
 
     bool g_GizmosDragged = false;
 
@@ -798,69 +598,11 @@ namespace Low {
       initialize_spherical_billboard_materials();
     }
 
-    static void initialize_test_visual_script_graph()
-    {
-      if (!g_TestVisualScriptDocument.graph.graph.nodes.empty()) {
-        return;
-      }
-
-      g_TestVisualScriptDocument.initialize();
-
-      register_test_visual_script_nodes(
-          g_TestVisualScriptDocument.graph);
-
-      const Util::String l_VisualScriptPath =
-          Util::project_data_path("test.vs.yaml");
-
-      const bool l_LoadedVisualScript =
-          g_TestVisualScriptDocument.load_from_path(
-              l_VisualScriptPath);
-
-      if (l_LoadedVisualScript &&
-          !g_TestVisualScriptDocument.graph.graph.nodes.empty()) {
-        g_TestVisualScriptEditor.load_document(
-            g_TestVisualScriptDocument);
-        return;
-      }
-
-      if (l_LoadedVisualScript) {
-        LOW_LOG_WARN
-            << "Loaded visual script test file did not contain any "
-               "nodes. Rebuilding the test graph template."
-            << LOW_LOG_END;
-      }
-
-      /*
-      VisualScript::GraphBuilder l_Builder(
-          g_TestVisualScriptDocument.graph,
-          &g_TestVisualScriptDocument.schema);
-
-      l_Builder.add_number_variable("Health", 100.0f);
-      l_Builder.add_bool_variable("IsAlive", true);
-
-      VisualScript::NodeHandle l_BeginNode = l_Builder.add_spawn_node(
-          N(vs_spawn_begin_event), Math::Vector2(120.0f, 120.0f));
-      VisualScript::NodeHandle l_PrintNode = l_Builder.add_spawn_node(
-          N(vs_spawn_print_string), Math::Vector2(460.0f, 220.0f));
-
-      if (!l_BeginNode.is_valid() || !l_PrintNode.is_valid()) {
-        return;
-      }
-
-      l_Builder.connect_exec(l_BeginNode, l_PrintNode);
-
-      g_TestVisualScriptDocument.save_as(l_VisualScriptPath);
-      g_TestVisualScriptEditor.load_document(
-          g_TestVisualScriptDocument);
-          */
-    }
-
     void initialize_main_window()
     {
       themes_load();
 
       initialize_billboard_materials();
-      initialize_test_visual_script_graph();
 
       LogWidget::initialize();
 
@@ -972,11 +714,6 @@ namespace Low {
         handle_shortcuts(p_Delta);
       }
       ImGui::ShowDemoWindow();
-
-      ImGui::Begin("Visual Scripting");
-      g_TestVisualScriptEditor.render("Graph",
-                                      Math::Vector2(0.0f, 0.0f));
-      ImGui::End();
 
       // ImGui::ShowMetricsWindow();
     }

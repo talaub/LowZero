@@ -132,7 +132,85 @@ namespace Low {
       struct LOW_EDITOR_API CompileContext
       {
         Util::StringBuilder main_code;
+        u32 indentation = 0;
+
+        void append_indent();
+        void append_line(const Util::String &p_Line);
+        void begin_block(const Util::String &p_Line);
+        void end_block(const Util::String &p_Line = "");
       };
+
+      struct LOW_EDITOR_API CompileEntryPoint
+      {
+        NodeId node;
+        PinId execution_output_pin;
+        Util::String function_name;
+        Util::String function_signature;
+
+        bool is_valid() const
+        {
+          return node.is_valid() && execution_output_pin.is_valid() &&
+                 !function_name.empty();
+        }
+      };
+
+      struct LOW_EDITOR_API CompileProfile
+      {
+        virtual ~CompileProfile() = default;
+
+        virtual Util::Name get_name() const = 0;
+        virtual void compile(Graph &p_Graph,
+                             CompileContext &p_Context) const = 0;
+      };
+
+      struct LOW_EDITOR_API UiControllerCompileProfile
+          : public CompileProfile
+      {
+        virtual Util::Name get_name() const override
+        {
+          return N(cp_ui_controller);
+        }
+        virtual Util::String get_class_name(Graph &p_Graph) const;
+        virtual void collect_entry_points(
+            Graph &p_Graph,
+            Util::List<CompileEntryPoint> &p_EntryPoints) const;
+        virtual void emit_prelude(Graph &p_Graph,
+                                  CompileContext &p_Context) const;
+        virtual void emit_members(Graph &p_Graph,
+                                  CompileContext &p_Context) const;
+        virtual void
+        emit_entry_point(Graph &p_Graph,
+                         const CompileEntryPoint &p_Entry,
+                         CompileContext &p_Context) const;
+
+        virtual void
+        compile(Graph &p_Graph,
+                CompileContext &p_Context) const override;
+      };
+
+      struct LOW_EDITOR_API DefaultCompileProfile
+          : public CompileProfile
+      {
+        virtual Util::Name get_name() const override;
+        virtual void collect_entry_points(
+            Graph &p_Graph,
+            Util::List<CompileEntryPoint> &p_EntryPoints) const;
+        virtual void compile(Graph &p_Graph,
+                             CompileContext &p_Context) const override;
+      };
+
+      struct LOW_EDITOR_API CompileProfileRegistry
+      {
+        Util::Map<Util::Name, CompileProfile *> profiles;
+
+        void register_profile(CompileProfile &p_Profile);
+        CompileProfile *find_profile(Util::Name p_ProfileName);
+        const CompileProfile *
+        find_profile(Util::Name p_ProfileName) const;
+      };
+
+      LOW_EDITOR_API void register_builtin_compile_profiles(
+          CompileProfileRegistry &p_ProfileRegistry);
 
       struct LOW_EDITOR_API NodeClass
       {
@@ -327,6 +405,10 @@ namespace Low {
         void
         compile_input_pin(PinId p_InputPinId,
                           CompileContext &p_CompileContext) const;
+        void compile(CompileProfile &p_Profile,
+                     CompileContext &p_CompileContext);
+        void compile(const CompileProfile &p_Profile,
+                     CompileContext &p_CompileContext);
 
         void serialize(Util::Serial::Node &p_Node) const;
         void deserialize(Util::Serial::Node &p_Node);

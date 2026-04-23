@@ -24,6 +24,7 @@
 #include "LowCoreScriptClass.h"
 #include "LowCoreScriptAsset.h"
 #include "LowCoreScriptClassInstance.h"
+#include "LowCoreScriptAssetGenerator.h"
 
 #include "LowCoreUiView.h"
 #include "LowCoreUiElement.h"
@@ -155,6 +156,7 @@ namespace Low {
 
     static void initialize_scripting_types()
     {
+      Scripting::AssetGeneratorEnumHelper::initialize();
       Scripting::Module::initialize();
       ScriptClass::initialize();
       Scripting::ClassInstance::initialize();
@@ -346,6 +348,7 @@ namespace Low {
       Scripting::ClassInstance::cleanup();
       ScriptClass::cleanup();
       Scripting::Module::cleanup();
+      Scripting::AssetGeneratorEnumHelper::cleanup();
     }
 
     static void cleanup_types()

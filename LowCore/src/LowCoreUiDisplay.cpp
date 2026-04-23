@@ -1234,13 +1234,15 @@ namespace Low {
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_parent
 
           Display l_Parent = get_parent();
-          if (l_Parent.is_alive()) {
-            for (auto it = l_Parent.get_children().begin();
-                 it != l_Parent.get_children().end();) {
-              if (*it == get_id()) {
-                it = l_Parent.get_children().erase(it);
-              } else {
-                ++it;
+          if (p_Value != l_Parent) {
+            if (l_Parent.is_alive()) {
+              for (auto it = l_Parent.get_children().begin();
+                   it != l_Parent.get_children().end();) {
+                if (*it == get_id()) {
+                  it = l_Parent.get_children().erase(it);
+                } else {
+                  ++it;
+                }
               }
             }
           }

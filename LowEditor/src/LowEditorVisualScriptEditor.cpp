@@ -6,6 +6,14 @@
 #include "LowEditorMetadata.h"
 #include "IconsLucide.h"
 #include "LowEditorThemes.h"
+#include "LowEditorVisualScriptBuilder.h"
+#include "LowEditorVisualScriptingBoolNodes.h"
+#include "LowEditorVisualScriptingCastNodes.h"
+#include "LowEditorVisualScriptingDebugNodes.h"
+#include "LowEditorVisualScriptingHandleNodes.h"
+#include "LowEditorVisualScriptingMathNodes.h"
+#include "LowEditorVisualScriptingOperatorNodes.h"
+#include "LowEditorVisualScriptingSyntaxNodes.h"
 #include "LowMath.h"
 #include "LowUtil.h"
 #include "LowUtilFileIO.h"
@@ -17,6 +25,27 @@
 namespace Low {
   namespace Editor {
     namespace VisualScript {
+      namespace {
+        static void register_common_node_libraries(Graph &p_Graph)
+        {
+          BoolNodes::register_nodes(p_Graph);
+          CastNodes::register_nodes(p_Graph);
+          DebugNodes::register_nodes(p_Graph);
+          HandleNodes::register_nodes(p_Graph);
+          MathNodes::register_nodes(p_Graph);
+          OperatorNodes::register_nodes(p_Graph);
+          SyntaxNodes::register_nodes(p_Graph);
+        }
+      } // namespace
+
+      void Document::apply_context(const ContextDefinition &p_Context)
+      {
+        initialize();
+        context = p_Context.get_name();
+        compile_profile = p_Context.get_default_compile_profile();
+        p_Context.register_node_libraries(graph);
+      }
+
       bool Document::load_from_path(const Util::String &p_Path)
       {
         if (p_Path.empty()) {
@@ -35,6 +64,71 @@ namespace Low {
 
         Util::Serial::Node l_Root =
             Util::Serial::load_yaml_file(p_Path.c_str());
+        if (l_Root["context"]) {
+          context = l_Root["context"].as<Util::Name>();
+        }
+        if (l_Root["output_path"]) {
+          output_path = l_Root["output_path"].as<Util::String>();
+        }
+        if (l_Root["compile_profile"]) {
+          compile_profile =
+              l_Root["compile_profile"].as<Util::Name>();
+        } else if (!compile_profile.is_valid()) {
+          compile_profile = N(vs_compile_default);
+        }
+
+        if (l_Root["graph"]) {
+          graph.deserialize(l_Root["graph"]);
+        } else {
+          graph.deserialize(l_Root);
+        }
+
+        path = p_Path;
+        return true;
+      }
+
+      bool Document::load_from_path(
+          const Util::String &p_Path,
+          const ContextRegistry &p_ContextRegistry)
+      {
+        if (p_Path.empty()) {
+          return false;
+        }
+
+        if (!Util::FileIO::file_exists_sync(p_Path.c_str())) {
+          LOW_LOG_WARN
+              << "Could not load visual script document. File "
+                 "does not exist: "
+              << p_Path << LOW_LOG_END;
+          return false;
+        }
+
+        initialize();
+
+        Util::Serial::Node l_Root =
+            Util::Serial::load_yaml_file(p_Path.c_str());
+        if (l_Root["context"]) {
+          const Util::Name l_ContextName =
+              l_Root["context"].as<Util::Name>();
+          const ContextDefinition *l_Context =
+              p_ContextRegistry.find_context(l_ContextName);
+          if (l_Context) {
+            apply_context(*l_Context);
+          } else {
+            context = l_ContextName;
+          }
+        }
+        if (l_Root["output_path"]) {
+          output_path = l_Root["output_path"].as<Util::String>();
+        }
+
+        if (l_Root["compile_profile"]) {
+          compile_profile =
+              l_Root["compile_profile"].as<Util::Name>();
+        } else if (!compile_profile.is_valid()) {
+          compile_profile = N(vs_compile_default);
+        }
+
         if (l_Root["graph"]) {
           graph.deserialize(l_Root["graph"]);
         } else {
@@ -63,11 +157,139 @@ namespace Low {
         Util::Serial::Node l_Root;
         l_Root["type"] = "LowVisualScript";
         l_Root["version"] = Util::U64Id{1ull};
+        if (context.is_valid()) {
+          l_Root["context"] = context;
+        }
+        if (!output_path.empty()) {
+          l_Root["output_path"] = output_path;
+        }
+        l_Root["compile_profile"] = compile_profile;
         graph.serialize(l_Root["graph"]);
 
         Util::Serial::write_yaml_file(p_Path.c_str(), l_Root);
         path = p_Path;
         return true;
+      }
+
+      bool Document::compile_and_write(
+          const CompileProfileRegistry &p_ProfileRegistry)
+      {
+        if (output_path.empty()) {
+          LOW_LOG_WARN << "Could not compile visual script document. "
+                          "Output path "
+                          "is empty."
+                       << LOW_LOG_END;
+          return false;
+        }
+
+        const CompileProfile *l_Profile =
+            p_ProfileRegistry.find_profile(compile_profile);
+        if (!l_Profile) {
+          LOW_LOG_WARN
+              << "Could not compile visual script document. Compile "
+                 "profile was not registered: "
+              << compile_profile << LOW_LOG_END;
+          return false;
+        }
+
+        CompileContext l_Context;
+        graph.compile(*l_Profile, l_Context);
+
+        LOW_LOG_DEBUG << "CODE: " << l_Context.main_code.get()
+                      << LOW_LOG_END;
+
+        Util::FileIO::File l_File = Util::FileIO::open(
+            output_path.c_str(), Util::FileIO::FileMode::WRITE);
+        Util::FileIO::write_sync(l_File, l_Context.main_code.get());
+        Util::FileIO::close(l_File);
+
+        return true;
+      }
+
+      void
+      ContextRegistry::register_context(ContextDefinition &p_Context)
+      {
+        contexts[p_Context.get_name()] = &p_Context;
+      }
+
+      ContextDefinition *
+      ContextRegistry::find_context(Util::Name p_ContextName)
+      {
+        auto it = contexts.find(p_ContextName);
+        if (it == contexts.end()) {
+          return nullptr;
+        }
+        return it->second;
+      }
+
+      const ContextDefinition *
+      ContextRegistry::find_context(Util::Name p_ContextName) const
+      {
+        auto it = contexts.find(p_ContextName);
+        if (it == contexts.end()) {
+          return nullptr;
+        }
+        return it->second;
+      }
+
+      Util::Name DefaultContextDefinition::get_name() const
+      {
+        return N(vs_context_default);
+      }
+
+      Util::Name
+      DefaultContextDefinition::get_default_compile_profile() const
+      {
+        return N(vs_compile_default);
+      }
+
+      void DefaultContextDefinition::register_node_libraries(
+          Graph &p_Graph) const
+      {
+        register_common_node_libraries(p_Graph);
+      }
+
+      Util::Name UiControllerContextDefinition::get_name() const
+      {
+        return N(vs_context_ui_controller);
+      }
+
+      Util::Name
+      UiControllerContextDefinition::get_default_compile_profile()
+          const
+      {
+        return N(cp_ui_controller);
+      }
+
+      void UiControllerContextDefinition::register_node_libraries(
+          Graph &p_Graph) const
+      {
+        register_common_node_libraries(p_Graph);
+      }
+
+      void UiControllerContextDefinition::build_default_template(
+          Document &p_Document) const
+      {
+        GraphBuilder l_Builder(p_Document.graph, &p_Document.schema);
+        NodeHandle l_LogNode = l_Builder.add_spawn_node(
+            N(vs_spawn_debug_log), Math::Vector2(120.0f, 120.0f));
+
+        if (l_LogNode.is_valid()) {
+          l_Builder.set_input_default(
+              l_LogNode, "Message",
+              Util::Variant(
+                  Util::String("Hello from UI controller")));
+        }
+      }
+
+      void
+      register_builtin_contexts(ContextRegistry &p_ContextRegistry)
+      {
+        static DefaultContextDefinition g_DefaultContext;
+        static UiControllerContextDefinition g_UiControllerContext;
+
+        p_ContextRegistry.register_context(g_DefaultContext);
+        p_ContextRegistry.register_context(g_UiControllerContext);
       }
 
       namespace {

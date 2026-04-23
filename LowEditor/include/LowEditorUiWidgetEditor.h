@@ -2,6 +2,7 @@
 
 #include "LowCoreUiElement.h"
 #include "LowCoreUiWidgetInstance.h"
+#include "LowCoreUiDisplay.h"
 #include "LowEditorTypeEditor.h"
 #include "LowEditorViewport.h"
 #include "LowEditorHandlePropertiesSection.h"
@@ -9,6 +10,7 @@
 #include "LowCoreUiWidgetAsset.h"
 #include "LowMath.h"
 #include "LowRendererUiDrawCommand.h"
+#include "LowUtilLogger.h"
 
 namespace Low {
   namespace Editor {
@@ -21,6 +23,8 @@ namespace Low {
           : UiViewport(p_Dimensions), m_Asset(p_Asset)
       {
         m_Instance = m_Asset.spawn_instance(m_Canvas);
+        Core::UI::Component::Display dis =
+            m_Instance.get_root().get_display();
       }
       ~UiWidgetInteractiveViewport()
       {
@@ -56,6 +60,8 @@ namespace Low {
     protected:
       UiWidgetInteractiveViewport *m_Viewport;
 
+      void create_local_controller();
+
       float m_LeftPaneWidth;
       float m_TopPaneHeight;
       bool m_Test;
@@ -63,6 +69,8 @@ namespace Low {
       Mode m_Mode = Mode::Widget;
 
       char *m_ElementSearch;
+
+      bool m_CreatedLocalController = false;
 
       Core::UI::Element m_SelectedElement;
 

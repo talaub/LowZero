@@ -7,6 +7,9 @@
 #include "LowEditorTypeEditor.h"
 #include "LowEditorIcons.h"
 #include "LowEditorUiWidget.h"
+#include "LowEditorVisualScriptBuilder.h"
+#include "LowEditorVisualScriptEditor.h"
+#include "LowEditorVisualScripting.h"
 
 #include "LowCoreUiElement.h"
 #include "LowCoreUiDisplay.h"
@@ -18,6 +21,7 @@
 #include "LowRendererTexture.h"
 #include "LowRendererUiCanvas.h"
 #include "LowRendererUiDrawCommand.h"
+#include "LowUtil.h"
 #include "LowUtilAssetManager.h"
 #include "LowUtilHandle.h"
 #include "LowUtilLogger.h"
@@ -48,7 +52,7 @@ namespace Low {
           m_TopPaneHeight(400.0f), m_Test(false),
           m_ElementSearch((char *)calloc(SEARCH_LENGTH, sizeof(char)))
     {
-      LOW_LOG_DEBUG << "Handle: " << p_Handle << LOW_LOG_END;
+      LOW_LOG_INFO << "Handle: " << p_Handle << LOW_LOG_END;
       m_Viewport = new UiWidgetInteractiveViewport(
           p_Handle, Math::UVector2(500, 500));
 
@@ -275,9 +279,54 @@ namespace Low {
       p_RotationRadians = l_Euler.z;
     }
 
+    void UiWidgetEditor::create_local_controller()
+    {
+      Core::UI::WidgetAsset l_Asset = m_Handle.get_id();
+
+      VisualScript::Document l_Document;
+      VisualScript::UiControllerContextDefinition l_Context;
+      l_Document.apply_context(l_Context);
+
+      l_Context.build_default_template(l_Document);
+      if (l_Document.graph.graph.nodes.empty()) {
+        LOW_LOG_ERROR
+            << "Failed to create ui controller visual script."
+            << LOW_LOG_END;
+      }
+
+      Util::String l_Path =
+          Util::project_managed_path("testcontroller.vs.yaml");
+      l_Document.output_path =
+          Util::project_visual_script_out_path("testcontroller.as");
+
+      Util::resolve_handle_reference_by_name(
+          m_Handle, N(controller), N(VisualScriptTestUiController));
+
+      if (l_Document.save_as(l_Path)) {
+        VisualScript::CompileProfileRegistry l_ProfileRegistry;
+        VisualScript::register_builtin_compile_profiles(
+            l_ProfileRegistry);
+        l_Document.compile_and_write(l_ProfileRegistry);
+      }
+
+      m_CreatedLocalController = true;
+    }
+
     void UiWidgetEditor::render(const float p_Delta)
     {
       Core::UI::WidgetAsset l_Asset = m_Handle.get_id();
+
+      if (m_CreatedLocalController &&
+          l_Asset.get_controller().is_alive()) {
+        l_Asset.has_custom_controller(true);
+        l_Asset.fill_content_from_instance(m_Viewport->m_Instance);
+        Util::AssetManager::save(l_Asset);
+        LOW_LOG_DEBUG << "Successfully created and linked custom "
+                         "controller and saved asset."
+                      << LOW_LOG_END;
+
+        m_CreatedLocalController = false;
+      }
 
       if (m_SelectedElement.is_alive()) {
         m_SelectedMarker.set_color(
@@ -433,13 +482,20 @@ namespace Low {
                           ImGuiChildFlags_Borders);
         {
           if (m_DetailsSections.empty()) {
-            if (!l_Asset.has_custom_controller() &&
+            if (m_CreatedLocalController &&
                 !l_Asset.get_controller().is_alive()) {
+              Gui::spinner("Creating controller", 7.0f, 2,
+                           theme_get_current().controller);
+              ImGui::SameLine();
+              ImGui::Text("Creating controller...");
+            } else if (!l_Asset.has_custom_controller() &&
+                       !l_Asset.get_controller().is_alive()) {
               show_editor(N(controller));
               ImGui::Dummy(ImVec2(0, 10.0f));
               if (Gui::Button("Create controller", false,
                               LOW_EDITOR_ICON_CONTROLLER,
                               theme_get_current().controller)) {
+                create_local_controller();
               }
             }
           } else {

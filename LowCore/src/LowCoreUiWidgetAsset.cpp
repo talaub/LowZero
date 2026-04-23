@@ -744,6 +744,7 @@ namespace Low {
 
         if (get_controller().is_alive()) {
           p_Node["controller"] = get_controller().get_name();
+          p_Node["custom_controller"] = has_custom_controller();
         }
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
@@ -824,6 +825,10 @@ namespace Low {
         }
 
         if (p_Node["controller"]) {
+          if (p_Node["custom_controller"]) {
+            has_custom_controller(
+                p_Node["custom_controller"].as<bool>());
+          }
           Util::Name l_ControllerName =
               p_Node["controller"].as<Util::Name>();
           Controller l_Controller =
@@ -1084,6 +1089,7 @@ namespace Low {
         }
 
         Element l_RootElement = Element::make(N(root), p_Canvas);
+        l_RootElement.set_widget_instance(l_Instance);
         Component::Display l_RootDisplay =
             Component::Display::make(l_RootElement);
         l_RootElement.set_click_passthrough(true);
@@ -1091,6 +1097,7 @@ namespace Low {
         l_Instance.set_root(l_RootElement);
 
         for (ElementDescriptor &i_ElementDescriptor : get_content()) {
+          LOW_LOG_DEBUG << "spawning" << LOW_LOG_END;
           Element i_Element =
               spawn_element(l_Instance, p_Canvas, i_ElementDescriptor,
                             l_RootElement);
@@ -1124,6 +1131,7 @@ namespace Low {
           if (i_Component.get_type() ==
               Component::Display::type_id()) {
             Component::Display i_Display = i_Component;
+            LOW_LOG_DEBUG << "assigning parent" << LOW_LOG_END;
             i_Display.set_parent(p_Parent.get_display().get_id());
           }
         }

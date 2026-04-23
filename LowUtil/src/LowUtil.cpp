@@ -28,6 +28,7 @@ namespace Low {
       g_Project.assetCachePath = "./data/.asset_cache";
       g_Project.editorImagesPath = "./data/.editor_images";
       g_Project.managedPath = "./data/.managed";
+      g_Project.visualScriptOut = "./data/.vs_out";
 
       g_Project.engineRootPath = "./";
       g_Project.engineDataPath = "./LowData";
@@ -198,6 +199,11 @@ namespace Low {
       return ProjectPathBuilder(get_project().managedPath);
     }
 
+    ProjectPathBuilder project_visual_script_out_path()
+    {
+      return ProjectPathBuilder(get_project().visualScriptOut);
+    }
+
     ProjectPathBuilder project_root_path()
     {
       return ProjectPathBuilder(get_project().rootPath);
@@ -246,6 +252,14 @@ namespace Low {
     String project_editor_images_path(const String &p_RelativePath)
     {
       return project_editor_images_path().join(p_RelativePath).get();
+    }
+
+    String
+    project_visual_script_out_path(const String &p_RelativePath)
+    {
+      return project_visual_script_out_path()
+          .join(p_RelativePath)
+          .get();
     }
 
     String engine_root_path(const String &p_RelativePath)

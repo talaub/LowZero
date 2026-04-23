@@ -209,6 +209,37 @@ namespace Low {
           return l_Result;
         }
 
+        static Util::String
+        make_script_identifier(const Util::String &p_Value,
+                               const Util::String &p_Fallback)
+        {
+          Util::String l_Result;
+
+          for (char i_Char : p_Value) {
+            const bool l_IsAlpha = (i_Char >= 'a' && i_Char <= 'z') ||
+                                   (i_Char >= 'A' && i_Char <= 'Z');
+            const bool l_IsDigit = i_Char >= '0' && i_Char <= '9';
+            const bool l_IsUnderscore = i_Char == '_';
+
+            if (l_IsAlpha || l_IsDigit || l_IsUnderscore) {
+              l_Result += i_Char;
+            } else if (!l_Result.empty() &&
+                       l_Result[l_Result.size() - 1] != '_') {
+              l_Result += '_';
+            }
+          }
+
+          if (l_Result.empty()) {
+            l_Result = p_Fallback;
+          }
+
+          if (l_Result[0] >= '0' && l_Result[0] <= '9') {
+            l_Result = Util::String("_") + l_Result;
+          }
+
+          return l_Result;
+        }
+
         static void append_default_value_expression(
             const Pin &p_PinMetadata,
             CompileContext &p_CompileContext)
@@ -328,9 +359,9 @@ namespace Low {
           p_Node["container_type"] =
               p_Pin.container_type == PinContainerType::List ? "List"
                                                              : "None";
-          p_Node["widget"] =
-              p_Pin.widget == PinWidget::DefaultValue ? "DefaultValue"
-                                                      : "None";
+          p_Node["widget"] = p_Pin.widget == PinWidget::DefaultValue
+                                 ? "DefaultValue"
+                                 : "None";
           p_Node["show_default_value_when_unlinked"] =
               p_Pin.show_default_value_when_unlinked;
 
@@ -342,16 +373,17 @@ namespace Low {
                                           p_Pin.default_value);
         }
 
-        static void deserialize_pin_metadata(Util::Serial::Node &p_Node,
-                                             Pin &p_Pin)
+        static void
+        deserialize_pin_metadata(Util::Serial::Node &p_Node,
+                                 Pin &p_Pin)
         {
           if (p_Node["display_name"]) {
             p_Pin.display_name =
                 p_Node["display_name"].as<Util::String>();
           }
           if (p_Node["type"]) {
-            p_Pin.type = string_to_pin_type(
-                p_Node["type"].as<Util::String>());
+            p_Pin.type =
+                string_to_pin_type(p_Node["type"].as<Util::String>());
           }
           if (p_Node["string_subtype"]) {
             p_Pin.string_subtype =
@@ -386,17 +418,15 @@ namespace Low {
           }
           if (p_Node["show_default_value_when_unlinked"]) {
             p_Pin.show_default_value_when_unlinked =
-                p_Node["show_default_value_when_unlinked"]
-                    .as<bool>();
+                p_Node["show_default_value_when_unlinked"].as<bool>();
           }
           if (p_Node["handle_type"]) {
             p_Pin.handle_type = Util::TypeIdentifier::from_string(
                 p_Node["handle_type"].as<Util::String>());
           }
           if (p_Node["default_value"]) {
-            p_Pin.default_value =
-                Util::Serial::deserialize_variant(
-                    p_Node["default_value"]);
+            p_Pin.default_value = Util::Serial::deserialize_variant(
+                p_Node["default_value"]);
           }
         }
 
@@ -406,8 +436,9 @@ namespace Low {
           p_Node["name"] = p_Variable.name;
           p_Node["type"] = pin_type_to_string(p_Variable.type);
           p_Node["string_subtype"] =
-              p_Variable.string_subtype == StringSubtype::Name ? "Name"
-                                                               : "String";
+              p_Variable.string_subtype == StringSubtype::Name
+                  ? "Name"
+                  : "String";
           switch (p_Variable.number_subtype) {
           case NumberSubtype::Int32:
             p_Node["number_subtype"] = "Int32";
@@ -439,8 +470,8 @@ namespace Low {
                                          Variable &p_Variable)
         {
           p_Variable.name = p_Node["name"].as<Util::String>();
-          p_Variable.type = string_to_pin_type(
-              p_Node["type"].as<Util::String>());
+          p_Variable.type =
+              string_to_pin_type(p_Node["type"].as<Util::String>());
           if (p_Node["string_subtype"]) {
             p_Variable.string_subtype =
                 p_Node["string_subtype"].as<Util::String>() == "Name"
@@ -467,8 +498,9 @@ namespace Low {
                     : PinContainerType::None;
           }
           if (p_Node["handle_type"]) {
-            p_Variable.handle_type = Util::TypeIdentifier::from_string(
-                p_Node["handle_type"].as<Util::String>());
+            p_Variable.handle_type =
+                Util::TypeIdentifier::from_string(
+                    p_Node["handle_type"].as<Util::String>());
           }
           if (p_Node["default_value"]) {
             p_Variable.default_value =
@@ -477,6 +509,245 @@ namespace Low {
           }
         }
       } // namespace
+
+      void CompileContext::append_indent()
+      {
+        for (u32 i = 0; i < indentation; ++i) {
+          main_code.append("  ");
+        }
+      }
+
+      void CompileContext::append_line(const Util::String &p_Line)
+      {
+        append_indent();
+        main_code.append(p_Line);
+        main_code.append("\n");
+      }
+
+      void CompileContext::begin_block(const Util::String &p_Line)
+      {
+        append_indent();
+        main_code.append(p_Line);
+        main_code.append("\n");
+        append_indent();
+        main_code.append("{\n");
+        ++indentation;
+      }
+
+      void CompileContext::end_block(const Util::String &p_Line)
+      {
+        if (indentation > 0) {
+          --indentation;
+        }
+
+        append_indent();
+        main_code.append("}");
+        if (!p_Line.empty()) {
+          main_code.append(p_Line);
+        }
+        main_code.append("\n");
+      }
+
+      Util::String
+      UiControllerCompileProfile::get_class_name(Graph &p_Graph) const
+      {
+        (void)p_Graph;
+        return "VisualScriptTestUiController";
+      }
+
+      void UiControllerCompileProfile::emit_prelude(
+          Graph &p_Graph, CompileContext &p_Context) const
+      {
+        (void)p_Graph;
+        (void)p_Context;
+      }
+
+      void UiControllerCompileProfile::emit_members(
+          Graph &p_Graph, CompileContext &p_Context) const
+      {
+        (void)p_Graph;
+        (void)p_Context;
+      }
+
+      void UiControllerCompileProfile::collect_entry_points(
+          Graph &p_Graph,
+          Util::List<CompileEntryPoint> &p_EntryPoints) const
+      {
+        (void)p_Graph;
+        (void)p_EntryPoints;
+      }
+
+      void UiControllerCompileProfile::emit_entry_point(
+          Graph &p_Graph, const CompileEntryPoint &p_Entry,
+          CompileContext &p_Context) const
+      {
+        if (!p_Entry.is_valid()) {
+          return;
+        }
+
+        Util::String l_Signature = p_Entry.function_signature;
+        if (l_Signature.empty()) {
+          l_Signature =
+              Util::String("void ") + p_Entry.function_name + "()";
+        }
+
+        p_Context.begin_block(l_Signature);
+        p_Graph.continue_compilation(p_Entry.execution_output_pin,
+                                     p_Context);
+        p_Context.end_block();
+        p_Context.main_code.append("\n");
+      }
+
+      void UiControllerCompileProfile::compile(
+          Graph &p_Graph, CompileContext &p_Context) const
+      {
+        emit_prelude(p_Graph, p_Context);
+
+        const Util::String l_ClassName = make_script_identifier(
+            get_class_name(p_Graph), "VisualScript");
+        p_Context.begin_block(Util::String("class ") + l_ClassName +
+                              Util::String(": UiController"));
+        emit_members(p_Graph, p_Context);
+
+        Util::List<CompileEntryPoint> l_EntryPoints;
+        collect_entry_points(p_Graph, l_EntryPoints);
+
+        for (const CompileEntryPoint &i_Entry : l_EntryPoints) {
+          emit_entry_point(p_Graph, i_Entry, p_Context);
+        }
+
+        p_Context.append_line("void on_click(UI::Element element) {");
+        p_Context.append_line("}");
+
+        p_Context.end_block(";");
+      }
+
+      Util::Name DefaultCompileProfile::get_name() const
+      {
+        return N(vs_compile_default);
+      }
+
+      void DefaultCompileProfile::collect_entry_points(
+          Graph &p_Graph,
+          Util::List<CompileEntryPoint> &p_EntryPoints) const
+      {
+        u32 l_EntryIndex = 0;
+
+        for (const Editor::Node &i_Node : p_Graph.graph.nodes) {
+          Util::List<Editor::Pin *> l_NodePins =
+              p_Graph.graph.get_node_pins(i_Node.id);
+
+          bool l_HasExecutionInput = false;
+          PinId l_ExecutionOutputPin;
+
+          for (const Editor::Pin *i_Pin : l_NodePins) {
+            const Pin *l_PinMetadata = p_Graph.find_pin(i_Pin->id);
+            if (!l_PinMetadata ||
+                l_PinMetadata->type != PinType::Execution) {
+              continue;
+            }
+
+            if (i_Pin->direction == PinDirection::Input) {
+              l_HasExecutionInput = true;
+            } else if (!l_ExecutionOutputPin.is_valid()) {
+              l_ExecutionOutputPin = i_Pin->id;
+            }
+          }
+
+          if (l_HasExecutionInput ||
+              !l_ExecutionOutputPin.is_valid()) {
+            continue;
+          }
+
+          const Node *l_NodeMetadata = p_Graph.find_node(i_Node.id);
+          Util::String l_FunctionName = "Entry";
+          if (l_NodeMetadata && !l_NodeMetadata->title.empty()) {
+            l_FunctionName = make_script_identifier(
+                l_NodeMetadata->title, Util::String("Entry"));
+          }
+
+          if (l_EntryIndex > 0) {
+            l_FunctionName += "_";
+            l_FunctionName += l_EntryIndex;
+          }
+
+          CompileEntryPoint l_Entry;
+          l_Entry.node = i_Node.id;
+          l_Entry.execution_output_pin = l_ExecutionOutputPin;
+          l_Entry.function_name = l_FunctionName;
+          l_Entry.function_signature =
+              Util::String("void ") + l_FunctionName + "()";
+          p_EntryPoints.push_back(l_Entry);
+          ++l_EntryIndex;
+        }
+      }
+
+      void
+      DefaultCompileProfile::compile(Graph &p_Graph,
+                                     CompileContext &p_Context) const
+      {
+        p_Context.begin_block("class VisualScript");
+
+        Util::List<CompileEntryPoint> l_EntryPoints;
+        collect_entry_points(p_Graph, l_EntryPoints);
+
+        for (const CompileEntryPoint &i_Entry : l_EntryPoints) {
+          if (!i_Entry.is_valid()) {
+            continue;
+          }
+
+          Util::String l_Signature = i_Entry.function_signature;
+          if (l_Signature.empty()) {
+            l_Signature =
+                Util::String("void ") + i_Entry.function_name + "()";
+          }
+
+          p_Context.begin_block(l_Signature);
+          p_Graph.continue_compilation(i_Entry.execution_output_pin,
+                                       p_Context);
+          p_Context.end_block();
+          p_Context.main_code.append("\n");
+        }
+
+        p_Context.end_block(";");
+      }
+
+      void CompileProfileRegistry::register_profile(
+          CompileProfile &p_Profile)
+      {
+        profiles[p_Profile.get_name()] = &p_Profile;
+      }
+
+      CompileProfile *
+      CompileProfileRegistry::find_profile(Util::Name p_ProfileName)
+      {
+        auto it = profiles.find(p_ProfileName);
+        if (it == profiles.end()) {
+          return nullptr;
+        }
+        return it->second;
+      }
+
+      const CompileProfile *CompileProfileRegistry::find_profile(
+          Util::Name p_ProfileName) const
+      {
+        auto it = profiles.find(p_ProfileName);
+        if (it == profiles.end()) {
+          return nullptr;
+        }
+        return it->second;
+      }
+
+      void register_builtin_compile_profiles(
+          CompileProfileRegistry &p_ProfileRegistry)
+      {
+        static DefaultCompileProfile g_DefaultCompileProfile;
+        static UiControllerCompileProfile
+            g_UiControllerCompileProfile;
+        p_ProfileRegistry.register_profile(g_DefaultCompileProfile);
+        p_ProfileRegistry.register_profile(
+            g_UiControllerCompileProfile);
+      }
 
       NodeGraphMutationResult<Editor::Node>
       Graph::add_node(const Editor::Node &p_Node,
@@ -1121,6 +1392,18 @@ namespace Low {
                                         p_CompileContext);
       }
 
+      void Graph::compile(CompileProfile &p_Profile,
+                          CompileContext &p_CompileContext)
+      {
+        p_Profile.compile(*this, p_CompileContext);
+      }
+
+      void Graph::compile(const CompileProfile &p_Profile,
+                          CompileContext &p_CompileContext)
+      {
+        p_Profile.compile(*this, p_CompileContext);
+      }
+
       void Graph::serialize(Util::Serial::Node &p_Node) const
       {
         p_Node["id_counter"] = Util::U64Id{id_counter};
@@ -1169,11 +1452,13 @@ namespace Low {
           const NodeClass *l_NodeClass =
               find_node_class(l_NodeMetadata->node_class);
           if (l_NodeClass) {
-            l_NodeClass->serialize(*const_cast<Graph *>(this), i_Node.id,
+            l_NodeClass->serialize(*const_cast<Graph *>(this),
+                                   i_Node.id,
                                    i_NodeNode["node_data"]);
           }
 
-          for (const Editor::Pin *i_Pin : graph.get_node_pins(i_Node.id)) {
+          for (const Editor::Pin *i_Pin :
+               graph.get_node_pins(i_Node.id)) {
             const Pin *l_PinMetadata = find_pin(i_Pin->id);
             if (!l_PinMetadata) {
               continue;
@@ -1210,10 +1495,9 @@ namespace Low {
         pin_metadata.clear();
         variables.clear();
 
-        id_counter =
-            p_Node["id_counter"]
-                ? (u64)p_Node["id_counter"].as<Util::U64Id>()
-                : 1ull;
+        id_counter = p_Node["id_counter"]
+                         ? (u64)p_Node["id_counter"].as<Util::U64Id>()
+                         : 1ull;
 
         if (p_Node["variables"]) {
           for (auto [_, i_VariableNode] : p_Node["variables"]) {
@@ -1231,16 +1515,17 @@ namespace Low {
                 i_NodeNode["node_class"].as<Util::Name>();
             const NodeClass *l_NodeClass =
                 find_node_class(l_NodeClassName);
-            LOW_ASSERT(l_NodeClass,
-                       "Could not find node class during VisualScript "
-                       "graph deserialization");
+            LOW_ASSERT(
+                l_NodeClass,
+                "Could not find node class during VisualScript "
+                "graph deserialization");
             if (!l_NodeClass) {
               continue;
             }
 
             Editor::Node l_Node;
-            l_Node.id = NodeId{
-                (u64)i_NodeNode["id"].as<Util::U64Id>()};
+            l_Node.id =
+                NodeId{(u64)i_NodeNode["id"].as<Util::U64Id>()};
             l_Node.position =
                 i_NodeNode["position"].as<Math::Vector2>();
             l_MaxId = LOW_MATH_MAX(l_MaxId, l_Node.id.value);
@@ -1289,7 +1574,8 @@ namespace Low {
                                        i_NodeNode["node_data"]);
             }
 
-            l_NodeClass->setup_default_pins(*this, l_Node.id, nullptr);
+            l_NodeClass->setup_default_pins(*this, l_Node.id,
+                                            nullptr);
 
             Util::List<Editor::Pin *> l_NodePins =
                 graph.get_node_pins(l_Node.id);
@@ -1307,17 +1593,16 @@ namespace Low {
               pin_metadata.erase(i_OldPinId);
             }
 
-            const u32 l_PinCount =
-                LOW_MATH_MIN((u32)l_NodePins.size(),
-                             l_SerializedPinCount);
+            const u32 l_PinCount = LOW_MATH_MIN(
+                (u32)l_NodePins.size(), l_SerializedPinCount);
             for (u32 i = 0; i < l_PinCount; ++i) {
               Editor::Pin *l_Pin = l_NodePins[i];
               Util::Serial::Node &l_PinNode = i_NodeNode["pins"][i];
               Pin l_PinMetadata;
               deserialize_pin_metadata(l_PinNode, l_PinMetadata);
 
-              const PinId l_PinId = PinId{
-                  (u64)l_PinNode["id"].as<Util::U64Id>()};
+              const PinId l_PinId =
+                  PinId{(u64)l_PinNode["id"].as<Util::U64Id>()};
               l_Pin->id = l_PinId;
               l_PinMetadata.pin = l_PinId;
               pin_metadata[l_PinId] = l_PinMetadata;
@@ -1329,12 +1614,12 @@ namespace Low {
         if (p_Node["links"]) {
           for (auto [_, i_LinkNode] : p_Node["links"]) {
             Editor::Link l_Link;
-            l_Link.id = LinkId{
-                (u64)i_LinkNode["id"].as<Util::U64Id>()};
-            l_Link.start_pin = PinId{
-                (u64)i_LinkNode["start_pin"].as<Util::U64Id>()};
-            l_Link.end_pin = PinId{
-                (u64)i_LinkNode["end_pin"].as<Util::U64Id>()};
+            l_Link.id =
+                LinkId{(u64)i_LinkNode["id"].as<Util::U64Id>()};
+            l_Link.start_pin =
+                PinId{(u64)i_LinkNode["start_pin"].as<Util::U64Id>()};
+            l_Link.end_pin =
+                PinId{(u64)i_LinkNode["end_pin"].as<Util::U64Id>()};
             graph.add_link(l_Link, nullptr);
             l_MaxId = LOW_MATH_MAX(l_MaxId, l_Link.id.value);
           }

@@ -419,6 +419,8 @@ namespace Low {
 
             Util::Serial::write_yaml_file(l_SidecarPath.c_str(),
                                           l_OutNode);
+
+            build_module(l_Asset.get_module());
           }
           return l_SidecarPath;
         });

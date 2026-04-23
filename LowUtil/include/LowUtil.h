@@ -23,6 +23,7 @@ namespace Low {
       String engineRootPath;
       String engineDataPath;
       String managedPath;
+      String visualScriptOut;
     };
     LOW_EXPORT const Project &get_project();
 
@@ -45,6 +46,7 @@ namespace Low {
     LOW_EXPORT ProjectPathBuilder project_data_path();
     LOW_EXPORT ProjectPathBuilder project_root_path();
     LOW_EXPORT ProjectPathBuilder project_asset_cache_path();
+    LOW_EXPORT ProjectPathBuilder project_visual_script_out_path();
     LOW_EXPORT ProjectPathBuilder project_managed_path();
     LOW_EXPORT ProjectPathBuilder project_editor_images_path();
     LOW_EXPORT ProjectPathBuilder engine_root_path();
@@ -58,6 +60,8 @@ namespace Low {
     project_editor_images_path(const String &p_RelativePath);
     LOW_EXPORT String
     project_managed_path(const String &p_RelativePath);
+    LOW_EXPORT String
+    project_visual_script_out_path(const String &p_RelativePath);
     LOW_EXPORT String engine_root_path(const String &p_RelativePath);
     LOW_EXPORT String engine_data_path(const String &p_RelativePath);
 
