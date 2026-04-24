@@ -1,5 +1,6 @@
 #include "LowCoreUiImageSystem.h"
 
+#include "LowMath.h"
 #include "LowRenderer.h"
 #include "LowRendererPrimitives.h"
 #include "LowRendererUiCanvas.h"

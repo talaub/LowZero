@@ -11,6 +11,7 @@
 #include "LowRendererVulkan.h"
 #include "LowRenderer.h"
 #include "LowRendererUiCanvas.h"
+#include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 
 #include "LowRendererSS2DDrawCommand.h"
@@ -403,6 +404,7 @@ namespace Low {
              it != UiRenderObject::ms_Dirty.end(); ++it) {
           UiRenderObject i_RenderObject = *it;
           if (!i_RenderObject.is_alive()) {
+
             continue;
           }
 
@@ -561,7 +563,7 @@ namespace Low {
 
         for (auto it = l_RescheduleRenderObjects.begin();
              it != l_RescheduleRenderObjects.end(); ++it) {
-          it->set_dirty(true);
+          it->mark_dirty();
         }
 
         return l_Result;
@@ -631,7 +633,9 @@ namespace Low {
       static bool update_ui_drawcommand_buffer(float p_Delta)
       {
         update_dirty_ui_drawcommands(p_Delta);
-        update_dirty_ui_renderobjects(p_Delta);
+        LOW_ASSERT_ERROR_RETURN_FALSE(
+            update_dirty_ui_renderobjects(p_Delta),
+            "Failed to update ui renderobjects.");
         return true;
       }
 

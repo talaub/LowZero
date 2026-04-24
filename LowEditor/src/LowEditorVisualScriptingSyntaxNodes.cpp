@@ -1,6 +1,7 @@
 #include "LowEditorVisualScriptingSyntaxNodes.h"
 
 #include "IconsCodicons.h"
+#include "LowUtilLogger.h"
 
 namespace Low {
   namespace Editor {

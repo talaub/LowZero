@@ -1323,6 +1323,9 @@ namespace Low {
           i_ComponentType.serialize(i_Component,
                                     i_ComponentDescriptor.data);
 
+          i_ComponentDescriptor.data.remove("_unique_id");
+          i_ComponentDescriptor.data.remove("unique_id");
+
           p_Descriptor.components.push_back(i_ComponentDescriptor);
         }
 

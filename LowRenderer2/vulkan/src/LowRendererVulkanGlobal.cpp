@@ -357,6 +357,10 @@ namespace Low {
         {
           g_FrameNumber++;
           g_CurrentFrameIndex = g_FrameNumber % g_FrameOverlap;
+
+          get_current_frame_staging_buffer().occupied = 0;
+          get_current_resource_staging_buffer().occupied = 0;
+
           return true;
         }
 

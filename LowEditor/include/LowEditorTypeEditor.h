@@ -41,6 +41,8 @@ namespace Low {
       {
       }
 
+      virtual ~TypeEditor() = default;
+
       virtual void render(const float p_Delta);
 
       void show();

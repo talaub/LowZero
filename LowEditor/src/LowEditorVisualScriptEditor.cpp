@@ -2,6 +2,7 @@
 
 #include "LowEditor.h"
 #include "LowEditorBase.h"
+#include "LowEditorFonts.h"
 #include "LowEditorGui.h"
 #include "LowEditorMetadata.h"
 #include "IconsLucide.h"
@@ -31,6 +32,26 @@ namespace Low {
             "VS_VARIABLE";
         static const char *g_CanvasDropPopupId =
             "##visual_script_canvas_drop_popup";
+
+        static void render_canvas_watermark(Document &p_Document)
+        {
+          ImDrawList *l_DrawList = p_Document.canvas.get_draw_list();
+          if (!l_DrawList) {
+            return;
+          }
+
+          ImFont *l_Font = Fonts::UI(48.0f, Fonts::Weight::Bold);
+          if (!l_Font) {
+            l_Font = ImGui::GetFont();
+          }
+
+          const ImVec2 l_Pos =
+              ImVec2(p_Document.canvas.get_canvas_min().x + 22.0f,
+                     p_Document.canvas.get_canvas_min().y + 18.0f);
+
+          l_DrawList->AddText(l_Font, 48.0f, l_Pos,
+                              IM_COL32(180, 185, 200, 32), "FLODE");
+        }
 
         static void register_common_node_libraries(Graph &p_Graph)
         {
@@ -989,6 +1010,7 @@ namespace Low {
                 document->canvas.get_canvas_origin(),
                 document->canvas.get_canvas_min(),
                 document->canvas.get_canvas_max()};
+            render_canvas_watermark(*document);
             document->renderer.render(l_GraphContext);
             document->canvas.end();
           }

@@ -1504,14 +1504,15 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dirty
-
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
 
       // Set new value
       TYPE_SOA(UiRenderObject, dirty, bool) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
-
+      if (p_Value) {
+        ms_Dirty.insert(get_id());
+      }
       // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
 
       broadcast_observable(N(dirty));
