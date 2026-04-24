@@ -2,7 +2,6 @@
 
 #include <algorithm>
 
-#include "LowCoreScriptAssetGenerator.h"
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
@@ -15,6 +14,7 @@
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 #include "LowUtilAssetManager.h"
 #include "LowCoreScripting.h"
+#include "LowUtilString.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -244,7 +244,10 @@ namespace Low {
                 p_Handle, Asset, source_path, Low::Util::String);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                  const void *p_Data) -> void {};
+                                  const void *p_Data) -> void {
+            Asset l_Handle = p_Handle.get_id();
+            l_Handle.set_source_path(*(Low::Util::String *)p_Data);
+          };
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Asset l_Handle = p_Handle.get_id();
@@ -388,9 +391,15 @@ namespace Low {
           ScriptAsset l_Asset = Util::Handle::DEAD;
           bool l_Reimport = false;
 
+          const Util::String l_NormalizedPath =
+              Util::PathHelper::normalize(p_Path);
+
           for (u32 i = 0; i < ScriptAsset::living_count(); ++i) {
             ScriptAsset i_Script = ScriptAsset::living_instances()[i];
-            if (i_Script.get_source_path() == p_Path) {
+            const Util::String i_NormalizedPath =
+                Util::PathHelper::normalize(
+                    i_Script.get_source_path());
+            if (i_NormalizedPath == l_NormalizedPath) {
               l_Asset = i_Script;
               l_Reimport = true;
               break;
@@ -412,7 +421,7 @@ namespace Low {
           if (l_Reimport) {
             build_module(l_Asset.get_module());
           } else {
-            l_Asset.set_source_path(p_Path);
+            l_Asset.set_source_path(l_NormalizedPath);
             Util::Serial::Node l_OutNode;
             l_Asset.serialize(l_OutNode);
             l_Asset.set_module(Module::find_by_name(N(low.misc)));

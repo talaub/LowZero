@@ -12,6 +12,8 @@
 #include "LowRendererUiDrawCommand.h"
 #include "LowUtilLogger.h"
 
+#include "LowEditorVisualScriptEditor.h"
+
 namespace Low {
   namespace Editor {
     struct UiWidgetEditor;
@@ -58,13 +60,19 @@ namespace Low {
       void render_viewport();
 
     protected:
+      Core::UI::Element create_element(const Util::Name p_Name,
+                                       Renderer::UiCanvas p_Canvas,
+                                       Core::UI::Element p_Parent);
+
       UiWidgetInteractiveViewport *m_Viewport;
 
       void create_local_controller();
 
       float m_LeftPaneWidth;
       float m_TopPaneHeight;
-      bool m_Test;
+
+      VisualScript::Document m_CustomControllerDocument;
+      VisualScript::Editor m_VisualScriptEditor;
 
       Mode m_Mode = Mode::Widget;
 

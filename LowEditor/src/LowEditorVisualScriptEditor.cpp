@@ -46,6 +46,35 @@ namespace Low {
         p_Context.register_node_libraries(graph);
       }
 
+      void Document::apply_context(
+          const ContextDefinition &p_Context,
+          const CompileProfileRegistry &p_ProfileRegistry)
+      {
+        apply_context(p_Context);
+        initialize_compile_settings(p_ProfileRegistry);
+      }
+
+      bool Document::initialize_compile_settings(
+          const CompileProfileRegistry &p_ProfileRegistry)
+      {
+        if (!compile_profile.is_valid()) {
+          return false;
+        }
+
+        const CompileProfile *l_Profile =
+            p_ProfileRegistry.find_profile(compile_profile);
+        if (!l_Profile) {
+          LOW_LOG_WARN
+              << "Could not initialize compile settings. Compile "
+                 "profile was not registered: "
+              << compile_profile << LOW_LOG_END;
+          return false;
+        }
+
+        compile_settings = l_Profile->create_settings();
+        return compile_settings != nullptr;
+      }
+
       bool Document::load_from_path(const Util::String &p_Path)
       {
         if (p_Path.empty()) {
@@ -76,6 +105,7 @@ namespace Low {
         } else if (!compile_profile.is_valid()) {
           compile_profile = N(vs_compile_default);
         }
+        compile_settings.reset();
 
         if (l_Root["graph"]) {
           graph.deserialize(l_Root["graph"]);
@@ -128,6 +158,69 @@ namespace Low {
         } else if (!compile_profile.is_valid()) {
           compile_profile = N(vs_compile_default);
         }
+        compile_settings.reset();
+
+        if (l_Root["graph"]) {
+          graph.deserialize(l_Root["graph"]);
+        } else {
+          graph.deserialize(l_Root);
+        }
+
+        path = p_Path;
+        return true;
+      }
+
+      bool Document::load_from_path(
+          const Util::String &p_Path,
+          const ContextRegistry &p_ContextRegistry,
+          const CompileProfileRegistry &p_ProfileRegistry)
+      {
+        if (p_Path.empty()) {
+          return false;
+        }
+
+        if (!Util::FileIO::file_exists_sync(p_Path.c_str())) {
+          LOW_LOG_WARN
+              << "Could not load visual script document. File "
+                 "does not exist: "
+              << p_Path << LOW_LOG_END;
+          return false;
+        }
+
+        initialize();
+
+        Util::Serial::Node l_Root =
+            Util::Serial::load_yaml_file(p_Path.c_str());
+        if (l_Root["context"]) {
+          const Util::Name l_ContextName =
+              l_Root["context"].as<Util::Name>();
+          const ContextDefinition *l_Context =
+              p_ContextRegistry.find_context(l_ContextName);
+          if (l_Context) {
+            apply_context(*l_Context, p_ProfileRegistry);
+          } else {
+            context = l_ContextName;
+          }
+        }
+        if (l_Root["output_path"]) {
+          output_path = l_Root["output_path"].as<Util::String>();
+        }
+
+        if (l_Root["compile_profile"]) {
+          compile_profile =
+              l_Root["compile_profile"].as<Util::Name>();
+        } else if (!compile_profile.is_valid()) {
+          compile_profile = N(vs_compile_default);
+        }
+
+        if (!compile_settings ||
+            compile_settings->get_profile_name() != compile_profile) {
+          initialize_compile_settings(p_ProfileRegistry);
+        }
+
+        if (compile_settings && l_Root["compile_settings"]) {
+          compile_settings->deserialize(l_Root["compile_settings"]);
+        }
 
         if (l_Root["graph"]) {
           graph.deserialize(l_Root["graph"]);
@@ -164,6 +257,9 @@ namespace Low {
           l_Root["output_path"] = output_path;
         }
         l_Root["compile_profile"] = compile_profile;
+        if (compile_settings) {
+          compile_settings->serialize(l_Root["compile_settings"]);
+        }
         graph.serialize(l_Root["graph"]);
 
         Util::Serial::write_yaml_file(p_Path.c_str(), l_Root);
@@ -193,7 +289,7 @@ namespace Low {
         }
 
         CompileContext l_Context;
-        graph.compile(*l_Profile, l_Context);
+        l_Profile->compile(*this, l_Context);
 
         LOW_LOG_DEBUG << "CODE: " << l_Context.main_code.get()
                       << LOW_LOG_END;

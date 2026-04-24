@@ -161,6 +161,7 @@ namespace Low {
       ScriptClass::initialize();
       Scripting::ClassInstance::initialize();
       Scripting::Module::make(N(low.misc));
+      Scripting::Module::make(N(ui.controller));
     }
 
     static void initialize_types()

@@ -1,6 +1,11 @@
 #include "LowUtilHashing.h"
+#include "LowUtilHandle.h"
+#include "LowUtilContainers.h"
 
 #include <inttypes.h>
+#include <atomic>
+#include <chrono>
+#include <random>
 
 namespace Low {
   namespace Util {
@@ -37,6 +42,31 @@ namespace Low {
     u64 string_to_hash(const Util::String &p_HashStr)
     {
       return std::strtoull(p_HashStr.c_str(), nullptr, 16);
+    }
+
+    u64 generate_unique_id()
+    {
+      static std::atomic<u64> s_Counter = 0;
+      static std::mt19937_64 s_Rng(
+          (u64)std::chrono::high_resolution_clock::now()
+              .time_since_epoch()
+              .count());
+
+      const u64 l_Time =
+          (u64)std::chrono::duration_cast<std::chrono::milliseconds>(
+              std::chrono::system_clock::now().time_since_epoch())
+              .count();
+      const u64 l_Counter =
+          s_Counter.fetch_add(1, std::memory_order_relaxed);
+      const u64 l_Random = s_Rng();
+
+      u64 l_Value = l_Time;
+      l_Value ^= l_Counter + 0x9e3779b97f4a7c15ull + (l_Value << 6) +
+                 (l_Value >> 2);
+      l_Value ^= l_Random + 0x9e3779b97f4a7c15ull + (l_Value << 6) +
+                 (l_Value >> 2);
+
+      return l_Value;
     }
 
   } // namespace Util

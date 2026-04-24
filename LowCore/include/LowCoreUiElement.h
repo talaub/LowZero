@@ -35,6 +35,7 @@ namespace Low {
           bool click_passthrough;
           Low::Renderer::UiCanvas canvas;
           uint64_t widget_instance;
+          uint64_t local_id;
           Low::Util::UniqueId unique_id;
           Low::Util::Name name;
 
@@ -176,6 +177,9 @@ namespace Low {
 
         uint64_t get_widget_instance() const;
         void set_widget_instance(uint64_t p_Value);
+
+        uint64_t get_local_id() const;
+        void set_local_id(uint64_t p_Value);
 
         Low::Util::UniqueId get_unique_id() const;
 

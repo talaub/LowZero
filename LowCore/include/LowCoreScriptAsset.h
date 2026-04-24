@@ -156,6 +156,8 @@ namespace Low {
         void set_module(Low::Core::Scripting::Module p_Value);
 
         Low::Util::String get_source_path() const;
+        void set_source_path(Low::Util::String p_Value);
+        void set_source_path(const char *p_Value);
 
         Low::Core::Scripting::AssetGenerator get_generator() const;
         void
@@ -178,8 +180,6 @@ namespace Low {
             u32 &p_PageIndex, u32 &p_SlotIndex,
             Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
         static u32 create_page();
-        void set_source_path(Low::Util::String p_Value);
-        void set_source_path(const char *p_Value);
         void set_unique_id(Low::Util::UniqueId p_Value);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE

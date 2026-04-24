@@ -28,6 +28,7 @@ namespace Low {
         Util::Name name;
         Util::List<ComponentDescriptor> components;
         Util::List<ElementDescriptor> children;
+        u64 local_id;
       };
       enum class LoadState
       {
@@ -49,6 +50,8 @@ namespace Low {
           Low::Util::String path;
           Low::Core::UI::Controller controller;
           bool has_custom_controller;
+          uint64_t local_element_id_counter;
+          uint64_t custom_controller_id;
           Low::Util::Name name;
 
           static size_t get_size()
@@ -198,9 +201,13 @@ namespace Low {
         void has_custom_controller(bool p_Value);
         void toggle_has_custom_controller();
 
+        uint64_t get_custom_controller_id() const;
+        void set_custom_controller_id(uint64_t p_Value);
+
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
 
+        uint64_t get_next_local_id();
         WidgetInstance
         spawn_instance(Low::Renderer::UiCanvas p_Canvas);
         Low::Core::UI::Element
@@ -223,6 +230,8 @@ namespace Low {
         static u32 create_page();
         void set_path(Low::Util::String p_Value);
         void set_path(const char *p_Value);
+        uint64_t get_local_element_id_counter() const;
+        void set_local_element_id_counter(uint64_t p_Value);
         void parse_content(Low::Util::Serial::Node &p_Node);
 
         void

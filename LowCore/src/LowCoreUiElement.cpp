@@ -386,6 +386,37 @@ namespace Low {
           // End property: widget_instance
         }
         {
+          // Property: local_id
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(local_id);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(Element::Data, local_id);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            Element l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Element> l_HandleLock(l_Handle);
+            l_Handle.get_local_id();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Element,
+                                              local_id, uint64_t);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            Element l_Handle = p_Handle.get_id();
+            l_Handle.set_local_id(*(uint64_t *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Element l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Element> l_HandleLock(l_Handle);
+            *((uint64_t *)p_Data) = l_Handle.get_local_id();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: local_id
+        }
+        {
           // Property: unique_id
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(unique_id);
@@ -1070,6 +1101,33 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_widget_instance
 
         broadcast_observable(N(widget_instance));
+      }
+
+      uint64_t Element::get_local_id() const
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Element> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_local_id
+        // LOW_CODEGEN::END::CUSTOM:GETTER_local_id
+
+        return TYPE_SOA(Element, local_id, uint64_t);
+      }
+      void Element::set_local_id(uint64_t p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Element> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_local_id
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_local_id
+
+        // Set new value
+        TYPE_SOA(Element, local_id, uint64_t) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_local_id
+        // LOW_CODEGEN::END::CUSTOM:SETTER_local_id
+
+        broadcast_observable(N(local_id));
       }
 
       Low::Util::UniqueId Element::get_unique_id() const

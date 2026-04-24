@@ -43,7 +43,6 @@ types:
         handle: true
       source_path:
         type: Low::Util::String
-        private_setter: true
       generator:
         type: Low::Core::Scripting::AssetGenerator
         enum: true

@@ -8,14 +8,17 @@
 #include "LowUtilHandle.h"
 #include "LowUtilHashing.h"
 #include "LowUtilName.h"
+#include "LowUtilSerialization.h"
 #include "LowUtilString.h"
 #include "LowUtilVariant.h"
 
 #include <functional>
+#include <memory>
 
 namespace Low {
   namespace Editor {
     namespace VisualScript {
+      struct Document;
       struct Graph;
 
       enum class PinType
@@ -154,12 +157,54 @@ namespace Low {
         }
       };
 
+      struct LOW_EDITOR_API CompileProfileSettings
+      {
+        virtual ~CompileProfileSettings() = default;
+
+        virtual Util::Name get_profile_name() const = 0;
+        virtual void serialize(Util::Serial::Node &p_Node) const
+        {
+          (void)p_Node;
+        }
+        virtual void deserialize(const Util::Serial::Node &p_Node)
+        {
+          (void)p_Node;
+        }
+      };
+
+      struct LOW_EDITOR_API DefaultCompileProfileSettings
+          : public CompileProfileSettings
+      {
+        virtual Util::Name get_profile_name() const override
+        {
+          return N(vs_compile_default);
+        }
+      };
+
+      struct LOW_EDITOR_API UiControllerCompileProfileSettings
+          : public CompileProfileSettings
+      {
+        Util::String class_name = "VisualScriptUiController";
+
+        virtual Util::Name get_profile_name() const override
+        {
+          return N(cp_ui_controller);
+        }
+
+        virtual void
+        serialize(Util::Serial::Node &p_Node) const override;
+        virtual void
+        deserialize(const Util::Serial::Node &p_Node) override;
+      };
+
       struct LOW_EDITOR_API CompileProfile
       {
         virtual ~CompileProfile() = default;
 
         virtual Util::Name get_name() const = 0;
-        virtual void compile(Graph &p_Graph,
+        virtual std::unique_ptr<CompileProfileSettings>
+        create_settings() const = 0;
+        virtual void compile(Document &p_Document,
                              CompileContext &p_Context) const = 0;
       };
 
@@ -170,7 +215,10 @@ namespace Low {
         {
           return N(cp_ui_controller);
         }
-        virtual Util::String get_class_name(Graph &p_Graph) const;
+        virtual std::unique_ptr<CompileProfileSettings>
+        create_settings() const override;
+        virtual Util::String
+        get_class_name(const Document &p_Document) const;
         virtual void collect_entry_points(
             Graph &p_Graph,
             Util::List<CompileEntryPoint> &p_EntryPoints) const;
@@ -184,7 +232,7 @@ namespace Low {
                          CompileContext &p_Context) const;
 
         virtual void
-        compile(Graph &p_Graph,
+        compile(Document &p_Document,
                 CompileContext &p_Context) const override;
       };
 
@@ -192,10 +240,12 @@ namespace Low {
           : public CompileProfile
       {
         virtual Util::Name get_name() const override;
+        virtual std::unique_ptr<CompileProfileSettings>
+        create_settings() const override;
         virtual void collect_entry_points(
             Graph &p_Graph,
             Util::List<CompileEntryPoint> &p_EntryPoints) const;
-        virtual void compile(Graph &p_Graph,
+        virtual void compile(Document &p_Document,
                              CompileContext &p_Context) const override;
       };
 
@@ -405,10 +455,6 @@ namespace Low {
         void
         compile_input_pin(PinId p_InputPinId,
                           CompileContext &p_CompileContext) const;
-        void compile(CompileProfile &p_Profile,
-                     CompileContext &p_CompileContext);
-        void compile(const CompileProfile &p_Profile,
-                     CompileContext &p_CompileContext);
 
         void serialize(Util::Serial::Node &p_Node) const;
         void deserialize(Util::Serial::Node &p_Node);

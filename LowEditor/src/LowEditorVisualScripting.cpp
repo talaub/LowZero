@@ -1,4 +1,5 @@
 #include "LowEditorVisualScripting.h"
+#include "LowEditorVisualScriptEditor.h"
 
 #include "LowEditorFonts.h"
 #include "LowEditorGui.h"
@@ -548,11 +549,37 @@ namespace Low {
         main_code.append("\n");
       }
 
-      Util::String
-      UiControllerCompileProfile::get_class_name(Graph &p_Graph) const
+      void UiControllerCompileProfileSettings::serialize(
+          Util::Serial::Node &p_Node) const
       {
-        (void)p_Graph;
-        return "VisualScriptTestUiController";
+        p_Node["class_name"] = class_name;
+      }
+
+      void UiControllerCompileProfileSettings::deserialize(
+          const Util::Serial::Node &p_Node)
+      {
+        if (p_Node["class_name"]) {
+          class_name = p_Node["class_name"].as<Util::String>();
+        }
+      }
+
+      std::unique_ptr<CompileProfileSettings>
+      UiControllerCompileProfile::create_settings() const
+      {
+        return std::make_unique<UiControllerCompileProfileSettings>();
+      }
+
+      Util::String UiControllerCompileProfile::get_class_name(
+          const Document &p_Document) const
+      {
+        const UiControllerCompileProfileSettings *l_Settings =
+            p_Document.get_compile_settings<
+                UiControllerCompileProfileSettings>();
+        if (l_Settings && !l_Settings->class_name.empty()) {
+          return l_Settings->class_name;
+        }
+
+        return "VisualScriptUiController";
       }
 
       void UiControllerCompileProfile::emit_prelude(
@@ -599,12 +626,13 @@ namespace Low {
       }
 
       void UiControllerCompileProfile::compile(
-          Graph &p_Graph, CompileContext &p_Context) const
+          Document &p_Document, CompileContext &p_Context) const
       {
+        Graph &p_Graph = p_Document.graph;
         emit_prelude(p_Graph, p_Context);
 
         const Util::String l_ClassName = make_script_identifier(
-            get_class_name(p_Graph), "VisualScript");
+            get_class_name(p_Document), "VisualScript");
         p_Context.begin_block(Util::String("class ") + l_ClassName +
                               Util::String(": UiController"));
         emit_members(p_Graph, p_Context);
@@ -627,20 +655,26 @@ namespace Low {
         return N(vs_compile_default);
       }
 
+      std::unique_ptr<CompileProfileSettings>
+      DefaultCompileProfile::create_settings() const
+      {
+        return std::make_unique<DefaultCompileProfileSettings>();
+      }
+
       void DefaultCompileProfile::collect_entry_points(
           Graph &p_Graph,
           Util::List<CompileEntryPoint> &p_EntryPoints) const
       {
         u32 l_EntryIndex = 0;
 
-        for (const Editor::Node &i_Node : p_Graph.graph.nodes) {
-          Util::List<Editor::Pin *> l_NodePins =
+        for (const Low::Editor::Node &i_Node : p_Graph.graph.nodes) {
+          Util::List<Low::Editor::Pin *> l_NodePins =
               p_Graph.graph.get_node_pins(i_Node.id);
 
           bool l_HasExecutionInput = false;
           PinId l_ExecutionOutputPin;
 
-          for (const Editor::Pin *i_Pin : l_NodePins) {
+          for (const Low::Editor::Pin *i_Pin : l_NodePins) {
             const Pin *l_PinMetadata = p_Graph.find_pin(i_Pin->id);
             if (!l_PinMetadata ||
                 l_PinMetadata->type != PinType::Execution) {
@@ -683,9 +717,10 @@ namespace Low {
       }
 
       void
-      DefaultCompileProfile::compile(Graph &p_Graph,
+      DefaultCompileProfile::compile(Document &p_Document,
                                      CompileContext &p_Context) const
       {
+        Graph &p_Graph = p_Document.graph;
         p_Context.begin_block("class VisualScript");
 
         Util::List<CompileEntryPoint> l_EntryPoints;
@@ -749,12 +784,12 @@ namespace Low {
             g_UiControllerCompileProfile);
       }
 
-      NodeGraphMutationResult<Editor::Node>
-      Graph::add_node(const Editor::Node &p_Node,
+      NodeGraphMutationResult<Low::Editor::Node>
+      Graph::add_node(const Low::Editor::Node &p_Node,
                       const Node &p_Metadata,
                       const NodeGraphSchema *p_Schema)
       {
-        NodeGraphMutationResult<Editor::Node> l_Result =
+        NodeGraphMutationResult<Low::Editor::Node> l_Result =
             graph.add_node(p_Node, p_Schema);
 
         if (l_Result.succeeded()) {
@@ -782,11 +817,11 @@ namespace Low {
         return l_Result;
       }
 
-      NodeGraphMutationResult<Editor::Pin>
-      Graph::add_pin(const Editor::Pin &p_Pin, const Pin &p_Metadata,
+      NodeGraphMutationResult<Low::Editor::Pin>
+      Graph::add_pin(const Low::Editor::Pin &p_Pin, const Pin &p_Metadata,
                      const NodeGraphSchema *p_Schema)
       {
-        NodeGraphMutationResult<Editor::Pin> l_Result =
+        NodeGraphMutationResult<Low::Editor::Pin> l_Result =
             graph.add_pin(p_Pin, p_Schema);
 
         if (l_Result.succeeded()) {
@@ -805,20 +840,20 @@ namespace Low {
         return l_Result;
       }
 
-      NodeGraphMutationResult<Editor::Link>
-      Graph::add_link(const Editor::Link &p_Link,
+      NodeGraphMutationResult<Low::Editor::Link>
+      Graph::add_link(const Low::Editor::Link &p_Link,
                       const NodeGraphSchema *p_Schema)
       {
-        NodeGraphMutationResult<Editor::Link> l_Result =
+        NodeGraphMutationResult<Low::Editor::Link> l_Result =
             graph.add_link(p_Link, p_Schema);
 
         if (!l_Result.succeeded()) {
           return l_Result;
         }
 
-        const Editor::Pin *l_StartPin =
+        const Low::Editor::Pin *l_StartPin =
             graph.find_pin(p_Link.start_pin);
-        const Editor::Pin *l_EndPin = graph.find_pin(p_Link.end_pin);
+        const Low::Editor::Pin *l_EndPin = graph.find_pin(p_Link.end_pin);
 
         if (l_StartPin) {
           const Node *l_NodeMetadata = find_node(l_StartPin->node);
@@ -855,7 +890,7 @@ namespace Low {
 
         for (auto it = pin_metadata.begin(); it != pin_metadata.end();
              ++it) {
-          const Editor::Pin *l_Pin = graph.find_pin(it->first);
+          const Low::Editor::Pin *l_Pin = graph.find_pin(it->first);
           if (l_Pin && l_Pin->node == p_NodeId) {
             l_PinIdsToRemove.push_back(it->first);
           }
@@ -939,7 +974,7 @@ namespace Low {
       Pin *Graph::find_input_pin(NodeId p_NodeId,
                                  const Util::String &p_DisplayName)
       {
-        for (Editor::Pin *i_Pin : graph.get_input_pins(p_NodeId)) {
+        for (Low::Editor::Pin *i_Pin : graph.get_input_pins(p_NodeId)) {
           Pin *l_PinMetadata = find_pin(i_Pin->id);
           if (l_PinMetadata &&
               l_PinMetadata->display_name == p_DisplayName) {
@@ -954,7 +989,7 @@ namespace Low {
       Graph::find_input_pin(NodeId p_NodeId,
                             const Util::String &p_DisplayName) const
       {
-        for (const Editor::Pin *i_Pin :
+        for (const Low::Editor::Pin *i_Pin :
              graph.get_input_pins(p_NodeId)) {
           const Pin *l_PinMetadata = find_pin(i_Pin->id);
           if (l_PinMetadata &&
@@ -969,7 +1004,7 @@ namespace Low {
       Pin *Graph::find_output_pin(NodeId p_NodeId,
                                   const Util::String &p_DisplayName)
       {
-        for (Editor::Pin *i_Pin : graph.get_output_pins(p_NodeId)) {
+        for (Low::Editor::Pin *i_Pin : graph.get_output_pins(p_NodeId)) {
           Pin *l_PinMetadata = find_pin(i_Pin->id);
           if (l_PinMetadata &&
               l_PinMetadata->display_name == p_DisplayName) {
@@ -984,7 +1019,7 @@ namespace Low {
       Graph::find_output_pin(NodeId p_NodeId,
                              const Util::String &p_DisplayName) const
       {
-        for (const Editor::Pin *i_Pin :
+        for (const Low::Editor::Pin *i_Pin :
              graph.get_output_pins(p_NodeId)) {
           const Pin *l_PinMetadata = find_pin(i_Pin->id);
           if (l_PinMetadata &&
@@ -1131,12 +1166,12 @@ namespace Low {
         return l_Entries;
       }
 
-      NodeGraphMutationResult<Editor::Node>
+      NodeGraphMutationResult<Low::Editor::Node>
       Graph::create_node(Util::Name p_NodeClass,
                          const Math::Vector2 &p_Position,
                          const NodeGraphSchema *p_Schema)
       {
-        NodeGraphMutationResult<Editor::Node> l_Result;
+        NodeGraphMutationResult<Low::Editor::Node> l_Result;
         const NodeClass *l_NodeClass = find_node_class(p_NodeClass);
 
         if (!l_NodeClass) {
@@ -1145,7 +1180,7 @@ namespace Low {
           return l_Result;
         }
 
-        Editor::Node l_Node;
+        Low::Editor::Node l_Node;
         l_Node.id = allocate_node_id();
         l_Node.position = p_Position;
 
@@ -1166,12 +1201,12 @@ namespace Low {
         return l_Result;
       }
 
-      NodeGraphMutationResult<Editor::Node>
+      NodeGraphMutationResult<Low::Editor::Node>
       Graph::create_node_from_spawn_entry(
           Util::Name p_SpawnEntryId, const Math::Vector2 &p_Position,
           const NodeGraphSchema *p_Schema)
       {
-        NodeGraphMutationResult<Editor::Node> l_Result;
+        NodeGraphMutationResult<Low::Editor::Node> l_Result;
         const NodeSpawnEntry *l_SpawnEntry =
             find_spawn_entry(p_SpawnEntryId);
 
@@ -1190,7 +1225,7 @@ namespace Low {
           return l_Result;
         }
 
-        Editor::Node l_Node;
+        Low::Editor::Node l_Node;
         l_Node.id = allocate_node_id();
         l_Node.position = p_Position;
 
@@ -1225,7 +1260,7 @@ namespace Low {
 
       bool Graph::is_pin_connected(PinId p_PinId) const
       {
-        for (const Editor::Link &i_Link : graph.links) {
+        for (const Low::Editor::Link &i_Link : graph.links) {
           if (i_Link.start_pin == p_PinId ||
               i_Link.end_pin == p_PinId) {
             return true;
@@ -1237,7 +1272,7 @@ namespace Low {
 
       PinId Graph::get_connected_pin(PinId p_PinId) const
       {
-        for (const Editor::Link &i_Link : graph.links) {
+        for (const Low::Editor::Link &i_Link : graph.links) {
           if (i_Link.start_pin == p_PinId) {
             return i_Link.end_pin;
           }
@@ -1253,7 +1288,7 @@ namespace Low {
       {
         Util::List<PinId> l_Result;
 
-        for (const Editor::Link &i_Link : graph.links) {
+        for (const Low::Editor::Link &i_Link : graph.links) {
           if (i_Link.start_pin == p_PinId) {
             l_Result.push_back(i_Link.end_pin);
           } else if (i_Link.end_pin == p_PinId) {
@@ -1286,7 +1321,7 @@ namespace Low {
           PinId p_ExecutionOutputPinId,
           CompileContext &p_CompileContext) const
       {
-        const Editor::Pin *l_OutputPin =
+        const Low::Editor::Pin *l_OutputPin =
             graph.find_pin(p_ExecutionOutputPinId);
         const Pin *l_OutputPinMetadata =
             find_pin(p_ExecutionOutputPinId);
@@ -1299,7 +1334,7 @@ namespace Low {
 
         for (PinId i_ConnectedPinId :
              get_connected_pins(p_ExecutionOutputPinId)) {
-          const Editor::Pin *l_ConnectedPin =
+          const Low::Editor::Pin *l_ConnectedPin =
               graph.find_pin(i_ConnectedPinId);
           if (!l_ConnectedPin) {
             continue;
@@ -1313,7 +1348,7 @@ namespace Low {
       Graph::compile_input_pin(PinId p_InputPinId,
                                CompileContext &p_CompileContext) const
       {
-        const Editor::Pin *l_InputPin = graph.find_pin(p_InputPinId);
+        const Low::Editor::Pin *l_InputPin = graph.find_pin(p_InputPinId);
         const Pin *l_InputPinMetadata = find_pin(p_InputPinId);
 
         if (!l_InputPin || !l_InputPinMetadata ||
@@ -1324,7 +1359,7 @@ namespace Low {
         if (is_pin_connected(p_InputPinId)) {
           const PinId l_ConnectedPinId =
               get_connected_pin(p_InputPinId);
-          const Editor::Pin *l_ConnectedPin =
+          const Low::Editor::Pin *l_ConnectedPin =
               graph.find_pin(l_ConnectedPinId);
 
           if (!l_ConnectedPin) {
@@ -1392,18 +1427,6 @@ namespace Low {
                                         p_CompileContext);
       }
 
-      void Graph::compile(CompileProfile &p_Profile,
-                          CompileContext &p_CompileContext)
-      {
-        p_Profile.compile(*this, p_CompileContext);
-      }
-
-      void Graph::compile(const CompileProfile &p_Profile,
-                          CompileContext &p_CompileContext)
-      {
-        p_Profile.compile(*this, p_CompileContext);
-      }
-
       void Graph::serialize(Util::Serial::Node &p_Node) const
       {
         p_Node["id_counter"] = Util::U64Id{id_counter};
@@ -1414,7 +1437,7 @@ namespace Low {
           p_Node["variables"].push_back(i_VariableNode);
         }
 
-        for (const Editor::Node &i_Node : graph.nodes) {
+        for (const Low::Editor::Node &i_Node : graph.nodes) {
           const Node *l_NodeMetadata = find_node(i_Node.id);
           if (!l_NodeMetadata) {
             continue;
@@ -1457,7 +1480,7 @@ namespace Low {
                                    i_NodeNode["node_data"]);
           }
 
-          for (const Editor::Pin *i_Pin :
+          for (const Low::Editor::Pin *i_Pin :
                graph.get_node_pins(i_Node.id)) {
             const Pin *l_PinMetadata = find_pin(i_Pin->id);
             if (!l_PinMetadata) {
@@ -1476,7 +1499,7 @@ namespace Low {
           p_Node["nodes"].push_back(i_NodeNode);
         }
 
-        for (const Editor::Link &i_Link : graph.links) {
+        for (const Low::Editor::Link &i_Link : graph.links) {
           Util::Serial::Node i_LinkNode;
           i_LinkNode["id"] = Util::U64Id{i_Link.id.value};
           i_LinkNode["start_pin"] =
@@ -1523,7 +1546,7 @@ namespace Low {
               continue;
             }
 
-            Editor::Node l_Node;
+            Low::Editor::Node l_Node;
             l_Node.id =
                 NodeId{(u64)i_NodeNode["id"].as<Util::U64Id>()};
             l_Node.position =
@@ -1563,7 +1586,7 @@ namespace Low {
                   i_NodeNode["member_name"].as<Util::Name>();
             }
 
-            NodeGraphMutationResult<Editor::Node> l_AddNodeResult =
+            NodeGraphMutationResult<Low::Editor::Node> l_AddNodeResult =
                 add_node(l_Node, l_Metadata, nullptr);
             if (!l_AddNodeResult.succeeded()) {
               continue;
@@ -1577,7 +1600,7 @@ namespace Low {
             l_NodeClass->setup_default_pins(*this, l_Node.id,
                                             nullptr);
 
-            Util::List<Editor::Pin *> l_NodePins =
+            Util::List<Low::Editor::Pin *> l_NodePins =
                 graph.get_node_pins(l_Node.id);
             const u32 l_SerializedPinCount =
                 (u32)i_NodeNode["pins"].size();
@@ -1586,7 +1609,7 @@ namespace Low {
                        "graph deserialization");
 
             Util::List<PinId> l_OldPinIds;
-            for (Editor::Pin *i_Pin : l_NodePins) {
+            for (Low::Editor::Pin *i_Pin : l_NodePins) {
               l_OldPinIds.push_back(i_Pin->id);
             }
             for (PinId i_OldPinId : l_OldPinIds) {
@@ -1596,7 +1619,7 @@ namespace Low {
             const u32 l_PinCount = LOW_MATH_MIN(
                 (u32)l_NodePins.size(), l_SerializedPinCount);
             for (u32 i = 0; i < l_PinCount; ++i) {
-              Editor::Pin *l_Pin = l_NodePins[i];
+              Low::Editor::Pin *l_Pin = l_NodePins[i];
               Util::Serial::Node &l_PinNode = i_NodeNode["pins"][i];
               Pin l_PinMetadata;
               deserialize_pin_metadata(l_PinNode, l_PinMetadata);
@@ -1613,7 +1636,7 @@ namespace Low {
 
         if (p_Node["links"]) {
           for (auto [_, i_LinkNode] : p_Node["links"]) {
-            Editor::Link l_Link;
+            Low::Editor::Link l_Link;
             l_Link.id =
                 LinkId{(u64)i_LinkNode["id"].as<Util::U64Id>()};
             l_Link.start_pin =
@@ -1688,15 +1711,15 @@ namespace Low {
 
       NodeGraphValidationResult
       Schema::can_create_pin(const NodeGraph &p_Graph,
-                             const Editor::Pin &p_Pin) const
+                             const Low::Editor::Pin &p_Pin) const
       {
         return NodeGraphSchema::can_create_pin(p_Graph, p_Pin);
       }
 
       NodeGraphValidationResult
       Schema::validate_link(const NodeGraph &p_Graph,
-                            const Editor::Pin &p_StartPin,
-                            const Editor::Pin &p_EndPin) const
+                            const Low::Editor::Pin &p_StartPin,
+                            const Low::Editor::Pin &p_EndPin) const
       {
         const Graph *l_Graph = get_graph(p_Graph);
         if (!l_Graph) {
@@ -1760,7 +1783,7 @@ namespace Low {
       }
 
       bool Schema::allows_multiple_links_per_pin(
-          const NodeGraph &p_Graph, const Editor::Pin &p_Pin) const
+          const NodeGraph &p_Graph, const Low::Editor::Pin &p_Pin) const
       {
         const Graph *l_Graph = get_graph(p_Graph);
         if (!l_Graph) {
@@ -1789,7 +1812,7 @@ namespace Low {
       }
 
       const Pin *
-      Schema::get_pin_metadata(const Editor::Pin &p_Pin) const
+      Schema::get_pin_metadata(const Low::Editor::Pin &p_Pin) const
       {
         if (!graph) {
           return nullptr;
@@ -1800,7 +1823,7 @@ namespace Low {
 
       Math::Vector2 NodeRenderer::get_node_size(
           const NodeGraphEditorContext &p_Context,
-          const Editor::Node &p_Node) const
+          const Low::Editor::Node &p_Node) const
       {
         (void)p_Context;
 
@@ -1810,10 +1833,10 @@ namespace Low {
 
         u32 l_InputCount = 0;
         u32 l_OutputCount = 0;
-        Util::List<Editor::Pin *> l_NodePins =
+        Util::List<Low::Editor::Pin *> l_NodePins =
             graph->graph.get_node_pins(p_Node.id);
 
-        for (Editor::Pin *i_Pin : l_NodePins) {
+        for (Low::Editor::Pin *i_Pin : l_NodePins) {
           if (i_Pin->direction == PinDirection::Input) {
             ++l_InputCount;
           } else {
@@ -1840,7 +1863,7 @@ namespace Low {
       }
 
       void NodeRenderer::render_node(
-          NodeGraphEditorContext &p_Context, Editor::Node &p_Node,
+          NodeGraphEditorContext &p_Context, Low::Editor::Node &p_Node,
           const ImVec2 &p_ScreenMin, const ImVec2 &p_ScreenMax)
       {
         if (!p_Context.draw_list) {
@@ -2032,11 +2055,11 @@ namespace Low {
           }
         }
 
-        Util::List<Editor::Pin *> l_NodePins =
+        Util::List<Low::Editor::Pin *> l_NodePins =
             graph ? graph->graph.get_node_pins(p_Node.id)
-                  : Util::List<Editor::Pin *>();
+                  : Util::List<Low::Editor::Pin *>();
 
-        for (Editor::Pin *i_Pin : l_NodePins) {
+        for (Low::Editor::Pin *i_Pin : l_NodePins) {
           Pin *l_PinMetadata =
               graph ? graph->find_pin(i_Pin->id) : nullptr;
           ImVec2 l_PinAnchor;
@@ -2253,7 +2276,7 @@ namespace Low {
 
       bool NodeRenderer::get_pin_anchor(
           const NodeGraphEditorContext &p_Context,
-          const Editor::Node &p_Node, const Editor::Pin &p_Pin,
+          const Low::Editor::Node &p_Node, const Low::Editor::Pin &p_Pin,
           const ImVec2 &p_ScreenMin, const ImVec2 &p_ScreenMax,
           ImVec2 &p_Anchor) const
       {
@@ -2270,7 +2293,7 @@ namespace Low {
         const bool l_Compact =
             l_NodeClass && l_NodeClass->is_compact(*graph, p_Node.id);
 
-        Util::List<Editor::Pin *> l_NodePins =
+        Util::List<Low::Editor::Pin *> l_NodePins =
             graph->graph.get_node_pins(p_Pin.node);
 
         u32 l_SideIndex = 0;
@@ -2278,7 +2301,7 @@ namespace Low {
         u32 l_InputCount = 0;
         u32 l_OutputCount = 0;
 
-        for (Editor::Pin *i_Pin : l_NodePins) {
+        for (Low::Editor::Pin *i_Pin : l_NodePins) {
           if (i_Pin->direction == PinDirection::Input) {
             ++l_InputCount;
           } else {
@@ -2334,7 +2357,7 @@ namespace Low {
       }
 
       NodeGraphNodeRenderer *GraphRenderer::get_node_renderer(
-          NodeGraphEditorContext &p_Context, Editor::Node &p_Node)
+          NodeGraphEditorContext &p_Context, Low::Editor::Node &p_Node)
       {
         (void)p_Context;
         (void)p_Node;
@@ -2348,12 +2371,12 @@ namespace Low {
         return graph ? &spawn_adapter : nullptr;
       }
 
-      NodeGraphMutationResult<Editor::Link>
+      NodeGraphMutationResult<Low::Editor::Link>
       GraphRenderer::create_link(NodeGraphEditorContext &p_Context,
-                                 const Editor::Link &p_Link)
+                                 const Low::Editor::Link &p_Link)
       {
         if (!graph) {
-          NodeGraphMutationResult<Editor::Link> l_Result;
+          NodeGraphMutationResult<Low::Editor::Link> l_Result;
           l_Result.validation_result =
               NodeGraphValidationResult::InvalidLink;
           return l_Result;
@@ -2443,7 +2466,7 @@ namespace Low {
             get_variable_name_from_spawn_id(p_EntryId,
                                             g_GetVariableSpawnPrefix);
         if (!l_GetVariableName.empty()) {
-          Editor::Node l_Node;
+          Low::Editor::Node l_Node;
           l_Node.id = graph->allocate_node_id();
           l_Node.position = p_Position;
 
@@ -2455,7 +2478,7 @@ namespace Low {
           l_Metadata.subtitle = "Variable";
           l_Metadata.category = "Syntax";
 
-          NodeGraphMutationResult<Editor::Node> l_Result =
+          NodeGraphMutationResult<Low::Editor::Node> l_Result =
               graph->add_node(l_Node, l_Metadata, p_Context.schema);
           if (!l_Result.succeeded()) {
             return false;
@@ -2474,7 +2497,7 @@ namespace Low {
             get_variable_name_from_spawn_id(p_EntryId,
                                             g_SetVariableSpawnPrefix);
         if (!l_SetVariableName.empty()) {
-          Editor::Node l_Node;
+          Low::Editor::Node l_Node;
           l_Node.id = graph->allocate_node_id();
           l_Node.position = p_Position;
 
@@ -2486,7 +2509,7 @@ namespace Low {
           l_Metadata.subtitle = "Variable";
           l_Metadata.category = "Syntax";
 
-          NodeGraphMutationResult<Editor::Node> l_Result =
+          NodeGraphMutationResult<Low::Editor::Node> l_Result =
               graph->add_node(l_Node, l_Metadata, p_Context.schema);
           if (!l_Result.succeeded()) {
             return false;
@@ -2508,7 +2531,7 @@ namespace Low {
       }
 
       void GraphRenderer::render_node_context_menu(
-          NodeGraphEditorContext &p_Context, Editor::Node &p_Node)
+          NodeGraphEditorContext &p_Context, Low::Editor::Node &p_Node)
       {
         (void)p_Context;
 
@@ -2528,7 +2551,7 @@ namespace Low {
       }
 
       void GraphRenderer::render_pin_context_menu(
-          NodeGraphEditorContext &p_Context, Editor::Pin &p_Pin)
+          NodeGraphEditorContext &p_Context, Low::Editor::Pin &p_Pin)
       {
         (void)p_Context;
 
@@ -2721,18 +2744,18 @@ namespace Low {
         return Util::Variant(Util::String(""));
       }
 
-      Editor::Pin make_input_pin(Graph &p_Graph, NodeId p_NodeId)
+      Low::Editor::Pin make_input_pin(Graph &p_Graph, NodeId p_NodeId)
       {
-        Editor::Pin l_Pin;
+        Low::Editor::Pin l_Pin;
         l_Pin.id = p_Graph.allocate_pin_id();
         l_Pin.node = p_NodeId;
         l_Pin.direction = PinDirection::Input;
         return l_Pin;
       }
 
-      Editor::Pin make_output_pin(Graph &p_Graph, NodeId p_NodeId)
+      Low::Editor::Pin make_output_pin(Graph &p_Graph, NodeId p_NodeId)
       {
-        Editor::Pin l_Pin;
+        Low::Editor::Pin l_Pin;
         l_Pin.id = p_Graph.allocate_pin_id();
         l_Pin.node = p_NodeId;
         l_Pin.direction = PinDirection::Output;

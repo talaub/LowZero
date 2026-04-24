@@ -1,6 +1,7 @@
 #pragma once
 
 #include "LowEditorVisualScripting.h"
+#include <memory>
 
 namespace Low {
   namespace Editor {
@@ -14,6 +15,7 @@ namespace Low {
         Util::String output_path;
         Util::Name context;
         Util::Name compile_profile;
+        std::unique_ptr<CompileProfileSettings> compile_settings;
         Graph graph;
         Schema schema;
         GraphRenderer renderer;
@@ -31,13 +33,32 @@ namespace Low {
         }
 
         void apply_context(const ContextDefinition &p_Context);
+        void apply_context(
+            const ContextDefinition &p_Context,
+            const CompileProfileRegistry &p_ProfileRegistry);
+        bool initialize_compile_settings(
+            const CompileProfileRegistry &p_ProfileRegistry);
         bool load_from_path(const Util::String &p_Path);
         bool load_from_path(const Util::String &p_Path,
                             const ContextRegistry &p_ContextRegistry);
+        bool load_from_path(
+            const Util::String &p_Path,
+            const ContextRegistry &p_ContextRegistry,
+            const CompileProfileRegistry &p_ProfileRegistry);
         bool save();
         bool save_as(const Util::String &p_Path);
         bool compile_and_write(
             const CompileProfileRegistry &p_ProfileRegistry);
+
+        template <typename T> T *get_compile_settings()
+        {
+          return dynamic_cast<T *>(compile_settings.get());
+        }
+
+        template <typename T> const T *get_compile_settings() const
+        {
+          return dynamic_cast<const T *>(compile_settings.get());
+        }
       };
 
       struct LOW_EDITOR_API ContextDefinition

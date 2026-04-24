@@ -593,37 +593,3 @@ template <> struct Converter<Name, void>
     return false;
   }
 };
-
-template <> struct Converter<U64Id, void>
-{
-  static Node encode(const U64Id &v)
-  {
-    Node n;
-    String hashed = hash_to_string(v.val);
-    n = hashed;
-    return n;
-  }
-  static bool decode(const Node &n, U64Id &out)
-  {
-    if (auto sc = std::get_if<Node::Scalar>(&n.data)) {
-      if (std::holds_alternative<String>(sc->value)) {
-        String hashed = std::get<String>(sc->value);
-        out.val = string_to_hash(hashed);
-        return true;
-      }
-      if (std::holds_alternative<u64>(sc->value)) {
-        out.val = std::get<u64>(sc->value);
-        return true;
-      }
-      if (std::holds_alternative<i64>(sc->value)) {
-        out.val = (u64)std::get<i64>(sc->value);
-        return true;
-      }
-      if (std::holds_alternative<float>(sc->value)) {
-        out.val = (u64)std::get<float>(sc->value);
-        return true;
-      }
-    }
-    return false;
-  }
-};

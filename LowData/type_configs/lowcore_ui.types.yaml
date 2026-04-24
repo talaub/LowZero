@@ -94,7 +94,15 @@ types:
         type: bool
         setter_name: has_custom_controller
         getter_name: has_custom_controller
+      local_element_id_counter:
+        private_setter: true
+        private_getter: true
+        type: uint64_t
+      custom_controller_id:
+        type: uint64_t
     functions:
+      get_next_local_id:
+        return_type: uint64_t
       parse_content:
         private: true
         return_type: void
@@ -304,6 +312,8 @@ types:
         skip_serialization: true
         skip_deserialization: true
       widget_instance:
+        type: uint64_t
+      local_id:
         type: uint64_t
     functions:
       make:

@@ -86,6 +86,7 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
         l_Handle.set_state(LoadState::Unloaded);
+        l_Handle.set_local_element_id_counter(1);
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -344,6 +345,59 @@ namespace Low {
           // End property: has_custom_controller
         }
         {
+          // Property: local_element_id_counter
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(local_element_id_counter);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(WidgetAsset::Data, local_element_id_counter);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            return nullptr;
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {};
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: local_element_id_counter
+        }
+        {
+          // Property: custom_controller_id
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(custom_controller_id);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(WidgetAsset::Data, custom_controller_id);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<WidgetAsset> l_HandleLock(l_Handle);
+            l_Handle.get_custom_controller_id();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, WidgetAsset,
+                                              custom_controller_id,
+                                              uint64_t);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            l_Handle.set_custom_controller_id(*(uint64_t *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<WidgetAsset> l_HandleLock(l_Handle);
+            *((uint64_t *)p_Data) =
+                l_Handle.get_custom_controller_id();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: custom_controller_id
+        }
+        {
           // Property: name
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(name);
@@ -373,6 +427,15 @@ namespace Low {
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: name
+        }
+        {
+          // Function: get_next_local_id
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(get_next_local_id);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: get_next_local_id
         }
         {
           // Function: parse_content
@@ -746,6 +809,9 @@ namespace Low {
           p_Node["controller"] = get_controller().get_name();
           p_Node["custom_controller"] = has_custom_controller();
         }
+
+        p_Node["local_element_id_counter"] =
+            Util::U64Id{get_local_element_id_counter()};
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -818,6 +884,13 @@ namespace Low {
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:POST_LOAD
         set_state(LoadState::Loaded);
+
+        if (p_Node["local_element_id_counter"]) {
+          set_local_element_id_counter(
+              p_Node["local_element_id_counter"].as<Util::U64Id>());
+        } else {
+          set_local_element_id_counter(1);
+        }
 
         get_content().clear();
         if (p_Node["content"]) {
@@ -1000,6 +1073,63 @@ namespace Low {
         broadcast_observable(N(has_custom_controller));
       }
 
+      uint64_t WidgetAsset::get_local_element_id_counter() const
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_local_element_id_counter
+        // LOW_CODEGEN::END::CUSTOM:GETTER_local_element_id_counter
+
+        return TYPE_SOA(WidgetAsset, local_element_id_counter,
+                        uint64_t);
+      }
+      void WidgetAsset::set_local_element_id_counter(uint64_t p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_local_element_id_counter
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_local_element_id_counter
+
+        // Set new value
+        TYPE_SOA(WidgetAsset, local_element_id_counter, uint64_t) =
+            p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_local_element_id_counter
+        // LOW_CODEGEN::END::CUSTOM:SETTER_local_element_id_counter
+
+        broadcast_observable(N(local_element_id_counter));
+      }
+
+      uint64_t WidgetAsset::get_custom_controller_id() const
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_custom_controller_id
+        // LOW_CODEGEN::END::CUSTOM:GETTER_custom_controller_id
+
+        return TYPE_SOA(WidgetAsset, custom_controller_id, uint64_t);
+      }
+      void WidgetAsset::set_custom_controller_id(uint64_t p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_custom_controller_id
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_custom_controller_id
+
+        // Set new value
+        TYPE_SOA(WidgetAsset, custom_controller_id, uint64_t) =
+            p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_custom_controller_id
+        // LOW_CODEGEN::END::CUSTOM:SETTER_custom_controller_id
+
+        broadcast_observable(N(custom_controller_id));
+      }
+
       Low::Util::Name WidgetAsset::get_name() const
       {
         _LOW_ASSERT(is_alive());
@@ -1027,6 +1157,22 @@ namespace Low {
         broadcast_observable(N(name));
       }
 
+      uint64_t WidgetAsset::get_next_local_id()
+      {
+        Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_next_local_id
+        u64 l_Id = 0;
+        do {
+          l_Id = get_local_element_id_counter();
+          LOW_LOG_DEBUG << "ID UPDATE: " << l_Id << LOW_LOG_END;
+          set_local_element_id_counter(
+              get_local_element_id_counter() + 1);
+        } while (l_Id == 0);
+
+        return l_Id;
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_next_local_id
+      }
+
       void WidgetAsset::parse_content(Low::Util::Serial::Node &p_Node)
       {
         Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
@@ -1050,6 +1196,7 @@ namespace Low {
         Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_parse_element
         p_Descriptor.name = p_Node["name"].as<Util::Name>();
+        p_Descriptor.local_id = p_Node["local_id"].as<Util::U64Id>();
 
         Util::Serial::Node &l_ComponentsNode = p_Node["components"];
         if (l_ComponentsNode) {
@@ -1097,7 +1244,6 @@ namespace Low {
         l_Instance.set_root(l_RootElement);
 
         for (ElementDescriptor &i_ElementDescriptor : get_content()) {
-          LOW_LOG_DEBUG << "spawning" << LOW_LOG_END;
           Element i_Element =
               spawn_element(l_Instance, p_Canvas, i_ElementDescriptor,
                             l_RootElement);
@@ -1120,6 +1266,7 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_spawn_element
         Element l_Element =
             Element::make(p_Descriptor.name, p_Canvas);
+        l_Element.set_local_id(p_Descriptor.local_id);
         for (ComponentDescriptor &i_ComponentDescriptor :
              p_Descriptor.components) {
           Util::RTTI::TypeInfo &i_ComponentType =
@@ -1131,7 +1278,6 @@ namespace Low {
           if (i_Component.get_type() ==
               Component::Display::type_id()) {
             Component::Display i_Display = i_Component;
-            LOW_LOG_DEBUG << "assigning parent" << LOW_LOG_END;
             i_Display.set_parent(p_Parent.get_display().get_id());
           }
         }
@@ -1153,6 +1299,10 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_fill_element_descriptor
         Component::Display l_Display = p_Element.get_display();
         p_Descriptor.name = p_Element.get_name();
+        p_Descriptor.local_id = p_Element.get_local_id();
+        if (p_Descriptor.local_id == 0) {
+          p_Descriptor.local_id = get_next_local_id();
+        }
 
         for (auto &i_ComponentEntry : p_Element.get_components()) {
           Util::Handle i_Component = i_ComponentEntry.second;
@@ -1207,6 +1357,7 @@ namespace Low {
         Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_serialize_element_descriptor
         p_Node["name"] = p_Descriptor.name;
+        p_Node["local_id"] = Util::U64Id{p_Descriptor.local_id};
         Util::Serial::Node &i_ComponentsNode = p_Node["components"];
         for (const ComponentDescriptor &i_Component :
              p_Descriptor.components) {
