@@ -36,6 +36,8 @@ namespace Low {
           OperatorNodes::register_nodes(p_Graph);
           SyntaxNodes::register_nodes(p_Graph);
         }
+
+        static ContextRegistry *g_ContextRegistry = nullptr;
       } // namespace
 
       void Document::apply_context(const ContextDefinition &p_Context)
@@ -77,97 +79,16 @@ namespace Low {
 
       bool Document::load_from_path(const Util::String &p_Path)
       {
-        if (p_Path.empty()) {
-          return false;
-        }
-
-        if (!Util::FileIO::file_exists_sync(p_Path.c_str())) {
-          LOW_LOG_WARN
-              << "Could not load visual script document. File "
-                 "does not exist: "
-              << p_Path << LOW_LOG_END;
-          return false;
-        }
-
-        initialize();
-
-        Util::Serial::Node l_Root =
-            Util::Serial::load_yaml_file(p_Path.c_str());
-        if (l_Root["context"]) {
-          context = l_Root["context"].as<Util::Name>();
-        }
-        if (l_Root["output_path"]) {
-          output_path = l_Root["output_path"].as<Util::String>();
-        }
-        if (l_Root["compile_profile"]) {
-          compile_profile =
-              l_Root["compile_profile"].as<Util::Name>();
-        } else if (!compile_profile.is_valid()) {
-          compile_profile = N(vs_compile_default);
-        }
-        compile_settings.reset();
-
-        if (l_Root["graph"]) {
-          graph.deserialize(l_Root["graph"]);
-        } else {
-          graph.deserialize(l_Root);
-        }
-
-        path = p_Path;
-        return true;
+        return load_from_path(p_Path, get_context_registry(),
+                              get_compile_profile_registry());
       }
 
       bool Document::load_from_path(
           const Util::String &p_Path,
           const ContextRegistry &p_ContextRegistry)
       {
-        if (p_Path.empty()) {
-          return false;
-        }
-
-        if (!Util::FileIO::file_exists_sync(p_Path.c_str())) {
-          LOW_LOG_WARN
-              << "Could not load visual script document. File "
-                 "does not exist: "
-              << p_Path << LOW_LOG_END;
-          return false;
-        }
-
-        initialize();
-
-        Util::Serial::Node l_Root =
-            Util::Serial::load_yaml_file(p_Path.c_str());
-        if (l_Root["context"]) {
-          const Util::Name l_ContextName =
-              l_Root["context"].as<Util::Name>();
-          const ContextDefinition *l_Context =
-              p_ContextRegistry.find_context(l_ContextName);
-          if (l_Context) {
-            apply_context(*l_Context);
-          } else {
-            context = l_ContextName;
-          }
-        }
-        if (l_Root["output_path"]) {
-          output_path = l_Root["output_path"].as<Util::String>();
-        }
-
-        if (l_Root["compile_profile"]) {
-          compile_profile =
-              l_Root["compile_profile"].as<Util::Name>();
-        } else if (!compile_profile.is_valid()) {
-          compile_profile = N(vs_compile_default);
-        }
-        compile_settings.reset();
-
-        if (l_Root["graph"]) {
-          graph.deserialize(l_Root["graph"]);
-        } else {
-          graph.deserialize(l_Root);
-        }
-
-        path = p_Path;
-        return true;
+        return load_from_path(p_Path, p_ContextRegistry,
+                              get_compile_profile_registry());
       }
 
       bool Document::load_from_path(
@@ -267,6 +188,34 @@ namespace Low {
         return true;
       }
 
+      bool Document::compile(CompileContext &p_Context)
+      {
+        return compile(p_Context, get_compile_profile_registry());
+      }
+
+      bool Document::compile(
+          CompileContext &p_Context,
+          const CompileProfileRegistry &p_ProfileRegistry)
+      {
+        const CompileProfile *l_Profile =
+            p_ProfileRegistry.find_profile(compile_profile);
+        if (!l_Profile) {
+          LOW_LOG_WARN
+              << "Could not compile visual script document. Compile "
+                 "profile was not registered: "
+              << compile_profile << LOW_LOG_END;
+          return false;
+        }
+
+        l_Profile->compile(*this, p_Context);
+        return true;
+      }
+
+      bool Document::compile_and_write()
+      {
+        return compile_and_write(get_compile_profile_registry());
+      }
+
       bool Document::compile_and_write(
           const CompileProfileRegistry &p_ProfileRegistry)
       {
@@ -278,18 +227,10 @@ namespace Low {
           return false;
         }
 
-        const CompileProfile *l_Profile =
-            p_ProfileRegistry.find_profile(compile_profile);
-        if (!l_Profile) {
-          LOW_LOG_WARN
-              << "Could not compile visual script document. Compile "
-                 "profile was not registered: "
-              << compile_profile << LOW_LOG_END;
+        CompileContext l_Context;
+        if (!compile(l_Context, p_ProfileRegistry)) {
           return false;
         }
-
-        CompileContext l_Context;
-        l_Profile->compile(*this, l_Context);
 
         LOW_LOG_DEBUG << "CODE: " << l_Context.main_code.get()
                       << LOW_LOG_END;
@@ -367,15 +308,6 @@ namespace Low {
           Document &p_Document) const
       {
         GraphBuilder l_Builder(p_Document.graph, &p_Document.schema);
-        NodeHandle l_LogNode = l_Builder.add_spawn_node(
-            N(vs_spawn_debug_log), Math::Vector2(120.0f, 120.0f));
-
-        if (l_LogNode.is_valid()) {
-          l_Builder.set_input_default(
-              l_LogNode, "Message",
-              Util::Variant(
-                  Util::String("Hello from UI controller")));
-        }
       }
 
       void
@@ -386,6 +318,27 @@ namespace Low {
 
         p_ContextRegistry.register_context(g_DefaultContext);
         p_ContextRegistry.register_context(g_UiControllerContext);
+      }
+
+      ContextRegistry &get_context_registry()
+      {
+        if (!g_ContextRegistry) {
+          g_ContextRegistry = new ContextRegistry();
+          register_builtin_contexts(*g_ContextRegistry);
+        }
+        return *g_ContextRegistry;
+      }
+
+      CompileProfileRegistry &get_compile_profile_registry()
+      {
+        static CompileProfileRegistry *g_CompileProfileRegistry =
+            nullptr;
+        if (!g_CompileProfileRegistry) {
+          g_CompileProfileRegistry = new CompileProfileRegistry();
+          register_builtin_compile_profiles(
+              *g_CompileProfileRegistry);
+        }
+        return *g_CompileProfileRegistry;
       }
 
       namespace {
@@ -763,8 +716,7 @@ namespace Low {
           ImGui::SameLine();
           if (Gui::Button("Compile", false, ICON_LC_PLAY,
                           theme_get_current().play)) {
-            LOW_LOG_DEBUG << "VisualScript compile requested"
-                          << LOW_LOG_END;
+            p_Editor.get_document()->compile_and_write();
           }
 
           ImGui::EndChild();
@@ -785,7 +737,9 @@ namespace Low {
           return;
         }
 
-        render_toolbar(*this);
+        if (!embedded) {
+          render_toolbar(*this);
+        }
 
         const ImVec2 l_ContentAvail = ImGui::GetContentRegionAvail();
         const float l_SplitterWidth = 6.0f;
@@ -795,56 +749,80 @@ namespace Low {
                                       l_ContentAvail.x - 220.0f));
         sidebar_width = LOW_MATH_CLAMP(
             sidebar_width, min_sidebar_width, l_MaxSidebarWidth);
+        const float l_CanvasWidth =
+            LOW_MATH_MAX(0.0f, l_ContentAvail.x - sidebar_width -
+                                   l_SplitterWidth);
 
-        ImGui::BeginChild("##visual_script_sidebar",
-                          ImVec2(sidebar_width, 0.0f), true,
-                          ImGuiWindowFlags_NoSavedSettings);
-        render_variables_sidebar(*this);
-        ImGui::EndChild();
+        auto l_RenderSidebar = [this]() {
+          ImGui::BeginChild("##visual_script_sidebar",
+                            ImVec2(sidebar_width, 0.0f), true,
+                            ImGuiWindowFlags_NoSavedSettings);
+          render_variables_sidebar(*this);
+          ImGui::EndChild();
+        };
 
-        ImGui::SameLine(0.0f, 0.0f);
+        auto l_RenderSplitter = [this, l_SplitterWidth,
+                                 l_ContentAvail,
+                                 l_MaxSidebarWidth]() {
+          ImGui::PushStyleColor(ImGuiCol_Button,
+                                IM_COL32(55, 58, 68, 255));
+          ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
+                                IM_COL32(78, 82, 95, 255));
+          ImGui::PushStyleColor(ImGuiCol_ButtonActive,
+                                IM_COL32(92, 97, 112, 255));
+          ImGui::Button("##visual_script_splitter",
+                        ImVec2(l_SplitterWidth, l_ContentAvail.y));
+          ImGui::PopStyleColor(3);
 
-        ImGui::PushStyleColor(ImGuiCol_Button,
-                              IM_COL32(55, 58, 68, 255));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
-                              IM_COL32(78, 82, 95, 255));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive,
-                              IM_COL32(92, 97, 112, 255));
-        ImGui::Button("##visual_script_splitter",
-                      ImVec2(l_SplitterWidth, l_ContentAvail.y));
-        ImGui::PopStyleColor(3);
+          if (ImGui::IsItemHovered() || ImGui::IsItemActive()) {
+            ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+          }
 
-        if (ImGui::IsItemHovered() || ImGui::IsItemActive()) {
-          ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+          if (ImGui::IsItemActive()) {
+            const float l_Delta = sidebar_left
+                                      ? ImGui::GetIO().MouseDelta.x
+                                      : -ImGui::GetIO().MouseDelta.x;
+            sidebar_width =
+                LOW_MATH_CLAMP(sidebar_width + l_Delta,
+                               min_sidebar_width, l_MaxSidebarWidth);
+          }
+        };
+
+        auto l_RenderCanvas = [this, p_Label, p_Size, l_CanvasWidth]() {
+          ImGui::BeginChild("##visual_script_canvas_host",
+                            ImVec2(l_CanvasWidth, 0.0f), false,
+                            ImGuiWindowFlags_NoSavedSettings);
+
+          if (document->canvas.begin(p_Label, p_Size)) {
+            NodeGraphEditorContext l_GraphContext{
+                document->graph.graph,
+                document->canvas,
+                &document->schema,
+                &document->state,
+                document->canvas.get_draw_list(),
+                document->canvas.get_canvas_origin(),
+                document->canvas.get_canvas_min(),
+                document->canvas.get_canvas_max()};
+            document->renderer.render(l_GraphContext);
+            document->canvas.end();
+          }
+
+          ImGui::EndChild();
+        };
+
+        if (sidebar_left) {
+          l_RenderSidebar();
+          ImGui::SameLine(0.0f, 0.0f);
+          l_RenderSplitter();
+          ImGui::SameLine(0.0f, 0.0f);
+          l_RenderCanvas();
+        } else {
+          l_RenderCanvas();
+          ImGui::SameLine(0.0f, 0.0f);
+          l_RenderSplitter();
+          ImGui::SameLine(0.0f, 0.0f);
+          l_RenderSidebar();
         }
-
-        if (ImGui::IsItemActive()) {
-          sidebar_width = LOW_MATH_CLAMP(
-              sidebar_width + ImGui::GetIO().MouseDelta.x,
-              min_sidebar_width, l_MaxSidebarWidth);
-        }
-
-        ImGui::SameLine(0.0f, 0.0f);
-
-        ImGui::BeginChild("##visual_script_canvas_host",
-                          ImVec2(0.0f, 0.0f), false,
-                          ImGuiWindowFlags_NoSavedSettings);
-
-        if (document->canvas.begin(p_Label, p_Size)) {
-          NodeGraphEditorContext l_GraphContext{
-              document->graph.graph,
-              document->canvas,
-              &document->schema,
-              &document->state,
-              document->canvas.get_draw_list(),
-              document->canvas.get_canvas_origin(),
-              document->canvas.get_canvas_min(),
-              document->canvas.get_canvas_max()};
-          document->renderer.render(l_GraphContext);
-          document->canvas.end();
-        }
-
-        ImGui::EndChild();
       }
     } // namespace VisualScript
   } // namespace Editor

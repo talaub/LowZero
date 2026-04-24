@@ -11,6 +11,7 @@
 #include "LowEditorTypeEditor.h"
 #include "LowEditorIcons.h"
 #include "LowEditorUiWidget.h"
+#include "LowEditorVisualScriptAssetBuilder.h"
 #include "LowEditorVisualScriptBuilder.h"
 #include "LowEditorVisualScriptEditor.h"
 #include "LowEditorVisualScripting.h"
@@ -73,6 +74,18 @@ namespace Low {
 
       if (l_Asset.has_custom_controller() &&
           l_Asset.get_controller().is_alive()) {
+        const u64 l_CustomControllerId =
+            l_Asset.get_custom_controller_id();
+        const Util::String l_FileName =
+            Util::hash_to_string(l_CustomControllerId);
+        const Util::String l_Path =
+            Util::project_managed_path(l_FileName + ".vs.yaml");
+
+        m_CustomControllerDocument.load_from_path(l_Path);
+        m_VisualScriptEditor.load_document(
+            m_CustomControllerDocument);
+        m_VisualScriptEditor.embedded = true;
+        m_VisualScriptEditor.sidebar_left = false;
       }
     }
     UiWidgetEditor::~UiWidgetEditor()
@@ -295,32 +308,31 @@ namespace Low {
     {
       Core::UI::WidgetAsset l_Asset = m_Handle.get_id();
 
-      VisualScript::Document l_Document;
-      VisualScript::CompileProfileRegistry l_ProfileRegistry;
-      VisualScript::register_builtin_compile_profiles(
-          l_ProfileRegistry);
       VisualScript::UiControllerContextDefinition l_Context;
-      l_Document.apply_context(l_Context, l_ProfileRegistry);
+      VisualScript::ScriptAssetBuilder l_Builder(l_Context);
 
       const u64 l_CustomControllerId = Util::generate_unique_id();
       const Util::String l_FileName =
           Util::hash_to_string(l_CustomControllerId);
       const Util::String l_Path =
           Util::project_managed_path(l_FileName + ".vs.yaml");
-      l_Document.output_path =
+      l_Builder.get_document().output_path =
           Util::project_visual_script_out_path(l_FileName + ".as");
-      const Util::String l_ClassName = "UiController_" + l_FileName;
+      const Util::String l_ClassName = "__UiController_" + l_FileName;
+
+      l_Builder.get_graph_builder().add_spawn_node(
+          N(vs_spawn_debug_log), Math::Vector2(100, 100));
 
       if (VisualScript::UiControllerCompileProfileSettings
               *l_Settings =
-                  l_Document.get_compile_settings<
+                  l_Builder.get_compile_settings<
                       VisualScript::
                           UiControllerCompileProfileSettings>()) {
         l_Settings->class_name = l_ClassName;
       }
 
-      l_Context.build_default_template(l_Document);
-      if (l_Document.graph.graph.nodes.empty()) {
+      l_Context.build_default_template(l_Builder.get_document());
+      if (l_Builder.get_document().graph.graph.nodes.empty()) {
         LOW_LOG_ERROR
             << "Failed to create ui controller visual script."
             << LOW_LOG_END;
@@ -328,37 +340,23 @@ namespace Low {
 
       l_Asset.set_custom_controller_id(l_CustomControllerId);
 
-      Core::ScriptAsset l_Script =
-          Core::ScriptAsset::make(LOW_NAME(l_FileName.c_str()));
-      {
-        l_Script.set_generator(
-            Core::Scripting::AssetGenerator::VISUALSCRIPT);
-        l_Script.set_module(
-            Core::Scripting::Module::find_by_name(N(ui.controller)));
-        l_Script.set_source_path(".vs_out/" + l_FileName + ".as");
-
-        Util::String l_SidecarPath =
-            Util::get_project().assetCachePath;
-        l_SidecarPath +=
-            "/" + Util::hash_to_string(l_Script.get_unique_id()) +
-            ".script.yaml";
-
-        Util::Serial::Node l_OutNode;
-        l_Script.serialize(l_OutNode);
-
-        Util::Serial::write_yaml_file(l_SidecarPath.c_str(),
-                                      l_OutNode);
-      }
+      l_Builder.create_script_asset(
+          LOW_NAME(l_FileName.c_str()),
+          Core::Scripting::Module::find_by_name(N(ui.controller)),
+          ".vs_out/" + l_FileName + ".as");
 
       Util::resolve_handle_reference_by_name(
           m_Handle, N(controller), LOW_NAME(l_ClassName.c_str()));
 
-      if (l_Document.save_as(l_Path)) {
-        l_Document.compile_and_write(l_ProfileRegistry);
-        Core::Scripting::build_module(l_Script.get_module());
-      }
+      l_Builder.save_compile_and_build_module(l_Path);
 
       m_CreatedLocalController = true;
+
+      m_CustomControllerDocument.load_from_path(
+          l_Builder.get_document().path);
+      m_VisualScriptEditor.load_document(m_CustomControllerDocument);
+      m_VisualScriptEditor.embedded = true;
+      m_VisualScriptEditor.sidebar_left = false;
     }
 
     void UiWidgetEditor::render(const float p_Delta)
@@ -397,6 +395,17 @@ namespace Low {
       if (Gui::SaveButton()) {
         l_Asset.fill_content_from_instance(m_Viewport->m_Instance);
         Util::AssetManager::save(l_Asset);
+        if (l_Asset.has_custom_controller()) {
+          m_VisualScriptEditor.get_document()->save();
+        }
+      }
+      if (l_Asset.has_custom_controller() &&
+          l_Asset.get_controller().is_alive()) {
+        ImGui::SameLine();
+        if (Gui::Button("Compile", false, ICON_LC_PLAY,
+                        theme_get_current().play)) {
+          m_VisualScriptEditor.get_document()->compile_and_write();
+        }
       }
 
       if (m_Mode == Mode::Widget) {
@@ -565,7 +574,11 @@ namespace Low {
                         ImGuiChildFlags_Borders);
       {
 
-        render_viewport();
+        if (m_Mode == Mode::Widget) {
+          render_viewport();
+        } else {
+          m_VisualScriptEditor.render(p_Delta);
+        }
       }
       ImGui::EndChild();
     }

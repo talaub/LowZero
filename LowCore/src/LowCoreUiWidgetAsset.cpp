@@ -808,6 +808,10 @@ namespace Low {
         if (get_controller().is_alive()) {
           p_Node["controller"] = get_controller().get_name();
           p_Node["custom_controller"] = has_custom_controller();
+          if (has_custom_controller()) {
+            p_Node["custom_controller_id"] =
+                Util::U64Id{get_custom_controller_id()};
+          }
         }
 
         p_Node["local_element_id_counter"] =
@@ -901,6 +905,11 @@ namespace Low {
           if (p_Node["custom_controller"]) {
             has_custom_controller(
                 p_Node["custom_controller"].as<bool>());
+
+            if (p_Node["custom_controller_id"]) {
+              set_custom_controller_id(
+                  p_Node["custom_controller_id"].as<Util::U64Id>());
+            }
           }
           Util::Name l_ControllerName =
               p_Node["controller"].as<Util::Name>();

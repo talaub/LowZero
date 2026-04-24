@@ -47,6 +47,10 @@ namespace Low {
             const CompileProfileRegistry &p_ProfileRegistry);
         bool save();
         bool save_as(const Util::String &p_Path);
+        bool compile(CompileContext &p_Context);
+        bool compile(CompileContext &p_Context,
+                     const CompileProfileRegistry &p_ProfileRegistry);
+        bool compile_and_write();
         bool compile_and_write(
             const CompileProfileRegistry &p_ProfileRegistry);
 
@@ -67,8 +71,10 @@ namespace Low {
 
         virtual Util::Name get_name() const = 0;
         virtual Util::Name get_default_compile_profile() const = 0;
-        virtual void register_node_libraries(Graph &p_Graph) const = 0;
-        virtual void build_default_template(Document &p_Document) const
+        virtual void
+        register_node_libraries(Graph &p_Graph) const = 0;
+        virtual void
+        build_default_template(Document &p_Document) const
         {
           (void)p_Document;
         }
@@ -88,7 +94,8 @@ namespace Low {
           : public ContextDefinition
       {
         virtual Util::Name get_name() const override;
-        virtual Util::Name get_default_compile_profile() const override;
+        virtual Util::Name
+        get_default_compile_profile() const override;
         virtual void
         register_node_libraries(Graph &p_Graph) const override;
       };
@@ -97,7 +104,8 @@ namespace Low {
           : public ContextDefinition
       {
         virtual Util::Name get_name() const override;
-        virtual Util::Name get_default_compile_profile() const override;
+        virtual Util::Name
+        get_default_compile_profile() const override;
         virtual void
         register_node_libraries(Graph &p_Graph) const override;
         virtual void
@@ -106,6 +114,10 @@ namespace Low {
 
       LOW_EDITOR_API void
       register_builtin_contexts(ContextRegistry &p_ContextRegistry);
+
+      LOW_EDITOR_API ContextRegistry &get_context_registry();
+      LOW_EDITOR_API CompileProfileRegistry &
+      get_compile_profile_registry();
 
       struct Editor
       {
@@ -120,6 +132,9 @@ namespace Low {
         StringSubtype new_variable_string_subtype =
             StringSubtype::String;
         Util::TypeIdentifier new_variable_handle_type;
+
+        bool embedded = false;
+        bool sidebar_left = true;
 
         Editor() = default;
         Editor(Document &p_Document) : document(&p_Document)
@@ -205,9 +220,9 @@ namespace Low {
           return document ? &document->state : nullptr;
         }
 
-        void render(const char *p_Label,
-                    const Math::Vector2 &p_Size =
-                        Math::Vector2(0.0f, 0.0f));
+        void render(
+            const char *p_Label,
+            const Math::Vector2 &p_Size = Math::Vector2(0.0f, 0.0f));
       };
     } // namespace VisualScript
   } // namespace Editor
