@@ -9,8 +9,8 @@ namespace Low {
         namespace {
           static ImU32 g_SyntaxColor = IM_COL32(189, 128, 53, 255);
 
-          static const Variable *get_selected_variable(
-              const Graph &p_Graph, NodeId p_NodeId)
+          static const Variable *
+          get_selected_variable(const Graph &p_Graph, NodeId p_NodeId)
           {
             const Node *l_Node = p_Graph.find_node(p_NodeId);
             if (!l_Node || l_Node->variable_name.empty()) {
@@ -44,8 +44,15 @@ namespace Low {
               return N(vs_syntax_get_variable);
             }
 
+            virtual bool is_compact(const Graph &p_Graph,
+                                    NodeId p_NodeId) const
+            {
+              return true;
+            }
+
             virtual Util::String
-            get_title(const Graph &p_Graph, NodeId p_NodeId) const override
+            get_compact_title(const Graph &p_Graph,
+                              NodeId p_NodeId) const override
             {
               const Variable *l_Variable =
                   get_selected_variable(p_Graph, p_NodeId);
@@ -54,32 +61,42 @@ namespace Low {
             }
 
             virtual Util::String
-            get_subtitle(const Graph &, NodeId) const override
+            get_title(const Graph &p_Graph,
+                      NodeId p_NodeId) const override
+            {
+              const Variable *l_Variable =
+                  get_selected_variable(p_Graph, p_NodeId);
+              return l_Variable ? l_Variable->name
+                                : Util::String("Get variable");
+            }
+
+            virtual Util::String get_subtitle(const Graph &,
+                                              NodeId) const override
             {
               return "Variable";
             }
 
-            virtual Util::String
-            get_category(const Graph &, NodeId) const override
+            virtual Util::String get_category(const Graph &,
+                                              NodeId) const override
             {
               return "Syntax";
             }
 
-            virtual Util::String
-            get_icon(const Graph &, NodeId) const override
+            virtual Util::String get_icon(const Graph &,
+                                          NodeId) const override
             {
               return ICON_CI_GIT_BRANCH;
             }
 
-            virtual ImU32 get_color(const Graph &, NodeId) const override
+            virtual ImU32 get_color(const Graph &,
+                                    NodeId) const override
             {
               return g_SyntaxColor;
             }
 
-            virtual void
-            setup_default_pins(Graph &p_Graph, NodeId p_NodeId,
-                               const NodeGraphSchema *p_Schema) const
-                override
+            virtual void setup_default_pins(
+                Graph &p_Graph, NodeId p_NodeId,
+                const NodeGraphSchema *p_Schema) const override
             {
               const Variable *l_Variable =
                   get_selected_variable(p_Graph, p_NodeId);
@@ -91,7 +108,8 @@ namespace Low {
                   make_output_pin(p_Graph, p_NodeId);
               Pin l_ValueMetadata =
                   make_pin_metadata_from_variable(*l_Variable, "");
-              l_ValueMetadata.show_default_value_when_unlinked = false;
+              l_ValueMetadata.show_default_value_when_unlinked =
+                  false;
               p_Graph.add_pin(l_ValueOut, l_ValueMetadata, p_Schema);
             }
 
@@ -102,13 +120,15 @@ namespace Low {
               (void)p_PinId;
               const Variable *l_Variable =
                   get_selected_variable(p_Graph, p_NodeId);
-              LOW_ASSERT(l_Variable,
-                         "No variable selected for get variable node");
+              LOW_ASSERT(
+                  l_Variable,
+                  "No variable selected for get variable node");
               if (!l_Variable) {
                 return;
               }
 
-              p_CompileContext.main_code.append(l_Variable->name.c_str());
+              p_CompileContext.main_code.append(
+                  l_Variable->name.c_str());
             }
           };
 
@@ -120,7 +140,8 @@ namespace Low {
             }
 
             virtual Util::String
-            get_title(const Graph &p_Graph, NodeId p_NodeId) const override
+            get_title(const Graph &p_Graph,
+                      NodeId p_NodeId) const override
             {
               const Variable *l_Variable =
                   get_selected_variable(p_Graph, p_NodeId);
@@ -133,35 +154,36 @@ namespace Low {
               return l_Title;
             }
 
-            virtual Util::String
-            get_subtitle(const Graph &, NodeId) const override
+            virtual Util::String get_subtitle(const Graph &,
+                                              NodeId) const override
             {
               return "Variable";
             }
 
-            virtual Util::String
-            get_category(const Graph &, NodeId) const override
+            virtual Util::String get_category(const Graph &,
+                                              NodeId) const override
             {
               return "Syntax";
             }
 
-            virtual Util::String
-            get_icon(const Graph &, NodeId) const override
+            virtual Util::String get_icon(const Graph &,
+                                          NodeId) const override
             {
               return ICON_CI_GIT_BRANCH;
             }
 
-            virtual ImU32 get_color(const Graph &, NodeId) const override
+            virtual ImU32 get_color(const Graph &,
+                                    NodeId) const override
             {
               return g_SyntaxColor;
             }
 
-            virtual void
-            setup_default_pins(Graph &p_Graph, NodeId p_NodeId,
-                               const NodeGraphSchema *p_Schema) const
-                override
+            virtual void setup_default_pins(
+                Graph &p_Graph, NodeId p_NodeId,
+                const NodeGraphSchema *p_Schema) const override
             {
-              Editor::Pin l_ExecIn = make_input_pin(p_Graph, p_NodeId);
+              Editor::Pin l_ExecIn =
+                  make_input_pin(p_Graph, p_NodeId);
               Pin l_ExecInMetadata =
                   make_execution_pin_metadata("Exec");
               p_Graph.add_pin(l_ExecIn, l_ExecInMetadata, p_Schema);
@@ -178,29 +200,31 @@ namespace Low {
                 return;
               }
 
-              Editor::Pin l_ValueIn = make_input_pin(p_Graph, p_NodeId);
+              Editor::Pin l_ValueIn =
+                  make_input_pin(p_Graph, p_NodeId);
               Pin l_ValueMetadata = make_pin_metadata_from_variable(
                   *l_Variable, l_Variable->name);
               p_Graph.add_pin(l_ValueIn, l_ValueMetadata, p_Schema);
             }
 
-            virtual void compile(Graph &p_Graph, NodeId p_NodeId,
-                                 CompileContext &p_CompileContext) const
-                override
+            virtual void
+            compile(Graph &p_Graph, NodeId p_NodeId,
+                    CompileContext &p_CompileContext) const override
             {
               const Variable *l_Variable =
                   get_selected_variable(p_Graph, p_NodeId);
-              LOW_ASSERT(l_Variable,
-                         "No variable selected for set variable node");
+              LOW_ASSERT(
+                  l_Variable,
+                  "No variable selected for set variable node");
               if (!l_Variable) {
                 return;
               }
 
-              const Pin *l_ValuePin =
-                  p_Graph.find_input_pin_checked(p_NodeId,
-                                                l_Variable->name);
+              const Pin *l_ValuePin = p_Graph.find_input_pin_checked(
+                  p_NodeId, l_Variable->name);
 
-              p_CompileContext.main_code.append(l_Variable->name.c_str());
+              p_CompileContext.main_code.append(
+                  l_Variable->name.c_str());
               p_CompileContext.main_code.append(" = ");
               compile_input_pin(p_Graph, p_NodeId, l_ValuePin->pin,
                                 p_CompileContext);
@@ -220,53 +244,55 @@ namespace Low {
               return N(vs_syntax_return_number);
             }
 
-            virtual Util::String
-            get_title(const Graph &, NodeId) const override
+            virtual Util::String get_title(const Graph &,
+                                           NodeId) const override
             {
               return "Return";
             }
 
-            virtual Util::String
-            get_subtitle(const Graph &, NodeId) const override
+            virtual Util::String get_subtitle(const Graph &,
+                                              NodeId) const override
             {
               return "Number";
             }
 
-            virtual Util::String
-            get_category(const Graph &, NodeId) const override
+            virtual Util::String get_category(const Graph &,
+                                              NodeId) const override
             {
               return "Syntax";
             }
 
-            virtual Util::String
-            get_icon(const Graph &, NodeId) const override
+            virtual Util::String get_icon(const Graph &,
+                                          NodeId) const override
             {
               return ICON_CI_ARROW_RIGHT;
             }
 
-            virtual ImU32 get_color(const Graph &, NodeId) const override
+            virtual ImU32 get_color(const Graph &,
+                                    NodeId) const override
             {
               return g_SyntaxColor;
             }
 
-            virtual void
-            setup_default_pins(Graph &p_Graph, NodeId p_NodeId,
-                               const NodeGraphSchema *p_Schema) const
-                override
+            virtual void setup_default_pins(
+                Graph &p_Graph, NodeId p_NodeId,
+                const NodeGraphSchema *p_Schema) const override
             {
-              Editor::Pin l_ExecIn = make_input_pin(p_Graph, p_NodeId);
+              Editor::Pin l_ExecIn =
+                  make_input_pin(p_Graph, p_NodeId);
               Pin l_ExecInMetadata =
                   make_execution_pin_metadata("Exec");
               p_Graph.add_pin(l_ExecIn, l_ExecInMetadata, p_Schema);
 
-              Editor::Pin l_ValueIn = make_input_pin(p_Graph, p_NodeId);
+              Editor::Pin l_ValueIn =
+                  make_input_pin(p_Graph, p_NodeId);
               Pin l_ValueMetadata = make_number_pin_metadata("");
               p_Graph.add_pin(l_ValueIn, l_ValueMetadata, p_Schema);
             }
 
-            virtual void compile(Graph &p_Graph, NodeId p_NodeId,
-                                 CompileContext &p_CompileContext) const
-                override
+            virtual void
+            compile(Graph &p_Graph, NodeId p_NodeId,
+                    CompileContext &p_CompileContext) const override
             {
               const Pin *l_ValuePin =
                   p_Graph.find_input_pin_checked(p_NodeId, "");
@@ -285,53 +311,55 @@ namespace Low {
               return N(vs_syntax_return_bool);
             }
 
-            virtual Util::String
-            get_title(const Graph &, NodeId) const override
+            virtual Util::String get_title(const Graph &,
+                                           NodeId) const override
             {
               return "Return";
             }
 
-            virtual Util::String
-            get_subtitle(const Graph &, NodeId) const override
+            virtual Util::String get_subtitle(const Graph &,
+                                              NodeId) const override
             {
               return "Bool";
             }
 
-            virtual Util::String
-            get_category(const Graph &, NodeId) const override
+            virtual Util::String get_category(const Graph &,
+                                              NodeId) const override
             {
               return "Syntax";
             }
 
-            virtual Util::String
-            get_icon(const Graph &, NodeId) const override
+            virtual Util::String get_icon(const Graph &,
+                                          NodeId) const override
             {
               return ICON_CI_ARROW_RIGHT;
             }
 
-            virtual ImU32 get_color(const Graph &, NodeId) const override
+            virtual ImU32 get_color(const Graph &,
+                                    NodeId) const override
             {
               return g_SyntaxColor;
             }
 
-            virtual void
-            setup_default_pins(Graph &p_Graph, NodeId p_NodeId,
-                               const NodeGraphSchema *p_Schema) const
-                override
+            virtual void setup_default_pins(
+                Graph &p_Graph, NodeId p_NodeId,
+                const NodeGraphSchema *p_Schema) const override
             {
-              Editor::Pin l_ExecIn = make_input_pin(p_Graph, p_NodeId);
+              Editor::Pin l_ExecIn =
+                  make_input_pin(p_Graph, p_NodeId);
               Pin l_ExecInMetadata =
                   make_execution_pin_metadata("Exec");
               p_Graph.add_pin(l_ExecIn, l_ExecInMetadata, p_Schema);
 
-              Editor::Pin l_ValueIn = make_input_pin(p_Graph, p_NodeId);
+              Editor::Pin l_ValueIn =
+                  make_input_pin(p_Graph, p_NodeId);
               Pin l_ValueMetadata = make_bool_pin_metadata("", false);
               p_Graph.add_pin(l_ValueIn, l_ValueMetadata, p_Schema);
             }
 
-            virtual void compile(Graph &p_Graph, NodeId p_NodeId,
-                                 CompileContext &p_CompileContext) const
-                override
+            virtual void
+            compile(Graph &p_Graph, NodeId p_NodeId,
+                    CompileContext &p_CompileContext) const override
             {
               const Pin *l_ValuePin =
                   p_Graph.find_input_pin_checked(p_NodeId, "");
@@ -350,46 +378,48 @@ namespace Low {
               return N(vs_syntax_for);
             }
 
-            virtual Util::String
-            get_title(const Graph &, NodeId) const override
+            virtual Util::String get_title(const Graph &,
+                                           NodeId) const override
             {
               return "for";
             }
 
-            virtual Util::String
-            get_subtitle(const Graph &, NodeId) const override
+            virtual Util::String get_subtitle(const Graph &,
+                                              NodeId) const override
             {
               return "Loop";
             }
 
-            virtual Util::String
-            get_category(const Graph &, NodeId) const override
+            virtual Util::String get_category(const Graph &,
+                                              NodeId) const override
             {
               return "Syntax";
             }
 
-            virtual Util::String
-            get_icon(const Graph &, NodeId) const override
+            virtual Util::String get_icon(const Graph &,
+                                          NodeId) const override
             {
               return ICON_CI_GIT_BRANCH;
             }
 
-            virtual ImU32 get_color(const Graph &, NodeId) const override
+            virtual ImU32 get_color(const Graph &,
+                                    NodeId) const override
             {
               return g_SyntaxColor;
             }
 
-            virtual void
-            setup_default_pins(Graph &p_Graph, NodeId p_NodeId,
-                               const NodeGraphSchema *p_Schema) const
-                override
+            virtual void setup_default_pins(
+                Graph &p_Graph, NodeId p_NodeId,
+                const NodeGraphSchema *p_Schema) const override
             {
-              Editor::Pin l_ExecIn = make_input_pin(p_Graph, p_NodeId);
+              Editor::Pin l_ExecIn =
+                  make_input_pin(p_Graph, p_NodeId);
               Pin l_ExecInMetadata =
                   make_execution_pin_metadata("Exec");
               p_Graph.add_pin(l_ExecIn, l_ExecInMetadata, p_Schema);
 
-              Editor::Pin l_StartIn = make_input_pin(p_Graph, p_NodeId);
+              Editor::Pin l_StartIn =
+                  make_input_pin(p_Graph, p_NodeId);
               Pin l_StartMetadata = make_number_pin_metadata("Start");
               p_Graph.add_pin(l_StartIn, l_StartMetadata, p_Schema);
 
@@ -397,7 +427,8 @@ namespace Low {
               Pin l_EndMetadata = make_number_pin_metadata("End");
               p_Graph.add_pin(l_EndIn, l_EndMetadata, p_Schema);
 
-              Editor::Pin l_StepIn = make_input_pin(p_Graph, p_NodeId);
+              Editor::Pin l_StepIn =
+                  make_input_pin(p_Graph, p_NodeId);
               Pin l_StepMetadata = make_number_pin_metadata("Step");
               l_StepMetadata.default_value = Util::Variant(1.0f);
               p_Graph.add_pin(l_StepIn, l_StepMetadata, p_Schema);
@@ -417,13 +448,14 @@ namespace Low {
               Editor::Pin l_IndexOut =
                   make_output_pin(p_Graph, p_NodeId);
               Pin l_IndexMetadata = make_number_pin_metadata("Index");
-              l_IndexMetadata.show_default_value_when_unlinked = false;
+              l_IndexMetadata.show_default_value_when_unlinked =
+                  false;
               p_Graph.add_pin(l_IndexOut, l_IndexMetadata, p_Schema);
             }
 
-            virtual void compile(Graph &p_Graph, NodeId p_NodeId,
-                                 CompileContext &p_CompileContext) const
-                override
+            virtual void
+            compile(Graph &p_Graph, NodeId p_NodeId,
+                    CompileContext &p_CompileContext) const override
             {
               const Pin *l_StartPin =
                   p_Graph.find_input_pin_checked(p_NodeId, "Start");
@@ -486,7 +518,8 @@ namespace Low {
             }
 
             virtual Util::String
-            get_title(const Graph &p_Graph, NodeId p_NodeId) const override
+            get_title(const Graph &p_Graph,
+                      NodeId p_NodeId) const override
             {
               (void)p_Graph;
               (void)p_NodeId;
@@ -512,27 +545,28 @@ namespace Low {
             }
 
             virtual Util::String
-            get_icon(const Graph &p_Graph, NodeId p_NodeId) const override
+            get_icon(const Graph &p_Graph,
+                     NodeId p_NodeId) const override
             {
               (void)p_Graph;
               (void)p_NodeId;
               return ICON_CI_GIT_BRANCH;
             }
 
-            virtual ImU32
-            get_color(const Graph &p_Graph, NodeId p_NodeId) const override
+            virtual ImU32 get_color(const Graph &p_Graph,
+                                    NodeId p_NodeId) const override
             {
               (void)p_Graph;
               (void)p_NodeId;
               return g_SyntaxColor;
             }
 
-            virtual void
-            setup_default_pins(Graph &p_Graph, NodeId p_NodeId,
-                               const NodeGraphSchema *p_Schema) const
-                override
+            virtual void setup_default_pins(
+                Graph &p_Graph, NodeId p_NodeId,
+                const NodeGraphSchema *p_Schema) const override
             {
-              Editor::Pin l_ExecIn = make_input_pin(p_Graph, p_NodeId);
+              Editor::Pin l_ExecIn =
+                  make_input_pin(p_Graph, p_NodeId);
               Pin l_ExecInMetadata =
                   make_execution_pin_metadata("Exec");
               p_Graph.add_pin(l_ExecIn, l_ExecInMetadata, p_Schema);
@@ -541,25 +575,30 @@ namespace Low {
                   make_input_pin(p_Graph, p_NodeId);
               Pin l_ConditionMetadata =
                   make_bool_pin_metadata("Condition", false);
-              p_Graph.add_pin(l_ConditionIn, l_ConditionMetadata, p_Schema);
+              p_Graph.add_pin(l_ConditionIn, l_ConditionMetadata,
+                              p_Schema);
 
-              Editor::Pin l_TrueOut = make_output_pin(p_Graph, p_NodeId);
+              Editor::Pin l_TrueOut =
+                  make_output_pin(p_Graph, p_NodeId);
               Pin l_TrueOutMetadata =
                   make_execution_pin_metadata("True");
               p_Graph.add_pin(l_TrueOut, l_TrueOutMetadata, p_Schema);
 
-              Editor::Pin l_FalseOut = make_output_pin(p_Graph, p_NodeId);
+              Editor::Pin l_FalseOut =
+                  make_output_pin(p_Graph, p_NodeId);
               Pin l_FalseOutMetadata =
                   make_execution_pin_metadata("False");
-              p_Graph.add_pin(l_FalseOut, l_FalseOutMetadata, p_Schema);
+              p_Graph.add_pin(l_FalseOut, l_FalseOutMetadata,
+                              p_Schema);
             }
 
-            virtual void compile(Graph &p_Graph, NodeId p_NodeId,
-                                 CompileContext &p_CompileContext) const
-                override
+            virtual void
+            compile(Graph &p_Graph, NodeId p_NodeId,
+                    CompileContext &p_CompileContext) const override
             {
               const Pin *l_ConditionPin =
-                  p_Graph.find_input_pin_checked(p_NodeId, "Condition");
+                  p_Graph.find_input_pin_checked(p_NodeId,
+                                                 "Condition");
               const Pin *l_TruePin =
                   p_Graph.find_output_pin_checked(p_NodeId, "True");
               const Pin *l_FalsePin =
@@ -574,7 +613,8 @@ namespace Low {
 
               if (l_HasTrueBranch) {
                 p_CompileContext.main_code.append("if (");
-                compile_input_pin(p_Graph, p_NodeId, l_ConditionPin->pin,
+                compile_input_pin(p_Graph, p_NodeId,
+                                  l_ConditionPin->pin,
                                   p_CompileContext);
                 p_CompileContext.main_code.append(") {").endl();
                 p_Graph.continue_compilation(l_TruePin->pin,
@@ -582,15 +622,15 @@ namespace Low {
                 p_CompileContext.main_code.append("}").endl();
 
                 if (l_HasFalseBranch) {
-                  p_CompileContext.main_code.append("else {")
-                      .endl();
+                  p_CompileContext.main_code.append("else {").endl();
                   p_Graph.continue_compilation(l_FalsePin->pin,
                                                p_CompileContext);
                   p_CompileContext.main_code.append("}").endl();
                 }
               } else if (l_HasFalseBranch) {
                 p_CompileContext.main_code.append("if (!(");
-                compile_input_pin(p_Graph, p_NodeId, l_ConditionPin->pin,
+                compile_input_pin(p_Graph, p_NodeId,
+                                  l_ConditionPin->pin,
                                   p_CompileContext);
                 p_CompileContext.main_code.append(")) {").endl();
                 p_Graph.continue_compilation(l_FalsePin->pin,

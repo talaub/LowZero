@@ -9,6 +9,17 @@ namespace Low {
       struct ContextDefinition;
       struct ContextRegistry;
 
+      struct CanvasDropAction
+      {
+        Util::String label;
+        std::function<void()> execute;
+
+        bool is_valid() const
+        {
+          return !label.empty() && (bool)execute;
+        }
+      };
+
       struct Document
       {
         Util::String path;
@@ -78,6 +89,24 @@ namespace Low {
         {
           (void)p_Document;
         }
+        virtual void get_canvas_drop_payload_types(
+            Util::List<Util::String> &p_Types) const
+        {
+          (void)p_Types;
+        }
+        virtual void get_canvas_drop_actions(
+            Document &p_Document, const char *p_PayloadType,
+            const void *p_Data, u32 p_DataSize,
+            const Math::Vector2 &p_CanvasPosition,
+            Util::List<CanvasDropAction> &p_Actions) const
+        {
+          (void)p_Document;
+          (void)p_PayloadType;
+          (void)p_Data;
+          (void)p_DataSize;
+          (void)p_CanvasPosition;
+          (void)p_Actions;
+        }
       };
 
       struct LOW_EDITOR_API ContextRegistry
@@ -110,6 +139,14 @@ namespace Low {
         register_node_libraries(Graph &p_Graph) const override;
         virtual void
         build_default_template(Document &p_Document) const override;
+        virtual void get_canvas_drop_payload_types(
+            Util::List<Util::String> &p_Types) const override;
+        virtual void get_canvas_drop_actions(
+            Document &p_Document, const char *p_PayloadType,
+            const void *p_Data, u32 p_DataSize,
+            const Math::Vector2 &p_CanvasPosition,
+            Util::List<CanvasDropAction> &p_Actions) const
+            override;
       };
 
       LOW_EDITOR_API void
@@ -132,6 +169,7 @@ namespace Low {
         StringSubtype new_variable_string_subtype =
             StringSubtype::String;
         Util::TypeIdentifier new_variable_handle_type;
+        Util::List<CanvasDropAction> pending_canvas_drop_actions;
 
         bool embedded = false;
         bool sidebar_left = true;

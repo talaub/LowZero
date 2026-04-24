@@ -21,11 +21,17 @@
 #include "LowUtilSerialization.h"
 
 #include <imgui.h>
+#include "imgui_internal.h"
 
 namespace Low {
   namespace Editor {
     namespace VisualScript {
       namespace {
+        static const char *g_VariableDragDropPayloadType =
+            "VS_VARIABLE";
+        static const char *g_CanvasDropPopupId =
+            "##visual_script_canvas_drop_popup";
+
         static void register_common_node_libraries(Graph &p_Graph)
         {
           BoolNodes::register_nodes(p_Graph);
@@ -308,6 +314,42 @@ namespace Low {
           Document &p_Document) const
       {
         GraphBuilder l_Builder(p_Document.graph, &p_Document.schema);
+      }
+
+      void
+      UiControllerContextDefinition::get_canvas_drop_payload_types(
+          Util::List<Util::String> &p_Types) const
+      {
+        p_Types.push_back("UI_ELEMENT");
+      }
+
+      void UiControllerContextDefinition::get_canvas_drop_actions(
+          Document &p_Document, const char *p_PayloadType,
+          const void *p_Data, u32 p_DataSize,
+          const Math::Vector2 &p_CanvasPosition,
+          Util::List<CanvasDropAction> &p_Actions) const
+      {
+        (void)p_Document;
+        (void)p_Data;
+        (void)p_DataSize;
+        (void)p_CanvasPosition;
+
+        if (!p_PayloadType ||
+            strcmp(p_PayloadType, "UI_ELEMENT") != 0) {
+          return;
+        }
+
+        CanvasDropAction l_Action;
+        l_Action.label = "React To UI Element Interaction";
+        l_Action.execute =
+            []() {
+              LOW_LOG_WARN
+                  << "UI element drop action selected, but the "
+                     "react_to_ui_element_interaction node is not "
+                     "implemented yet."
+                  << LOW_LOG_END;
+            };
+        p_Actions.push_back(l_Action);
       }
 
       void
@@ -646,9 +688,20 @@ namespace Low {
             Variable &i_Variable = l_Graph.variables[i];
             ImGui::PushID((int)i);
 
-            if (ImGui::CollapsingHeader(
-                    i_Variable.name.c_str(),
-                    ImGuiTreeNodeFlags_DefaultOpen)) {
+            const bool l_HeaderOpen = ImGui::CollapsingHeader(
+                i_Variable.name.c_str(),
+                ImGuiTreeNodeFlags_DefaultOpen);
+
+            if (ImGui::BeginDragDropSource(
+                    ImGuiDragDropFlags_SourceAllowNullID)) {
+              ImGui::SetDragDropPayload(g_VariableDragDropPayloadType,
+                                        i_Variable.name.c_str(),
+                                        i_Variable.name.size() + 1);
+              ImGui::Text("Variable: %s", i_Variable.name.c_str());
+              ImGui::EndDragDropSource();
+            }
+
+            if (l_HeaderOpen) {
               ImGui::TextDisabled(
                   "%s", get_pin_type_label(i_Variable.type));
 
@@ -722,6 +775,139 @@ namespace Low {
           ImGui::EndChild();
           ImGui::PopStyleVar(2);
         }
+
+        static void append_variable_drop_actions(
+            Editor &p_Editor, const void *p_Data, u32 p_DataSize,
+            const Math::Vector2 &p_CanvasPosition,
+            Util::List<CanvasDropAction> &p_Actions)
+        {
+          if (!p_Editor.document || !p_Data || !p_DataSize) {
+            return;
+          }
+
+          const char *l_NameData = static_cast<const char *>(p_Data);
+          Util::String l_VariableName(l_NameData);
+          if (l_VariableName.empty() ||
+              !p_Editor.document->graph.find_variable(
+                  l_VariableName)) {
+            return;
+          }
+
+          auto l_SpawnVariableNode =
+              [&p_Editor, l_VariableName, p_CanvasPosition](
+                  Util::Name p_NodeClass,
+                  const Util::String &p_Title) {
+                Low::Editor::Node l_Node;
+                l_Node.id =
+                    p_Editor.document->graph.allocate_node_id();
+                l_Node.position = p_CanvasPosition;
+
+                Node l_Metadata;
+                l_Metadata.node = l_Node.id;
+                l_Metadata.node_class = p_NodeClass;
+                l_Metadata.variable_name = l_VariableName;
+                l_Metadata.title = p_Title;
+                l_Metadata.subtitle = "Variable";
+                l_Metadata.category = "Syntax";
+
+                NodeGraphMutationResult<Low::Editor::Node> l_Result =
+                    p_Editor.document->graph.add_node(
+                        l_Node, l_Metadata,
+                        &p_Editor.document->schema);
+                if (!l_Result.succeeded()) {
+                  return;
+                }
+
+                const NodeClass *l_NodeClass =
+                    p_Editor.document->graph.find_node_class(
+                        p_NodeClass);
+                if (l_NodeClass) {
+                  l_NodeClass->setup_default_pins(
+                      p_Editor.document->graph, l_Node.id,
+                      &p_Editor.document->schema);
+                }
+              };
+
+          if (p_Editor.document->graph.find_node_class(
+                  N(vs_syntax_get_variable))) {
+            CanvasDropAction l_Action;
+            l_Action.label = Util::String("Get ") + l_VariableName;
+            l_Action.execute = [l_SpawnVariableNode,
+                                l_VariableName]() {
+              l_SpawnVariableNode(
+                  N(vs_syntax_get_variable),
+                  Util::String("Get ") + l_VariableName);
+            };
+            p_Actions.push_back(l_Action);
+          }
+
+          if (p_Editor.document->graph.find_node_class(
+                  N(vs_syntax_set_variable))) {
+            CanvasDropAction l_Action;
+            l_Action.label = Util::String("Set ") + l_VariableName;
+            l_Action.execute = [l_SpawnVariableNode,
+                                l_VariableName]() {
+              l_SpawnVariableNode(
+                  N(vs_syntax_set_variable),
+                  Util::String("Set ") + l_VariableName);
+            };
+            p_Actions.push_back(l_Action);
+          }
+        }
+
+        static void append_canvas_drop_actions(
+            Editor &p_Editor, const char *p_PayloadType,
+            const void *p_Data, u32 p_DataSize,
+            const Math::Vector2 &p_CanvasPosition,
+            Util::List<CanvasDropAction> &p_Actions)
+        {
+          if (!p_Editor.document || !p_PayloadType) {
+            return;
+          }
+
+          if (strcmp(p_PayloadType, g_VariableDragDropPayloadType) ==
+              0) {
+            append_variable_drop_actions(p_Editor, p_Data, p_DataSize,
+                                         p_CanvasPosition, p_Actions);
+          }
+
+          const ContextDefinition *l_Context =
+              p_Editor.document->context.is_valid()
+                  ? get_context_registry().find_context(
+                        p_Editor.document->context)
+                  : nullptr;
+          if (l_Context) {
+            l_Context->get_canvas_drop_actions(
+                *p_Editor.document, p_PayloadType, p_Data, p_DataSize,
+                p_CanvasPosition, p_Actions);
+          }
+        }
+
+        static void render_canvas_drop_popup(Editor &p_Editor)
+        {
+          if (ImGui::BeginPopup(g_CanvasDropPopupId)) {
+            for (u32 i = 0;
+                 i < p_Editor.pending_canvas_drop_actions.size();
+                 ++i) {
+              CanvasDropAction &i_Action =
+                  p_Editor.pending_canvas_drop_actions[i];
+              if (!i_Action.is_valid()) {
+                continue;
+              }
+
+              if (ImGui::MenuItem(i_Action.label.c_str())) {
+                i_Action.execute();
+                p_Editor.pending_canvas_drop_actions.clear();
+                ImGui::CloseCurrentPopup();
+                break;
+              }
+            }
+            ImGui::EndPopup();
+          } else if (!ImGui::IsPopupOpen(g_CanvasDropPopupId) &&
+                     !p_Editor.pending_canvas_drop_actions.empty()) {
+            p_Editor.pending_canvas_drop_actions.clear();
+          }
+        }
       } // namespace
 
       void Editor::render(const float p_Delta)
@@ -749,9 +935,8 @@ namespace Low {
                                       l_ContentAvail.x - 220.0f));
         sidebar_width = LOW_MATH_CLAMP(
             sidebar_width, min_sidebar_width, l_MaxSidebarWidth);
-        const float l_CanvasWidth =
-            LOW_MATH_MAX(0.0f, l_ContentAvail.x - sidebar_width -
-                                   l_SplitterWidth);
+        const float l_CanvasWidth = LOW_MATH_MAX(
+            0.0f, l_ContentAvail.x - sidebar_width - l_SplitterWidth);
 
         auto l_RenderSidebar = [this]() {
           ImGui::BeginChild("##visual_script_sidebar",
@@ -788,7 +973,8 @@ namespace Low {
           }
         };
 
-        auto l_RenderCanvas = [this, p_Label, p_Size, l_CanvasWidth]() {
+        auto l_RenderCanvas = [this, p_Label, p_Size,
+                               l_CanvasWidth]() {
           ImGui::BeginChild("##visual_script_canvas_host",
                             ImVec2(l_CanvasWidth, 0.0f), false,
                             ImGuiWindowFlags_NoSavedSettings);
@@ -806,6 +992,57 @@ namespace Low {
             document->renderer.render(l_GraphContext);
             document->canvas.end();
           }
+
+          Util::List<Util::String> l_PayloadTypes;
+          l_PayloadTypes.push_back(g_VariableDragDropPayloadType);
+
+          const ContextDefinition *l_Context =
+              document->context.is_valid()
+                  ? get_context_registry().find_context(
+                        document->context)
+                  : nullptr;
+          if (l_Context) {
+            l_Context->get_canvas_drop_payload_types(l_PayloadTypes);
+          }
+
+          const ImRect l_DropRect(document->canvas.get_canvas_min(),
+                                  document->canvas.get_canvas_max());
+          if (ImGui::BeginDragDropTargetCustom(
+                  l_DropRect,
+                  ImGui::GetID(
+                      "##visual_script_canvas_drop_target"))) {
+            for (u32 i = 0; i < l_PayloadTypes.size(); ++i) {
+              const Util::String &i_PayloadType = l_PayloadTypes[i];
+              if (const ImGuiPayload *l_Payload =
+                      ImGui::AcceptDragDropPayload(
+                          i_PayloadType.c_str())) {
+                if (!l_Payload->IsDelivery()) {
+                  continue;
+                }
+
+                pending_canvas_drop_actions.clear();
+                append_canvas_drop_actions(
+                    *this, i_PayloadType.c_str(), l_Payload->Data,
+                    l_Payload->DataSize,
+                    document->canvas.screen_to_canvas(
+                        Math::Vector2(ImGui::GetMousePos().x,
+                                      ImGui::GetMousePos().y),
+                        Math::Vector2(
+                            document->canvas.get_canvas_origin().x,
+                            document->canvas.get_canvas_origin().y)),
+                    pending_canvas_drop_actions);
+
+                if (!pending_canvas_drop_actions.empty()) {
+                  ImGui::OpenPopup(g_CanvasDropPopupId);
+                }
+                break;
+              }
+            }
+
+            ImGui::EndDragDropTarget();
+          }
+
+          render_canvas_drop_popup(*this);
 
           ImGui::EndChild();
         };
