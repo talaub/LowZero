@@ -864,6 +864,51 @@ namespace Low {
                       p_CanvasSize.y * m_Zoom);
       }
 
+      void focus_canvas_bounds(const Math::Vector2 &p_Min,
+                               const Math::Vector2 &p_Max,
+                               float p_PaddingScreen = 80.0f)
+      {
+        const float l_ViewportWidth = m_CanvasP1.x - m_CanvasP0.x;
+        const float l_ViewportHeight = m_CanvasP1.y - m_CanvasP0.y;
+        if (l_ViewportWidth <= 1.0f || l_ViewportHeight <= 1.0f) {
+          return;
+        }
+
+        const float l_Padding =
+            LOW_MATH_MAX(0.0f, p_PaddingScreen);
+        const float l_AvailableWidth =
+            LOW_MATH_MAX(1.0f, l_ViewportWidth - l_Padding * 2.0f);
+        const float l_AvailableHeight = LOW_MATH_MAX(
+            1.0f, l_ViewportHeight - l_Padding * 2.0f);
+
+        const float l_BoundsWidth =
+            LOW_MATH_MAX(1.0f, p_Max.x - p_Min.x);
+        const float l_BoundsHeight =
+            LOW_MATH_MAX(1.0f, p_Max.y - p_Min.y);
+
+        const float l_ZoomX = l_AvailableWidth / l_BoundsWidth;
+        const float l_ZoomY = l_AvailableHeight / l_BoundsHeight;
+        m_Zoom = LOW_MATH_CLAMP(LOW_MATH_MIN(l_ZoomX, l_ZoomY),
+                                m_MinZoom, m_MaxZoom);
+
+        const Math::Vector2 l_Center =
+            (p_Min + p_Max) * 0.5f;
+        m_Scrolling.x =
+            l_ViewportWidth * 0.5f - l_Center.x * m_Zoom;
+        m_Scrolling.y =
+            l_ViewportHeight * 0.5f - l_Center.y * m_Zoom;
+      }
+
+      void focus_canvas_point(const Math::Vector2 &p_Point)
+      {
+        const float l_ViewportWidth = m_CanvasP1.x - m_CanvasP0.x;
+        const float l_ViewportHeight = m_CanvasP1.y - m_CanvasP0.y;
+        m_Scrolling.x =
+            l_ViewportWidth * 0.5f - p_Point.x * m_Zoom;
+        m_Scrolling.y =
+            l_ViewportHeight * 0.5f - p_Point.y * m_Zoom;
+      }
+
     private:
       ImDrawList *m_DrawList = nullptr;
       ImVec2 m_CanvasP0 = ImVec2(0.0f, 0.0f);
@@ -899,6 +944,10 @@ namespace Low {
       PinId context_menu_pin;
       PinId link_drag_start_pin;
       bool dragging_nodes = false;
+      bool box_selecting = false;
+      bool box_select_additive = false;
+      ImVec2 box_select_start = ImVec2(0.0f, 0.0f);
+      ImVec2 box_select_current = ImVec2(0.0f, 0.0f);
       bool interacting_with_widget = false;
 
       bool is_node_selected(NodeId p_NodeId) const
@@ -1061,6 +1110,21 @@ namespace Low {
         (void)p_Context;
         (void)p_Pin;
       }
+
+      bool get_node_canvas_bounds(
+          NodeGraphEditorContext &p_Context, const Node &p_Node,
+          Math::Vector2 &p_Min, Math::Vector2 &p_Max);
+      bool focus_node(NodeGraphEditorContext &p_Context, NodeId p_NodeId,
+                      float p_PaddingScreen = 80.0f);
+      bool focus_nodes(
+          NodeGraphEditorContext &p_Context,
+          const Util::List<NodeId> &p_NodeIds,
+          float p_PaddingScreen = 80.0f);
+      bool focus_selection(
+          NodeGraphEditorContext &p_Context,
+          float p_PaddingScreen = 80.0f);
+      bool focus_graph(NodeGraphEditorContext &p_Context,
+                       float p_PaddingScreen = 80.0f);
 
       virtual void
       render_foreground(NodeGraphEditorContext &p_Context);

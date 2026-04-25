@@ -11,7 +11,8 @@
 namespace Low {
   namespace Editor {
     namespace {
-      static ImVec2 cubic_bezier(const ImVec2 &p_P0, const ImVec2 &p_P1,
+      static ImVec2 cubic_bezier(const ImVec2 &p_P0,
+                                 const ImVec2 &p_P1,
                                  const ImVec2 &p_P2,
                                  const ImVec2 &p_P3, float p_T)
       {
@@ -24,7 +25,8 @@ namespace Low {
         return ImVec2(l_UUU * p_P0.x + 3.0f * l_UU * p_T * p_P1.x +
                           3.0f * l_U * l_TT * p_P2.x + l_TTT * p_P3.x,
                       l_UUU * p_P0.y + 3.0f * l_UU * p_T * p_P1.y +
-                          3.0f * l_U * l_TT * p_P2.y + l_TTT * p_P3.y);
+                          3.0f * l_U * l_TT * p_P2.y +
+                          l_TTT * p_P3.y);
       }
 
       static float distance_squared(const ImVec2 &p_A,
@@ -57,9 +59,10 @@ namespace Low {
       m_CanvasP1 = ImVec2(m_CanvasP0.x + l_CanvasSize.x,
                           m_CanvasP0.y + l_CanvasSize.y);
       const ImVec2 l_MousePos = ImGui::GetIO().MousePos;
-      const bool l_Hovered =
-          l_MousePos.x >= m_CanvasP0.x && l_MousePos.x <= m_CanvasP1.x &&
-          l_MousePos.y >= m_CanvasP0.y && l_MousePos.y <= m_CanvasP1.y;
+      const bool l_Hovered = l_MousePos.x >= m_CanvasP0.x &&
+                             l_MousePos.x <= m_CanvasP1.x &&
+                             l_MousePos.y >= m_CanvasP0.y &&
+                             l_MousePos.y <= m_CanvasP1.y;
       // Background
       m_DrawList->AddRectFilled(m_CanvasP0, m_CanvasP1,
                                 IM_COL32(32, 32, 36, 255));
@@ -82,18 +85,15 @@ namespace Low {
         m_Zoom = std::clamp(m_Zoom, m_MinZoom, m_MaxZoom);
 
         m_Scrolling.x =
-            l_MousePos.x - m_CanvasP0.x -
-            l_CanvasMousePos.x * m_Zoom;
+            l_MousePos.x - m_CanvasP0.x - l_CanvasMousePos.x * m_Zoom;
         m_Scrolling.y =
-            l_MousePos.y - m_CanvasP0.y -
-            l_CanvasMousePos.y * m_Zoom;
+            l_MousePos.y - m_CanvasP0.y - l_CanvasMousePos.y * m_Zoom;
       }
 
       m_DrawList->PushClipRect(m_CanvasP0, m_CanvasP1, true);
 
       if (m_ShowMinorGrid) {
-        draw_grid(m_DrawList, m_CanvasP0, m_CanvasP1,
-                  m_MinorGridStep,
+        draw_grid(m_DrawList, m_CanvasP0, m_CanvasP1, m_MinorGridStep,
                   IM_COL32(45, 45, 50, 255));
       }
 
@@ -185,8 +185,8 @@ namespace Low {
       }
     }
 
-    void NodeGraphEditorRenderer::render(
-        NodeGraphEditorContext &p_Context)
+    void
+    NodeGraphEditorRenderer::render(NodeGraphEditorContext &p_Context)
     {
       NodeGraphEditorState *l_State = p_Context.state;
       NodeId l_HoveredNodeId;
@@ -226,10 +226,9 @@ namespace Low {
             ImVec2(l_ScreenMin.x + l_ScreenSize.x,
                    l_ScreenMin.y + l_ScreenSize.y);
 
-        if (l_MouseInCanvas &&
-            l_NodeRenderer->hit_test_node(
-                p_Context, i_Node, l_ScreenMin, l_ScreenMax,
-                l_MousePosition)) {
+        if (l_MouseInCanvas && l_NodeRenderer->hit_test_node(
+                                   p_Context, i_Node, l_ScreenMin,
+                                   l_ScreenMax, l_MousePosition)) {
           l_HoveredNodeId = i_Node.id;
           l_HoveredNodeRenderer = l_NodeRenderer;
           break;
@@ -344,10 +343,17 @@ namespace Low {
           if (l_HoveredPinId.is_valid()) {
             l_State->link_drag_start_pin = l_HoveredPinId;
             l_State->dragging_nodes = false;
+            l_State->box_selecting = false;
           } else if (l_HoveredNodeId.is_valid()) {
             const bool l_AdditiveSelection = ImGui::GetIO().KeyCtrl;
-            l_State->select_node(l_HoveredNodeId,
-                                 l_AdditiveSelection);
+            const bool l_NodeAlreadySelected =
+                l_State->is_node_selected(l_HoveredNodeId);
+
+            if (l_AdditiveSelection) {
+              l_State->select_node(l_HoveredNodeId, true);
+            } else if (!l_NodeAlreadySelected) {
+              l_State->select_node(l_HoveredNodeId, false);
+            }
 
             if (l_HoveredNodeRenderer) {
               Node *l_HoveredNode =
@@ -356,10 +362,19 @@ namespace Low {
                   l_HoveredNodeRenderer->can_drag_node(
                       p_Context, *l_HoveredNode)) {
                 l_State->dragging_nodes = true;
+                l_State->box_selecting = false;
               }
             }
           } else {
-            l_State->clear_selection();
+            l_State->dragging_nodes = false;
+            l_State->link_drag_start_pin = PinId{};
+            l_State->box_selecting = true;
+            l_State->box_select_additive = ImGui::GetIO().KeyCtrl;
+            l_State->box_select_start = l_MousePosition;
+            l_State->box_select_current = l_MousePosition;
+            if (!l_State->box_select_additive) {
+              l_State->clear_selection();
+            }
           }
         }
 
@@ -370,14 +385,64 @@ namespace Low {
               p_Context.canvas.screen_to_canvas_size(
                   ImGui::GetIO().MouseDelta);
 
-          if (l_CanvasDelta.x != 0.0f ||
-              l_CanvasDelta.y != 0.0f) {
+          if (l_CanvasDelta.x != 0.0f || l_CanvasDelta.y != 0.0f) {
             for (NodeId i_NodeId : l_State->selected_nodes) {
               Node *l_Node = p_Context.graph.find_node(i_NodeId);
               if (l_Node) {
-                l_Node->translate(Math::Vector2(l_CanvasDelta.x,
-                                                l_CanvasDelta.y));
+                l_Node->translate(
+                    Math::Vector2(l_CanvasDelta.x, l_CanvasDelta.y));
               }
+            }
+          }
+        }
+
+        if (!l_BlockCanvasInteraction && l_State->box_selecting &&
+            ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+          l_State->box_select_current = l_MousePosition;
+
+          const ImVec2 l_BoxMin(
+              LOW_MATH_MIN(l_State->box_select_start.x,
+                           l_State->box_select_current.x),
+              LOW_MATH_MIN(l_State->box_select_start.y,
+                           l_State->box_select_current.y));
+          const ImVec2 l_BoxMax(
+              LOW_MATH_MAX(l_State->box_select_start.x,
+                           l_State->box_select_current.x),
+              LOW_MATH_MAX(l_State->box_select_start.y,
+                           l_State->box_select_current.y));
+
+          if (!l_State->box_select_additive) {
+            l_State->clear_selection();
+          }
+
+          for (Node &i_Node : p_Context.graph.nodes) {
+            NodeGraphNodeRenderer *l_NodeRenderer =
+                get_node_renderer(p_Context, i_Node);
+
+            if (!l_NodeRenderer) {
+              continue;
+            }
+
+            const Math::Vector2 l_NodeSize =
+                l_NodeRenderer->get_node_size(p_Context, i_Node);
+            const ImVec2 l_ScreenMin =
+                p_Context.canvas.canvas_to_screen(
+                    ImVec2(i_Node.position.x, i_Node.position.y),
+                    p_Context.canvas_origin);
+            const ImVec2 l_ScreenSize =
+                p_Context.canvas.canvas_to_screen_size(
+                    ImVec2(l_NodeSize.x, l_NodeSize.y));
+            const ImVec2 l_ScreenMax =
+                ImVec2(l_ScreenMin.x + l_ScreenSize.x,
+                       l_ScreenMin.y + l_ScreenSize.y);
+
+            const bool l_Intersects = l_ScreenMin.x <= l_BoxMax.x &&
+                                      l_ScreenMax.x >= l_BoxMin.x &&
+                                      l_ScreenMin.y <= l_BoxMax.y &&
+                                      l_ScreenMax.y >= l_BoxMin.y;
+
+            if (l_Intersects) {
+              l_State->select_node(i_Node.id, true);
             }
           }
         }
@@ -385,6 +450,11 @@ namespace Low {
         if (l_State->dragging_nodes &&
             ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
           l_State->dragging_nodes = false;
+        }
+
+        if (l_State->box_selecting &&
+            ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+          l_State->box_selecting = false;
         }
 
         if (!l_BlockCanvasInteraction &&
@@ -430,7 +500,145 @@ namespace Low {
             p_Context.graph.remove_node(i_NodeId);
           }
         }
+
+        if (l_State->box_selecting) {
+          const ImVec2 l_BoxMin(
+              LOW_MATH_MIN(l_State->box_select_start.x,
+                           l_State->box_select_current.x),
+              LOW_MATH_MIN(l_State->box_select_start.y,
+                           l_State->box_select_current.y));
+          const ImVec2 l_BoxMax(
+              LOW_MATH_MAX(l_State->box_select_start.x,
+                           l_State->box_select_current.x),
+              LOW_MATH_MAX(l_State->box_select_start.y,
+                           l_State->box_select_current.y));
+
+          p_Context.draw_list->AddRectFilled(
+              l_BoxMin, l_BoxMax, IM_COL32(120, 170, 255, 28));
+          p_Context.draw_list->AddRect(l_BoxMin, l_BoxMax,
+                                       IM_COL32(120, 170, 255, 180),
+                                       0.0f, 0, 1.5f);
+        }
       }
+    }
+
+    bool NodeGraphEditorRenderer::get_node_canvas_bounds(
+        NodeGraphEditorContext &p_Context, const Node &p_Node,
+        Math::Vector2 &p_Min, Math::Vector2 &p_Max)
+    {
+      Node *l_Node = p_Context.graph.find_node(p_Node.id);
+      if (!l_Node) {
+        return false;
+      }
+
+      NodeGraphNodeRenderer *l_NodeRenderer =
+          get_node_renderer(p_Context, *l_Node);
+      if (!l_NodeRenderer) {
+        return false;
+      }
+
+      const Math::Vector2 l_Size =
+          l_NodeRenderer->get_node_size(p_Context, *l_Node);
+      p_Min = l_Node->position;
+      p_Max = l_Node->position + l_Size;
+      return true;
+    }
+
+    bool NodeGraphEditorRenderer::focus_node(
+        NodeGraphEditorContext &p_Context, NodeId p_NodeId,
+        float p_PaddingScreen)
+    {
+      const Node *l_Node = p_Context.graph.find_node(p_NodeId);
+      if (!l_Node) {
+        return false;
+      }
+
+      Math::Vector2 l_Min;
+      Math::Vector2 l_Max;
+      if (!get_node_canvas_bounds(p_Context, *l_Node, l_Min, l_Max)) {
+        return false;
+      }
+
+      NodeGraphCanvas &l_Canvas =
+          const_cast<NodeGraphCanvas &>(p_Context.canvas);
+      const Math::Vector2 l_Size = l_Max - l_Min;
+      if (l_Size.x <= 1.0f && l_Size.y <= 1.0f) {
+        l_Canvas.focus_canvas_point((l_Min + l_Max) * 0.5f);
+      } else {
+        l_Canvas.focus_canvas_bounds(l_Min, l_Max, p_PaddingScreen);
+      }
+      return true;
+    }
+
+    bool NodeGraphEditorRenderer::focus_nodes(
+        NodeGraphEditorContext &p_Context,
+        const Util::List<NodeId> &p_NodeIds, float p_PaddingScreen)
+    {
+      bool l_HaveBounds = false;
+      Math::Vector2 l_Min;
+      Math::Vector2 l_Max;
+
+      for (NodeId i_NodeId : p_NodeIds) {
+        const Node *l_Node = p_Context.graph.find_node(i_NodeId);
+        if (!l_Node) {
+          continue;
+        }
+
+        Math::Vector2 i_Min;
+        Math::Vector2 i_Max;
+        if (!get_node_canvas_bounds(p_Context, *l_Node, i_Min,
+                                    i_Max)) {
+          continue;
+        }
+
+        if (!l_HaveBounds) {
+          l_Min = i_Min;
+          l_Max = i_Max;
+          l_HaveBounds = true;
+        } else {
+          l_Min.x = LOW_MATH_MIN(l_Min.x, i_Min.x);
+          l_Min.y = LOW_MATH_MIN(l_Min.y, i_Min.y);
+          l_Max.x = LOW_MATH_MAX(l_Max.x, i_Max.x);
+          l_Max.y = LOW_MATH_MAX(l_Max.y, i_Max.y);
+        }
+      }
+
+      if (!l_HaveBounds) {
+        return false;
+      }
+
+      NodeGraphCanvas &l_Canvas =
+          const_cast<NodeGraphCanvas &>(p_Context.canvas);
+      const Math::Vector2 l_Size = l_Max - l_Min;
+      if (l_Size.x <= 1.0f && l_Size.y <= 1.0f) {
+        l_Canvas.focus_canvas_point((l_Min + l_Max) * 0.5f);
+      } else {
+        l_Canvas.focus_canvas_bounds(l_Min, l_Max, p_PaddingScreen);
+      }
+      return true;
+    }
+
+    bool NodeGraphEditorRenderer::focus_selection(
+        NodeGraphEditorContext &p_Context, float p_PaddingScreen)
+    {
+      if (!p_Context.state ||
+          p_Context.state->selected_nodes.empty()) {
+        return false;
+      }
+
+      return focus_nodes(p_Context, p_Context.state->selected_nodes,
+                         p_PaddingScreen);
+    }
+
+    bool NodeGraphEditorRenderer::focus_graph(
+        NodeGraphEditorContext &p_Context, float p_PaddingScreen)
+    {
+      Util::List<NodeId> l_NodeIds;
+      for (const Node &i_Node : p_Context.graph.nodes) {
+        l_NodeIds.push_back(i_Node.id);
+      }
+
+      return focus_nodes(p_Context, l_NodeIds, p_PaddingScreen);
     }
 
     void NodeGraphEditorRenderer::render_foreground(
@@ -451,11 +659,12 @@ namespace Low {
           p_Context.state->hovered_node.is_valid() ||
           p_Context.state->hovered_pin.is_valid();
 
-      if (!p_Context.state->interacting_with_widget && l_MouseInCanvas &&
-          !l_HoveringGraphElement &&
+      if (!p_Context.state->interacting_with_widget &&
+          l_MouseInCanvas && !l_HoveringGraphElement &&
           ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-        m_CreateNodePosition = TO_VEC2(p_Context.canvas.screen_to_canvas(
-            l_MousePosition, p_Context.canvas_origin));
+        m_CreateNodePosition =
+            TO_VEC2(p_Context.canvas.screen_to_canvas(
+                l_MousePosition, p_Context.canvas_origin));
         m_CreateNodePopupJustOpened = true;
         m_CreateNodeSearch[0] = '\0';
         ImGui::OpenPopup("NodeGraphCreateNode");
@@ -469,10 +678,9 @@ namespace Low {
           m_CreateNodePopupJustOpened = false;
         }
 
-        Gui::SearchField("##nodegraph_create_node_search",
-                         m_CreateNodeSearch,
-                         IM_ARRAYSIZE(m_CreateNodeSearch),
-                         ImVec2(0.0f, 3.0f));
+        Gui::SearchField(
+            "##nodegraph_create_node_search", m_CreateNodeSearch,
+            IM_ARRAYSIZE(m_CreateNodeSearch), ImVec2(0.0f, 3.0f));
         ImGui::Separator();
 
         Util::String l_Search = m_CreateNodeSearch;
@@ -496,7 +704,8 @@ namespace Low {
             l_FilterText += i_Entry.search_text;
             l_FilterText.make_lower();
 
-            if (!Util::StringHelper::contains(l_FilterText, l_Search)) {
+            if (!Util::StringHelper::contains(l_FilterText,
+                                              l_Search)) {
               continue;
             }
           }
@@ -542,8 +751,8 @@ namespace Low {
 
       if (p_Context.state &&
           ImGui::BeginPopup("NodeGraphNodeContextMenu")) {
-        Node *l_Node =
-            p_Context.graph.find_node(p_Context.state->context_menu_node);
+        Node *l_Node = p_Context.graph.find_node(
+            p_Context.state->context_menu_node);
         if (l_Node) {
           render_node_context_menu(p_Context, *l_Node);
         }
@@ -552,8 +761,8 @@ namespace Low {
 
       if (p_Context.state &&
           ImGui::BeginPopup("NodeGraphPinContextMenu")) {
-        Pin *l_Pin =
-            p_Context.graph.find_pin(p_Context.state->context_menu_pin);
+        Pin *l_Pin = p_Context.graph.find_pin(
+            p_Context.state->context_menu_pin);
         if (l_Pin) {
           render_pin_context_menu(p_Context, *l_Pin);
         }
@@ -588,8 +797,7 @@ namespace Low {
         const float l_Tangent =
             LOW_MATH_MAX(60.0f * p_Context.canvas.m_Zoom,
                          LOW_MATH_ABS(l_End.x - l_Start.x) * 0.5f);
-        const ImVec2 l_ControlStart(l_Start.x + l_Tangent,
-                                    l_Start.y);
+        const ImVec2 l_ControlStart(l_Start.x + l_Tangent, l_Start.y);
         const ImVec2 l_ControlEnd(l_End.x - l_Tangent, l_End.y);
 
         ImU32 l_Color = IM_COL32(180, 180, 190, 255);
@@ -610,9 +818,9 @@ namespace Low {
           l_Thickness = 4.0f;
         }
 
-        p_Context.draw_list->AddBezierCubic(
-            l_Start, l_ControlStart, l_ControlEnd, l_End, l_Color,
-            l_Thickness);
+        p_Context.draw_list->AddBezierCubic(l_Start, l_ControlStart,
+                                            l_ControlEnd, l_End,
+                                            l_Color, l_Thickness);
       }
 
       if (p_Context.state) {
@@ -637,15 +845,13 @@ namespace Low {
             ImVec2 l_ControlEnd;
 
             if (l_StartPin->direction == PinDirection::Output) {
-              l_ControlStart = ImVec2(l_Start.x + l_Tangent,
-                                      l_Start.y);
-              l_ControlEnd =
-                  ImVec2(l_End.x - l_Tangent, l_End.y);
+              l_ControlStart =
+                  ImVec2(l_Start.x + l_Tangent, l_Start.y);
+              l_ControlEnd = ImVec2(l_End.x - l_Tangent, l_End.y);
             } else {
-              l_ControlStart = ImVec2(l_Start.x - l_Tangent,
-                                      l_Start.y);
-              l_ControlEnd =
-                  ImVec2(l_End.x + l_Tangent, l_End.y);
+              l_ControlStart =
+                  ImVec2(l_Start.x - l_Tangent, l_Start.y);
+              l_ControlEnd = ImVec2(l_End.x + l_Tangent, l_End.y);
             }
 
             p_Context.draw_list->AddBezierCubic(
@@ -684,16 +890,17 @@ namespace Low {
           ImVec2(l_ScreenMin.x + l_ScreenSize.x,
                  l_ScreenMin.y + l_ScreenSize.y);
 
-      return l_NodeRenderer->get_pin_anchor(
-          p_Context, *l_Node, p_Pin, l_ScreenMin, l_ScreenMax,
-          p_Anchor);
+      return l_NodeRenderer->get_pin_anchor(p_Context, *l_Node, p_Pin,
+                                            l_ScreenMin, l_ScreenMax,
+                                            p_Anchor);
     }
 
     bool NodeGraphEditorRenderer::get_link_endpoints(
         NodeGraphEditorContext &p_Context, const Link &p_Link,
         ImVec2 &p_Start, ImVec2 &p_End)
     {
-      const Pin *l_StartPin = p_Context.graph.find_pin(p_Link.start_pin);
+      const Pin *l_StartPin =
+          p_Context.graph.find_pin(p_Link.start_pin);
       const Pin *l_EndPin = p_Context.graph.find_pin(p_Link.end_pin);
 
       if (!l_StartPin || !l_EndPin) {
@@ -737,11 +944,11 @@ namespace Low {
 
       for (u32 i = 0; i <= 24; ++i) {
         const float l_T = (float)i / 24.0f;
-        const ImVec2 l_Point = cubic_bezier(
-            l_Start, l_ControlStart, l_ControlEnd, l_End, l_T);
-        l_BestDistanceSquared = LOW_MATH_MIN(
-            l_BestDistanceSquared,
-            distance_squared(l_Point, p_ScreenPosition));
+        const ImVec2 l_Point = cubic_bezier(l_Start, l_ControlStart,
+                                            l_ControlEnd, l_End, l_T);
+        l_BestDistanceSquared =
+            LOW_MATH_MIN(l_BestDistanceSquared,
+                         distance_squared(l_Point, p_ScreenPosition));
       }
 
       return sqrtf(l_BestDistanceSquared);
@@ -764,8 +971,7 @@ namespace Low {
       p_Context.draw_list->AddRectFilled(
           p_ScreenMin,
           ImVec2(p_ScreenMax.x, p_ScreenMin.y + l_TitleHeight),
-          title_color, border_rounding,
-          ImDrawFlags_RoundCornersTop);
+          title_color, border_rounding, ImDrawFlags_RoundCornersTop);
       p_Context.draw_list->AddRect(p_ScreenMin, p_ScreenMax,
                                    border_color, border_rounding, 0,
                                    1.5f);
@@ -839,7 +1045,8 @@ namespace Low {
           (p_ScreenMax.y - p_ScreenMin.y) / (float)(l_SideCount + 1);
       const float l_Y =
           p_ScreenMin.y + l_Step * (float)(l_SideIndex + 1);
-      const float l_X = p_Pin.is_input() ? p_ScreenMin.x : p_ScreenMax.x;
+      const float l_X =
+          p_Pin.is_input() ? p_ScreenMin.x : p_ScreenMax.x;
 
       p_Anchor = ImVec2(l_X, l_Y);
       return true;
