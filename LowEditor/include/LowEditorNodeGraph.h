@@ -759,9 +759,12 @@ namespace Low {
     {
       Math::Vector2 m_Scrolling = Math::Vector2(0, 0);
       float m_Zoom = 1.0f;
+      Math::Vector2 m_TargetScrolling = Math::Vector2(0, 0);
+      float m_TargetZoom = 1.0f;
       float m_MinZoom = 0.25f;
       float m_MaxZoom = 2.5f;
       float m_ZoomStep = 0.1f;
+      float m_FocusSmoothingSpeed = 10.0f;
       float m_GridStep = 64.0f;
       float m_MinorGridStep = 16.0f;
       bool m_ShowMinorGrid = true;
@@ -874,12 +877,11 @@ namespace Low {
           return;
         }
 
-        const float l_Padding =
-            LOW_MATH_MAX(0.0f, p_PaddingScreen);
+        const float l_Padding = LOW_MATH_MAX(0.0f, p_PaddingScreen);
         const float l_AvailableWidth =
             LOW_MATH_MAX(1.0f, l_ViewportWidth - l_Padding * 2.0f);
-        const float l_AvailableHeight = LOW_MATH_MAX(
-            1.0f, l_ViewportHeight - l_Padding * 2.0f);
+        const float l_AvailableHeight =
+            LOW_MATH_MAX(1.0f, l_ViewportHeight - l_Padding * 2.0f);
 
         const float l_BoundsWidth =
             LOW_MATH_MAX(1.0f, p_Max.x - p_Min.x);
@@ -888,25 +890,24 @@ namespace Low {
 
         const float l_ZoomX = l_AvailableWidth / l_BoundsWidth;
         const float l_ZoomY = l_AvailableHeight / l_BoundsHeight;
-        m_Zoom = LOW_MATH_CLAMP(LOW_MATH_MIN(l_ZoomX, l_ZoomY),
-                                m_MinZoom, m_MaxZoom);
+        m_TargetZoom = LOW_MATH_CLAMP(LOW_MATH_MIN(l_ZoomX, l_ZoomY),
+                                      m_MinZoom, m_MaxZoom);
 
-        const Math::Vector2 l_Center =
-            (p_Min + p_Max) * 0.5f;
-        m_Scrolling.x =
-            l_ViewportWidth * 0.5f - l_Center.x * m_Zoom;
-        m_Scrolling.y =
-            l_ViewportHeight * 0.5f - l_Center.y * m_Zoom;
+        const Math::Vector2 l_Center = (p_Min + p_Max) * 0.5f;
+        m_TargetScrolling.x =
+            l_ViewportWidth * 0.5f - l_Center.x * m_TargetZoom;
+        m_TargetScrolling.y =
+            l_ViewportHeight * 0.5f - l_Center.y * m_TargetZoom;
       }
 
       void focus_canvas_point(const Math::Vector2 &p_Point)
       {
         const float l_ViewportWidth = m_CanvasP1.x - m_CanvasP0.x;
         const float l_ViewportHeight = m_CanvasP1.y - m_CanvasP0.y;
-        m_Scrolling.x =
-            l_ViewportWidth * 0.5f - p_Point.x * m_Zoom;
-        m_Scrolling.y =
-            l_ViewportHeight * 0.5f - p_Point.y * m_Zoom;
+        m_TargetScrolling.x =
+            l_ViewportWidth * 0.5f - p_Point.x * m_TargetZoom;
+        m_TargetScrolling.y =
+            l_ViewportHeight * 0.5f - p_Point.y * m_TargetZoom;
       }
 
     private:
@@ -915,6 +916,8 @@ namespace Low {
       ImVec2 m_CanvasP1 = ImVec2(0.0f, 0.0f);
       bool m_Active = false;
 
+      void update_view_animation(float p_DeltaTime);
+      void sync_view_targets();
       void draw_grid(ImDrawList *p_DrawList, const ImVec2 &p_Min,
                      const ImVec2 &p_Max, float p_Step,
                      ImU32 p_Color) const;
@@ -1067,6 +1070,8 @@ namespace Low {
 
     struct NodeGraphEditorRenderer
     {
+      friend struct NodeGraphEditorController;
+
       virtual ~NodeGraphEditorRenderer() = default;
 
       virtual void
@@ -1111,31 +1116,21 @@ namespace Low {
         (void)p_Pin;
       }
 
-      bool get_node_canvas_bounds(
-          NodeGraphEditorContext &p_Context, const Node &p_Node,
-          Math::Vector2 &p_Min, Math::Vector2 &p_Max);
-      bool focus_node(NodeGraphEditorContext &p_Context, NodeId p_NodeId,
-                      float p_PaddingScreen = 80.0f);
-      bool focus_nodes(
-          NodeGraphEditorContext &p_Context,
-          const Util::List<NodeId> &p_NodeIds,
-          float p_PaddingScreen = 80.0f);
-      bool focus_selection(
-          NodeGraphEditorContext &p_Context,
-          float p_PaddingScreen = 80.0f);
+      bool get_node_canvas_bounds(NodeGraphEditorContext &p_Context,
+                                  const Node &p_Node,
+                                  Math::Vector2 &p_Min,
+                                  Math::Vector2 &p_Max);
+      bool focus_node(NodeGraphEditorContext &p_Context,
+                      NodeId p_NodeId, float p_PaddingScreen = 80.0f);
+      bool focus_nodes(NodeGraphEditorContext &p_Context,
+                       const Util::List<NodeId> &p_NodeIds,
+                       float p_PaddingScreen = 80.0f);
+      bool focus_selection(NodeGraphEditorContext &p_Context,
+                           float p_PaddingScreen = 80.0f);
       bool focus_graph(NodeGraphEditorContext &p_Context,
                        float p_PaddingScreen = 80.0f);
 
-      virtual void
-      render_foreground(NodeGraphEditorContext &p_Context);
-
-      virtual void render(NodeGraphEditorContext &p_Context);
-
     protected:
-      char m_CreateNodeSearch[256] = {};
-      Math::Vector2 m_CreateNodePosition = Math::Vector2(0.0f, 0.0f);
-      bool m_CreateNodePopupJustOpened = false;
-
       bool get_pin_anchor(NodeGraphEditorContext &p_Context,
                           const Pin &p_Pin, ImVec2 &p_Anchor);
       bool get_link_endpoints(NodeGraphEditorContext &p_Context,
@@ -1145,6 +1140,26 @@ namespace Low {
       float distance_to_link(NodeGraphEditorContext &p_Context,
                              const Link &p_Link,
                              const ImVec2 &p_ScreenPosition);
+    };
+
+    struct NodeGraphEditorController
+    {
+      char create_node_search[256] = {};
+      Math::Vector2 create_node_position = Math::Vector2(0.0f, 0.0f);
+      bool create_node_popup_just_opened = false;
+
+      void render(NodeGraphEditorContext &p_Context,
+                  NodeGraphEditorRenderer &p_Renderer);
+
+    private:
+      void handle_shortcuts(NodeGraphEditorContext &p_Context,
+                            NodeGraphEditorRenderer &p_Renderer,
+                            bool p_BlockCanvasInteraction);
+      void
+      render_create_node_popup(NodeGraphEditorContext &p_Context,
+                               NodeGraphEditorRenderer &p_Renderer);
+      void render_context_menus(NodeGraphEditorContext &p_Context,
+                                NodeGraphEditorRenderer &p_Renderer);
     };
 
     struct NodeGraphBoxNodeRenderer : public NodeGraphNodeRenderer

@@ -1011,7 +1011,8 @@ namespace Low {
                 document->canvas.get_canvas_min(),
                 document->canvas.get_canvas_max()};
             render_canvas_watermark(*document);
-            document->renderer.render(l_GraphContext);
+            document->controller.render(l_GraphContext,
+                                        document->renderer);
             document->canvas.end();
           }
 

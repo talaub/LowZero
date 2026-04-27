@@ -7,6 +7,7 @@
 #include <cfloat>
 #include <cmath>
 #include <cstdio>
+#include <imgui.h>
 
 namespace Low {
   namespace Editor {
@@ -69,11 +70,14 @@ namespace Low {
       m_DrawList->AddRect(m_CanvasP0, m_CanvasP1,
                           IM_COL32(80, 80, 90, 255));
 
+      update_view_animation(ImGui::GetIO().DeltaTime);
+
       // Panning with middle mouse
       if (l_Hovered &&
           ImGui::IsMouseDragging(ImGuiMouseButton_Middle, 0.0f)) {
         m_Scrolling.x += ImGui::GetIO().MouseDelta.x;
         m_Scrolling.y += ImGui::GetIO().MouseDelta.y;
+        sync_view_targets();
       }
 
       if (l_Hovered && ImGui::GetIO().MouseWheel != 0.0f) {
@@ -88,6 +92,7 @@ namespace Low {
             l_MousePos.x - m_CanvasP0.x - l_CanvasMousePos.x * m_Zoom;
         m_Scrolling.y =
             l_MousePos.y - m_CanvasP0.y - l_CanvasMousePos.y * m_Zoom;
+        sync_view_targets();
       }
 
       m_DrawList->PushClipRect(m_CanvasP0, m_CanvasP1, true);
@@ -105,6 +110,36 @@ namespace Low {
 
       m_Active = true;
       return true;
+    }
+
+    void NodeGraphCanvas::update_view_animation(float p_DeltaTime)
+    {
+      if (p_DeltaTime <= 0.0f) {
+        return;
+      }
+
+      const float l_Factor = LOW_MATH_CLAMP(
+          p_DeltaTime * m_FocusSmoothingSpeed, 0.0f, 1.0f);
+
+      m_Zoom += (m_TargetZoom - m_Zoom) * l_Factor;
+      m_Scrolling += (m_TargetScrolling - m_Scrolling) * l_Factor;
+
+      if (LOW_MATH_ABS(m_TargetZoom - m_Zoom) < 0.001f) {
+        m_Zoom = m_TargetZoom;
+      }
+
+      if (LOW_MATH_ABS(m_TargetScrolling.x - m_Scrolling.x) < 0.5f) {
+        m_Scrolling.x = m_TargetScrolling.x;
+      }
+      if (LOW_MATH_ABS(m_TargetScrolling.y - m_Scrolling.y) < 0.5f) {
+        m_Scrolling.y = m_TargetScrolling.y;
+      }
+    }
+
+    void NodeGraphCanvas::sync_view_targets()
+    {
+      m_TargetScrolling = m_Scrolling;
+      m_TargetZoom = m_Zoom;
     }
 
     void NodeGraphCanvas::end()
@@ -185,8 +220,9 @@ namespace Low {
       }
     }
 
-    void
-    NodeGraphEditorRenderer::render(NodeGraphEditorContext &p_Context)
+    void NodeGraphEditorController::render(
+        NodeGraphEditorContext &p_Context,
+        NodeGraphEditorRenderer &p_Renderer)
     {
       NodeGraphEditorState *l_State = p_Context.state;
       NodeId l_HoveredNodeId;
@@ -208,7 +244,7 @@ namespace Low {
            it != p_Context.graph.nodes.rend(); ++it) {
         Node &i_Node = *it;
         NodeGraphNodeRenderer *l_NodeRenderer =
-            get_node_renderer(p_Context, i_Node);
+            p_Renderer.get_node_renderer(p_Context, i_Node);
 
         if (!l_NodeRenderer) {
           continue;
@@ -240,7 +276,7 @@ namespace Low {
              it != p_Context.graph.nodes.rend(); ++it) {
           Node &i_Node = *it;
           NodeGraphNodeRenderer *l_NodeRenderer =
-              get_node_renderer(p_Context, i_Node);
+              p_Renderer.get_node_renderer(p_Context, i_Node);
 
           if (!l_NodeRenderer) {
             continue;
@@ -291,12 +327,12 @@ namespace Low {
         l_State->hovered_pin = l_HoveredPinId;
       }
 
-      render_background(p_Context);
-      render_links(p_Context);
+      p_Renderer.render_background(p_Context);
+      p_Renderer.render_links(p_Context);
 
       for (Node &i_Node : p_Context.graph.nodes) {
         NodeGraphNodeRenderer *l_NodeRenderer =
-            get_node_renderer(p_Context, i_Node);
+            p_Renderer.get_node_renderer(p_Context, i_Node);
 
         if (!l_NodeRenderer) {
           continue;
@@ -317,8 +353,6 @@ namespace Low {
         l_NodeRenderer->render_node(p_Context, i_Node, l_ScreenMin,
                                     l_ScreenMax);
       }
-
-      render_foreground(p_Context);
 
       if (l_State) {
         const bool l_BlockCanvasInteraction =
@@ -417,7 +451,7 @@ namespace Low {
 
           for (Node &i_Node : p_Context.graph.nodes) {
             NodeGraphNodeRenderer *l_NodeRenderer =
-                get_node_renderer(p_Context, i_Node);
+                p_Renderer.get_node_renderer(p_Context, i_Node);
 
             if (!l_NodeRenderer) {
               continue;
@@ -468,7 +502,7 @@ namespace Low {
           if (l_StartPin && l_EndPin &&
               l_StartPin->id != l_EndPin->id) {
             Link l_NewLink;
-            l_NewLink.id = allocate_link_id(p_Context);
+            l_NewLink.id = p_Renderer.allocate_link_id(p_Context);
 
             if (l_StartPin->direction == PinDirection::Output) {
               l_NewLink.start_pin = l_StartPin->id;
@@ -478,27 +512,10 @@ namespace Low {
               l_NewLink.end_pin = l_StartPin->id;
             }
 
-            create_link(p_Context, l_NewLink);
+            p_Renderer.create_link(p_Context, l_NewLink);
           }
 
           l_State->link_drag_start_pin = PinId{};
-        }
-
-        if (!l_BlockCanvasInteraction &&
-            (ImGui::IsKeyPressed(ImGuiKey_Delete) ||
-             ImGui::IsKeyPressed(ImGuiKey_Backspace)) &&
-            !l_State->selected_nodes.empty()) {
-          Util::List<NodeId> l_NodesToDelete =
-              l_State->selected_nodes;
-
-          l_State->clear_selection();
-          l_State->dragging_nodes = false;
-          l_State->hovered_node = NodeId{};
-          l_State->hovered_pin = PinId{};
-
-          for (NodeId i_NodeId : l_NodesToDelete) {
-            p_Context.graph.remove_node(i_NodeId);
-          }
         }
 
         if (l_State->box_selecting) {
@@ -518,6 +535,48 @@ namespace Low {
           p_Context.draw_list->AddRect(l_BoxMin, l_BoxMax,
                                        IM_COL32(120, 170, 255, 180),
                                        0.0f, 0, 1.5f);
+        }
+      }
+
+      handle_shortcuts(p_Context, p_Renderer,
+                       l_State ? l_State->interacting_with_widget
+                               : false);
+      render_create_node_popup(p_Context, p_Renderer);
+      render_context_menus(p_Context, p_Renderer);
+    }
+
+    void NodeGraphEditorController::handle_shortcuts(
+        NodeGraphEditorContext &p_Context,
+        NodeGraphEditorRenderer &p_Renderer,
+        bool p_BlockCanvasInteraction)
+    {
+      (void)p_Renderer;
+
+      NodeGraphEditorState *l_State = p_Context.state;
+      if (!l_State || p_BlockCanvasInteraction) {
+        return;
+      }
+
+      if ((ImGui::IsKeyPressed(ImGuiKey_Delete) ||
+           ImGui::IsKeyPressed(ImGuiKey_Backspace)) &&
+          !l_State->selected_nodes.empty()) {
+        Util::List<NodeId> l_NodesToDelete = l_State->selected_nodes;
+
+        l_State->clear_selection();
+        l_State->dragging_nodes = false;
+        l_State->hovered_node = NodeId{};
+        l_State->hovered_pin = PinId{};
+
+        for (NodeId i_NodeId : l_NodesToDelete) {
+          p_Context.graph.remove_node(i_NodeId);
+        }
+      }
+      if (ImGui::IsKeyPressed(ImGuiKey_F)) {
+        if (p_Context.state->selected_nodes.empty()) {
+
+          p_Renderer.focus_graph(p_Context);
+        } else {
+          p_Renderer.focus_selection(p_Context);
         }
       }
     }
@@ -641,10 +700,11 @@ namespace Low {
       return focus_nodes(p_Context, l_NodeIds, p_PaddingScreen);
     }
 
-    void NodeGraphEditorRenderer::render_foreground(
-        NodeGraphEditorContext &p_Context)
+    void NodeGraphEditorController::render_create_node_popup(
+        NodeGraphEditorContext &p_Context,
+        NodeGraphEditorRenderer &p_Renderer)
     {
-      NodeGraphSpawner *l_Spawner = get_spawner(p_Context);
+      NodeGraphSpawner *l_Spawner = p_Renderer.get_spawner(p_Context);
       if (!l_Spawner || !p_Context.state) {
         return;
       }
@@ -662,28 +722,28 @@ namespace Low {
       if (!p_Context.state->interacting_with_widget &&
           l_MouseInCanvas && !l_HoveringGraphElement &&
           ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-        m_CreateNodePosition =
+        create_node_position =
             TO_VEC2(p_Context.canvas.screen_to_canvas(
                 l_MousePosition, p_Context.canvas_origin));
-        m_CreateNodePopupJustOpened = true;
-        m_CreateNodeSearch[0] = '\0';
+        create_node_popup_just_opened = true;
+        create_node_search[0] = '\0';
         ImGui::OpenPopup("NodeGraphCreateNode");
       }
 
       ImGui::SetNextWindowSize(ImVec2(320.0f, 260.0f),
                                ImGuiCond_Appearing);
       if (ImGui::BeginPopup("NodeGraphCreateNode")) {
-        if (m_CreateNodePopupJustOpened) {
+        if (create_node_popup_just_opened) {
           ImGui::SetKeyboardFocusHere();
-          m_CreateNodePopupJustOpened = false;
+          create_node_popup_just_opened = false;
         }
 
         Gui::SearchField(
-            "##nodegraph_create_node_search", m_CreateNodeSearch,
-            IM_ARRAYSIZE(m_CreateNodeSearch), ImVec2(0.0f, 3.0f));
+            "##nodegraph_create_node_search", create_node_search,
+            IM_ARRAYSIZE(create_node_search), ImVec2(0.0f, 3.0f));
         ImGui::Separator();
 
-        Util::String l_Search = m_CreateNodeSearch;
+        Util::String l_Search = create_node_search;
         l_Search.make_lower();
         Util::Map<Util::String, Util::List<NodeGraphSpawnEntry>>
             l_CategorizedEntries;
@@ -731,7 +791,7 @@ namespace Low {
 
               if (ImGui::MenuItem(l_Label.c_str())) {
                 l_Spawner->spawn_entry(p_Context, i_Entry.id,
-                                       m_CreateNodePosition);
+                                       create_node_position);
                 ImGui::CloseCurrentPopup();
               }
 
@@ -748,13 +808,18 @@ namespace Low {
 
         ImGui::EndPopup();
       }
+    }
 
+    void NodeGraphEditorController::render_context_menus(
+        NodeGraphEditorContext &p_Context,
+        NodeGraphEditorRenderer &p_Renderer)
+    {
       if (p_Context.state &&
           ImGui::BeginPopup("NodeGraphNodeContextMenu")) {
         Node *l_Node = p_Context.graph.find_node(
             p_Context.state->context_menu_node);
         if (l_Node) {
-          render_node_context_menu(p_Context, *l_Node);
+          p_Renderer.render_node_context_menu(p_Context, *l_Node);
         }
         ImGui::EndPopup();
       }
@@ -764,7 +829,7 @@ namespace Low {
         Pin *l_Pin = p_Context.graph.find_pin(
             p_Context.state->context_menu_pin);
         if (l_Pin) {
-          render_pin_context_menu(p_Context, *l_Pin);
+          p_Renderer.render_pin_context_menu(p_Context, *l_Pin);
         }
         ImGui::EndPopup();
       }

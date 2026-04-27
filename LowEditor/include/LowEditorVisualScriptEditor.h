@@ -30,6 +30,7 @@ namespace Low {
         Graph graph;
         Schema schema;
         GraphRenderer renderer;
+        NodeGraphEditorController controller;
         NodeGraphCanvas canvas;
         NodeGraphEditorState state;
 
