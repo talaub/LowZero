@@ -1,5 +1,7 @@
 #include <iostream>
 
+#include "LowderSplash.h"
+
 #include "LowMath.h"
 #include "LowMathVectorUtil.h"
 
@@ -275,15 +277,19 @@ for (int i = 0; i < l_FilePaths.size(); ++i) {
 
 int run_low(bool p_IsHost, Low::Util::String p_ProjectPath)
 {
+  Lowder::Splash::set_status("Initializing utility systems...");
   Low::Util::initialize();
 
   Low::Util::Globals::set(N(IS_HOST), p_IsHost);
 
+  Lowder::Splash::set_status("Loading project...");
   load_project(p_ProjectPath);
   // return 0;
 
+  Lowder::Splash::set_status("Initializing renderer...");
   Low::Renderer::initialize();
 
+  Lowder::Splash::set_status("Initializing core systems...");
   Low::Core::initialize();
 
   Low::Core::GameLoop::register_tick_callback(&Low::Editor::tick);
@@ -297,18 +303,25 @@ int run_low(bool p_IsHost, Low::Util::String p_ProjectPath)
   // Mtd::initialize();
 
   for (int i = 0; i < g_RuntimeModuleInitialize.size(); ++i) {
+    Lowder::Splash::set_status("Initializing runtime modules...");
     g_RuntimeModuleInitialize[i]();
   }
 
+  Lowder::Splash::set_status("Setting up scene...");
   setup_scene();
 
+  Lowder::Splash::set_status("Initializing editor...");
   Low::Editor::initialize();
 
   for (int i = 0; i < g_EditorModuleInitialize.size(); ++i) {
+    Lowder::Splash::set_status("Initializing editor modules...");
     g_EditorModuleInitialize[i]();
   }
 
+  Lowder::Splash::set_status("Loading user settings...");
   Low::Editor::load_user_settings();
+
+  Lowder::Splash::stop();
 
   Low::Core::GameLoop::start();
 
@@ -334,6 +347,8 @@ int run_low(bool p_IsHost, Low::Util::String p_ProjectPath)
 
 int main(int argc, char *argv[])
 {
+  Lowder::Splash::start();
+
   bool l_IsHost = false;
   Low::Util::String l_ProjectPath = "";
   if (argc > 1) {
@@ -347,5 +362,7 @@ int main(int argc, char *argv[])
   l_IsHost = true;
   l_ProjectPath = "./";
 #endif
-  return run_low(l_IsHost, l_ProjectPath);
+  int l_Result = run_low(l_IsHost, l_ProjectPath);
+  Lowder::Splash::stop();
+  return l_Result;
 }
