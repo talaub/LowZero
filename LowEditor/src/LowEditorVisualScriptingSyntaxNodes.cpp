@@ -1,4 +1,4 @@
-#include "LowEditorVisualScriptingSyntaxNodes.h"
+#include "LowEditorVisualScriptNodes.h"
 
 #include "IconsCodicons.h"
 #include "LowUtilLogger.h"

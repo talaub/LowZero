@@ -1,4 +1,4 @@
-#include "LowEditorVisualScriptingBoolNodes.h"
+#include "LowEditorVisualScriptNodes.h"
 
 #include "IconsFontAwesome5.h"
 

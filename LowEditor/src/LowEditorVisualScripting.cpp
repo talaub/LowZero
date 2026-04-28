@@ -1191,6 +1191,7 @@ namespace Low {
         Node l_Metadata;
         l_Metadata.node = l_Node.id;
         l_Metadata.node_class = p_NodeClass;
+        l_Metadata.user_data = l_NodeClass->create_user_data();
         l_Metadata.title = l_NodeClass->get_title(*this, l_Node.id);
         l_Metadata.subtitle =
             l_NodeClass->get_subtitle(*this, l_Node.id);
@@ -1236,6 +1237,7 @@ namespace Low {
         Node l_Metadata;
         l_Metadata.node = l_Node.id;
         l_Metadata.node_class = l_SpawnEntry->node_class;
+        l_Metadata.user_data = l_NodeClass->create_user_data();
         l_Metadata.spawn_entry = l_SpawnEntry->id;
         l_Metadata.title =
             !l_SpawnEntry->title.empty()
@@ -1260,6 +1262,26 @@ namespace Low {
         }
 
         return l_Result;
+      }
+
+      void Graph::refresh_node_display_metadata(NodeId p_NodeId)
+      {
+        Node *l_NodeMetadata = find_node(p_NodeId);
+        if (!l_NodeMetadata) {
+          return;
+        }
+
+        const NodeClass *l_NodeClass =
+            find_node_class(l_NodeMetadata->node_class);
+        if (!l_NodeClass) {
+          return;
+        }
+
+        l_NodeMetadata->title = l_NodeClass->get_title(*this, p_NodeId);
+        l_NodeMetadata->subtitle =
+            l_NodeClass->get_subtitle(*this, p_NodeId);
+        l_NodeMetadata->category =
+            l_NodeClass->get_category(*this, p_NodeId);
       }
 
       bool Graph::is_pin_connected(PinId p_PinId) const
@@ -1601,6 +1623,7 @@ namespace Low {
             Node l_Metadata;
             l_Metadata.node = l_Node.id;
             l_Metadata.node_class = l_NodeClassName;
+            l_Metadata.user_data = l_NodeClass->create_user_data();
             if (i_NodeNode["spawn_entry"]) {
               l_Metadata.spawn_entry =
                   i_NodeNode["spawn_entry"].as<Util::Name>();

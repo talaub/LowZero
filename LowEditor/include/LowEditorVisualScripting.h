@@ -80,6 +80,11 @@ namespace Low {
         }
       };
 
+      struct LOW_EDITOR_API NodeUserData
+      {
+        virtual ~NodeUserData() = default;
+      };
+
       struct LOW_EDITOR_API Node
       {
         NodeId node;
@@ -89,6 +94,7 @@ namespace Low {
         Util::String subtitle;
         Util::String category;
         Util::String variable_name;
+        Util::SharedPtr<NodeUserData> user_data;
         Util::TypeIdentifier handle_type;
         Util::Name member_name;
 
@@ -245,8 +251,9 @@ namespace Low {
         virtual void collect_entry_points(
             Graph &p_Graph,
             Util::List<CompileEntryPoint> &p_EntryPoints) const;
-        virtual void compile(Document &p_Document,
-                             CompileContext &p_Context) const override;
+        virtual void
+        compile(Document &p_Document,
+                CompileContext &p_Context) const override;
       };
 
       struct LOW_EDITOR_API CompileProfileRegistry
@@ -276,6 +283,12 @@ namespace Low {
 
         virtual Util::String get_category(const Graph &p_Graph,
                                           NodeId p_NodeId) const;
+
+        virtual Util::SharedPtr<NodeUserData>
+        create_user_data() const
+        {
+          return nullptr;
+        }
 
         virtual Util::String get_icon(const Graph &p_Graph,
                                       NodeId p_NodeId) const;
@@ -415,6 +428,27 @@ namespace Low {
         const Pin *find_output_pin_checked(
             NodeId p_NodeId, const Util::String &p_DisplayName) const;
 
+        template <typename T> T *get_node_user_data(NodeId p_NodeId)
+        {
+          Node *l_Node = find_node(p_NodeId);
+          if (!l_Node || !l_Node->user_data) {
+            return nullptr;
+          }
+
+          return dynamic_cast<T *>(l_Node->user_data.get());
+        }
+
+        template <typename T>
+        const T *get_node_user_data(NodeId p_NodeId) const
+        {
+          const Node *l_Node = find_node(p_NodeId);
+          if (!l_Node || !l_Node->user_data) {
+            return nullptr;
+          }
+
+          return dynamic_cast<const T *>(l_Node->user_data.get());
+        }
+
         bool add_variable(const Variable &p_Variable);
         bool remove_variable(const Util::String &p_Name);
         Variable *find_variable(const Util::String &p_Name);
@@ -442,6 +476,8 @@ namespace Low {
             Util::Name p_SpawnEntryId,
             const Math::Vector2 &p_Position,
             const NodeGraphSchema *p_Schema = nullptr);
+
+        void refresh_node_display_metadata(NodeId p_NodeId);
 
         bool is_pin_connected(PinId p_PinId) const;
         PinId get_connected_pin(PinId p_PinId) const;

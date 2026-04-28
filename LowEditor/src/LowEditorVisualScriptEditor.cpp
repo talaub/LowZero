@@ -1,5 +1,6 @@
 #include "LowEditorVisualScriptEditor.h"
 
+#include "LowCoreUiElement.h"
 #include "LowEditor.h"
 #include "LowEditorBase.h"
 #include "LowEditorFonts.h"
@@ -8,13 +9,7 @@
 #include "IconsLucide.h"
 #include "LowEditorThemes.h"
 #include "LowEditorVisualScriptBuilder.h"
-#include "LowEditorVisualScriptingBoolNodes.h"
-#include "LowEditorVisualScriptingCastNodes.h"
-#include "LowEditorVisualScriptingDebugNodes.h"
-#include "LowEditorVisualScriptingHandleNodes.h"
-#include "LowEditorVisualScriptingMathNodes.h"
-#include "LowEditorVisualScriptingOperatorNodes.h"
-#include "LowEditorVisualScriptingSyntaxNodes.h"
+#include "LowEditorVisualScriptNodes.h"
 #include "LowMath.h"
 #include "LowUtil.h"
 #include "LowUtilFileIO.h"
@@ -329,6 +324,7 @@ namespace Low {
           Graph &p_Graph) const
       {
         register_common_node_libraries(p_Graph);
+        UiControllerNodes::register_nodes(p_Graph);
       }
 
       void UiControllerContextDefinition::build_default_template(
@@ -360,17 +356,59 @@ namespace Low {
           return;
         }
 
-        CanvasDropAction l_Action;
-        l_Action.label = "React To UI Element Interaction";
-        l_Action.execute =
-            []() {
-              LOW_LOG_WARN
-                  << "UI element drop action selected, but the "
-                     "react_to_ui_element_interaction node is not "
-                     "implemented yet."
-                  << LOW_LOG_END;
+        Core::UI::Element l_Element =
+            *static_cast<const Core::UI::Element *>(p_Data);
+
+        auto l_SpawnElementEventNode =
+            [&p_Document,
+             p_CanvasPosition](Core::UI::Element p_Element,
+                               UiControllerNodes::InteractionType
+                                   p_InteractionType) {
+              NodeGraphMutationResult<Low::Editor::Node> l_Result =
+                  p_Document.graph.create_node(
+                      N(vs_uicontroller_element_event),
+                      p_CanvasPosition, &p_Document.schema);
+              if (!l_Result.succeeded() || !l_Result.value) {
+                return;
+              }
+
+              UiControllerNodes::ElementEventNodeData *l_Data =
+                  p_Document.graph.get_node_user_data<
+                      UiControllerNodes::ElementEventNodeData>(
+                      l_Result.value->id);
+              if (!l_Data) {
+                return;
+              }
+
+              l_Data->element_name = p_Element.get_name();
+              l_Data->element_local_id = p_Element.get_local_id();
+              l_Data->interaction_type = p_InteractionType;
+              p_Document.graph.refresh_node_display_metadata(
+                  l_Result.value->id);
             };
-        p_Actions.push_back(l_Action);
+
+        auto l_AddElementAction =
+            [&p_Actions, &l_SpawnElementEventNode,
+             l_Element](const char *p_Label,
+                        UiControllerNodes::InteractionType
+                            p_InteractionType) {
+              CanvasDropAction l_Action;
+              l_Action.label = p_Label;
+              l_Action.execute = [l_SpawnElementEventNode, l_Element,
+                                  p_InteractionType]() {
+                l_SpawnElementEventNode(l_Element, p_InteractionType);
+              };
+              p_Actions.push_back(l_Action);
+            };
+
+        l_AddElementAction("React to click",
+                           UiControllerNodes::InteractionType::Click);
+        l_AddElementAction(
+            "React to mouse enter",
+            UiControllerNodes::InteractionType::MouseEnter);
+        l_AddElementAction(
+            "React to mouse exit",
+            UiControllerNodes::InteractionType::MouseExit);
       }
 
       void
@@ -815,9 +853,9 @@ namespace Low {
           }
 
           auto l_SpawnVariableNode =
-              [&p_Editor, l_VariableName, p_CanvasPosition](
-                  Util::Name p_NodeClass,
-                  const Util::String &p_Title) {
+              [&p_Editor, l_VariableName,
+               p_CanvasPosition](Util::Name p_NodeClass,
+                                 const Util::String &p_Title) {
                 Low::Editor::Node l_Node;
                 l_Node.id =
                     p_Editor.document->graph.allocate_node_id();
@@ -855,9 +893,9 @@ namespace Low {
             l_Action.label = Util::String("Get ") + l_VariableName;
             l_Action.execute = [l_SpawnVariableNode,
                                 l_VariableName]() {
-              l_SpawnVariableNode(
-                  N(vs_syntax_get_variable),
-                  Util::String("Get ") + l_VariableName);
+              l_SpawnVariableNode(N(vs_syntax_get_variable),
+                                  Util::String("Get ") +
+                                      l_VariableName);
             };
             p_Actions.push_back(l_Action);
           }
@@ -868,9 +906,9 @@ namespace Low {
             l_Action.label = Util::String("Set ") + l_VariableName;
             l_Action.execute = [l_SpawnVariableNode,
                                 l_VariableName]() {
-              l_SpawnVariableNode(
-                  N(vs_syntax_set_variable),
-                  Util::String("Set ") + l_VariableName);
+              l_SpawnVariableNode(N(vs_syntax_set_variable),
+                                  Util::String("Set ") +
+                                      l_VariableName);
             };
             p_Actions.push_back(l_Action);
           }

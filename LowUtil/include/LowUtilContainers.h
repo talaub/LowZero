@@ -16,6 +16,7 @@
 
 #include <future>
 #include <functional>
+#include <memory>
 
 #include <shared_mutex>
 #include <mutex>
@@ -56,6 +57,14 @@ namespace Low {
 
     template <typename T> using Future = std::future<T>;
     template <typename T> using Function = std::function<T>;
+    template <typename T> using SharedPtr = std::shared_ptr<T>;
+
+    template <typename T, typename... TArgs>
+    SharedPtr<T> make_shared(TArgs &&...p_Args)
+    {
+      return std::make_shared<T>(
+          std::forward<TArgs>(p_Args)...);
+    }
 
   } // namespace Util
 } // namespace Low
