@@ -25,6 +25,7 @@ namespace Low {
     Project g_Project;
 
     Low::Util::Window g_MainWindow;
+    bool g_MainWindowInitiallyHidden = false;
 
 #ifdef _WIN32
     static LRESULT CALLBACK custom_window_proc(HWND p_Hwnd,
@@ -238,6 +239,10 @@ namespace Low {
         SDL_WindowFlags window_flags =
             (SDL_WindowFlags)(SDL_WINDOW_VULKAN |
                               SDL_WINDOW_RESIZABLE);
+        if (g_MainWindowInitiallyHidden) {
+          window_flags =
+              (SDL_WindowFlags)(window_flags | SDL_WINDOW_HIDDEN);
+        }
 
         g_MainWindow.shouldClose = false;
         g_MainWindow.minimized = false;
@@ -249,6 +254,11 @@ namespace Low {
       }
 
       LOW_LOG_INFO << "Util initialized" << LOW_LOG_END;
+    }
+
+    void set_main_window_initially_hidden(bool p_Hidden)
+    {
+      g_MainWindowInitiallyHidden = p_Hidden;
     }
 
     void tick_handle_reference_resolvers(const float p_Delta);
@@ -542,6 +552,16 @@ namespace Low {
       }
 #endif
       shouldClose = true;
+    }
+
+    void Window::show()
+    {
+      SDL_ShowWindow(sdlwindow);
+    }
+
+    void Window::hide()
+    {
+      SDL_HideWindow(sdlwindow);
     }
   } // namespace Util
 } // namespace Low

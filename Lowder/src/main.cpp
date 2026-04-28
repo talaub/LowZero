@@ -119,12 +119,21 @@ static void tick_splash_shutdown(float p_Delta,
 
   static uint32_t l_RenderedFrames = 0u;
   static bool l_SplashClosed = false;
+  static bool l_MainWindowShown = false;
   if (l_SplashClosed) {
     return;
   }
 
-  if (++l_RenderedFrames >= 5u) {
+  ++l_RenderedFrames;
+
+  if (!l_MainWindowShown && l_RenderedFrames >= 3u) {
+    Low::Util::Window::get_main_window().show();
+    l_MainWindowShown = true;
+  }
+
+  if (l_RenderedFrames >= 5u) {
     Lowder::Splash::stop();
+    Low::Util::Window::get_main_window().show();
     l_SplashClosed = true;
   }
 }
@@ -296,6 +305,7 @@ for (int i = 0; i < l_FilePaths.size(); ++i) {
 int run_low(bool p_IsHost, Low::Util::String p_ProjectPath)
 {
   Lowder::Splash::set_status("Initializing utility systems...");
+  Low::Util::set_main_window_initially_hidden(true);
   Low::Util::initialize();
 
   Low::Util::Globals::set(N(IS_HOST), p_IsHost);

@@ -15,6 +15,7 @@ namespace Low {
     LOW_EXPORT void initialize();
     LOW_EXPORT void tick(float p_Delta);
     LOW_EXPORT void cleanup();
+    LOW_EXPORT void set_main_window_initially_hidden(bool p_Hidden);
 
     struct Project
     {
@@ -93,6 +94,8 @@ namespace Low {
       void minimize();
       void maximize_or_restore();
       void request_close();
+      void show();
+      void hide();
 
       static Window &get_main_window();
     };
