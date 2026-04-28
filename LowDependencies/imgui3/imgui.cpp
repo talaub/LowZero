@@ -19392,7 +19392,13 @@ static void ImGui::DockNodeCalcTabBarLayout(const ImGuiDockNode* node, ImRect* o
         r.Max.x -= button_sz + style.ItemInnerSpacing.x;
     }
 #if !IMGUI_LOWENGINE_ENABLE_DOCK_WINDOW_MENU_BUTTON
-    r.Min.x += IMGUI_LOWENGINE_DOCK_TAB_BAR_LEFT_OFFSET;
+    const ImGuiViewport* main_viewport = GetMainViewport();
+    const float top_left_epsilon = 2.0f;
+    const bool is_main_viewport_top_left_tab_bar =
+        node->Pos.x <= main_viewport->Pos.x + top_left_epsilon &&
+        node->Pos.y <= main_viewport->Pos.y + GetFrameHeight() + top_left_epsilon;
+    if (is_main_viewport_top_left_tab_bar)
+        r.Min.x += IMGUI_LOWENGINE_DOCK_TAB_BAR_LEFT_OFFSET;
 #endif
     if (out_tab_bar_rect) { *out_tab_bar_rect = r; }
     if (out_window_menu_button_pos) { *out_window_menu_button_pos = window_menu_button_pos; }
