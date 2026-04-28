@@ -4543,7 +4543,7 @@ namespace Low {
         Util::String l_Notice = "Compiling shader " + l_SourcePath;
 
         LOW_LOG_DEBUG << l_Notice << LOW_LOG_END;
-        system(l_Command.c_str());
+        Util::execute_command(l_Command);
 #endif
 
         return l_OutPath;

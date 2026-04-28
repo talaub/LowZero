@@ -15,6 +15,10 @@
 #include "LowUtilJobManager.h"
 #include "LowUtilFileIO.h"
 
+#ifdef _WIN32
+extern "C" __declspec(dllimport) void *__stdcall GetConsoleWindow();
+#endif
+
 namespace Low {
   namespace Util {
     namespace Log {
@@ -25,6 +29,7 @@ namespace Low {
       String g_LogFilePath;
 
       Mutex g_PrintMutex;
+      bool g_ConsoleOutputEnabled = true;
 
       void initialize()
       {
@@ -59,6 +64,20 @@ namespace Low {
       void register_log_callback(LogCallback p_Callback)
       {
         g_Callbacks.push_back(p_Callback);
+      }
+
+      void set_console_output_enabled(bool p_Enabled)
+      {
+        g_ConsoleOutputEnabled = p_Enabled;
+      }
+
+      static bool should_print_to_console()
+      {
+#ifdef _WIN32
+        return g_ConsoleOutputEnabled && GetConsoleWindow() != nullptr;
+#else
+        return g_ConsoleOutputEnabled;
+#endif
       }
 
       static void print_time(LogEntry &p_Entry)
@@ -225,11 +244,13 @@ namespace Low {
       LogStream &LogStream::operator<<(LogLineEnd p_LineEnd)
       {
         g_PrintMutex.lock();
-        print_time(m_Entry);
-        print_thread_id(m_Entry);
-        print_log_level(m_Entry.level);
-        print_module(m_Entry);
-        printf("- %s\n", m_Entry.message.c_str());
+        if (should_print_to_console()) {
+          print_time(m_Entry);
+          print_thread_id(m_Entry);
+          print_log_level(m_Entry.level);
+          print_module(m_Entry);
+          printf("- %s\n", m_Entry.message.c_str());
+        }
 
         for (uint32_t i = 0u; i < g_Callbacks.size(); ++i) {
           g_Callbacks[i](m_Entry);

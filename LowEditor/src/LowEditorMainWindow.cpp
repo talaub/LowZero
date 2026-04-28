@@ -178,7 +178,7 @@ namespace Low {
     static void render_title_bar_logo()
     {
       Renderer::EditorImage l_Logo =
-          Renderer::EditorImage::find_by_name(N(lowlogo));
+          Renderer::EditorImage::find_by_name(N(lowlogo_36));
       const float l_MenuOffset = 50.0f;
       const float l_RowHeight = ImGui::GetFrameHeight();
       const ImVec2 l_BlockSize(l_MenuOffset, l_RowHeight * 2.0f);
@@ -190,7 +190,8 @@ namespace Low {
       }
 
       ImGuiViewport *l_Viewport = ImGui::GetMainViewport();
-      ImDrawList *l_DrawList = ImGui::GetForegroundDrawList(l_Viewport);
+      ImDrawList *l_DrawList =
+          ImGui::GetForegroundDrawList(l_Viewport);
       const float l_MenuHeight = l_RowHeight;
       ImVec2 l_BackgroundMin = l_Viewport->Pos;
       ImVec2 l_BackgroundMax = l_BackgroundMin + l_BlockSize;
@@ -198,20 +199,19 @@ namespace Low {
           l_BackgroundMin, l_BackgroundMax,
           ImGui::GetColorU32(ImGuiCol_MenuBarBg));
       const ImU32 l_BorderColor = ImGui::GetColorU32(ImGuiCol_Border);
-      l_DrawList->AddLine(l_BackgroundMin,
-                          ImVec2(l_BackgroundMax.x,
-                                 l_BackgroundMin.y),
-                          l_BorderColor);
-      l_DrawList->AddLine(l_BackgroundMin,
-                          ImVec2(l_BackgroundMin.x,
-                                 l_BackgroundMax.y),
-                          l_BorderColor);
-      l_DrawList->AddLine(ImVec2(l_BackgroundMin.x,
-                                 l_BackgroundMax.y),
-                          l_BackgroundMax, l_BorderColor);
       l_DrawList->AddLine(
-          ImVec2(l_BackgroundMax.x,
-                 l_Viewport->Pos.y + l_MenuHeight),
+          l_BackgroundMin,
+          ImVec2(l_BackgroundMax.x, l_BackgroundMin.y),
+          l_BorderColor);
+      l_DrawList->AddLine(
+          l_BackgroundMin,
+          ImVec2(l_BackgroundMin.x, l_BackgroundMax.y),
+          l_BorderColor);
+      l_DrawList->AddLine(
+          ImVec2(l_BackgroundMin.x, l_BackgroundMax.y),
+          l_BackgroundMax, l_BorderColor);
+      l_DrawList->AddLine(
+          ImVec2(l_BackgroundMax.x, l_Viewport->Pos.y + l_MenuHeight),
           l_BackgroundMax, l_BorderColor);
 
       ImVec2 l_ImageMin =
@@ -226,27 +226,25 @@ namespace Low {
         l_DrawList->AddImage(l_Logo.get_gpu().get_imgui_texture_id(),
                              l_ImageMin, l_ImageMax);
       } else {
-        l_DrawList->AddRectFilled(
-            l_ImageMin, l_ImageMax,
-            ImGui::GetColorU32(ImGuiCol_Button), 4.0f);
+        l_DrawList->AddRectFilled(l_ImageMin, l_ImageMax,
+                                  ImGui::GetColorU32(ImGuiCol_Button),
+                                  4.0f);
       }
       ImGui::Dummy(ImVec2(l_MenuOffset, 0.0f));
       ImGui::SameLine();
     }
 
-    static void render_title_bar_window_button(const char *p_Label,
-                                               bool p_Close,
-                                               std::function<void()> p_OnClick)
+    static void
+    render_title_bar_window_button(const char *p_Label, bool p_Close,
+                                   std::function<void()> p_OnClick)
     {
-      ImVec4 l_Hover =
-          p_Close ? ImVec4(0.75f, 0.12f, 0.12f, 1.0f)
-                  : ImVec4(0.22f, 0.22f, 0.22f, 1.0f);
-      ImVec4 l_Active =
-          p_Close ? ImVec4(0.88f, 0.16f, 0.16f, 1.0f)
-                  : ImVec4(0.28f, 0.28f, 0.28f, 1.0f);
+      ImVec4 l_Hover = p_Close ? ImVec4(0.75f, 0.12f, 0.12f, 1.0f)
+                               : ImVec4(0.22f, 0.22f, 0.22f, 1.0f);
+      ImVec4 l_Active = p_Close ? ImVec4(0.88f, 0.16f, 0.16f, 1.0f)
+                                : ImVec4(0.28f, 0.28f, 0.28f, 1.0f);
 
-      ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f,
-                                                    0.0f, 0.0f));
+      ImGui::PushStyleColor(ImGuiCol_Button,
+                            ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
       ImGui::PushStyleColor(ImGuiCol_ButtonHovered, l_Hover);
       ImGui::PushStyleColor(ImGuiCol_ButtonActive, l_Active);
       ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
@@ -266,19 +264,15 @@ namespace Low {
       const bool l_Maximized =
           (l_WindowFlags & SDL_WINDOW_MAXIMIZED) != 0;
 
-      render_title_bar_window_button(ICON_LC_MINUS, false, [&] {
-        l_Window.minimize();
-      });
+      render_title_bar_window_button(ICON_LC_MINUS, false,
+                                     [&] { l_Window.minimize(); });
       ImGui::SameLine(0.0f, 0.0f);
       render_title_bar_window_button(
           l_Maximized ? ICON_LC_MINIMIZE_2 : ICON_LC_MAXIMIZE_2,
-          false, [&] {
-            l_Window.maximize_or_restore();
-          });
+          false, [&] { l_Window.maximize_or_restore(); });
       ImGui::SameLine(0.0f, 0.0f);
-      render_title_bar_window_button(ICON_LC_X, true, [&] {
-        l_Window.request_close();
-      });
+      render_title_bar_window_button(
+          ICON_LC_X, true, [&] { l_Window.request_close(); });
     }
 
     void register_editor_widget(Low::Util::String p_Path,
@@ -566,18 +560,18 @@ namespace Low {
         ImGui::PopFont();
         ImGui::PopStyleColor();
 
-        const float l_ControlsLeft =
-            l_Viewport->WorkPos.x + l_Viewport->WorkSize.x -
-            l_ControlWidth;
-        ImGui::SameLine(l_ControlsLeft - l_Viewport->WorkPos.x,
-                        0.0f);
+        const float l_ControlsLeft = l_Viewport->WorkPos.x +
+                                     l_Viewport->WorkSize.x -
+                                     l_ControlWidth;
+        ImGui::SameLine(l_ControlsLeft - l_Viewport->WorkPos.x, 0.0f);
         render_title_bar_window_controls();
 
         Util::Window::get_main_window()
             .set_custom_title_bar_hit_zones(
                 static_cast<int>(ImGui::GetFrameHeight()),
                 static_cast<int>(l_Cursor.x),
-                static_cast<int>(l_ControlsLeft - l_Viewport->WorkPos.x));
+                static_cast<int>(l_ControlsLeft -
+                                 l_Viewport->WorkPos.x));
         ImGui::EndMainMenuBar();
 
         if (show_metrics)

@@ -112,6 +112,7 @@ namespace Low {
       };
 
       LOW_EXPORT void register_log_callback(LogCallback p_Callback);
+      LOW_EXPORT void set_console_output_enabled(bool p_Enabled);
 
       void initialize();
       void cleanup();

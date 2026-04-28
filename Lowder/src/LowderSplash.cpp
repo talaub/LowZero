@@ -204,20 +204,20 @@ namespace Lowder {
                                  l_TextHeight);
             l_LinePos = 128;
 #else
-            const float l_Scale = 0.20f;
+            const float l_Scale = 0.55f;
 
             const int l_TextWidth =
                 static_cast<int>(l_SourceWidth * l_Scale);
             const int l_TextHeight =
                 static_cast<int>(l_SourceHeight * l_Scale);
-            l_Graphics.DrawImage(g_TextLogo, 135, 15, l_TextWidth,
+            l_Graphics.DrawImage(g_TextLogo, 160, 80, l_TextWidth,
                                  l_TextHeight);
-            l_LinePos = 145;
+            l_LinePos = 150;
 #endif
           }
         }
 
-        HPEN l_AccentPen = CreatePen(PS_SOLID, 3, RGB(0, 104, 255));
+        HPEN l_AccentPen = CreatePen(PS_SOLID, 3, RGB(2, 173, 191));
         l_PreviousPen = SelectObject(l_MemoryDc, l_AccentPen);
         MoveToEx(l_MemoryDc, 164, l_LinePos, nullptr);
         LineTo(l_MemoryDc, SPLASH_WIDTH - 50, l_LinePos);
@@ -283,8 +283,8 @@ namespace Lowder {
         Gdiplus::GdiplusStartup(&g_GdiplusToken, &l_GdiplusInput,
                                 nullptr);
 
-        g_Logo = load_image("lowlogo.png");
-        g_TextLogo = load_image("lowtext.png");
+        g_Logo = load_image("lowlogo_90.png");
+        g_TextLogo = load_image("lowfont_500.png");
 
         HINSTANCE l_Instance = GetModuleHandle(nullptr);
         const char *l_ClassName = "LowEngineSplashWindow";

@@ -1,5 +1,14 @@
 #include <iostream>
 
+#ifndef LOW_HIDE_WINDOWS_CONSOLE
+#define LOW_HIDE_WINDOWS_CONSOLE 0
+#endif
+
+#if defined(_WIN32) && defined(_MSC_VER) && LOW_HIDE_WINDOWS_CONSOLE
+#pragma comment(linker, "/SUBSYSTEM:WINDOWS")
+#pragma comment(linker, "/ENTRY:mainCRTStartup")
+#endif
+
 #include "LowderSplash.h"
 
 #include "LowMath.h"
@@ -306,6 +315,8 @@ int run_low(bool p_IsHost, Low::Util::String p_ProjectPath)
 {
   Lowder::Splash::set_status("Initializing utility systems...");
   Low::Util::set_main_window_initially_hidden(true);
+  Low::Util::Log::set_console_output_enabled(
+      !LOW_HIDE_WINDOWS_CONSOLE);
   Low::Util::initialize();
 
   Low::Util::Globals::set(N(IS_HOST), p_IsHost);

@@ -16,6 +16,8 @@ namespace Low {
     LOW_EXPORT void tick(float p_Delta);
     LOW_EXPORT void cleanup();
     LOW_EXPORT void set_main_window_initially_hidden(bool p_Hidden);
+    LOW_EXPORT int execute_command(const String &p_Command,
+                                   bool p_HideWindow = true);
 
     struct Project
     {

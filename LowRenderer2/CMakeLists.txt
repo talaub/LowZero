@@ -89,6 +89,10 @@ target_compile_definitions(LowRenderer2 PRIVATE
   IMGUI_USER_CONFIG="${LOW_SOURCE_PATH}/LowRenderer2/include/LowRendererImguiConfig.h"
 )
 
+if (MSVC)
+  target_compile_options(LowRenderer2 PRIVATE /FS)
+endif()
+
 target_include_directories(LowRenderer2 PRIVATE
  ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/include
 )

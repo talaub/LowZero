@@ -261,6 +261,38 @@ namespace Low {
       g_MainWindowInitiallyHidden = p_Hidden;
     }
 
+    int execute_command(const String &p_Command, bool p_HideWindow)
+    {
+#ifdef _WIN32
+      STARTUPINFOA l_StartupInfo = {};
+      l_StartupInfo.cb = sizeof(l_StartupInfo);
+      if (p_HideWindow) {
+        l_StartupInfo.dwFlags = STARTF_USESHOWWINDOW;
+        l_StartupInfo.wShowWindow = SW_HIDE;
+      }
+
+      PROCESS_INFORMATION l_ProcessInfo = {};
+      String l_Command = p_Command;
+      if (!CreateProcessA(nullptr, l_Command.data(), nullptr, nullptr,
+                          FALSE,
+                          p_HideWindow ? CREATE_NO_WINDOW : 0, nullptr,
+                          nullptr, &l_StartupInfo, &l_ProcessInfo)) {
+        return -1;
+      }
+
+      WaitForSingleObject(l_ProcessInfo.hProcess, INFINITE);
+
+      DWORD l_ExitCode = 0;
+      GetExitCodeProcess(l_ProcessInfo.hProcess, &l_ExitCode);
+      CloseHandle(l_ProcessInfo.hThread);
+      CloseHandle(l_ProcessInfo.hProcess);
+      return static_cast<int>(l_ExitCode);
+#else
+      (void)p_HideWindow;
+      return system(p_Command.c_str());
+#endif
+    }
+
     void tick_handle_reference_resolvers(const float p_Delta);
 
     void tick(float p_Delta)
