@@ -181,7 +181,8 @@ namespace Low {
           Renderer::EditorImage::find_by_name(N(lowlogo_36));
       const float l_MenuOffset = 50.0f;
       const float l_RowHeight = ImGui::GetFrameHeight();
-      const ImVec2 l_BlockSize(l_MenuOffset, l_RowHeight * 2.0f);
+      const ImVec2 l_BlockSize(l_MenuOffset,
+                               (l_RowHeight * 2.0f) - 1.0f);
       const ImVec2 l_Size(36.0f, 36.0f);
 
       if (l_Logo.is_alive() &&
@@ -738,7 +739,7 @@ namespace Low {
       register_editor_widget("History", new ChangeWidget());
       // register_editor_widget("Resources", new ResourceWidget());
       g_FlodeWidget = new FlodeWidget();
-      register_editor_widget("Flode", g_FlodeWidget, false);
+      // register_editor_widget("Flode", g_FlodeWidget, false);
       register_editor_widget("UI-Views", new UiWidget(), false);
       register_editor_widget("Scripting errors",
                              new ScriptingErrorWidget, false);
@@ -833,7 +834,7 @@ namespace Low {
           !g_FocusedWidget->handle_shortcuts(p_Delta)) {
         handle_shortcuts(p_Delta);
       }
-      ImGui::ShowDemoWindow();
+      // ImGui::ShowDemoWindow();
 
       // ImGui::ShowMetricsWindow();
     }
