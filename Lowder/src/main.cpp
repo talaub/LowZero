@@ -111,6 +111,24 @@ Low::Util::List<f_funci> g_EditorModuleCleanup;
 Low::Util::List<f_funci> g_RuntimeModuleInitialize;
 Low::Util::List<f_funci> g_RuntimeModuleCleanup;
 
+static void tick_splash_shutdown(float p_Delta,
+                                 Low::Util::EngineState p_State)
+{
+  (void)p_Delta;
+  (void)p_State;
+
+  static uint32_t l_RenderedFrames = 0u;
+  static bool l_SplashClosed = false;
+  if (l_SplashClosed) {
+    return;
+  }
+
+  if (++l_RenderedFrames >= 5u) {
+    Lowder::Splash::stop();
+    l_SplashClosed = true;
+  }
+}
+
 void *operator new[](size_t size, const char *pName, int flags,
                      unsigned debugFlags, const char *file, int line)
 {
@@ -293,6 +311,8 @@ int run_low(bool p_IsHost, Low::Util::String p_ProjectPath)
   Low::Core::initialize();
 
   Low::Core::GameLoop::register_tick_callback(&Low::Editor::tick);
+  Low::Core::GameLoop::register_late_tick_callback(
+      &tick_splash_shutdown);
 
   if (0) {
     Low::Renderer::ResourceImporter::import_font("C:\\roboto.ttf",
@@ -321,7 +341,7 @@ int run_low(bool p_IsHost, Low::Util::String p_ProjectPath)
   Lowder::Splash::set_status("Loading user settings...");
   Low::Editor::load_user_settings();
 
-  Lowder::Splash::stop();
+  Lowder::Splash::set_status("Finalizing initialization...");
 
   Low::Core::GameLoop::start();
 

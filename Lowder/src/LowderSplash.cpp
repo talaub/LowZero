@@ -26,6 +26,7 @@ namespace Lowder {
       DWORD g_ThreadId = 0;
       HWND g_Window = nullptr;
       Gdiplus::Image *g_Logo = nullptr;
+      Gdiplus::Image *g_TextLogo = nullptr;
       ULONG_PTR g_GdiplusToken = 0;
       std::mutex g_StatusMutex;
       std::string g_Status = "Starting LowEngine...";
@@ -73,15 +74,19 @@ namespace Lowder {
         return p_Left + "\\" + p_Right;
       }
 
-      void add_logo_candidates(const std::string &p_Base,
-                               std::vector<std::string> &p_Candidates)
+      void
+      add_image_candidates(const std::string &p_Base,
+                           const char *p_FileName,
+                           std::vector<std::string> &p_Candidates)
       {
         std::string l_Current = p_Base;
         for (int i = 0; i < 8 && !l_Current.empty(); ++i) {
+          p_Candidates.push_back(
+              join_path(join_path(l_Current, "data\\.editor_images"),
+                        p_FileName));
           p_Candidates.push_back(join_path(
-              l_Current, "data\\.editor_images\\lowlogo.png"));
-          p_Candidates.push_back(join_path(
-              l_Current, "misteda\\data\\.editor_images\\lowlogo.png"));
+              join_path(l_Current, "misteda\\data\\.editor_images"),
+              p_FileName));
 
           size_t l_Pos = l_Current.find_last_of("\\/");
           if (l_Pos == std::string::npos) {
@@ -91,13 +96,14 @@ namespace Lowder {
         }
       }
 
-      std::string find_logo_path()
+      std::string find_image_path(const char *p_FileName)
       {
         std::vector<std::string> l_Candidates;
 
         char l_CurrentDirectory[MAX_PATH] = {};
         if (GetCurrentDirectoryA(MAX_PATH, l_CurrentDirectory) > 0) {
-          add_logo_candidates(l_CurrentDirectory, l_Candidates);
+          add_image_candidates(l_CurrentDirectory, p_FileName,
+                               l_Candidates);
         }
 
         char l_ModulePath[MAX_PATH] = {};
@@ -106,7 +112,8 @@ namespace Lowder {
           size_t l_Pos = l_ModuleDirectory.find_last_of("\\/");
           if (l_Pos != std::string::npos) {
             l_ModuleDirectory = l_ModuleDirectory.substr(0, l_Pos);
-            add_logo_candidates(l_ModuleDirectory, l_Candidates);
+            add_image_candidates(l_ModuleDirectory, p_FileName,
+                                 l_Candidates);
           }
         }
 
@@ -116,6 +123,22 @@ namespace Lowder {
           }
         }
         return "";
+      }
+
+      Gdiplus::Image *load_image(const char *p_FileName)
+      {
+        std::string l_Path = find_image_path(p_FileName);
+        if (l_Path.empty()) {
+          return nullptr;
+        }
+
+        Gdiplus::Image *l_Image =
+            Gdiplus::Image::FromFile(widen(l_Path).c_str());
+        if (l_Image && l_Image->GetLastStatus() != Gdiplus::Ok) {
+          delete l_Image;
+          return nullptr;
+        }
+        return l_Image;
       }
 
       void paint_splash(HWND p_Window)
@@ -153,38 +176,64 @@ namespace Lowder {
             Gdiplus::InterpolationModeHighQualityBicubic);
         l_Graphics.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
         if (g_Logo && g_Logo->GetLastStatus() == Gdiplus::Ok) {
-          l_Graphics.DrawImage(g_Logo, 48, 54, 88, 88);
+          l_Graphics.DrawImage(g_Logo, 48, 70, 88, 88);
         }
 
-        HFONT l_TitleFont = CreateFontA(
-            38, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE,
-            DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-            CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE,
-            "Segoe UI");
-        HGDIOBJ l_PreviousFont =
-            SelectObject(l_MemoryDc, l_TitleFont);
-        RECT l_TitleRect{164, 58, SPLASH_WIDTH - 48, 110};
-        DrawTextA(l_MemoryDc, "LowEngine", -1, &l_TitleRect,
-                  DT_LEFT | DT_SINGLELINE | DT_VCENTER);
-        SelectObject(l_MemoryDc, l_PreviousFont);
-        DeleteObject(l_TitleFont);
+        int l_LinePos = 128;
+
+        if (g_TextLogo &&
+            g_TextLogo->GetLastStatus() == Gdiplus::Ok) {
+          const int l_MaxTextWidth = SPLASH_WIDTH - 212;
+          const int l_MaxTextHeight = 48;
+          const float l_SourceWidth =
+              static_cast<float>(g_TextLogo->GetWidth());
+          const float l_SourceHeight =
+              static_cast<float>(g_TextLogo->GetHeight());
+          if (l_SourceWidth > 0.0f && l_SourceHeight > 0.0f) {
+#if 0 
+            float l_Scale = l_MaxTextHeight / l_SourceHeight;
+            if (l_SourceWidth * l_Scale > l_MaxTextWidth) {
+              l_Scale = l_MaxTextWidth / l_SourceWidth;
+            }
+            const int l_TextWidth =
+                static_cast<int>(l_SourceWidth * l_Scale);
+            const int l_TextHeight =
+                static_cast<int>(l_SourceHeight * l_Scale);
+            l_Graphics.DrawImage(g_TextLogo, 164,
+                                 82 - (l_TextHeight / 2), l_TextWidth,
+                                 l_TextHeight);
+            l_LinePos = 128;
+#else
+            const float l_Scale = 0.20f;
+
+            const int l_TextWidth =
+                static_cast<int>(l_SourceWidth * l_Scale);
+            const int l_TextHeight =
+                static_cast<int>(l_SourceHeight * l_Scale);
+            l_Graphics.DrawImage(g_TextLogo, 135, 15, l_TextWidth,
+                                 l_TextHeight);
+            l_LinePos = 145;
+#endif
+          }
+        }
 
         HPEN l_AccentPen = CreatePen(PS_SOLID, 3, RGB(0, 104, 255));
         l_PreviousPen = SelectObject(l_MemoryDc, l_AccentPen);
-        MoveToEx(l_MemoryDc, 164, 128, nullptr);
-        LineTo(l_MemoryDc, SPLASH_WIDTH - 50, 128);
+        MoveToEx(l_MemoryDc, 164, l_LinePos, nullptr);
+        LineTo(l_MemoryDc, SPLASH_WIDTH - 50, l_LinePos);
         SelectObject(l_MemoryDc, l_PreviousPen);
         DeleteObject(l_AccentPen);
 
         SetTextColor(l_MemoryDc, RGB(190, 184, 198));
-        HFONT l_StatusFont = CreateFontA(
-            18, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
-            DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-            CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE,
-            "Segoe UI");
-        l_PreviousFont = SelectObject(l_MemoryDc, l_StatusFont);
+        HFONT l_StatusFont =
+            CreateFontA(18, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+                        DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
+                        CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+                        DEFAULT_PITCH | FF_DONTCARE, "Segoe UI");
+        HGDIOBJ l_PreviousFont =
+            SelectObject(l_MemoryDc, l_StatusFont);
         std::string l_Status = get_status();
-        RECT l_StatusRect{50, 160, SPLASH_WIDTH - 50, 210};
+        RECT l_StatusRect{50, 200, SPLASH_WIDTH - 50, 240};
         DrawTextA(l_MemoryDc, l_Status.c_str(), -1, &l_StatusRect,
                   DT_LEFT | DT_SINGLELINE | DT_VCENTER |
                       DT_END_ELLIPSIS);
@@ -234,14 +283,8 @@ namespace Lowder {
         Gdiplus::GdiplusStartup(&g_GdiplusToken, &l_GdiplusInput,
                                 nullptr);
 
-        std::string l_LogoPath = find_logo_path();
-        if (!l_LogoPath.empty()) {
-          g_Logo = Gdiplus::Image::FromFile(widen(l_LogoPath).c_str());
-          if (g_Logo && g_Logo->GetLastStatus() != Gdiplus::Ok) {
-            delete g_Logo;
-            g_Logo = nullptr;
-          }
-        }
+        g_Logo = load_image("lowlogo.png");
+        g_TextLogo = load_image("lowtext.png");
 
         HINSTANCE l_Instance = GetModuleHandle(nullptr);
         const char *l_ClassName = "LowEngineSplashWindow";
@@ -285,6 +328,8 @@ namespace Lowder {
 
         delete g_Logo;
         g_Logo = nullptr;
+        delete g_TextLogo;
+        g_TextLogo = nullptr;
         if (g_GdiplusToken != 0) {
           Gdiplus::GdiplusShutdown(g_GdiplusToken);
           g_GdiplusToken = 0;

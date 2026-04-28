@@ -60,6 +60,7 @@ namespace Low {
       uint64_t g_Frames = 0ull;
 
       Util::List<System::TickCallback> g_TickCallbacks;
+      Util::List<System::TickCallback> g_LateTickCallbacks;
 
       // FIX: Remove test code
       Low::Renderer::UiRenderObject g_FontRenderObject;
@@ -180,6 +181,12 @@ namespace Low {
 
         Input::late_tick(p_Delta);
         Renderer::tick(p_Delta);
+
+        for (auto it = g_LateTickCallbacks.begin();
+             it != g_LateTickCallbacks.end(); ++it) {
+          (*it)(p_Delta, get_engine_state());
+        }
+
         l_FirstRun = false;
       }
 
@@ -375,6 +382,11 @@ namespace Low {
       void register_tick_callback(System::TickCallback p_Callback)
       {
         g_TickCallbacks.push_back(p_Callback);
+      }
+
+      void register_late_tick_callback(System::TickCallback p_Callback)
+      {
+        g_LateTickCallbacks.push_back(p_Callback);
       }
 
       uint32_t get_fps()
