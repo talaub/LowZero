@@ -5,6 +5,8 @@
 #include "LowUtilContainers.h"
 #include "LowUtilString.h"
 
+#include <cstdint>
+
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
 
@@ -71,11 +73,26 @@ namespace Low {
 
       bool shouldClose = false;
       bool minimized = false;
+      bool customDecorations = false;
+      int customTitleBarHeight = 0;
+      int customTitleBarInteractiveLeft = 0;
+      int customTitleBarControlsLeft = 0;
+      int customResizeBorder = 6;
+      void *nativeHandle = nullptr;
+      void *nativeWndProc = nullptr;
+      std::intptr_t nativeStyle = 0;
 
       typedef bool (*EventCallback)(const SDL_Event *);
       Util::List<EventCallback> eventCallbacks;
 
       void get_size(int *p_Width, int *p_Height);
+      void set_custom_decorations(bool p_Enabled);
+      void set_custom_title_bar_hit_zones(int p_Height,
+                                          int p_InteractiveLeft,
+                                          int p_ControlsLeft);
+      void minimize();
+      void maximize_or_restore();
+      void request_close();
 
       static Window &get_main_window();
     };

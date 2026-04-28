@@ -12,13 +12,205 @@
 
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
+#include <SDL_syswm.h>
 #include <SDL_vulkan.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#include <windowsx.h>
+#endif
 
 namespace Low {
   namespace Util {
     Project g_Project;
 
     Low::Util::Window g_MainWindow;
+
+#ifdef _WIN32
+    static LRESULT CALLBACK custom_window_proc(HWND p_Hwnd,
+                                               UINT p_Message,
+                                               WPARAM p_WParam,
+                                               LPARAM p_LParam)
+    {
+      if (p_Message == WM_NCCALCSIZE &&
+          g_MainWindow.customDecorations &&
+          p_Hwnd == static_cast<HWND>(g_MainWindow.nativeHandle)) {
+        return 0;
+      }
+
+      if (p_Message == WM_NCHITTEST &&
+          g_MainWindow.customDecorations &&
+          p_Hwnd == static_cast<HWND>(g_MainWindow.nativeHandle)) {
+        POINT l_Point{GET_X_LPARAM(p_LParam),
+                      GET_Y_LPARAM(p_LParam)};
+        ScreenToClient(p_Hwnd, &l_Point);
+
+        RECT l_ClientRect{};
+        GetClientRect(p_Hwnd, &l_ClientRect);
+
+        const int l_Width = l_ClientRect.right - l_ClientRect.left;
+        const int l_Height = l_ClientRect.bottom - l_ClientRect.top;
+        const int l_Border = g_MainWindow.customResizeBorder;
+
+        if (l_Point.y < g_MainWindow.customTitleBarHeight &&
+            l_Point.x >= g_MainWindow.customTitleBarControlsLeft) {
+          return HTCLIENT;
+        }
+
+        const bool l_Left = l_Point.x < l_Border;
+        const bool l_Right = l_Point.x >= l_Width - l_Border;
+        const bool l_Top = l_Point.y < l_Border;
+        const bool l_Bottom = l_Point.y >= l_Height - l_Border;
+
+        if (l_Left && l_Top) {
+          return HTTOPLEFT;
+        }
+        if (l_Right && l_Top) {
+          return HTTOPRIGHT;
+        }
+        if (l_Left && l_Bottom) {
+          return HTBOTTOMLEFT;
+        }
+        if (l_Right && l_Bottom) {
+          return HTBOTTOMRIGHT;
+        }
+        if (l_Top) {
+          return HTTOP;
+        }
+        if (l_Bottom) {
+          return HTBOTTOM;
+        }
+        if (l_Left) {
+          return HTLEFT;
+        }
+        if (l_Right) {
+          return HTRIGHT;
+        }
+
+        if (l_Point.y < g_MainWindow.customTitleBarHeight &&
+            l_Point.x >= g_MainWindow.customTitleBarInteractiveLeft &&
+            l_Point.x < g_MainWindow.customTitleBarControlsLeft) {
+          return HTCAPTION;
+        }
+      }
+
+      WNDPROC l_Previous =
+          reinterpret_cast<WNDPROC>(g_MainWindow.nativeWndProc);
+      if (l_Previous) {
+        return CallWindowProc(l_Previous, p_Hwnd, p_Message,
+                              p_WParam, p_LParam);
+      }
+      return DefWindowProc(p_Hwnd, p_Message, p_WParam, p_LParam);
+    }
+
+    static void install_custom_window_proc(Window &p_Window)
+    {
+      SDL_SysWMinfo l_Info;
+      SDL_VERSION(&l_Info.version);
+      if (!SDL_GetWindowWMInfo(p_Window.sdlwindow, &l_Info)) {
+        return;
+      }
+
+      HWND l_Hwnd = l_Info.info.win.window;
+      p_Window.nativeHandle = l_Hwnd;
+
+      LONG_PTR l_Style = GetWindowLongPtr(l_Hwnd, GWL_STYLE);
+      if (!p_Window.nativeStyle) {
+        p_Window.nativeStyle = static_cast<std::intptr_t>(l_Style);
+      }
+      l_Style &= ~WS_POPUP;
+      l_Style |= WS_OVERLAPPEDWINDOW;
+      SetWindowLongPtr(l_Hwnd, GWL_STYLE, l_Style);
+
+      if (!p_Window.nativeWndProc) {
+        p_Window.nativeWndProc =
+            reinterpret_cast<void *>(SetWindowLongPtr(
+                l_Hwnd, GWLP_WNDPROC,
+                reinterpret_cast<LONG_PTR>(custom_window_proc)));
+      }
+
+      SetWindowPos(l_Hwnd, nullptr, 0, 0, 0, 0,
+                   SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+                       SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+    }
+
+    static void restore_custom_window_proc(Window &p_Window)
+    {
+      if (!p_Window.nativeHandle || !p_Window.nativeWndProc) {
+        return;
+      }
+
+      SetWindowLongPtr(
+          static_cast<HWND>(p_Window.nativeHandle), GWLP_WNDPROC,
+          reinterpret_cast<LONG_PTR>(p_Window.nativeWndProc));
+      p_Window.nativeWndProc = nullptr;
+      if (p_Window.nativeStyle) {
+        SetWindowLongPtr(static_cast<HWND>(p_Window.nativeHandle),
+                         GWL_STYLE,
+                         static_cast<LONG_PTR>(p_Window.nativeStyle));
+      }
+    }
+#endif
+
+    static SDL_HitTestResult custom_window_hit_test(SDL_Window *p_Window,
+                                                    const SDL_Point *p_Area,
+                                                    void *p_Data)
+    {
+      Window *l_Window = static_cast<Window *>(p_Data);
+      if (!l_Window || !l_Window->customDecorations ||
+          p_Window != l_Window->sdlwindow) {
+        return SDL_HITTEST_NORMAL;
+      }
+
+      int l_Width = 0;
+      int l_Height = 0;
+      SDL_GetWindowSize(p_Window, &l_Width, &l_Height);
+
+      const int l_Border = l_Window->customResizeBorder;
+
+      if (p_Area->y < l_Window->customTitleBarHeight &&
+          p_Area->x >= l_Window->customTitleBarControlsLeft) {
+        return SDL_HITTEST_NORMAL;
+      }
+
+      const bool l_Left = p_Area->x < l_Border;
+      const bool l_Right = p_Area->x >= l_Width - l_Border;
+      const bool l_Top = p_Area->y < l_Border;
+      const bool l_Bottom = p_Area->y >= l_Height - l_Border;
+
+      if (l_Left && l_Top) {
+        return SDL_HITTEST_RESIZE_TOPLEFT;
+      }
+      if (l_Right && l_Top) {
+        return SDL_HITTEST_RESIZE_TOPRIGHT;
+      }
+      if (l_Left && l_Bottom) {
+        return SDL_HITTEST_RESIZE_BOTTOMLEFT;
+      }
+      if (l_Right && l_Bottom) {
+        return SDL_HITTEST_RESIZE_BOTTOMRIGHT;
+      }
+      if (l_Top) {
+        return SDL_HITTEST_RESIZE_TOP;
+      }
+      if (l_Bottom) {
+        return SDL_HITTEST_RESIZE_BOTTOM;
+      }
+      if (l_Left) {
+        return SDL_HITTEST_RESIZE_LEFT;
+      }
+      if (l_Right) {
+        return SDL_HITTEST_RESIZE_RIGHT;
+      }
+
+      if (p_Area->y < l_Window->customTitleBarHeight &&
+          p_Area->x >= l_Window->customTitleBarInteractiveLeft &&
+          p_Area->x < l_Window->customTitleBarControlsLeft) {
+        return SDL_HITTEST_DRAGGABLE;
+      }
+
+      return SDL_HITTEST_NORMAL;
+    }
 
     void initialize()
     {
@@ -49,9 +241,11 @@ namespace Low {
 
         g_MainWindow.shouldClose = false;
         g_MainWindow.minimized = false;
+        g_MainWindow.customResizeBorder = 10;
         g_MainWindow.sdlwindow = SDL_CreateWindow(
             "LowEngine", SDL_WINDOWPOS_UNDEFINED,
             SDL_WINDOWPOS_UNDEFINED, 1280, 720, window_flags);
+        g_MainWindow.set_custom_decorations(true);
       }
 
       LOW_LOG_INFO << "Util initialized" << LOW_LOG_END;
@@ -280,6 +474,74 @@ namespace Low {
     void Window::get_size(int *p_Width, int *p_Height)
     {
       SDL_GetWindowSize(sdlwindow, p_Width, p_Height);
+    }
+
+    void Window::set_custom_decorations(bool p_Enabled)
+    {
+      customDecorations = p_Enabled;
+#ifndef _WIN32
+      SDL_SetWindowBordered(sdlwindow, p_Enabled ? SDL_FALSE
+                                                 : SDL_TRUE);
+#endif
+#ifdef _WIN32
+      if (p_Enabled) {
+        install_custom_window_proc(*this);
+      } else {
+        restore_custom_window_proc(*this);
+      }
+#endif
+      SDL_SetWindowHitTest(sdlwindow,
+                           p_Enabled ? custom_window_hit_test
+                                     : nullptr,
+                           p_Enabled ? this : nullptr);
+    }
+
+    void Window::set_custom_title_bar_hit_zones(
+        int p_Height, int p_InteractiveLeft, int p_ControlsLeft)
+    {
+      customTitleBarHeight = p_Height;
+      customTitleBarInteractiveLeft = p_InteractiveLeft;
+      customTitleBarControlsLeft = p_ControlsLeft;
+    }
+
+    void Window::minimize()
+    {
+#ifdef _WIN32
+      if (nativeHandle) {
+        SendMessage(static_cast<HWND>(nativeHandle), WM_SYSCOMMAND,
+                    SC_MINIMIZE, 0);
+        return;
+      }
+#endif
+      SDL_MinimizeWindow(sdlwindow);
+    }
+
+    void Window::maximize_or_restore()
+    {
+#ifdef _WIN32
+      if (nativeHandle) {
+        HWND l_Hwnd = static_cast<HWND>(nativeHandle);
+        SendMessage(l_Hwnd, WM_SYSCOMMAND,
+                    IsZoomed(l_Hwnd) ? SC_RESTORE : SC_MAXIMIZE, 0);
+        return;
+      }
+#endif
+      if ((SDL_GetWindowFlags(sdlwindow) & SDL_WINDOW_MAXIMIZED) !=
+          0) {
+        SDL_RestoreWindow(sdlwindow);
+      } else {
+        SDL_MaximizeWindow(sdlwindow);
+      }
+    }
+
+    void Window::request_close()
+    {
+#ifdef _WIN32
+      if (nativeHandle) {
+        PostMessage(static_cast<HWND>(nativeHandle), WM_CLOSE, 0, 0);
+      }
+#endif
+      shouldClose = true;
     }
   } // namespace Util
 } // namespace Low

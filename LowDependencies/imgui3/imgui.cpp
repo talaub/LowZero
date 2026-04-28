@@ -1158,6 +1158,16 @@ IMPLEMENTING SUPPORT for ImGuiBackendFlags_RendererHasTextures:
 
 #include "imgui_stacklayout_internal.h"
 
+// LowEngine: keep dock node tab bars visible and remove the dock window menu
+// button (the arrow button that exposes "Hide tab bar"). The code paths are
+// left in place and can be re-enabled by defining this to 1 before building.
+#ifndef IMGUI_LOWENGINE_ENABLE_DOCK_WINDOW_MENU_BUTTON
+#define IMGUI_LOWENGINE_ENABLE_DOCK_WINDOW_MENU_BUTTON 0
+#endif
+#ifndef IMGUI_LOWENGINE_DOCK_TAB_BAR_LEFT_OFFSET
+#define IMGUI_LOWENGINE_DOCK_TAB_BAR_LEFT_OFFSET 50.0f
+#endif
+
 // System includes
 #include <stdio.h>      // vsnprintf, sscanf, printf
 #include <stdint.h>     // intptr_t
@@ -7412,7 +7422,7 @@ void ImGui::RenderWindowDecorations(ImGuiWindow* window, const ImRect& title_bar
 
         // Docking: Unhide tab bar (small triangle in the corner), drag from small triangle to quickly undock
         ImGuiDockNode* node = window->DockNode;
-        if (window->DockIsActive && node->IsHiddenTabBar() && !node->IsNoTabBar())
+        if (IMGUI_LOWENGINE_ENABLE_DOCK_WINDOW_MENU_BUTTON && window->DockIsActive && node->IsHiddenTabBar() && !node->IsNoTabBar())
         {
             float unhide_sz_draw = ImTrunc(g.FontSize * 0.70f);
             float unhide_sz_hit = ImTrunc(g.FontSize * 0.55f);
@@ -7624,6 +7634,8 @@ static void SetWindowActiveForSkipRefresh(ImGuiWindow* window)
 // - Passing 'bool* p_open' displays a Close button on the upper-right corner of the window, the pointed value will be set to false when the button is pressed.
 bool ImGui::Begin(const char* name, bool* p_open, ImGuiWindowFlags flags)
 {
+    flags |= ImGuiWindowFlags_NoCollapse;
+
     ImGuiContext& g = *GImGui;
     const ImGuiStyle& style = g.Style;
     IM_ASSERT(name != NULL && name[0] != '\0');     // Window name required
@@ -18481,7 +18493,12 @@ static void ImGui::DockNodeUpdateFlagsAndCollapse(ImGuiDockNode* node)
 
     // Auto-hide tab bar option
     ImGuiDockNodeFlags node_flags = node->MergedFlags;
-    if (node->WantHiddenTabBarUpdate && node->Windows.Size == 1 && (node_flags & ImGuiDockNodeFlags_AutoHideTabBar) && !node->IsHiddenTabBar())
+#if !IMGUI_LOWENGINE_ENABLE_DOCK_WINDOW_MENU_BUTTON
+    if (node->IsHiddenTabBar())
+        node->SetLocalFlags(node->LocalFlags & ~ImGuiDockNodeFlags_HiddenTabBar);
+    node_flags = node->MergedFlags;
+#endif
+    if (IMGUI_LOWENGINE_ENABLE_DOCK_WINDOW_MENU_BUTTON && node->WantHiddenTabBarUpdate && node->Windows.Size == 1 && (node_flags & ImGuiDockNodeFlags_AutoHideTabBar) && !node->IsHiddenTabBar())
         node->WantHiddenTabBarToggle = true;
     node->WantHiddenTabBarUpdate = false;
 
@@ -18683,7 +18700,7 @@ static void ImGui::DockNodeUpdate(ImGuiDockNode* node)
     const ImGuiDockNodeFlags node_flags = node->MergedFlags;
 
     // Decide if the node will have a close button and a window menu button
-    node->HasWindowMenuButton = (node->Windows.Size > 0) && (node_flags & ImGuiDockNodeFlags_NoWindowMenuButton) == 0;
+    node->HasWindowMenuButton = IMGUI_LOWENGINE_ENABLE_DOCK_WINDOW_MENU_BUTTON && (node->Windows.Size > 0) && (node_flags & ImGuiDockNodeFlags_NoWindowMenuButton) == 0;
     node->HasCloseButton = false;
     for (ImGuiWindow* window : node->Windows)
     {
@@ -19060,7 +19077,7 @@ static void ImGui::DockNodeUpdateTabBar(ImGuiDockNode* node, ImGuiWindow* host_w
     node->IsFocused = is_focused;
 
     const ImGuiDockNodeFlags node_flags = node->MergedFlags;
-    const bool has_window_menu_button = (node_flags & ImGuiDockNodeFlags_NoWindowMenuButton) == 0 && (style.WindowMenuButtonPosition != ImGuiDir_None);
+    const bool has_window_menu_button = IMGUI_LOWENGINE_ENABLE_DOCK_WINDOW_MENU_BUTTON && (node_flags & ImGuiDockNodeFlags_NoWindowMenuButton) == 0 && (style.WindowMenuButtonPosition != ImGuiDir_None);
 
     // In a dock node, the Collapse Button turns into the Window Menu button.
     // FIXME-DOCK FIXME-OPT: Could we recycle popups id across multiple dock nodes?
@@ -19374,6 +19391,9 @@ static void ImGui::DockNodeCalcTabBarLayout(const ImGuiDockNode* node, ImRect* o
         window_menu_button_pos = ImVec2(r.Max.x - button_sz, r.Min.y + style.FramePadding.y);
         r.Max.x -= button_sz + style.ItemInnerSpacing.x;
     }
+#if !IMGUI_LOWENGINE_ENABLE_DOCK_WINDOW_MENU_BUTTON
+    r.Min.x += IMGUI_LOWENGINE_DOCK_TAB_BAR_LEFT_OFFSET;
+#endif
     if (out_tab_bar_rect) { *out_tab_bar_rect = r; }
     if (out_window_menu_button_pos) { *out_window_menu_button_pos = window_menu_button_pos; }
 }
@@ -19506,7 +19526,7 @@ static void ImGui::DockNodePreviewDockSetup(ImGuiWindow* host_window, ImGuiDockN
 
     // Build a tentative future node (reuse same structure because it is practical. Shape will be readjusted when previewing a split)
     data->FutureNode.HasCloseButton = (host_node ? host_node->HasCloseButton : host_window->HasCloseButton) || (payload_window->HasCloseButton);
-    data->FutureNode.HasWindowMenuButton = host_node ? true : ((host_window->Flags & ImGuiWindowFlags_NoCollapse) == 0);
+    data->FutureNode.HasWindowMenuButton = IMGUI_LOWENGINE_ENABLE_DOCK_WINDOW_MENU_BUTTON && (host_node ? true : ((host_window->Flags & ImGuiWindowFlags_NoCollapse) == 0));
     data->FutureNode.Pos = ref_node_for_rect ? ref_node_for_rect->Pos : host_window->Pos;
     data->FutureNode.Size = ref_node_for_rect ? ref_node_for_rect->Size : host_window->Size;
 
