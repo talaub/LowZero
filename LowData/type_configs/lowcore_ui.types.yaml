@@ -315,6 +315,7 @@ types:
         type: uint64_t
       local_id:
         type: uint64_t
+        expose_scripting: true
     functions:
       make:
         static: true

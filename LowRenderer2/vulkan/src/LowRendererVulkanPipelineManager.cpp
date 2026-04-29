@@ -23,6 +23,7 @@ namespace Low {
         static bool compile_shader(Util::String p_SourcePath,
                                    Util::String p_OutPath)
         {
+#if 0
           Util::String l_IncludeCommand =
               "-I " + Util::get_project().engineDataPath +
               "\\lowr_shaders\\lib";
@@ -35,6 +36,7 @@ namespace Low {
 
           LOW_LOG_DEBUG << l_Notice << LOW_LOG_END;
           Util::execute_command(l_Command);
+#endif
 
           return true;
         }
@@ -200,6 +202,6 @@ namespace Low {
           return true;
         }
       } // namespace PipelineManager
-    }   // namespace Vulkan
-  }     // namespace Renderer
+    } // namespace Vulkan
+  } // namespace Renderer
 } // namespace Low

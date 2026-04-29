@@ -17,7 +17,8 @@ namespace Low {
             }
 
             virtual Util::String
-            get_title(const Graph &p_Graph, NodeId p_NodeId) const override
+            get_title(const Graph &p_Graph,
+                      NodeId p_NodeId) const override
             {
               (void)p_Graph;
               (void)p_NodeId;
@@ -43,32 +44,34 @@ namespace Low {
             }
 
             virtual Util::String
-            get_icon(const Graph &p_Graph, NodeId p_NodeId) const override
+            get_icon(const Graph &p_Graph,
+                     NodeId p_NodeId) const override
             {
               (void)p_Graph;
               (void)p_NodeId;
               return ICON_CI_BUG;
             }
 
-            virtual ImU32
-            get_color(const Graph &p_Graph, NodeId p_NodeId) const override
+            virtual ImU32 get_color(const Graph &p_Graph,
+                                    NodeId p_NodeId) const override
             {
               (void)p_Graph;
               (void)p_NodeId;
               return IM_COL32(102, 113, 115, 255);
             }
 
-            virtual void
-            setup_default_pins(Graph &p_Graph, NodeId p_NodeId,
-                               const NodeGraphSchema *p_Schema) const
-                override
+            virtual void setup_default_pins(
+                Graph &p_Graph, NodeId p_NodeId,
+                const NodeGraphSchema *p_Schema) const override
             {
-              Editor::Pin l_ExecIn = make_input_pin(p_Graph, p_NodeId);
+              Editor::Pin l_ExecIn =
+                  make_input_pin(p_Graph, p_NodeId);
               Pin l_ExecInMetadata =
                   make_execution_pin_metadata("Exec");
               p_Graph.add_pin(l_ExecIn, l_ExecInMetadata, p_Schema);
 
-              Editor::Pin l_ExecOut = make_output_pin(p_Graph, p_NodeId);
+              Editor::Pin l_ExecOut =
+                  make_output_pin(p_Graph, p_NodeId);
               Pin l_ExecOutMetadata =
                   make_execution_pin_metadata("Then");
               p_Graph.add_pin(l_ExecOut, l_ExecOutMetadata, p_Schema);
@@ -79,23 +82,23 @@ namespace Low {
                   make_string_pin_metadata("Message");
               l_MessageInMetadata.default_value =
                   Util::Variant(Util::String(""));
-              p_Graph.add_pin(l_MessageIn, l_MessageInMetadata, p_Schema);
+              p_Graph.add_pin(l_MessageIn, l_MessageInMetadata,
+                              p_Schema);
             }
 
-            virtual void compile(Graph &p_Graph, NodeId p_NodeId,
-                                 CompileContext &p_CompileContext) const
-                override
+            virtual void
+            compile(Graph &p_Graph, NodeId p_NodeId,
+                    CompileContext &p_CompileContext) const override
             {
               const Pin *l_MessagePin =
                   p_Graph.find_input_pin_checked(p_NodeId, "Message");
               const Pin *l_ThenPin =
                   p_Graph.find_output_pin_checked(p_NodeId, "Then");
 
-              p_CompileContext.main_code.append("LOW_LOG_DEBUG << ");
+              p_CompileContext.main_code.append("Log::info(");
               compile_input_pin(p_Graph, p_NodeId, l_MessagePin->pin,
-                                        p_CompileContext);
-              p_CompileContext.main_code.append(" << LOW_LOG_END;")
-                  .endl();
+                                p_CompileContext);
+              p_CompileContext.main_code.append(");").endl();
 
               p_Graph.continue_compilation(l_ThenPin->pin,
                                            p_CompileContext);

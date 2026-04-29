@@ -1236,6 +1236,19 @@ static void expose_LowCore_Element(asIScriptEngine *p_Engine)
                      "click_passthrough of Low::Core::UI::Element.");
 
   r = p_Engine->RegisterObjectMethod(
+      "Element", "u64 get_local_id() const property",
+      asMETHOD(Low::Core::UI::Element, get_local_id),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property getter for local_id "
+                     "of Low::Core::UI::Element.");
+  r = p_Engine->RegisterObjectMethod(
+      "Element", "void set_local_id(u64) property",
+      asMETHOD(Low::Core::UI::Element, set_local_id),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property setter for local_id "
+                     "of Low::Core::UI::Element.");
+
+  r = p_Engine->RegisterObjectMethod(
       "Element", "Name get_name() const property",
       asMETHOD(Low::Core::UI::Element, get_name), asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property getter for name of "
@@ -1398,13 +1411,13 @@ static void expose_LowCore_Display(asIScriptEngine *p_Engine)
                      "Low::Core::UI::Component::Display.");
 
   r = p_Engine->RegisterObjectMethod(
-      "Display", "u64 get_parent() const property",
+      "Display", "Display get_parent() const property",
       asMETHOD(Low::Core::UI::Component::Display, get_parent),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property getter for parent of "
                      "Low::Core::UI::Component::Display.");
   r = p_Engine->RegisterObjectMethod(
-      "Display", "void set_parent(u64) property",
+      "Display", "void set_parent(Display) property",
       asMETHOD(Low::Core::UI::Component::Display, set_parent),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for parent of "

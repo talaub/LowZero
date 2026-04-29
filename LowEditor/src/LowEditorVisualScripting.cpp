@@ -1,5 +1,6 @@
 #include "LowEditorVisualScripting.h"
 #include "LowEditorVisualScriptEditor.h"
+#include "LowEditorVisualScriptNodes.h"
 
 #include "LowEditorFonts.h"
 #include "LowEditorGui.h"
@@ -600,8 +601,81 @@ namespace Low {
           Graph &p_Graph,
           Util::List<CompileEntryPoint> &p_EntryPoints) const
       {
-        (void)p_Graph;
-        (void)p_EntryPoints;
+        u32 l_EntryIndex = 0;
+
+        for (const Low::Editor::Node &i_Node : p_Graph.graph.nodes) {
+          const Node *l_NodeMetadata = p_Graph.find_node(i_Node.id);
+          if (!l_NodeMetadata ||
+              l_NodeMetadata->node_class !=
+                  N(vs_uicontroller_element_event)) {
+            continue;
+          }
+
+          const UiControllerNodes::ElementEventNodeData *l_Data =
+              p_Graph.get_node_user_data<
+                  UiControllerNodes::ElementEventNodeData>(i_Node.id);
+
+          PinId l_ExecutionOutputPin;
+          Util::List<Low::Editor::Pin *> l_NodePins =
+              p_Graph.graph.get_node_pins(i_Node.id);
+          for (const Low::Editor::Pin *i_Pin : l_NodePins) {
+            const Pin *l_PinMetadata = p_Graph.find_pin(i_Pin->id);
+            if (!l_PinMetadata ||
+                l_PinMetadata->type != PinType::Execution ||
+                i_Pin->direction != PinDirection::Output) {
+              continue;
+            }
+
+            l_ExecutionOutputPin = i_Pin->id;
+            break;
+          }
+
+          if (!l_ExecutionOutputPin.is_valid()) {
+            continue;
+          }
+
+          Util::String l_InteractionPrefix = "on_click";
+          if (l_Data) {
+            switch (l_Data->interaction_type) {
+            case UiControllerNodes::InteractionType::MouseEnter:
+              l_InteractionPrefix = "on_mouse_enter";
+              break;
+            case UiControllerNodes::InteractionType::MouseExit:
+              l_InteractionPrefix = "on_mouse_exit";
+              break;
+            case UiControllerNodes::InteractionType::Click:
+            default:
+              l_InteractionPrefix = "on_click";
+              break;
+            }
+          }
+
+          Util::String l_ElementName =
+              l_Data && l_Data->element_name.is_valid()
+                  ? Util::String(l_Data->element_name.c_str())
+                  : Util::String("element");
+          Util::String l_FunctionName = make_script_identifier(
+              l_InteractionPrefix + Util::String("_") + l_ElementName,
+              Util::String("on_click_element"));
+
+          if (l_Data && l_Data->element_local_id != 0) {
+            l_FunctionName += "_";
+            l_FunctionName += LOW_TO_STRING(l_Data->element_local_id);
+          } else if (l_EntryIndex > 0) {
+            l_FunctionName += "_";
+            l_FunctionName += LOW_TO_STRING(l_EntryIndex);
+          }
+
+          CompileEntryPoint l_Entry;
+          l_Entry.node = i_Node.id;
+          l_Entry.execution_output_pin = l_ExecutionOutputPin;
+          l_Entry.function_name = l_FunctionName;
+          l_Entry.function_signature = Util::String("void ") +
+                                       l_FunctionName +
+                                       "(UI::Element element)";
+          p_EntryPoints.push_back(l_Entry);
+          ++l_EntryIndex;
+        }
       }
 
       void UiControllerCompileProfile::emit_entry_point(
@@ -639,13 +713,60 @@ namespace Low {
 
         Util::List<CompileEntryPoint> l_EntryPoints;
         collect_entry_points(p_Graph, l_EntryPoints);
+        LOW_LOG_DEBUG << "EP: " << l_EntryPoints.size()
+                      << LOW_LOG_END;
+        for (int i = 0; i < l_EntryPoints.size(); ++i) {
+          LOW_LOG_DEBUG << "Entry: " << l_EntryPoints[i].function_name
+                        << LOW_LOG_END;
+        }
 
         for (const CompileEntryPoint &i_Entry : l_EntryPoints) {
           emit_entry_point(p_Graph, i_Entry, p_Context);
         }
 
-        p_Context.append_line("void on_click(UI::Element element) {");
-        p_Context.append_line("}");
+        auto l_EmitInteractionDispatcher =
+            [&](const char *p_MethodName,
+                UiControllerNodes::InteractionType
+                    p_InteractionType) {
+              p_Context.begin_block(Util::String("void ") +
+                                    p_MethodName +
+                                    "(UI::Element element)");
+
+              for (const CompileEntryPoint &i_Entry : l_EntryPoints) {
+                const UiControllerNodes::ElementEventNodeData
+                    *l_Data = p_Graph.get_node_user_data<
+                        UiControllerNodes::ElementEventNodeData>(
+                        i_Entry.node);
+                if (!l_Data ||
+                    l_Data->interaction_type != p_InteractionType) {
+                  continue;
+                }
+
+                if (l_Data->element_local_id != 0) {
+                  p_Context.begin_block(
+                      Util::String("if (element.local_id == ") +
+                      LOW_TO_STRING(l_Data->element_local_id) + ")");
+                  p_Context.append_line(i_Entry.function_name +
+                                        "(element);");
+                  p_Context.end_block();
+                } else {
+                  p_Context.append_line(i_Entry.function_name +
+                                        "(element);");
+                }
+              }
+
+              p_Context.end_block();
+              p_Context.main_code.append("\n");
+            };
+
+        l_EmitInteractionDispatcher(
+            "on_click", UiControllerNodes::InteractionType::Click);
+        l_EmitInteractionDispatcher(
+            "on_mouse_enter",
+            UiControllerNodes::InteractionType::MouseEnter);
+        l_EmitInteractionDispatcher(
+            "on_mouse_exit",
+            UiControllerNodes::InteractionType::MouseExit);
 
         p_Context.end_block(";");
       }
@@ -1277,7 +1398,8 @@ namespace Low {
           return;
         }
 
-        l_NodeMetadata->title = l_NodeClass->get_title(*this, p_NodeId);
+        l_NodeMetadata->title =
+            l_NodeClass->get_title(*this, p_NodeId);
         l_NodeMetadata->subtitle =
             l_NodeClass->get_subtitle(*this, p_NodeId);
         l_NodeMetadata->category =

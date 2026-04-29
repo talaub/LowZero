@@ -1,7 +1,7 @@
 #include <iostream>
 
 #ifndef LOW_HIDE_WINDOWS_CONSOLE
-#define LOW_HIDE_WINDOWS_CONSOLE 1
+#define LOW_HIDE_WINDOWS_CONSOLE 0
 #endif
 
 #if defined(_WIN32) && defined(_MSC_VER) && LOW_HIDE_WINDOWS_CONSOLE
