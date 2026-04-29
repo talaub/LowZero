@@ -105,8 +105,6 @@ namespace Low {
           Scripting::initialize_as();
         }
 
-        LOW_ASSERT(g_Frames < 220, "Testcrash");
-
         Renderer::prepare_tick(p_Delta);
         System::Transform::tick(p_Delta, get_engine_state());
         UI::System::View::tick(p_Delta, get_engine_state());
