@@ -10,6 +10,7 @@
 #endif
 
 #include "LowderSplash.h"
+#include "LowderCrashReporter.h"
 
 #include "LowMath.h"
 #include "LowMathVectorUtil.h"
@@ -388,8 +389,6 @@ int run_low(bool p_IsHost, Low::Util::String p_ProjectPath)
 
 int main(int argc, char *argv[])
 {
-  Lowder::Splash::start();
-
   bool l_IsHost = false;
   Low::Util::String l_ProjectPath = "";
   if (argc > 1) {
@@ -403,7 +402,11 @@ int main(int argc, char *argv[])
   l_IsHost = true;
   l_ProjectPath = "./";
 #endif
+  Lowder::CrashReporter::initialize(l_ProjectPath.c_str());
+
+  Lowder::Splash::start();
   int l_Result = run_low(l_IsHost, l_ProjectPath);
   Lowder::Splash::stop();
+  Lowder::CrashReporter::shutdown();
   return l_Result;
 }

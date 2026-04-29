@@ -48,8 +48,12 @@ target_link_libraries(Lowder PRIVATE
   #nativefiledialog
   assimp
   physx
-  #"${DBGHELP_LIB_PATH}/Dbghelp.lib"
 )
+
+if(WIN32)
+  target_link_libraries(Lowder PRIVATE Dbghelp.lib)
+  target_link_libraries(Lowder PRIVATE Gdiplus.lib)
+endif()
 
 target_link_libraries(Lowder PRIVATE
   LowEditor

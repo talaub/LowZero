@@ -105,6 +105,8 @@ namespace Low {
           Scripting::initialize_as();
         }
 
+        LOW_ASSERT(g_Frames < 220, "Testcrash");
+
         Renderer::prepare_tick(p_Delta);
         System::Transform::tick(p_Delta, get_engine_state());
         UI::System::View::tick(p_Delta, get_engine_state());
@@ -384,7 +386,8 @@ namespace Low {
         g_TickCallbacks.push_back(p_Callback);
       }
 
-      void register_late_tick_callback(System::TickCallback p_Callback)
+      void
+      register_late_tick_callback(System::TickCallback p_Callback)
       {
         g_LateTickCallbacks.push_back(p_Callback);
       }

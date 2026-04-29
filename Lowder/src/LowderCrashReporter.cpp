@@ -1,0 +1,751 @@
+#include "LowderCrashReporter.h"
+
+#include <cstdio>
+#include <cstdlib>
+#include <ctime>
+#include <exception>
+#include <string>
+
+#ifdef _WIN32
+#include <windows.h>
+#include <DbgHelp.h>
+#include <gdiplus.h>
+#endif
+
+namespace Lowder {
+  namespace CrashReporter {
+    namespace {
+      std::string g_ProjectPath = ".";
+
+      static std::string normalize_path(const std::string &p_Path)
+      {
+#ifdef _WIN32
+        char l_Buffer[MAX_PATH];
+        DWORD l_Result = GetFullPathNameA(p_Path.c_str(), MAX_PATH,
+                                          l_Buffer, nullptr);
+        if (l_Result == 0 || l_Result >= MAX_PATH) {
+          return p_Path;
+        }
+        return l_Buffer;
+#else
+        return p_Path;
+#endif
+      }
+
+#ifdef _WIN32
+      LPTOP_LEVEL_EXCEPTION_FILTER g_PreviousExceptionFilter = nullptr;
+
+      const int ID_ACTIONS_EDIT = 1001;
+      const int ID_SAVE_BUTTON = 1002;
+      const int ID_SKIP_BUTTON = 1003;
+
+      struct ReporterWindowState
+      {
+        std::string reportDirectory;
+        std::string logoPath;
+        std::string logoTextPath;
+        HWND editControl = nullptr;
+        HFONT titleFont = nullptr;
+        HFONT bodyFont = nullptr;
+        HICON windowIcon = nullptr;
+        Gdiplus::Image *logoImage = nullptr;
+        Gdiplus::Image *logoTextImage = nullptr;
+        HBRUSH backgroundBrush = nullptr;
+        HBRUSH editBrush = nullptr;
+        bool saved = false;
+      };
+
+      ULONG_PTR g_GdiplusToken = 0;
+
+      static std::string get_last_error_string()
+      {
+        DWORD l_Error = GetLastError();
+        if (!l_Error) {
+          return "";
+        }
+
+        LPVOID l_Buffer = nullptr;
+        FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                           FORMAT_MESSAGE_FROM_SYSTEM |
+                           FORMAT_MESSAGE_IGNORE_INSERTS,
+                       nullptr, l_Error,
+                       MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                       reinterpret_cast<LPSTR>(&l_Buffer), 0,
+                       nullptr);
+
+        std::string l_Message =
+            l_Buffer ? static_cast<char *>(l_Buffer) : "unknown error";
+        if (l_Buffer) {
+          LocalFree(l_Buffer);
+        }
+        return l_Message;
+      }
+
+      static bool ensure_directory(const std::string &p_Path)
+      {
+        if (CreateDirectoryA(p_Path.c_str(), nullptr)) {
+          return true;
+        }
+
+        return GetLastError() == ERROR_ALREADY_EXISTS;
+      }
+
+      static std::string join_path(const std::string &p_Left,
+                                   const std::string &p_Right)
+      {
+        if (p_Left.empty()) {
+          return p_Right;
+        }
+
+        const char l_Last = p_Left[p_Left.size() - 1];
+        if (l_Last == '\\' || l_Last == '/') {
+          return p_Left + p_Right;
+        }
+
+        return p_Left + "\\" + p_Right;
+      }
+
+      static bool file_exists(const std::string &p_Path)
+      {
+        DWORD l_Attributes = GetFileAttributesA(p_Path.c_str());
+        return l_Attributes != INVALID_FILE_ATTRIBUTES &&
+               (l_Attributes & FILE_ATTRIBUTE_DIRECTORY) == 0;
+      }
+
+      static std::wstring widen_path(const std::string &p_Path)
+      {
+        const int l_Size = MultiByteToWideChar(
+            CP_UTF8, 0, p_Path.c_str(), -1, nullptr, 0);
+        if (l_Size <= 0) {
+          return std::wstring(p_Path.begin(), p_Path.end());
+        }
+
+        std::wstring l_Result;
+        l_Result.resize(static_cast<size_t>(l_Size));
+        MultiByteToWideChar(CP_UTF8, 0, p_Path.c_str(), -1,
+                            l_Result.data(), l_Size);
+        if (!l_Result.empty() && l_Result.back() == L'\0') {
+          l_Result.pop_back();
+        }
+        return l_Result;
+      }
+
+      static std::string find_logo_path()
+      {
+        const std::string l_Candidates[] = {
+            join_path(g_ProjectPath, "data\\.editor_images\\lowlogo_90.png"),
+            join_path(g_ProjectPath, "data\\.editor_images\\lowlogo_36.png")};
+
+        for (const std::string &i_Path : l_Candidates) {
+          if (file_exists(i_Path)) {
+            return i_Path;
+          }
+        }
+
+        return "";
+      }
+
+      static std::string find_logo_text_path()
+      {
+        const std::string l_Path =
+            join_path(g_ProjectPath, "data\\.editor_images\\lowfont_500.png");
+        return file_exists(l_Path) ? l_Path : "";
+      }
+
+      static HICON load_window_icon()
+      {
+        const std::string l_AppIconPath =
+            join_path(g_ProjectPath, "app.ico");
+        if (file_exists(l_AppIconPath)) {
+          return static_cast<HICON>(LoadImageA(
+              nullptr, l_AppIconPath.c_str(), IMAGE_ICON, 32, 32,
+              LR_LOADFROMFILE | LR_DEFAULTCOLOR));
+        }
+
+        return LoadIcon(nullptr, IDI_ERROR);
+      }
+
+      static std::string make_report_directory()
+      {
+        ensure_directory(g_ProjectPath);
+
+        const std::string l_CrashRoot =
+            join_path(g_ProjectPath, "crash_reports");
+        ensure_directory(l_CrashRoot);
+
+        SYSTEMTIME l_Time;
+        GetLocalTime(&l_Time);
+
+        char l_Name[128];
+        std::snprintf(l_Name, sizeof(l_Name),
+                      "%04u%02u%02u_%02u%02u%02u_%lu",
+                      l_Time.wYear, l_Time.wMonth, l_Time.wDay,
+                      l_Time.wHour, l_Time.wMinute, l_Time.wSecond,
+                      static_cast<unsigned long>(GetCurrentProcessId()));
+
+        const std::string l_ReportDirectory =
+            join_path(l_CrashRoot, l_Name);
+        ensure_directory(l_ReportDirectory);
+        return l_ReportDirectory;
+      }
+
+      static void write_text_file(const std::string &p_Path,
+                                  const std::string &p_Text)
+      {
+        FILE *l_File = nullptr;
+        fopen_s(&l_File, p_Path.c_str(), "wb");
+        if (!l_File) {
+          return;
+        }
+
+        fwrite(p_Text.data(), 1, p_Text.size(), l_File);
+        fclose(l_File);
+      }
+
+      static void append_text_file(const std::string &p_Path,
+                                   const std::string &p_Text)
+      {
+        FILE *l_File = nullptr;
+        fopen_s(&l_File, p_Path.c_str(), "ab");
+        if (!l_File) {
+          return;
+        }
+
+        fwrite(p_Text.data(), 1, p_Text.size(), l_File);
+        fclose(l_File);
+      }
+
+      static void copy_file_if_exists(const std::string &p_Source,
+                                      const std::string &p_Target)
+      {
+        CopyFileA(p_Source.c_str(), p_Target.c_str(), FALSE);
+      }
+
+      static void delete_file_if_exists(const std::string &p_Path)
+      {
+        DeleteFileA(p_Path.c_str());
+      }
+
+      static void delete_report_directory(
+          const std::string &p_ReportDirectory)
+      {
+        delete_file_if_exists(join_path(p_ReportDirectory, "crash.txt"));
+        delete_file_if_exists(
+            join_path(p_ReportDirectory, "minidump.dmp"));
+        delete_file_if_exists(join_path(p_ReportDirectory, "low.log"));
+        delete_file_if_exists(join_path(p_ReportDirectory, "lowerr.log"));
+        delete_file_if_exists(join_path(
+            p_ReportDirectory, "last_actions_before_crash.txt"));
+        RemoveDirectoryA(p_ReportDirectory.c_str());
+      }
+
+      static void write_minidump(
+          const std::string &p_ReportDirectory,
+          EXCEPTION_POINTERS *p_ExceptionPointers)
+      {
+        const std::string l_DumpPath =
+            join_path(p_ReportDirectory, "minidump.dmp");
+
+        HANDLE l_File =
+            CreateFileA(l_DumpPath.c_str(), GENERIC_WRITE, 0, nullptr,
+                        CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+
+        if (l_File == INVALID_HANDLE_VALUE) {
+          append_text_file(join_path(p_ReportDirectory, "crash.txt"),
+                           "Failed to create minidump file: " +
+                               get_last_error_string() + "\r\n");
+          return;
+        }
+
+        MINIDUMP_EXCEPTION_INFORMATION l_ExceptionInfo;
+        l_ExceptionInfo.ThreadId = GetCurrentThreadId();
+        l_ExceptionInfo.ExceptionPointers = p_ExceptionPointers;
+        l_ExceptionInfo.ClientPointers = FALSE;
+
+        const BOOL l_Success = MiniDumpWriteDump(
+            GetCurrentProcess(), GetCurrentProcessId(), l_File,
+            MiniDumpWithIndirectlyReferencedMemory,
+            p_ExceptionPointers ? &l_ExceptionInfo : nullptr, nullptr,
+            nullptr);
+
+        CloseHandle(l_File);
+
+        if (!l_Success) {
+          append_text_file(join_path(p_ReportDirectory, "crash.txt"),
+                           "Failed to write minidump: " +
+                               get_last_error_string() + "\r\n");
+        }
+      }
+
+      static std::string format_exception_info(
+          EXCEPTION_POINTERS *p_ExceptionPointers)
+      {
+        std::string l_Text;
+        l_Text += "LowEngine crash report\r\n";
+        l_Text += "Version: ";
+        l_Text += LOW_VERSION_YEAR;
+        l_Text += ".";
+        l_Text += LOW_VERSION_MAJOR;
+        l_Text += ".";
+        l_Text += LOW_VERSION_MINOR;
+        l_Text += "\r\n";
+        l_Text += "Project path: " + g_ProjectPath + "\r\n";
+
+        if (p_ExceptionPointers &&
+            p_ExceptionPointers->ExceptionRecord) {
+          char l_Buffer[256];
+          std::snprintf(
+              l_Buffer, sizeof(l_Buffer),
+              "Exception code: 0x%08lX\r\nException address: 0x%p\r\n",
+              static_cast<unsigned long>(
+                  p_ExceptionPointers->ExceptionRecord->ExceptionCode),
+              p_ExceptionPointers->ExceptionRecord->ExceptionAddress);
+          l_Text += l_Buffer;
+        } else {
+          l_Text += "Exception code: unavailable\r\n";
+          l_Text += "Exception address: unavailable\r\n";
+        }
+
+        return l_Text;
+      }
+
+      static void write_user_actions(const std::string &p_ReportDirectory,
+                                     HWND p_EditControl)
+      {
+        const int l_Length = GetWindowTextLengthA(p_EditControl);
+        std::string l_Text;
+        l_Text.resize(static_cast<size_t>(l_Length) + 1u);
+        GetWindowTextA(p_EditControl, l_Text.data(), l_Length + 1);
+        l_Text.resize(static_cast<size_t>(l_Length));
+
+        write_text_file(join_path(p_ReportDirectory,
+                                  "last_actions_before_crash.txt"),
+                        l_Text);
+      }
+
+      static void center_window_on_monitor(HWND p_Window)
+      {
+        RECT l_WindowRect;
+        GetWindowRect(p_Window, &l_WindowRect);
+
+        HMONITOR l_Monitor =
+            MonitorFromWindow(p_Window, MONITOR_DEFAULTTONEAREST);
+
+        MONITORINFO l_MonitorInfo = {};
+        l_MonitorInfo.cbSize = sizeof(l_MonitorInfo);
+        GetMonitorInfoA(l_Monitor, &l_MonitorInfo);
+
+        const int l_Width = l_WindowRect.right - l_WindowRect.left;
+        const int l_Height = l_WindowRect.bottom - l_WindowRect.top;
+        const int l_X = l_MonitorInfo.rcWork.left +
+                        ((l_MonitorInfo.rcWork.right -
+                          l_MonitorInfo.rcWork.left - l_Width) /
+                         2);
+        const int l_Y = l_MonitorInfo.rcWork.top +
+                        ((l_MonitorInfo.rcWork.bottom -
+                          l_MonitorInfo.rcWork.top - l_Height) /
+                         2);
+
+        SetWindowPos(p_Window, nullptr, l_X, l_Y, 0, 0,
+                     SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
+      }
+
+      static LRESULT CALLBACK reporter_window_proc(HWND p_Window,
+                                                   UINT p_Message,
+                                                   WPARAM p_WParam,
+                                                   LPARAM p_LParam)
+      {
+        ReporterWindowState *l_State =
+            reinterpret_cast<ReporterWindowState *>(
+                GetWindowLongPtrA(p_Window, GWLP_USERDATA));
+
+        switch (p_Message) {
+        case WM_CREATE: {
+          CREATESTRUCTA *l_Create =
+              reinterpret_cast<CREATESTRUCTA *>(p_LParam);
+          l_State = reinterpret_cast<ReporterWindowState *>(
+              l_Create->lpCreateParams);
+          SetWindowLongPtrA(p_Window, GWLP_USERDATA,
+                            reinterpret_cast<LONG_PTR>(l_State));
+
+          l_State->titleFont = CreateFontA(
+              24, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE,
+              DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+              CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, "Segoe UI");
+          l_State->bodyFont = CreateFontA(
+              16, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+              DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+              CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, "Segoe UI");
+          l_State->backgroundBrush =
+              CreateSolidBrush(RGB(22, 20, 27));
+          l_State->editBrush = CreateSolidBrush(RGB(18, 17, 22));
+
+          l_State->windowIcon = load_window_icon();
+          if (l_State->windowIcon) {
+            SendMessageA(p_Window, WM_SETICON, ICON_BIG,
+                         reinterpret_cast<LPARAM>(
+                             l_State->windowIcon));
+            SendMessageA(p_Window, WM_SETICON, ICON_SMALL,
+                         reinterpret_cast<LPARAM>(
+                             l_State->windowIcon));
+          }
+
+          l_State->logoPath = find_logo_path();
+          if (!l_State->logoPath.empty()) {
+            l_State->logoImage =
+                new Gdiplus::Image(widen_path(l_State->logoPath).c_str());
+          }
+          l_State->logoTextPath = find_logo_text_path();
+          if (!l_State->logoTextPath.empty()) {
+            l_State->logoTextImage = new Gdiplus::Image(
+                widen_path(l_State->logoTextPath).c_str());
+          }
+
+          HWND l_Title = CreateWindowExA(
+              0, "STATIC", "LowEngine crashed",
+              WS_CHILD | WS_VISIBLE, 32, 136, 500, 34, p_Window,
+              nullptr, nullptr, nullptr);
+          SendMessageA(l_Title, WM_SETFONT,
+                       reinterpret_cast<WPARAM>(l_State->titleFont),
+                       TRUE);
+
+          HWND l_Text = CreateWindowExA(
+              0, "STATIC",
+              "A crash report was saved. Tell us what happened right "
+              "before the crash so we can reproduce it.",
+              WS_CHILD | WS_VISIBLE, 32, 172, 500, 44, p_Window,
+              nullptr, nullptr, nullptr);
+          SendMessageA(l_Text, WM_SETFONT,
+                       reinterpret_cast<WPARAM>(l_State->bodyFont),
+                       TRUE);
+
+          l_State->editControl = CreateWindowExA(
+              WS_EX_CLIENTEDGE, "EDIT", "",
+              WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_MULTILINE |
+                  ES_AUTOVSCROLL | ES_WANTRETURN | WS_VSCROLL,
+              32, 230, 500, 132, p_Window,
+              reinterpret_cast<HMENU>(
+                  static_cast<INT_PTR>(ID_ACTIONS_EDIT)),
+              nullptr, nullptr);
+          SendMessageA(l_State->editControl, WM_SETFONT,
+                       reinterpret_cast<WPARAM>(l_State->bodyFont),
+                       TRUE);
+
+          HWND l_PathText = CreateWindowExA(
+              0, "STATIC", l_State->reportDirectory.c_str(),
+              WS_CHILD | WS_VISIBLE | SS_ENDELLIPSIS, 32, 372, 500,
+              20, p_Window, nullptr, nullptr, nullptr);
+          SendMessageA(l_PathText, WM_SETFONT,
+                       reinterpret_cast<WPARAM>(l_State->bodyFont),
+                       TRUE);
+
+          HWND l_SaveButton = CreateWindowExA(0, "BUTTON", "Save report",
+                          WS_CHILD | WS_VISIBLE | WS_TABSTOP |
+                              BS_DEFPUSHBUTTON | BS_OWNERDRAW,
+                          318, 408, 104, 32, p_Window,
+                          reinterpret_cast<HMENU>(
+                              static_cast<INT_PTR>(ID_SAVE_BUTTON)),
+                          nullptr, nullptr);
+          SendMessageA(l_SaveButton, WM_SETFONT,
+                       reinterpret_cast<WPARAM>(l_State->bodyFont),
+                       TRUE);
+
+          HWND l_SkipButton = CreateWindowExA(
+              0, "BUTTON", "Skip",
+              WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW, 432,
+              408, 100, 32, p_Window,
+              reinterpret_cast<HMENU>(
+                  static_cast<INT_PTR>(ID_SKIP_BUTTON)),
+              nullptr, nullptr);
+          SendMessageA(l_SkipButton, WM_SETFONT,
+                       reinterpret_cast<WPARAM>(l_State->bodyFont),
+                       TRUE);
+
+          SetFocus(l_State->editControl);
+          return 0;
+        }
+        case WM_COMMAND:
+          if (LOWORD(p_WParam) == ID_SAVE_BUTTON && l_State) {
+            write_user_actions(l_State->reportDirectory,
+                               l_State->editControl);
+            l_State->saved = true;
+            DestroyWindow(p_Window);
+            return 0;
+          }
+
+          if (LOWORD(p_WParam) == ID_SKIP_BUTTON) {
+            DestroyWindow(p_Window);
+            return 0;
+          }
+          break;
+        case WM_CLOSE:
+          DestroyWindow(p_Window);
+          return 0;
+        case WM_DRAWITEM: {
+          DRAWITEMSTRUCT *l_DrawItem =
+              reinterpret_cast<DRAWITEMSTRUCT *>(p_LParam);
+          if (!l_DrawItem ||
+              (l_DrawItem->CtlID != ID_SAVE_BUTTON &&
+               l_DrawItem->CtlID != ID_SKIP_BUTTON)) {
+            break;
+          }
+
+          const bool l_IsSave = l_DrawItem->CtlID == ID_SAVE_BUTTON;
+          const bool l_IsPressed =
+              (l_DrawItem->itemState & ODS_SELECTED) != 0;
+          const bool l_IsFocused =
+              (l_DrawItem->itemState & ODS_FOCUS) != 0;
+
+          const COLORREF l_FillColor =
+              l_IsSave ? (l_IsPressed ? RGB(13, 150, 163)
+                                      : RGB(18, 204, 220))
+                       : (l_IsPressed ? RGB(55, 49, 63)
+                                      : RGB(42, 37, 49));
+          const COLORREF l_BorderColor =
+              l_IsSave ? RGB(80, 232, 242) : RGB(91, 82, 104);
+          const COLORREF l_TextColor =
+              l_IsSave ? RGB(12, 14, 18) : RGB(238, 238, 242);
+
+          HBRUSH l_ButtonBrush = CreateSolidBrush(l_FillColor);
+          FillRect(l_DrawItem->hDC, &l_DrawItem->rcItem,
+                   l_ButtonBrush);
+          DeleteObject(l_ButtonBrush);
+
+          HPEN l_ButtonPen = CreatePen(
+              PS_SOLID, l_IsFocused ? 2 : 1, l_BorderColor);
+          HGDIOBJ l_OldPen =
+              SelectObject(l_DrawItem->hDC, l_ButtonPen);
+          HGDIOBJ l_OldBrush = SelectObject(
+              l_DrawItem->hDC, GetStockObject(NULL_BRUSH));
+          Rectangle(l_DrawItem->hDC, l_DrawItem->rcItem.left,
+                    l_DrawItem->rcItem.top, l_DrawItem->rcItem.right,
+                    l_DrawItem->rcItem.bottom);
+          SelectObject(l_DrawItem->hDC, l_OldBrush);
+          SelectObject(l_DrawItem->hDC, l_OldPen);
+          DeleteObject(l_ButtonPen);
+
+          SetBkMode(l_DrawItem->hDC, TRANSPARENT);
+          SetTextColor(l_DrawItem->hDC, l_TextColor);
+          const char *l_Label = l_IsSave ? "Save report" : "Skip";
+          RECT l_TextRect = l_DrawItem->rcItem;
+          DrawTextA(l_DrawItem->hDC, l_Label, -1, &l_TextRect,
+                    DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+          return TRUE;
+        }
+        case WM_CTLCOLOREDIT: {
+          HDC l_DeviceContext = reinterpret_cast<HDC>(p_WParam);
+          SetBkMode(l_DeviceContext, OPAQUE);
+          SetTextColor(l_DeviceContext, RGB(238, 238, 242));
+          SetBkColor(l_DeviceContext, RGB(18, 17, 22));
+          return reinterpret_cast<LRESULT>(
+              l_State && l_State->editBrush ? l_State->editBrush
+                                             : GetStockObject(BLACK_BRUSH));
+        }
+        case WM_CTLCOLORSTATIC: {
+          HDC l_DeviceContext = reinterpret_cast<HDC>(p_WParam);
+          SetBkMode(l_DeviceContext, TRANSPARENT);
+          SetTextColor(l_DeviceContext, RGB(238, 238, 242));
+          return reinterpret_cast<LRESULT>(
+              GetStockObject(NULL_BRUSH));
+        }
+        case WM_ERASEBKGND: {
+          HDC l_DeviceContext = reinterpret_cast<HDC>(p_WParam);
+          RECT l_Rect;
+          GetClientRect(p_Window, &l_Rect);
+          FillRect(l_DeviceContext, &l_Rect,
+                   l_State && l_State->backgroundBrush
+                       ? l_State->backgroundBrush
+                       : reinterpret_cast<HBRUSH>(
+                             GetStockObject(BLACK_BRUSH)));
+          return 1;
+        }
+        case WM_PAINT: {
+          PAINTSTRUCT l_Paint;
+          HDC l_DeviceContext = BeginPaint(p_Window, &l_Paint);
+          const int l_LogoTextX = 166;
+          const int l_LogoTextY = 36;
+          const int l_LogoTextWidth = 285;
+          int l_LogoTextHeight = 54;
+          if (l_State && l_State->logoTextImage &&
+              l_State->logoTextImage->GetLastStatus() == Gdiplus::Ok &&
+              l_State->logoTextImage->GetWidth() > 0u) {
+            l_LogoTextHeight = static_cast<int>(
+                (static_cast<float>(l_LogoTextWidth) /
+                 static_cast<float>(l_State->logoTextImage->GetWidth())) *
+                static_cast<float>(l_State->logoTextImage->GetHeight()));
+          }
+
+          const int l_AccentY = l_LogoTextY + l_LogoTextHeight + 6;
+          HPEN l_AccentPen =
+              CreatePen(PS_SOLID, 3, RGB(18, 204, 220));
+          HGDIOBJ l_OldPen = SelectObject(l_DeviceContext, l_AccentPen);
+          MoveToEx(l_DeviceContext, l_LogoTextX, l_AccentY, nullptr);
+          LineTo(l_DeviceContext, l_LogoTextX + l_LogoTextWidth + 36,
+                 l_AccentY);
+          SelectObject(l_DeviceContext, l_OldPen);
+          DeleteObject(l_AccentPen);
+
+          if (l_State && l_State->logoImage &&
+              l_State->logoImage->GetLastStatus() == Gdiplus::Ok) {
+            Gdiplus::Graphics l_Graphics(l_DeviceContext);
+              l_Graphics.SetInterpolationMode(
+                  Gdiplus::InterpolationModeHighQualityBicubic);
+            l_Graphics.DrawImage(l_State->logoImage, 54, 36, 72, 72);
+            if (l_State->logoTextImage &&
+                l_State->logoTextImage->GetLastStatus() ==
+                    Gdiplus::Ok) {
+              l_Graphics.DrawImage(l_State->logoTextImage, l_LogoTextX,
+                                   l_LogoTextY, l_LogoTextWidth,
+                                   l_LogoTextHeight);
+            }
+          } else if (l_State && l_State->windowIcon) {
+            DrawIconEx(l_DeviceContext, 62, 42, l_State->windowIcon,
+                       48, 48, 0, nullptr, DI_NORMAL);
+          }
+          EndPaint(p_Window, &l_Paint);
+          return 0;
+        }
+        case WM_DESTROY:
+          if (l_State) {
+            delete l_State->logoImage;
+            l_State->logoImage = nullptr;
+            delete l_State->logoTextImage;
+            l_State->logoTextImage = nullptr;
+            if (l_State->titleFont) {
+              DeleteObject(l_State->titleFont);
+              l_State->titleFont = nullptr;
+            }
+            if (l_State->bodyFont) {
+              DeleteObject(l_State->bodyFont);
+              l_State->bodyFont = nullptr;
+            }
+            if (l_State->windowIcon) {
+              DestroyIcon(l_State->windowIcon);
+              l_State->windowIcon = nullptr;
+            }
+            if (l_State->backgroundBrush) {
+              DeleteObject(l_State->backgroundBrush);
+              l_State->backgroundBrush = nullptr;
+            }
+            if (l_State->editBrush) {
+              DeleteObject(l_State->editBrush);
+              l_State->editBrush = nullptr;
+            }
+          }
+          PostQuitMessage(0);
+          return 0;
+        }
+
+        return DefWindowProcA(p_Window, p_Message, p_WParam,
+                              p_LParam);
+      }
+
+      static void show_reporter_popup(
+          const std::string &p_ReportDirectory)
+      {
+        ReporterWindowState l_State;
+        l_State.reportDirectory = p_ReportDirectory;
+
+        HINSTANCE l_Instance = GetModuleHandleA(nullptr);
+        const char *l_ClassName = "LowderCrashReporterWindow";
+
+        WNDCLASSA l_Class = {};
+        l_Class.lpfnWndProc = reporter_window_proc;
+        l_Class.hInstance = l_Instance;
+        l_Class.lpszClassName = l_ClassName;
+        l_Class.hCursor = LoadCursor(nullptr, IDC_ARROW);
+        l_Class.hbrBackground = nullptr;
+        RegisterClassA(&l_Class);
+
+        HWND l_Window = CreateWindowExA(
+            WS_EX_TOPMOST, l_ClassName, "LowEngine Crash Reporter",
+            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU, CW_USEDEFAULT,
+            CW_USEDEFAULT, 584, 490, nullptr, nullptr, l_Instance,
+            &l_State);
+
+        if (!l_Window) {
+          append_text_file(join_path(p_ReportDirectory, "crash.txt"),
+                           "Failed to create crash reporter window: " +
+                               get_last_error_string() + "\r\n");
+          return;
+        }
+
+        center_window_on_monitor(l_Window);
+        ShowWindow(l_Window, SW_SHOW);
+        UpdateWindow(l_Window);
+
+        MSG l_Message;
+        while (GetMessageA(&l_Message, nullptr, 0, 0) > 0) {
+          TranslateMessage(&l_Message);
+          DispatchMessageA(&l_Message);
+        }
+
+        if (l_State.saved) {
+          MessageBoxA(
+              nullptr,
+              ("Crash report saved to:\n" + p_ReportDirectory).c_str(),
+              "LowEngine Crash Reporter", MB_OK | MB_ICONINFORMATION);
+        } else {
+          delete_report_directory(p_ReportDirectory);
+        }
+      }
+
+      static void collect_crash_report(
+          EXCEPTION_POINTERS *p_ExceptionPointers)
+      {
+        const std::string l_ReportDirectory = make_report_directory();
+
+        write_text_file(join_path(l_ReportDirectory, "crash.txt"),
+                        format_exception_info(p_ExceptionPointers));
+
+        write_minidump(l_ReportDirectory, p_ExceptionPointers);
+
+        copy_file_if_exists(join_path(g_ProjectPath, "low.log"),
+                            join_path(l_ReportDirectory, "low.log"));
+        copy_file_if_exists(join_path(g_ProjectPath, "lowerr.log"),
+                            join_path(l_ReportDirectory, "lowerr.log"));
+
+        show_reporter_popup(l_ReportDirectory);
+      }
+
+      static LONG WINAPI unhandled_exception_filter(
+          EXCEPTION_POINTERS *p_ExceptionPointers)
+      {
+        collect_crash_report(p_ExceptionPointers);
+        return EXCEPTION_EXECUTE_HANDLER;
+      }
+
+      static void terminate_handler()
+      {
+        collect_crash_report(nullptr);
+        std::abort();
+      }
+#endif
+    } // namespace
+
+    void initialize(const std::string &p_ProjectPath)
+    {
+      g_ProjectPath = normalize_path(p_ProjectPath.empty() ? "."
+                                                           : p_ProjectPath);
+
+#ifdef _WIN32
+      Gdiplus::GdiplusStartupInput l_Input;
+      Gdiplus::GdiplusStartup(&g_GdiplusToken, &l_Input, nullptr);
+      g_PreviousExceptionFilter =
+          SetUnhandledExceptionFilter(unhandled_exception_filter);
+      std::set_terminate(terminate_handler);
+#endif
+    }
+
+    void shutdown()
+    {
+#ifdef _WIN32
+      SetUnhandledExceptionFilter(g_PreviousExceptionFilter);
+      if (g_GdiplusToken) {
+        Gdiplus::GdiplusShutdown(g_GdiplusToken);
+        g_GdiplusToken = 0;
+      }
+#endif
+    }
+  } // namespace CrashReporter
+} // namespace Lowder
