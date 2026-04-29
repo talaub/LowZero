@@ -27,22 +27,20 @@ namespace Low {
       JobManager::ThreadPool *g_ThreadPool;
 
       String g_LogFilePath;
+      String g_ErrLogFilePath;
 
       Mutex g_PrintMutex;
       bool g_ConsoleOutputEnabled = true;
 
-      void initialize()
+      static void clear_log(const String &p_LogPath,
+                            const String &p_Title)
       {
-        g_ThreadPool = new JobManager::ThreadPool(1);
 
-        g_LogFilePath = get_project().rootPath + "/low.log";
-
-        // Clear log file
-        FileIO::File l_LogFile = FileIO::open(
-            g_LogFilePath.c_str(), FileIO::FileMode::WRITE);
+        FileIO::File l_LogFile =
+            FileIO::open(p_LogPath.c_str(), FileIO::FileMode::WRITE);
 
         String l_HeaderString =
-            "LowEngine log output\nEngine version: ";
+            "LowEngine " + p_Title + "\nEngine version: ";
         l_HeaderString += LOW_VERSION_YEAR;
         l_HeaderString += ".";
         l_HeaderString += LOW_VERSION_MAJOR;
@@ -52,6 +50,17 @@ namespace Low {
 
         FileIO::write_sync(l_LogFile, l_HeaderString);
         FileIO::close(l_LogFile);
+      }
+
+      void initialize()
+      {
+        g_ThreadPool = new JobManager::ThreadPool(1);
+
+        g_LogFilePath = get_project().rootPath + "/low.log";
+        g_ErrLogFilePath = get_project().rootPath + "/lowerr.log";
+
+        clear_log(g_LogFilePath, "log output");
+        clear_log(g_ErrLogFilePath, "error output");
       }
 
       void cleanup()
@@ -74,7 +83,8 @@ namespace Low {
       static bool should_print_to_console()
       {
 #ifdef _WIN32
-        return g_ConsoleOutputEnabled && GetConsoleWindow() != nullptr;
+        return g_ConsoleOutputEnabled &&
+               GetConsoleWindow() != nullptr;
 #else
         return g_ConsoleOutputEnabled;
 #endif
@@ -239,6 +249,16 @@ namespace Low {
         FileIO::write_sync(l_LogFile, l_Content);
 
         FileIO::close(l_LogFile);
+
+        if (p_Entry.level == LogLevel::ERROR ||
+            p_Entry.level == LogLevel::FATAL ||
+            p_Entry.level == LogLevel::ERR) {
+          FileIO::File l_LogFile = FileIO::open(
+              g_ErrLogFilePath.c_str(), FileIO::FileMode::APPEND);
+          FileIO::write_sync(l_LogFile, l_Content);
+
+          FileIO::close(l_LogFile);
+        }
       }
 
       LogStream &LogStream::operator<<(LogLineEnd p_LineEnd)
