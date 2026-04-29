@@ -2,8 +2,12 @@ project(Lowder)
 
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE INCLUDES "include/*.h")
+set(WINDOWS_RESOURCES "")
+if(WIN32)
+  set(WINDOWS_RESOURCES "resources/Lowder.rc")
+endif()
 
-add_executable(Lowder ${SOURCES} ${INCLUDES})
+add_executable(Lowder ${SOURCES} ${INCLUDES} ${WINDOWS_RESOURCES})
 
 source_group("Header Files" FILES ${INCLUDES})
 
@@ -26,6 +30,7 @@ add_dependencies(Lowder
 
 set(LOWDER_INCLUDE_DIRS
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
+  "${CMAKE_CURRENT_SOURCE_DIR}/resources"
 )
 
 #set_property(TARGET Lowder PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_}")

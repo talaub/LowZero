@@ -176,6 +176,13 @@ namespace Lowder {
 
       static HICON load_window_icon()
       {
+        HICON l_EmbeddedIcon = static_cast<HICON>(LoadImageA(
+            GetModuleHandleA(nullptr), MAKEINTRESOURCEA(1), IMAGE_ICON,
+            32, 32, LR_DEFAULTCOLOR));
+        if (l_EmbeddedIcon) {
+          return l_EmbeddedIcon;
+        }
+
         const std::string l_AppIconPath =
             join_path(g_ProjectPath, "app.ico");
         if (file_exists(l_AppIconPath)) {
