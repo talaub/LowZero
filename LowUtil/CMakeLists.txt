@@ -5,6 +5,13 @@ project(LowUtil)
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE INCLUDES "include/*.h")
 
+set(LOW_GENERATED_INCLUDE_DIR "${LOW_BINARY_PATH}/generated/include")
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/include/LowUtilVersion.h.in"
+  "${LOW_GENERATED_INCLUDE_DIR}/LowUtilVersion.h"
+  @ONLY
+)
+
 add_library(LowUtil SHARED
   ${SOURCES}
   ${INCLUDES}
@@ -89,6 +96,7 @@ mark_includes_as_system(LowUtil yaml-cpp)
 
 target_include_directories(LowUtil PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+	$<BUILD_INTERFACE:${LOW_GENERATED_INCLUDE_DIR}>
 	$<INSTALL_INTERFACE:include>
 )
 

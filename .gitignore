@@ -8,8 +8,11 @@ build/
 /cmake-build-debug-visual-studio
 /.idea
 /packman-repo
+/release_symbols
+/Lowder/CrashReporter.local.cmake
 /misteda
 LowScriptingApi/bin
 LowScriptingApi/obj
 .rgignore
 .clangflags
+misteda-crash-reporter

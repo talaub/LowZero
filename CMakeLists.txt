@@ -41,8 +41,9 @@ endforeach( OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
 
 if (ENGINE_BUILD)
   message("AAAAAAAAAAAA")
+  set(LOW_EFFECTIVE_MINOR_VERSION "${LOW_MINOR_VERSION}")
 ELSE()
-  set(LOW_MINOR_VERSION "${LOW_MINOR_VERSION}-DEV")
+  set(LOW_EFFECTIVE_MINOR_VERSION "${LOW_MINOR_VERSION}-DEV")
   message("BBBBBBBBBB")
 ENDIF()
 
@@ -113,12 +114,6 @@ add_compile_definitions(
 message(BBBBBBBBBBBBBBBBBBBBBBBBBBBB)
 message(NOEngine build)
 endif()
-
-add_compile_definitions(
-  LOW_VERSION_YEAR="${LOW_YEAR_VERSION}"
-  LOW_VERSION_MAJOR="${LOW_MAJOR_VERSION}"
-  LOW_VERSION_MINOR="${LOW_MINOR_VERSION}"
-)
 
 # Excluded directories
 # These directorories are not part of the build tree

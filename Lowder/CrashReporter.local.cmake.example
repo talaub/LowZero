@@ -1,0 +1,2 @@
+set(LOW_CRASH_REPORT_UPLOAD_URL "https://example.com/submit.php")
+set(LOW_CRASH_REPORT_UPLOAD_TOKEN "replace-with-private-upload-token")

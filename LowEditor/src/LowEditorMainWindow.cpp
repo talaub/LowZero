@@ -1,4 +1,5 @@
 #include "LowEditorMainWindow.h"
+#include "LowUtilVersion.h"
 
 #include <iostream>
 

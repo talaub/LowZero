@@ -30,8 +30,24 @@ set(LOWDER_INCLUDE_DIRS
 
 #set_property(TARGET Lowder PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_}")
 
+set(LOW_CRASH_REPORT_UPLOAD_URL "" CACHE STRING "Crash reporter submit URL")
+set(LOW_CRASH_REPORT_UPLOAD_TOKEN "" CACHE STRING "Crash reporter upload token")
+
+if(DEFINED ENV{LOW_CRASH_REPORT_UPLOAD_URL} AND NOT "$ENV{LOW_CRASH_REPORT_UPLOAD_URL}" STREQUAL "")
+  set(LOW_CRASH_REPORT_UPLOAD_URL "$ENV{LOW_CRASH_REPORT_UPLOAD_URL}")
+endif()
+
+if(DEFINED ENV{LOW_CRASH_REPORT_UPLOAD_TOKEN} AND NOT "$ENV{LOW_CRASH_REPORT_UPLOAD_TOKEN}" STREQUAL "")
+  set(LOW_CRASH_REPORT_UPLOAD_TOKEN "$ENV{LOW_CRASH_REPORT_UPLOAD_TOKEN}")
+endif()
+
+include("${CMAKE_CURRENT_SOURCE_DIR}/CrashReporter.local.cmake" OPTIONAL)
+
 target_compile_definitions(Lowder PRIVATE
   LOW_MODULE_NAME="lowder"
+  LOW_HIDE_WINDOWS_CONSOLE=$<IF:$<BOOL:${ENGINE_BUILD}>,1,0>
+  "LOW_CRASH_REPORT_UPLOAD_URL=\"${LOW_CRASH_REPORT_UPLOAD_URL}\""
+  "LOW_CRASH_REPORT_UPLOAD_TOKEN=\"${LOW_CRASH_REPORT_UPLOAD_TOKEN}\""
 )
 
 include_directories(
@@ -53,6 +69,7 @@ target_link_libraries(Lowder PRIVATE
 if(WIN32)
   target_link_libraries(Lowder PRIVATE Dbghelp.lib)
   target_link_libraries(Lowder PRIVATE Gdiplus.lib)
+  target_link_libraries(Lowder PRIVATE Winhttp.lib)
 endif()
 
 target_link_libraries(Lowder PRIVATE
