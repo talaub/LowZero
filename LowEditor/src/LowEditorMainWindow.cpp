@@ -59,6 +59,10 @@
 #include <future>
 #include <ctype.h>
 
+#if defined(_WIN32)
+extern "C" __declspec(dllimport) int __stdcall IsDebuggerPresent();
+#endif
+
 void *operator new[](size_t size, const char *pName, int flags,
                      unsigned debugFlags, const char *file, int line)
 {
@@ -101,6 +105,15 @@ namespace Low {
     Low::Util::List<MenuEntry> g_MenuEntries;
 
     Helper::SphericalBillboardMaterials g_SphericalBillboardMaterials;
+
+    bool is_debugger_attached()
+    {
+#ifdef _WIN32
+      return IsDebuggerPresent() != 0;
+#else
+      return false;
+#endif
+    }
 
     Util::Map<Util::String, EditorWidget> &get_editor_widgets()
     {
@@ -535,15 +548,25 @@ namespace Low {
         l_VersionString += ".";
         l_VersionString += LOW_VERSION_MINOR;
 
+        const bool l_DebuggerAttached = is_debugger_attached();
+        const char *l_DebuggerLabel = "DEBUGGER";
+        const float l_DebuggerSpacing =
+            l_DebuggerAttached ? 12.0f : 0.0f;
+        const float l_VersionWidth =
+            ImGui::CalcTextSize(l_VersionString.c_str()).x;
+        const float l_DebuggerWidth =
+            l_DebuggerAttached
+                ? ImGui::CalcTextSize(l_DebuggerLabel).x
+                : 0.0f;
+        const float l_StatusWidth =
+            l_VersionWidth + l_DebuggerSpacing + l_DebuggerWidth;
+
         ImGuiViewport *l_Viewport = ImGui::GetMainViewport();
         ImVec2 l_Cursor = ImGui::GetCursorPos();
-        float l_Margin = 73.0f;
-        if (Util::StringHelper::ends_with(l_VersionString, "DEV")) {
-          l_Margin = 89.0f;
-        }
         const float l_ControlWidth = 46.0f * 3.0f;
         float l_PointToAchieve =
-            l_Viewport->WorkSize.x - l_Margin - l_ControlWidth;
+            l_Viewport->WorkSize.x - l_StatusWidth - 12.0f -
+            l_ControlWidth;
         float l_CurrentMargin = l_Cursor.x;
         float l_Spacing = l_PointToAchieve - l_CurrentMargin;
 
@@ -561,6 +584,19 @@ namespace Low {
         ImGui::Text(l_VersionString.c_str());
         ImGui::PopFont();
         ImGui::PopStyleColor();
+
+        if (l_DebuggerAttached) {
+          ImGui::SameLine(0.0f, l_DebuggerSpacing);
+          ImGui::PushStyleColor(
+              ImGuiCol_Text,
+              color_to_imvec4(theme_get_current().warning));
+          ImGui::PushFont(Fonts::UI(12));
+          cursor = ImGui::GetCursorPos();
+          ImGui::SetCursorPos(cursor + ImVec2(0.0f, 3.0f));
+          ImGui::TextUnformatted(l_DebuggerLabel);
+          ImGui::PopFont();
+          ImGui::PopStyleColor();
+        }
 
         const float l_ControlsLeft = l_Viewport->WorkPos.x +
                                      l_Viewport->WorkSize.x -

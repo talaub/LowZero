@@ -224,14 +224,76 @@ namespace Lowder {
         SelectObject(l_MemoryDc, l_PreviousPen);
         DeleteObject(l_AccentPen);
 
+        HGDIOBJ l_PreviousFont = nullptr;
+
+#if !defined(RELEASE_BUILD) || !RELEASE_BUILD
+        RECT l_DevBadgeRect{SPLASH_WIDTH - 150, 24, SPLASH_WIDTH - 50,
+                            50};
+        HBRUSH l_DevBadgeBrush = CreateSolidBrush(RGB(32, 28, 38));
+        HPEN l_DevBadgePen = CreatePen(PS_SOLID, 1, RGB(2, 173, 191));
+        HGDIOBJ l_PreviousBadgeBrush =
+            SelectObject(l_MemoryDc, l_DevBadgeBrush);
+        l_PreviousPen = SelectObject(l_MemoryDc, l_DevBadgePen);
+        RoundRect(l_MemoryDc, l_DevBadgeRect.left, l_DevBadgeRect.top,
+                  l_DevBadgeRect.right, l_DevBadgeRect.bottom, 6, 6);
+        SelectObject(l_MemoryDc, l_PreviousBadgeBrush);
+        SelectObject(l_MemoryDc, l_PreviousPen);
+        DeleteObject(l_DevBadgePen);
+        DeleteObject(l_DevBadgeBrush);
+
+        HFONT l_DevBadgeFont =
+            CreateFontA(14, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE,
+                        DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
+                        CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+                        DEFAULT_PITCH | FF_DONTCARE, "Segoe UI");
+        l_PreviousFont = SelectObject(l_MemoryDc, l_DevBadgeFont);
+        SetTextColor(l_MemoryDc, RGB(2, 173, 191));
+        DrawTextA(l_MemoryDc, "DEV BUILD", -1, &l_DevBadgeRect,
+                  DT_CENTER | DT_SINGLELINE | DT_VCENTER);
+        SelectObject(l_MemoryDc, l_PreviousFont);
+        DeleteObject(l_DevBadgeFont);
+#endif
+
+        if (IsDebuggerPresent()) {
+          RECT l_DebuggerBadgeRect{SPLASH_WIDTH - 208, 56,
+                                   SPLASH_WIDTH - 50, 82};
+          HBRUSH l_DebuggerBadgeBrush =
+              CreateSolidBrush(RGB(42, 27, 34));
+          HPEN l_DebuggerBadgePen =
+              CreatePen(PS_SOLID, 1, RGB(191, 86, 65));
+          HGDIOBJ l_PreviousBadgeBrush =
+              SelectObject(l_MemoryDc, l_DebuggerBadgeBrush);
+          l_PreviousPen = SelectObject(l_MemoryDc, l_DebuggerBadgePen);
+          RoundRect(l_MemoryDc, l_DebuggerBadgeRect.left,
+                    l_DebuggerBadgeRect.top, l_DebuggerBadgeRect.right,
+                    l_DebuggerBadgeRect.bottom, 6, 6);
+          SelectObject(l_MemoryDc, l_PreviousBadgeBrush);
+          SelectObject(l_MemoryDc, l_PreviousPen);
+          DeleteObject(l_DebuggerBadgePen);
+          DeleteObject(l_DebuggerBadgeBrush);
+
+          HFONT l_DebuggerBadgeFont =
+              CreateFontA(14, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE,
+                          FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
+                          CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+                          DEFAULT_PITCH | FF_DONTCARE, "Segoe UI");
+          l_PreviousFont =
+              SelectObject(l_MemoryDc, l_DebuggerBadgeFont);
+          SetTextColor(l_MemoryDc, RGB(230, 122, 96));
+          DrawTextA(l_MemoryDc, "DEBUGGER ATTACHED", -1,
+                    &l_DebuggerBadgeRect,
+                    DT_CENTER | DT_SINGLELINE | DT_VCENTER);
+          SelectObject(l_MemoryDc, l_PreviousFont);
+          DeleteObject(l_DebuggerBadgeFont);
+        }
+
         SetTextColor(l_MemoryDc, RGB(190, 184, 198));
         HFONT l_StatusFont =
             CreateFontA(18, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
                         DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
                         CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
                         DEFAULT_PITCH | FF_DONTCARE, "Segoe UI");
-        HGDIOBJ l_PreviousFont =
-            SelectObject(l_MemoryDc, l_StatusFont);
+        l_PreviousFont = SelectObject(l_MemoryDc, l_StatusFont);
         std::string l_Status = get_status();
         RECT l_StatusRect{50, 200, SPLASH_WIDTH - 50, 240};
         DrawTextA(l_MemoryDc, l_Status.c_str(), -1, &l_StatusRect,
