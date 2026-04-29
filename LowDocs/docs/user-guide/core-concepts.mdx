@@ -1,0 +1,153 @@
+---
+sidebar_position: 1
+---
+
+# Core Concepts
+
+LowEngine is built around a small set of concepts that show up everywhere in the editor: scenes, regions, entities, components, systems, assets, resources, prefabs, and handles. Once those words are clear, most editor workflows become much easier to reason about.
+
+This page explains those concepts from a user point of view. The implementation details live in the Technical Reference section.
+
+## Scene
+
+A scene is the top-level editable world. It is roughly equivalent to a level, map, or large playable area.
+
+Only one scene is loaded at a time. When you switch scenes, the currently loaded scene is unloaded and the selected scene becomes the active editing context.
+
+A scene does not directly contain all gameplay objects as one flat list. Instead, it is made up of one or more regions. Those regions own the entities that make up the scene.
+
+Use scenes when you want to separate major areas of a game or tool project:
+
+- A gameplay level
+- A menu or UI test scene
+- A combat arena
+- A prototype sandbox
+- A large world area split into streamable parts
+
+## Region
+
+A region is a group of entities inside a scene.
+
+Regions exist so a scene can be split into meaningful chunks. Some regions are always loaded with the scene. Others can be streamed in and out based on distance from the player camera.
+
+For streamed regions, the important settings are:
+
+- **Streaming enabled** controls whether the region can unload dynamically.
+- **Streaming position** is the center of the streaming area.
+- **Streaming radius** defines the size of the streaming area.
+
+When streaming is disabled, the region behaves like a normal static part of the scene. Its entities stay loaded for as long as the scene is loaded.
+
+Use regions when you want to organize the world by area, performance boundary, or editing responsibility. Even in a small scene, regions help answer a simple question: "Where does this entity belong?"
+
+## Entity
+
+An entity is an object placed in a scene.
+
+Entities are intentionally lightweight. By themselves, they do not do much. Their behavior and editable data come from components attached to them.
+
+You can think of an entity as the thing you select in the scene hierarchy:
+
+- A character
+- A light
+- A camera
+- A prop
+- A trigger
+- A gameplay object
+
+Every entity belongs to a region. If that region unloads, the entity unloads with it. If the region loads again, the entity data is restored from that region's saved data.
+
+Every entity also has a transform. The transform gives the entity a position, rotation, and scale in the world, and it allows entities to be arranged into parent/child hierarchies.
+
+## Component
+
+A component adds a specific piece of data or behavior to an entity.
+
+An entity can have multiple components, but usually only one component of a given type. This keeps an entity composable without turning it into a large custom object for every possible use case.
+
+Common component types include:
+
+- **Transform** for position, rotation, scale, and hierarchy.
+- **Mesh Renderer** for displaying a mesh with a material.
+- **Directional Light** for global directional lighting.
+- **Point Light** for local light sources.
+- **Rigid Body** for physics behavior.
+- **Camera** for rendering a view.
+
+The Details panel is where component properties are inspected and edited. If you select an entity, you are usually editing the components attached to that entity.
+
+## System
+
+A system is the part of the engine that reads component data and performs behavior.
+
+LowEngine follows the broad idea of an Entity Component System. In that model, the responsibilities are split:
+
+- **Entities** identify objects.
+- **Components** store data on those objects.
+- **Systems** run logic using that data.
+
+For example, a mesh renderer component can store which mesh and material an entity should use. The rendering system then reads that data and submits the object to the renderer. A point light component can store color, intensity, and range. The lighting system then uses those values when preparing the scene for rendering.
+
+This separation is important because components should usually stay small and descriptive. They answer "what data does this entity have?" Systems answer "what happens because of that data?"
+
+From a user point of view, this means adding a component is often enough to opt an entity into engine behavior. If an entity has a mesh renderer, it can be drawn. If it has a rigid body, physics can affect it. If it has a light component, it contributes light to the scene.
+
+Some systems run automatically as part of the engine loop. Others are editor-facing and react to changes made in the UI. Either way, systems are what make component data active.
+
+## Transform And Hierarchy
+
+The transform is the component that places an entity in the world.
+
+It stores local position, local rotation, and local scale. It can also have a parent entity. When an entity has a parent, its local transform is interpreted relative to that parent, and LowEngine calculates the final world transform from the hierarchy.
+
+Hierarchy is useful for objects that should move together:
+
+- A weapon attached to a character
+- A camera attached to a rig
+- Child meshes making up a larger prop
+
+When editing a hierarchy, remember that moving a parent affects the world position of its children.
+
+## Asset
+
+An asset is project data stored on disk and managed by the editor.
+
+Assets are the things you reuse across scenes and entities. They can be selected, inspected, referenced, and assigned to component properties.
+
+Examples include:
+
+- Meshes
+- Materials
+- Textures
+- Fonts
+- UI widgets
+- Scripts
+- _and many more..._
+
+## Handle
+
+A handle is the way LowEngine refers to engine objects internally and in scripting-facing systems.
+
+Most major engine objects are handle types:
+
+- Scene
+- Region
+- Entity
+- Component types
+- Assets
+- Renderer objects
+
+For users, handles mostly appear indirectly: when one object references another, the editor is usually storing a handle or a handle-like identifier behind the scenes.
+
+Handles are important because they let the engine refer to objects without copying the object itself. A component can reference a mesh, an entity can reference its region, and editor tools can pass around references to engine objects.
+
+## Unique IDs
+
+Many LowEngine objects also have unique IDs.
+
+Unique IDs are stable identifiers used for saving, loading, and reconnecting references. This matters because an object's in-memory handle can change between sessions, but saved data still needs to find the same scene object, region, prefab, or asset again.
+
+In practice:
+
+- Handles are useful while the engine is running.
+- Unique IDs are useful when data is saved, loaded, duplicated, or referenced from disk.

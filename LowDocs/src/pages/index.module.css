@@ -4,10 +4,18 @@
  */
 
 .heroBanner {
-  padding: 4rem 0;
+  padding: 4.5rem 0;
   text-align: center;
   position: relative;
   overflow: hidden;
+}
+
+.heroWordmark {
+  display: block;
+  width: min(18rem, 72vw);
+  height: auto;
+  margin: 0.75rem auto 1rem;
+  filter: drop-shadow(0 0.75rem 1.5rem rgba(0, 0, 0, 0.28));
 }
 
 @media screen and (max-width: 996px) {
