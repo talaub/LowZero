@@ -14,6 +14,7 @@
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 
 #include "LowRendererVkImage.h"
+#include "LowRendererVulkanImage.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -96,7 +97,10 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
         Vulkan::Image l_Image = get_data_handle();
-        l_Image.destroy();
+        if (l_Image.is_alive()) {
+          Vulkan::ImageUtil::destroy(l_Image);
+          l_Image.destroy();
+        }
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 

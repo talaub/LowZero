@@ -301,11 +301,13 @@ namespace Low {
       g_UserSettings[N(theme)] = theme_get_current_name();
       g_UserSettings[N(loaded_scene)] = l_Scene.get_name();
 
+      /*
       LOW_LOG_DEBUG << "Debug" << LOW_LOG_END;
       LOW_LOG_INFO << "Info" << LOW_LOG_END;
       LOW_LOG_WARN << "Warning" << LOW_LOG_END;
       LOW_LOG_ERROR << "Error" << LOW_LOG_END;
       LOW_LOG_PROFILE << "Profile" << LOW_LOG_END;
+      */
     }
 
     static void register_type_nodes()

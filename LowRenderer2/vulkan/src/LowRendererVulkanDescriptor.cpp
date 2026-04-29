@@ -332,6 +332,6 @@ namespace Low {
           return true;
         }
       } // namespace DescriptorUtil
-    }   // namespace Vulkan
-  }     // namespace Renderer
+    } // namespace Vulkan
+  } // namespace Renderer
 } // namespace Low

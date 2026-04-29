@@ -67,9 +67,6 @@
 namespace Low {
   namespace Renderer {
 
-    VkSampler g_TestSampler;
-    Low::Renderer::Texture g_Texture;
-
     MaterialTypes g_MaterialTypes;
 
     Util::List<ThumbnailCreationSchedule>
@@ -637,41 +634,8 @@ namespace Low {
                  "Failed to initialize Vulkan renderer");
 
       {
-        /*
-        Low::Util::String l_BasePath =
-            Low::Util::get_project().dataPath;
-        l_BasePath += "/resources/img2d/test.ktx";
-
-        g_Texture = Low::Renderer::load_texture(l_BasePath);
-        */
-      }
-
-      {
         g_DefaultTexture = Texture::make_gpu_ready(N(Default));
       }
-
-      VkSamplerCreateInfo sampl{};
-      sampl.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-
-      sampl.magFilter = VK_FILTER_NEAREST;
-      sampl.minFilter = VK_FILTER_NEAREST;
-      // sampl.minLod = 0.0f;
-      // sampl.maxLod = 0.0f;
-      sampl.mipmapMode =
-          VK_SAMPLER_MIPMAP_MODE_LINEAR; // Enable mipmaps
-
-      sampl.addressModeU =
-          VK_SAMPLER_ADDRESS_MODE_REPEAT; // Addressing mode
-      sampl.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-      sampl.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-
-      sampl.mipLodBias = 0.0f; // LOD bias for mip selection
-      sampl.minLod = 0.0f;     // Minimum LOD level
-      sampl.maxLod = static_cast<float>(4 - 1); // Max LOD level
-      sampl.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-
-      vkCreateSampler(Low::Renderer::Vulkan::Global::get_device(),
-                      &sampl, nullptr, &g_TestSampler);
 
       initialize_primitives();
 
@@ -699,9 +663,6 @@ namespace Low {
     void cleanup()
     {
       Vulkan::wait_idle();
-
-      vkDestroySampler(Vulkan::Global::get_device(), g_TestSampler,
-                       nullptr);
 
       cleanup_types();
       cleanup_enums();

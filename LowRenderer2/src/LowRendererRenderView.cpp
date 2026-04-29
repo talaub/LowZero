@@ -158,6 +158,34 @@ namespace Low {
           it->teardown(get_id());
           free(get_step_data()[it->get_index()]);
         }
+        if (get_gbuffer_albedo().is_alive()) {
+          get_gbuffer_albedo().destroy();
+        }
+        if (get_gbuffer_normals().is_alive()) {
+          get_gbuffer_normals().destroy();
+        }
+        if (get_gbuffer_depth().is_alive()) {
+          get_gbuffer_depth().destroy();
+        }
+        if (get_gbuffer_viewposition().is_alive()) {
+          get_gbuffer_viewposition().destroy();
+        }
+        if (get_object_map().is_alive()) {
+          get_object_map().destroy();
+        }
+        if (get_lit_image().is_alive()) {
+          get_lit_image().destroy();
+        }
+        if (get_blurred_image().is_alive()) {
+          get_blurred_image().destroy();
+        }
+        if (get_ssao_image().is_alive()) {
+          get_ssao_image().destroy();
+        }
+        Vulkan::ViewInfo l_ViewInfo = get_view_info_handle();
+        if (l_ViewInfo.is_alive()) {
+          l_ViewInfo.destroy();
+        }
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 

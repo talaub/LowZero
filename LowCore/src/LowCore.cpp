@@ -339,8 +339,8 @@ namespace Low {
       UI::Element::cleanup();
       UI::WidgetAsset::cleanup();
 
-      UI::ControllerInstance::initialize();
-      UI::Controller::initialize();
+      UI::ControllerInstance::cleanup();
+      UI::Controller::cleanup();
     }
 
     static void cleanup_scripting_types()

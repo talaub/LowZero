@@ -13,6 +13,7 @@
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 
+#include "LowRendererVkTexExport.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -98,6 +99,10 @@ namespace Low {
         Low::Util::HandleLock<TextureExport> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
+        Vulkan::TexExport l_TexExport = get_data_handle();
+        if (l_TexExport.is_alive()) {
+          l_TexExport.destroy();
+        }
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 

@@ -10,10 +10,19 @@ dll_macro: LOW_RENDERER2_API
 types:
   Pipeline:
     properties:
-      pipeline:
+      internal:
         type: VkPipeline
+        getter_name: get
+        setter_name: set
       layout:
+        type: PipelineLayout
+        handle: true
+  PipelineLayout:
+    properties:
+      internal:
         type: VkPipelineLayout
+        getter_name: get
+        setter_name: set
   Image:
     properties:
       allocated_image:

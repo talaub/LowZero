@@ -85,7 +85,7 @@ namespace Low {
           // Break on error or warning
           if (messageSeverity >=
               VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-            // DEBUG_BREAK();
+            DEBUG_BREAK();
           }
 
           return VK_FALSE;
@@ -151,10 +151,10 @@ namespace Low {
         VkDescriptorSetLayout g_TextureDescriptorSetLayout;
         VkDescriptorSet *g_TextureDescriptorSets;
 
-        VkPipelineLayout g_LightingPipelineLayout;
+        PipelineLayout g_LightingPipelineLayout;
 
-        VkPipelineLayout g_BlurPipelineLayout;
-        VkPipelineLayout g_DynamicBlurPipelineLayout;
+        PipelineLayout g_BlurPipelineLayout;
+        PipelineLayout g_DynamicBlurPipelineLayout;
 
         struct BlurPushConstants
         {
@@ -236,7 +236,7 @@ namespace Low {
           return g_Samplers;
         }
 
-        VkPipelineLayout get_lighting_pipeline_layout()
+        PipelineLayout get_lighting_pipeline_layout()
         {
           return g_LightingPipelineLayout;
         }
@@ -650,10 +650,8 @@ namespace Low {
             l_Layout.pPushConstantRanges = &l_PushConstant;
             l_Layout.pushConstantRangeCount = 1;
 
-            LOWR_VK_CHECK_RETURN(vkCreatePipelineLayout(
-                get_device(), &l_Layout, nullptr,
-
-                &g_BlurPipelineLayout));
+            g_BlurPipelineLayout =
+                PipelineUtil::create_layout(N(Blur), l_Layout);
           }
 
           {
@@ -672,10 +670,8 @@ namespace Low {
             l_Layout.pPushConstantRanges = &l_PushConstant;
             l_Layout.pushConstantRangeCount = 1;
 
-            LOWR_VK_CHECK_RETURN(vkCreatePipelineLayout(
-                get_device(), &l_Layout, nullptr,
-
-                &g_DynamicBlurPipelineLayout));
+            g_DynamicBlurPipelineLayout =
+                PipelineUtil::create_layout(N(DynamicBlur), l_Layout);
           }
 
           {
@@ -927,6 +923,8 @@ namespace Low {
               VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
           l_Features12.bufferDeviceAddress = true;
           l_Features12.descriptorIndexing = true;
+          l_Features12.shaderSampledImageArrayNonUniformIndexing =
+              true;
 
           VkPhysicalDeviceFeatures l_ExtensionFeatures{};
           l_ExtensionFeatures.fillModeNonSolid = VK_TRUE;
@@ -1037,9 +1035,8 @@ namespace Low {
             l_Layout.pSetLayouts = l_DescriptorSetLayouts.data();
             l_Layout.setLayoutCount = l_DescriptorSetLayouts.size();
 
-            LOWR_VK_CHECK_RETURN(vkCreatePipelineLayout(
-                Global::get_device(), &l_Layout, nullptr,
-                &g_LightingPipelineLayout));
+            g_LightingPipelineLayout =
+                PipelineUtil::create_layout(N(Lighting), l_Layout);
           }
 
           LOWR_VK_ASSERT(blur_pipelines_init(),
@@ -1077,12 +1074,22 @@ namespace Low {
           get_drawcommand_buffer().destroy();
           get_ui_drawcommand_buffer().destroy();
           BufferUtil::destroy_buffer(get_material_data_buffer());
+          BufferUtil::destroy_buffer(get_ss2d_drawcommand_buffer());
 
           return true;
         }
 
         static bool global_descriptors_cleanup()
         {
+          vkDestroyDescriptorSetLayout(
+              Global::get_device(),
+              Global::get_gbuffer_descriptor_set_layout(), nullptr);
+          vkDestroyDescriptorSetLayout(
+              Global::get_device(),
+              Global::get_view_info_descriptor_set_layout(), nullptr);
+          vkDestroyDescriptorSetLayout(
+              Global::get_device(),
+              Global::get_texture_descriptor_set_layout(), nullptr);
           vkDestroyDescriptorSetLayout(
               Global::get_device(),
               Global::get_global_descriptor_set_layout(), nullptr);
@@ -1098,15 +1105,42 @@ namespace Low {
           return true;
         }
 
+        static bool samplers_cleanup()
+        {
+          vkDestroySampler(get_device(),
+                           get_samplers().no_lod_nearest_repeat_black,
+                           nullptr);
+          vkDestroySampler(get_device(),
+                           get_samplers().no_lod_nearest_repeat_white,
+                           nullptr);
+          {
+            for (int i = 0;
+                 i < get_samplers().lod_linear_repeat_black.size();
+                 ++i) {
+              vkDestroySampler(
+                  get_device(),
+                  get_samplers().lod_linear_repeat_black[i], nullptr);
+            }
+            get_samplers().lod_linear_repeat_black.clear();
+          }
+          {
+            for (int i = 0;
+                 i < get_samplers().lod_nearest_repeat_black.size();
+                 ++i) {
+              vkDestroySampler(
+                  get_device(),
+                  get_samplers().lod_nearest_repeat_black[i],
+                  nullptr);
+            }
+            get_samplers().lod_nearest_repeat_black.clear();
+          }
+          return true;
+        }
+
         bool cleanup()
         {
           ImGui_ImplVulkan_Shutdown();
           vkDestroyDescriptorPool(g_Device, g_ImguiPool, nullptr);
-
-          vkDestroyDescriptorSetLayout(
-              g_Device, g_GBufferDescriptorSetLayout, nullptr);
-          vkDestroyDescriptorSetLayout(
-              g_Device, g_ViewInfoDescriptorSetLayout, nullptr);
 
           LOWR_VK_ASSERT(global_descriptors_cleanup(),
                          "Could not cleanup global descriptors");
@@ -1116,8 +1150,26 @@ namespace Low {
                          "Could not cleanup buffers");
           LOWR_VK_ASSERT(mesh_buffer_cleanup(),
                          "Could not cleanup mesh buffers");
+          LOWR_VK_ASSERT(samplers_cleanup(),
+                         "Could not cleanup samplers");
 
           vkDestroySurfaceKHR(g_Instance, g_Surface, nullptr);
+
+          VmaTotalStatistics l_Stats = {};
+          vmaCalculateStatistics(g_Allocator, &l_Stats);
+          if (l_Stats.total.statistics.allocationCount > 0) {
+            LOW_LOG_WARN << "VMA allocations still alive before "
+                         << "vmaDestroyAllocator: count="
+                         << l_Stats.total.statistics.allocationCount
+                         << " bytes="
+                         << l_Stats.total.statistics.allocationBytes
+                         << LOW_LOG_END;
+
+            char *l_StatsString = nullptr;
+            vmaBuildStatsString(g_Allocator, &l_StatsString, true);
+            LOW_LOG_WARN << l_StatsString << LOW_LOG_END;
+            vmaFreeStatsString(g_Allocator, l_StatsString);
+          }
 
           vmaDestroyAllocator(g_Allocator);
 
@@ -1189,19 +1241,20 @@ namespace Low {
             vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
 
             vkCmdBindPipeline(l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                              g_BlurPipelines.x_1.get_pipeline());
+                              g_BlurPipelines.x_1.get());
 
             vkCmdBindDescriptorSets(
                 l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                g_BlurPipelineLayout, 0, l_DescriptorSets.size(),
-                l_DescriptorSets.data(), 0, nullptr);
+                g_BlurPipelineLayout.get(), 0,
+                l_DescriptorSets.size(), l_DescriptorSets.data(), 0,
+                nullptr);
 
             BlurPushConstants l_PushConstants;
             l_PushConstants.texelSize = l_InverseDimensions;
             l_PushConstants.inputTextureIndex =
                 p_ImageToBlur.get_gpu().get_index();
 
-            vkCmdPushConstants(l_Cmd, g_BlurPipelineLayout,
+            vkCmdPushConstants(l_Cmd, g_BlurPipelineLayout.get(),
                                VK_SHADER_STAGE_FRAGMENT_BIT, 0,
                                sizeof(BlurPushConstants),
                                &l_PushConstants);
@@ -1240,19 +1293,20 @@ namespace Low {
             vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
 
             vkCmdBindPipeline(l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                              g_BlurPipelines.y_1.get_pipeline());
+                              g_BlurPipelines.y_1.get());
 
             vkCmdBindDescriptorSets(
                 l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                g_BlurPipelineLayout, 0, l_DescriptorSets.size(),
-                l_DescriptorSets.data(), 0, nullptr);
+                g_BlurPipelineLayout.get(), 0,
+                l_DescriptorSets.size(), l_DescriptorSets.data(), 0,
+                nullptr);
 
             BlurPushConstants l_PushConstants;
             l_PushConstants.texelSize = l_InverseDimensions;
             l_PushConstants.inputTextureIndex =
                 p_TempImage.get_gpu().get_index();
 
-            vkCmdPushConstants(l_Cmd, g_BlurPipelineLayout,
+            vkCmdPushConstants(l_Cmd, g_BlurPipelineLayout.get(),
                                VK_SHADER_STAGE_FRAGMENT_BIT, 0,
                                sizeof(BlurPushConstants),
                                &l_PushConstants);
@@ -1337,11 +1391,11 @@ namespace Low {
             vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
 
             vkCmdBindPipeline(l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                              g_BlurPipelines.x_4.get_pipeline());
+                              g_BlurPipelines.x_4.get());
 
             vkCmdBindDescriptorSets(
                 l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                g_DynamicBlurPipelineLayout, 0,
+                g_DynamicBlurPipelineLayout.get(), 0,
                 l_DescriptorSets.size(), l_DescriptorSets.data(), 0,
                 nullptr);
 
@@ -1353,10 +1407,10 @@ namespace Low {
             l_PushConstants.sigma = l_Sigma;
             l_PushConstants.stepScale = l_StepSize;
 
-            vkCmdPushConstants(l_Cmd, g_DynamicBlurPipelineLayout,
-                               VK_SHADER_STAGE_FRAGMENT_BIT, 0,
-                               sizeof(DynamicBlurPushConstants),
-                               &l_PushConstants);
+            vkCmdPushConstants(
+                l_Cmd, g_DynamicBlurPipelineLayout.get(),
+                VK_SHADER_STAGE_FRAGMENT_BIT, 0,
+                sizeof(DynamicBlurPushConstants), &l_PushConstants);
 
             vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
 
@@ -1392,11 +1446,11 @@ namespace Low {
             vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
 
             vkCmdBindPipeline(l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                              g_BlurPipelines.y_4.get_pipeline());
+                              g_BlurPipelines.y_4.get());
 
             vkCmdBindDescriptorSets(
                 l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                g_DynamicBlurPipelineLayout, 0,
+                g_DynamicBlurPipelineLayout.get(), 0,
                 l_DescriptorSets.size(), l_DescriptorSets.data(), 0,
                 nullptr);
 
@@ -1408,10 +1462,10 @@ namespace Low {
             l_PushConstants.sigma = l_Sigma;
             l_PushConstants.stepScale = l_StepSize;
 
-            vkCmdPushConstants(l_Cmd, g_DynamicBlurPipelineLayout,
-                               VK_SHADER_STAGE_FRAGMENT_BIT, 0,
-                               sizeof(DynamicBlurPushConstants),
-                               &l_PushConstants);
+            vkCmdPushConstants(
+                l_Cmd, g_DynamicBlurPipelineLayout.get(),
+                VK_SHADER_STAGE_FRAGMENT_BIT, 0,
+                sizeof(DynamicBlurPushConstants), &l_PushConstants);
 
             vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
 

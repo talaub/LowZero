@@ -8,27 +8,23 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-
 #include <vulkan/vulkan.h>
-#include "LowRendererVulkan.h"
-#include "LowRendererVkPipelineLayout.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
   namespace Renderer {
     namespace Vulkan {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      struct LOW_RENDERER2_API Pipeline : public Low::Util::Handle
+      struct LOW_RENDERER2_API PipelineLayout
+          : public Low::Util::Handle
       {
       public:
         struct Data
         {
         public:
-          VkPipeline internal;
-          PipelineLayout layout;
+          VkPipelineLayout internal;
           Low::Util::Name name;
 
           static size_t get_size()
@@ -47,7 +43,7 @@ namespace Low {
         static Low::Util::SharedMutex ms_PagesMutex;
         static Low::Util::List<Low::Util::Instances::Page *> ms_Pages;
 
-        static Low::Util::List<Pipeline> ms_LivingInstances;
+        static Low::Util::List<PipelineLayout> ms_LivingInstances;
 
         const static Low::Util::TypeIdentifier IDENTIFIER;
 
@@ -56,9 +52,9 @@ namespace Low {
           return ms_TypeId;
         }
 
-        static Pipeline make(Low::Util::Name p_Name);
+        static PipelineLayout make(Low::Util::Name p_Name);
         static Low::Util::Handle _make(Low::Util::Name p_Name);
-        explicit Pipeline(const Pipeline &p_Copy)
+        explicit PipelineLayout(const PipelineLayout &p_Copy)
             : Low::Util::Handle(p_Copy.m_Id)
         {
         }
@@ -68,21 +64,22 @@ namespace Low {
         static void initialize();
         static void cleanup();
 
-        Pipeline(u64 p_Id) : Low::Util::Handle(p_Id)
+        PipelineLayout(u64 p_Id) : Low::Util::Handle(p_Id)
         {
         }
-        Pipeline() : Low::Util::Handle()
+        PipelineLayout() : Low::Util::Handle()
         {
         }
-        Pipeline(Low::Util::Handle p_Handle)
+        PipelineLayout(Low::Util::Handle p_Handle)
             : Low::Util::Handle(p_Handle.get_id())
         {
         }
 
         using Handle::operator=;
 
-        Pipeline &operator=(const Pipeline &) = default;
-        Pipeline &operator=(Pipeline &&) noexcept = default;
+        PipelineLayout &operator=(const PipelineLayout &) = default;
+        PipelineLayout &
+        operator=(PipelineLayout &&) noexcept = default;
 
         static uint32_t living_count()
         {
@@ -90,16 +87,16 @@ namespace Low {
               ms_LivingMutex);
           return static_cast<uint32_t>(ms_LivingInstances.size());
         }
-        static Pipeline *living_instances()
+        static PipelineLayout *living_instances()
         {
           Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
               ms_LivingMutex);
           return ms_LivingInstances.data();
         }
 
-        static Pipeline create_handle_by_index(u32 p_Index);
+        static PipelineLayout create_handle_by_index(u32 p_Index);
 
-        static Pipeline find_by_index(uint32_t p_Index);
+        static PipelineLayout find_by_index(uint32_t p_Index);
         static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
         bool is_alive() const;
@@ -122,14 +119,14 @@ namespace Low {
 
         void serialize(Low::Util::Serial::Node &p_Node) const;
 
-        Pipeline duplicate(Low::Util::Name p_Name) const;
-        static Pipeline duplicate(Pipeline p_Handle,
-                                  Low::Util::Name p_Name);
+        PipelineLayout duplicate(Low::Util::Name p_Name) const;
+        static PipelineLayout duplicate(PipelineLayout p_Handle,
+                                        Low::Util::Name p_Name);
         static Low::Util::Handle
         _duplicate(Low::Util::Handle p_Handle,
                    Low::Util::Name p_Name);
 
-        static Pipeline find_by_name(Low::Util::Name p_Name);
+        static PipelineLayout find_by_name(Low::Util::Name p_Name);
         static Low::Util::Handle
         _find_by_name(Low::Util::Name p_Name);
 
@@ -140,22 +137,19 @@ namespace Low {
                     Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
-          Pipeline l_Handle = p_Handle.get_id();
+          PipelineLayout l_Handle = p_Handle.get_id();
           return l_Handle.is_alive();
         }
 
         static void destroy(Low::Util::Handle p_Handle)
         {
           _LOW_ASSERT(is_alive(p_Handle));
-          Pipeline l_Pipeline = p_Handle.get_id();
-          l_Pipeline.destroy();
+          PipelineLayout l_PipelineLayout = p_Handle.get_id();
+          l_PipelineLayout.destroy();
         }
 
-        VkPipeline &get() const;
-        void set(VkPipeline &p_Value);
-
-        PipelineLayout get_layout() const;
-        void set_layout(PipelineLayout p_Value);
+        VkPipelineLayout &get() const;
+        void set(VkPipelineLayout &p_Value);
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
@@ -173,12 +167,10 @@ namespace Low {
         static u32 create_page();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
-
         // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
       };
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
-
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
     } // namespace Vulkan

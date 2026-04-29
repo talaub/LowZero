@@ -98,7 +98,12 @@ namespace Low {
         Low::Util::HandleLock<EditorImage> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
-        // TODO: destroy gpu/staging
+        if (get_gpu().is_alive()) {
+          get_gpu().destroy();
+        }
+        if (get_staging().is_alive()) {
+          get_staging().destroy();
+        }
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 

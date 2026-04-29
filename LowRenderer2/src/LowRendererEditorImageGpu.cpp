@@ -13,6 +13,9 @@
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 
+#include "LowRendererVkImage.h"
+#include "LowRendererVulkanImage.h"
+#include "imgui_impl_vulkan.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -94,7 +97,15 @@ namespace Low {
         Low::Util::HandleLock<EditorImageGpu> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
-        // TODO: remove vulkan imgui image
+        Vulkan::Image l_Image = get_data_handle();
+        if (is_imgui_texture_initialized()) {
+          ImGui_ImplVulkan_RemoveTexture(
+              (VkDescriptorSet)get_imgui_texture_id());
+        }
+        if (l_Image.is_alive()) {
+          Vulkan::ImageUtil::destroy(l_Image);
+          l_Image.destroy();
+        }
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 

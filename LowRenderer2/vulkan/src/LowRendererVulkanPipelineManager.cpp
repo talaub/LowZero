@@ -55,7 +55,7 @@ namespace Low {
 
           // Destroy old pipeline
           vkDestroyPipeline(Global::get_device(),
-                            p_Pipeline.get_pipeline(), nullptr);
+                            p_Pipeline.get(), nullptr);
 
           // #if LOW_RENDERER_COMPILE_SHADERS
           if (p_CompileShaders) {
@@ -71,7 +71,7 @@ namespace Low {
               l_Builder.build_pipeline(Global::get_device());
 
           // Create new pipeline and assign
-          p_Pipeline.set_pipeline(l_VkPipeline);
+          p_Pipeline.set(l_VkPipeline);
 
           return true;
         }
@@ -84,7 +84,7 @@ namespace Low {
 
           // Destroy old pipeline
           vkDestroyPipeline(Global::get_device(),
-                            p_Pipeline.get_pipeline(), nullptr);
+                            p_Pipeline.get(), nullptr);
 
           // #if LOW_RENDERER_COMPILE_SHADERS
           if (p_CompileShaders) {
@@ -99,7 +99,7 @@ namespace Low {
               l_Builder.build_pipeline(Global::get_device());
 
           // Create new pipeline and assign
-          p_Pipeline.set_pipeline(l_VkPipeline);
+          p_Pipeline.set(l_VkPipeline);
 
           return true;
         }

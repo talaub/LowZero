@@ -1,5 +1,6 @@
 #include "LowRendererVulkanPipeline.h"
 
+#include "LowRendererVkPipelineLayout.h"
 #include "LowRendererVulkanInit.h"
 #include "LowRendererVulkanBase.h"
 #include "LowRendererVulkanPipelineManager.h"
@@ -8,12 +9,30 @@
 #include "LowUtil.h"
 
 #include <fstream>
-#include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan.h>
+#include "LowRendererVulkanBase.h"
 
 namespace Low {
   namespace Renderer {
     namespace Vulkan {
       namespace PipelineUtil {
+        PipelineLayout
+        create_layout(Util::Name p_Name,
+                      const VkPipelineLayoutCreateInfo &p_CreateInfo)
+        {
+          PipelineLayout l_Layout = PipelineLayout::make(p_Name);
+
+          VkPipelineLayout l_VkLayout;
+
+          LOWR_VK_CHECK(vkCreatePipelineLayout(Global::get_device(),
+                                                &p_CreateInfo, nullptr,
+                                                &l_VkLayout),
+                         "Failed to create pipeline layout.");
+
+          l_Layout.set(l_VkLayout);
+          return l_Layout;
+        }
+
         bool load_shader_module(const char *p_FilePath,
                                 VkDevice p_Device,
                                 VkShaderModule *p_OutShaderModule)
@@ -97,7 +116,7 @@ namespace Low {
 
         GraphicsPipelineBuilder
         GraphicsPipelineBuilder::prepare_fullscreen_effect(
-            VkPipelineLayout p_Layout, Util::String p_ShaderPath,
+            PipelineLayout p_Layout, Util::String p_ShaderPath,
             VkFormat p_OutImageFormat)
         {
           PipelineUtil::GraphicsPipelineBuilder l_Builder;
@@ -192,6 +211,10 @@ namespace Low {
           renderInfo.pColorAttachmentFormats =
               colorAttachmentFormats.data();
 
+          LOW_ASSERT(
+              pipelineLayout.is_alive(),
+              "Cannot create pipeline with dead pipeline layout.");
+
           VkPipelineViewportStateCreateInfo l_ViewportState = {};
           l_ViewportState.sType =
               VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -244,7 +267,7 @@ namespace Low {
           l_PipelineInfo.pMultisampleState = &multisampling;
           l_PipelineInfo.pColorBlendState = &l_BlendStateCreateInfo;
           l_PipelineInfo.pDepthStencilState = &depthStencil;
-          l_PipelineInfo.layout = pipelineLayout;
+          l_PipelineInfo.layout = pipelineLayout.get();
 
           VkDynamicState l_State[] = {VK_DYNAMIC_STATE_VIEWPORT,
                                       VK_DYNAMIC_STATE_SCISSOR};
@@ -413,7 +436,7 @@ namespace Low {
           shaderStage.pName =
               "main"; // Default entry point for compute shaders
 
-          pipelineLayout = VK_NULL_HANDLE;
+          pipelineLayout = Util::Handle::DEAD;
           computeShaderPath.clear();
           computeSpirvPath.clear();
         }
@@ -425,7 +448,7 @@ namespace Low {
           pipelineCreateInfo.sType =
               VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
           pipelineCreateInfo.stage = shaderStage;
-          pipelineCreateInfo.layout = pipelineLayout;
+          pipelineCreateInfo.layout = pipelineLayout.get();
 
           VkPipeline pipeline;
           if (vkCreateComputePipelines(p_Device, VK_NULL_HANDLE, 1,
@@ -444,7 +467,7 @@ namespace Low {
         }
 
         void ComputePipelineBuilder::set_pipeline_layout(
-            VkPipelineLayout p_PipelineLayout)
+            PipelineLayout p_PipelineLayout)
         {
           pipelineLayout = p_PipelineLayout;
         }
@@ -492,6 +515,6 @@ namespace Low {
           return l_Pipeline;
         }
       } // namespace PipelineUtil
-    }   // namespace Vulkan
-  }     // namespace Renderer
+    } // namespace Vulkan
+  } // namespace Renderer
 } // namespace Low

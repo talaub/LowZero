@@ -14,6 +14,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "LowRendererTexture.h"
+#include "LowRendererVkPipelineLayout.h"
 
 #define VK_FRAME_OVERLAP 2
 
@@ -171,7 +172,7 @@ namespace Low {
         VkDescriptorSetLayout get_view_info_descriptor_set_layout();
         VkDescriptorSetLayout get_gbuffer_descriptor_set_layout();
 
-        VkPipelineLayout get_lighting_pipeline_layout();
+        PipelineLayout get_lighting_pipeline_layout();
 
         Samplers &get_samplers();
 

@@ -23,6 +23,7 @@
 #include "LowRendererTextureExport.h"
 #include "LowRendererVkTexExport.h"
 #include "LowRendererEditorImage.h"
+#include "LowRendererVkPipelineLayout.h"
 
 #include "LowRenderer.h"
 
@@ -65,9 +66,9 @@ namespace Low {
     namespace Vulkan {
       Context g_Context;
 
-      Vulkan::Pipeline create_pipeline_from_config(
+      static Vulkan::Pipeline create_pipeline_from_config(
           const GraphicsPipelineConfig &p_Config,
-          VkPipelineLayout p_PipelineLayout);
+          PipelineLayout p_PipelineLayout);
 
       struct ComputePushConstants
       {
@@ -79,23 +80,18 @@ namespace Low {
 
       struct
       {
-        VkPipeline gradientPipeline;
-        VkPipelineLayout gradientPipelineLayout;
-
-        VkPipelineLayout trianglePipelineLayout;
-        Pipeline trianglePipeline;
-
-        VkPipelineLayout solidBasePipelineLayout;
+        PipelineLayout solidBasePipelineLayout;
         Pipeline solidBasePipeline;
 
         Pipeline lightingPipeline;
 
         Pipeline ss2d;
-        VkPipelineLayout ss2dLayout;
+        PipelineLayout ss2dLayout;
       } g_Pipelines;
 
       VkDescriptorSet g_Ss2dGlobalSet;
       VkDescriptorSetLayout g_Ss2dCanvasDSLayout;
+      VkDescriptorSetLayout g_Ss2dGlobalDSLayout;
 
       namespace Convert {
         static VkFormat image_format(ImageFormat p_Format)
@@ -150,9 +146,9 @@ namespace Low {
         }
       } // namespace Convert
 
-      Vulkan::Pipeline create_pipeline_from_config(
+      static Vulkan::Pipeline create_pipeline_from_config(
           const GraphicsPipelineConfig &p_Config,
-          VkPipelineLayout p_PipelineLayout)
+          PipelineLayout p_PipelineLayout)
       {
         Vulkan::PipelineUtil::GraphicsPipelineBuilder l_Builder;
 
@@ -197,6 +193,15 @@ namespace Low {
         return l_Builder.register_pipeline();
       }
 
+      static bool ss2d_pipeline_cleanup()
+      {
+        vkDestroyDescriptorSetLayout(Global::get_device(),
+                                     g_Ss2dCanvasDSLayout, nullptr);
+        vkDestroyDescriptorSetLayout(Global::get_device(),
+                                     g_Ss2dGlobalDSLayout, nullptr);
+        return true;
+      }
+
       static bool ss2d_pipeline_init(Context &p_Context)
       {
         Util::String l_VertexShaderPath = "fullscreen_triangle.vert";
@@ -204,13 +209,11 @@ namespace Low {
 
         Util::List<VkDescriptorSetLayout> l_DescriptorSetLayouts;
 
-        VkDescriptorSetLayout l_GlobalDSLayout;
-
         {
           DescriptorUtil::DescriptorLayoutBuilder l_Builder;
           l_Builder.add_binding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
-          l_GlobalDSLayout = l_Builder.build(
+          g_Ss2dGlobalDSLayout = l_Builder.build(
               Global::get_device(), VK_SHADER_STAGE_ALL_GRAPHICS);
         }
 
@@ -222,7 +225,7 @@ namespace Low {
               Global::get_device(), VK_SHADER_STAGE_ALL_GRAPHICS);
         }
 
-        l_DescriptorSetLayouts.push_back(l_GlobalDSLayout);
+        l_DescriptorSetLayouts.push_back(g_Ss2dGlobalDSLayout);
         l_DescriptorSetLayouts.push_back(g_Ss2dCanvasDSLayout);
 
         VkPipelineLayoutCreateInfo l_Layout{};
@@ -232,9 +235,8 @@ namespace Low {
         l_Layout.pSetLayouts = l_DescriptorSetLayouts.data();
         l_Layout.setLayoutCount = l_DescriptorSetLayouts.size();
 
-        LOWR_VK_CHECK_RETURN(
-            vkCreatePipelineLayout(Global::get_device(), &l_Layout,
-                                   nullptr, &g_Pipelines.ss2dLayout));
+        g_Pipelines.ss2dLayout =
+            PipelineUtil::create_layout(N(SS2D), l_Layout);
 
         // Create pipeline
         PipelineUtil::GraphicsPipelineBuilder l_Builder;
@@ -260,7 +262,7 @@ namespace Low {
 
         g_Ss2dGlobalSet =
             Global::get_global_descriptor_allocator().allocate(
-                Global::get_device(), l_GlobalDSLayout);
+                Global::get_device(), g_Ss2dGlobalDSLayout);
 
         DescriptorUtil::DescriptorWriter l_Writer;
         l_Writer.write_buffer(
@@ -307,69 +309,6 @@ namespace Low {
         return true;
       }
 
-      bool bg_pipelines_init(Context &p_Context)
-      {
-        VkPipelineLayoutCreateInfo l_ComputeLayout{};
-        l_ComputeLayout.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        l_ComputeLayout.pNext = nullptr;
-        l_ComputeLayout.pSetLayouts =
-            &p_Context.drawImageDescriptorLayout;
-        l_ComputeLayout.setLayoutCount = 1;
-
-        VkPushConstantRange l_PushConstant{};
-        l_PushConstant.offset = 0;
-        l_PushConstant.size = sizeof(ComputePushConstants);
-        l_PushConstant.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-        l_ComputeLayout.pPushConstantRanges = &l_PushConstant;
-        l_ComputeLayout.pushConstantRangeCount = 1;
-
-        LOWR_VK_CHECK_RETURN(vkCreatePipelineLayout(
-            Global::get_device(), &l_ComputeLayout, nullptr,
-            &g_Pipelines.gradientPipelineLayout));
-
-        Util::String l_ComputeShaderPath =
-            Util::get_project().engineDataPath +
-            "/lowr_shaders/gradient_color.comp.spv";
-
-        VkShaderModule l_ComputeDrawShader;
-        if (!PipelineUtil::load_shader_module(
-                l_ComputeShaderPath.c_str(), Global::get_device(),
-                &l_ComputeDrawShader)) {
-          LOW_LOG_ERROR << "Could not find shader file"
-                        << LOW_LOG_END;
-          return false;
-        }
-
-        VkPipelineShaderStageCreateInfo l_StageInfo{};
-        l_StageInfo.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        l_StageInfo.pNext = nullptr;
-        l_StageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-        l_StageInfo.module = l_ComputeDrawShader;
-        l_StageInfo.pName = "main";
-
-        VkComputePipelineCreateInfo l_ComputePipelineCreateInfo{};
-        l_ComputePipelineCreateInfo.sType =
-            VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-        l_ComputePipelineCreateInfo.pNext = nullptr;
-        l_ComputePipelineCreateInfo.layout =
-            g_Pipelines.gradientPipelineLayout;
-        l_ComputePipelineCreateInfo.stage = l_StageInfo;
-
-        LOWR_VK_CHECK_RETURN(vkCreateComputePipelines(
-            Global::get_device(), VK_NULL_HANDLE, 1,
-            &l_ComputePipelineCreateInfo, nullptr,
-            &g_Pipelines.gradientPipeline));
-
-        // Destroying the shader module
-        vkDestroyShaderModule(Global::get_device(),
-                              l_ComputeDrawShader, nullptr);
-
-        return true;
-      }
-
       bool solid_base_pipeline_init(Context &p_Context)
       {
         Util::String l_VertexShaderPath = "solid_base.vert";
@@ -398,9 +337,9 @@ namespace Low {
         l_PipelineLayoutInfo.pPushConstantRanges = &l_PushConstant;
         l_PipelineLayoutInfo.pushConstantRangeCount = 1;
 
-        LOWR_VK_CHECK_RETURN(vkCreatePipelineLayout(
-            Global::get_device(), &l_PipelineLayoutInfo, nullptr,
-            &g_Pipelines.solidBasePipelineLayout));
+        g_Pipelines.solidBasePipelineLayout =
+            PipelineUtil::create_layout(N(solid_base),
+                                        l_PipelineLayoutInfo);
 
         // Create pipeline
         PipelineUtil::GraphicsPipelineBuilder l_Builder;
@@ -430,52 +369,17 @@ namespace Low {
         return true;
       }
 
-      bool triangle_pipeline_init(Context &p_Context)
-      {
-        Util::String l_VertexShaderPath = "colored_triangle.vert";
-        Util::String l_FragmentShaderPath = "colored_triangle.frag";
-
-        VkPipelineLayoutCreateInfo l_PipelineLayoutInfo =
-            PipelineUtil::layout_create_info();
-        LOWR_VK_CHECK_RETURN(vkCreatePipelineLayout(
-            Global::get_device(), &l_PipelineLayoutInfo, nullptr,
-            &g_Pipelines.trianglePipelineLayout));
-
-        // Create pipeline
-        PipelineUtil::GraphicsPipelineBuilder l_Builder;
-        l_Builder.pipelineLayout = g_Pipelines.trianglePipelineLayout;
-        l_Builder.set_shaders(l_VertexShaderPath,
-                              l_FragmentShaderPath);
-        l_Builder.set_input_topology(
-            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-        l_Builder.set_polygon_mode(VK_POLYGON_MODE_FILL);
-        l_Builder.set_cull_mode(VK_CULL_MODE_NONE,
-                                VK_FRONT_FACE_CLOCKWISE);
-        l_Builder.set_multismapling_none();
-        l_Builder.disable_blending();
-        l_Builder.disable_depth_test();
-
-        l_Builder.colorAttachmentFormats.push_back(
-            p_Context.swapchain.drawImage.format);
-        l_Builder.set_depth_format(VK_FORMAT_UNDEFINED);
-
-        g_Pipelines.trianglePipeline = l_Builder.register_pipeline();
-
-        return true;
-      }
-
       bool setup_renderflow(Context &p_Context)
       {
-        bg_pipelines_init(p_Context);
         lighting_pipeline_init(p_Context);
         ss2d_pipeline_init(p_Context);
-        triangle_pipeline_init(p_Context);
         solid_base_pipeline_init(p_Context);
         return true;
       }
 
       static void initialize_types()
       {
+        PipelineLayout::initialize();
         Pipeline::initialize();
         Image::initialize();
         TexExport::initialize();
@@ -494,6 +398,7 @@ namespace Low {
         TexExport::cleanup();
         Pipeline::cleanup();
         Image::cleanup();
+        PipelineLayout::cleanup();
       }
 
       size_t request_resource_staging_buffer_space(
@@ -660,36 +565,9 @@ namespace Low {
         return true;
       }
 
-      bool bg_pipelines_cleanup(const Context &p_Context)
-      {
-        vkDestroyPipelineLayout(Global::get_device(),
-                                g_Pipelines.gradientPipelineLayout,
-                                nullptr);
-        vkDestroyPipeline(Global::get_device(),
-                          g_Pipelines.gradientPipeline, nullptr);
-
-        return true;
-      }
-
-      bool triangle_pipeline_cleanup(const Context &p_Context)
-      {
-        g_Pipelines.trianglePipeline.destroy();
-        /*
-        vkDestroyPipelineLayout(p_Context.device,
-                                g_Pipelines.trianglePipelineLayout,
-                                nullptr);
-        vkDestroyPipeline(p_Context.device,
-                          g_Pipelines.trianglePipeline, nullptr);
-                          */
-
-        return true;
-      }
-
       bool cleanup_renderflow(Context &p_Context)
       {
-        triangle_pipeline_cleanup(p_Context);
-        bg_pipelines_cleanup(p_Context);
-
+        ss2d_pipeline_cleanup();
         return true;
       }
 
@@ -705,6 +583,8 @@ namespace Low {
 
         cleanup_renderflow(g_Context);
 
+        cleanup_basic_rendersteps();
+
         cleanup_types();
 
         LOWR_VK_ASSERT_RETURN(
@@ -713,55 +593,6 @@ namespace Low {
 
         LOWR_VK_ASSERT_RETURN(Base::cleanup(),
                               "Failed to cleanup vulkan globals");
-
-        return true;
-      }
-
-      bool geometry_draw(Context &p_Context)
-      {
-        VkCommandBuffer l_Cmd = Global::get_current_command_buffer();
-
-        // begin a render pass  connected to our draw image
-        VkRenderingAttachmentInfo l_ColorAttachment =
-            InitUtil::attachment_info(
-                p_Context.swapchain.drawImage.imageView, nullptr,
-                VK_IMAGE_LAYOUT_GENERAL);
-
-        VkRenderingInfo l_RenderInfo =
-            InitUtil::rendering_info(p_Context.swapchain.drawExtent,
-                                     &l_ColorAttachment, 1, nullptr);
-        vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
-
-        vkCmdBindPipeline(
-            l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-            g_Pipelines.trianglePipeline.get_pipeline());
-
-        // set dynamic viewport and scissor
-        VkViewport l_Viewport = {};
-        l_Viewport.x = 0;
-        l_Viewport.y = 0;
-        l_Viewport.width =
-            static_cast<float>(p_Context.swapchain.drawExtent.width);
-        l_Viewport.height =
-            static_cast<float>(p_Context.swapchain.drawExtent.height);
-        l_Viewport.minDepth = 0.f;
-        l_Viewport.maxDepth = 1.f;
-
-        vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
-
-        VkRect2D l_Scissor = {};
-        l_Scissor.offset.x = 0;
-        l_Scissor.offset.y = 0;
-        l_Scissor.extent.width = p_Context.swapchain.drawExtent.width;
-        l_Scissor.extent.height =
-            p_Context.swapchain.drawExtent.height;
-
-        vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
-
-        // launch a draw command to draw 3 vertices
-        vkCmdDraw(l_Cmd, 3, 1, 0, 0);
-
-        vkCmdEndRendering(l_Cmd);
 
         return true;
       }
@@ -1267,9 +1098,14 @@ namespace Low {
             l_Image = Image::make(N(ObjectMap));
             p_RenderView.get_object_map().get_gpu().set_data_handle(
                 l_Image.get_id());
-          } else {
-            BufferUtil::destroy_buffer(
-                p_ViewInfo.get_object_id_buffer());
+          }
+          {
+            AllocatedBuffer l_OldObjectBuffer =
+                p_ViewInfo.get_object_id_buffer();
+            if (l_OldObjectBuffer.buffer != VK_NULL_HANDLE) {
+              BufferUtil::destroy_buffer(l_OldObjectBuffer);
+              p_ViewInfo.set_object_id_buffer({});
+            }
           }
 
           ImageUtil::create(l_Image, l_Extent, VK_FORMAT_R32_UINT,
@@ -1694,16 +1530,17 @@ namespace Low {
           vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
 
           vkCmdBindPipeline(l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            g_Pipelines.ss2d.get_pipeline());
+                            g_Pipelines.ss2d.get());
 
           vkCmdBindDescriptorSets(l_Cmd,
                                   VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                  g_Pipelines.ss2dLayout, 0, 1,
+                                  g_Pipelines.ss2dLayout.get(), 0, 1,
                                   &g_Ss2dGlobalSet, 0, nullptr);
 
-          vkCmdBindDescriptorSets(
-              l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-              g_Pipelines.ss2dLayout, 1, 1, &i_CanvasDS, 0, nullptr);
+          vkCmdBindDescriptorSets(l_Cmd,
+                                  VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                  g_Pipelines.ss2dLayout.get(), 1, 1,
+                                  &i_CanvasDS, 0, nullptr);
 
           VkViewport l_Viewport = {};
           l_Viewport.x = 0;

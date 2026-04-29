@@ -6,6 +6,7 @@
 #include "LowUtilContainers.h"
 
 #include "LowRendererVkPipeline.h"
+#include "LowRendererVkPipelineLayout.h"
 
 namespace Low {
   namespace Renderer {
@@ -16,6 +17,10 @@ namespace Low {
                                 VkShaderModule *p_OutShaderModule);
 
         VkPipelineLayoutCreateInfo layout_create_info();
+
+        PipelineLayout
+        create_layout(Util::Name p_Name,
+                      const VkPipelineLayoutCreateInfo &p_CreateInfo);
 
         VkPipelineShaderStageCreateInfo
         shader_stage_create_info(VkShaderStageFlagBits p_Stage,
@@ -30,7 +35,7 @@ namespace Low {
           VkPipelineRasterizationStateCreateInfo rasterizer;
           VkPipelineColorBlendAttachmentState colorBlendAttachment;
           VkPipelineMultisampleStateCreateInfo multisampling;
-          VkPipelineLayout pipelineLayout;
+          PipelineLayout pipelineLayout;
           VkPipelineDepthStencilStateCreateInfo depthStencil;
           VkPipelineRenderingCreateInfo renderInfo;
           Util::List<VkFormat> colorAttachmentFormats;
@@ -71,7 +76,7 @@ namespace Low {
           void update_shaders();
 
           static GraphicsPipelineBuilder
-          prepare_fullscreen_effect(VkPipelineLayout p_Layout,
+          prepare_fullscreen_effect(PipelineLayout p_Layout,
                                     Util::String p_ShaderPath,
                                     VkFormat p_OutImageFormat);
 
@@ -85,7 +90,7 @@ namespace Low {
         struct ComputePipelineBuilder
         {
           VkPipelineShaderStageCreateInfo shaderStage;
-          VkPipelineLayout pipelineLayout;
+          PipelineLayout pipelineLayout;
           Util::String computeShaderPath;
           Util::String computeSpirvPath;
 
@@ -102,7 +107,7 @@ namespace Low {
 
           void set_shader(Util::String p_ComputeShader);
 
-          void set_pipeline_layout(VkPipelineLayout p_PipelineLayout);
+          void set_pipeline_layout(PipelineLayout p_PipelineLayout);
 
           void update_shader();
 
@@ -110,6 +115,6 @@ namespace Low {
           void set_shader(VkShaderModule p_ComputeShader);
         };
       } // namespace PipelineUtil
-    }   // namespace Vulkan
-  }     // namespace Renderer
+    } // namespace Vulkan
+  } // namespace Renderer
 } // namespace Low

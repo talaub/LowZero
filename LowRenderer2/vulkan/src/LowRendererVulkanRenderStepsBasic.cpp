@@ -241,31 +241,32 @@ namespace Low {
 
               vkCmdBindPipeline(l_Cmd,
                                 VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                i_Pipeline.get_pipeline());
+                                i_Pipeline.get());
 
               VkDescriptorSet l_Set =
                   Global::get_global_descriptor_set();
 
-              vkCmdBindDescriptorSets(
-                  l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                  i_Pipeline.get_layout(), 0, 1, &l_Set, 0, nullptr);
+              vkCmdBindDescriptorSets(l_Cmd,
+                                      VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                      i_Pipeline.get_layout().get(),
+                                      0, 1, &l_Set, 0, nullptr);
 
               {
                 VkDescriptorSet l_TextureSet =
                     Global::get_current_texture_descriptor_set();
                 vkCmdBindDescriptorSets(
                     l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    i_Pipeline.get_layout(), 1, 1, &l_TextureSet, 0,
-                    nullptr);
+                    i_Pipeline.get_layout().get(), 1, 1,
+                    &l_TextureSet, 0, nullptr);
               }
 
               VkDescriptorSet l_DescriptorSet =
                   l_ViewInfo.get_view_data_descriptor_set();
 
-              vkCmdBindDescriptorSets(l_Cmd,
-                                      VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                      i_Pipeline.get_layout(), 2, 1,
-                                      &l_DescriptorSet, 0, nullptr);
+              vkCmdBindDescriptorSets(
+                  l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                  i_Pipeline.get_layout().get(), 2, 1,
+                  &l_DescriptorSet, 0, nullptr);
             }
 
             Pipeline i_Pipeline =
@@ -274,7 +275,7 @@ namespace Low {
             RenderEntryPushConstant i_PushConstants;
             i_PushConstants.renderObjectSlot = it->get_slot();
 
-            vkCmdPushConstants(l_Cmd, i_Pipeline.get_layout(),
+            vkCmdPushConstants(l_Cmd, i_Pipeline.get_layout().get(),
                                VK_SHADER_STAGE_ALL_GRAPHICS, 0,
                                sizeof(RenderEntryPushConstant),
                                &i_PushConstants);
@@ -433,7 +434,7 @@ namespace Low {
           vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
 
           vkCmdBindPipeline(l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            l_Data->pipeline.get_pipeline());
+                            l_Data->pipeline.get());
 
           {
             VkDescriptorSet l_Set =
@@ -441,15 +442,15 @@ namespace Low {
 
             vkCmdBindDescriptorSets(
                 l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                Global::get_lighting_pipeline_layout(), 0, 1, &l_Set,
-                0, nullptr);
+                Global::get_lighting_pipeline_layout().get(), 0, 1,
+                &l_Set, 0, nullptr);
 
             {
               VkDescriptorSet l_TextureSet =
                   Global::get_current_texture_descriptor_set();
               vkCmdBindDescriptorSets(
                   l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                  Global::get_lighting_pipeline_layout(), 1, 1,
+                  Global::get_lighting_pipeline_layout().get(), 1, 1,
                   &l_TextureSet, 0, nullptr);
             }
 
@@ -458,7 +459,7 @@ namespace Low {
 
             vkCmdBindDescriptorSets(
                 l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                Global::get_lighting_pipeline_layout(), 2, 1,
+                Global::get_lighting_pipeline_layout().get(), 2, 1,
                 &l_DescriptorSet, 0, nullptr);
 
             VkViewport l_Viewport = {};
@@ -533,9 +534,9 @@ namespace Low {
               ViewInfo l_ViewInfo =
                   p_RenderView.get_view_info_handle();
 
-              vkCmdBindPipeline(l_Cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
-                                g_LightCullingBaseGlobalData
-                                    .cullingPipeline.get_pipeline());
+              vkCmdBindPipeline(
+                  l_Cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
+                  g_LightCullingBaseGlobalData.cullingPipeline.get());
 
               {
                 VkDescriptorSet l_Set =
@@ -543,16 +544,16 @@ namespace Low {
 
                 vkCmdBindDescriptorSets(
                     l_Cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
-                    Global::get_lighting_pipeline_layout(), 0, 1,
-                    &l_Set, 0, nullptr);
+                    Global::get_lighting_pipeline_layout().get(), 0,
+                    1, &l_Set, 0, nullptr);
 
                 {
                   VkDescriptorSet l_TextureSet =
                       Global::get_current_texture_descriptor_set();
                   vkCmdBindDescriptorSets(
                       l_Cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
-                      Global::get_lighting_pipeline_layout(), 1, 1,
-                      &l_TextureSet, 0, nullptr);
+                      Global::get_lighting_pipeline_layout().get(), 1,
+                      1, &l_TextureSet, 0, nullptr);
                 }
 
                 VkDescriptorSet l_DescriptorSet =
@@ -560,8 +561,8 @@ namespace Low {
 
                 vkCmdBindDescriptorSets(
                     l_Cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
-                    Global::get_lighting_pipeline_layout(), 2, 1,
-                    &l_DescriptorSet, 0, nullptr);
+                    Global::get_lighting_pipeline_layout().get(), 2,
+                    1, &l_DescriptorSet, 0, nullptr);
               }
 
               vkCmdDispatch(l_Cmd, l_ViewInfo.get_light_clusters().x,
@@ -578,12 +579,13 @@ namespace Low {
       struct
       {
         Pipeline pipeline;
-        VkPipelineLayout pipelineLayout;
+        PipelineLayout pipelineLayout;
         VkDescriptorSetLayout descriptorSetLayout;
         VkDescriptorSet descriptorSet;
         AllocatedBuffer kernelBuffer;
         Texture noise;
         Image noiseImage;
+        bool initialized = false;
       } g_BaseSsaoStepData;
 
       struct BaseSsaoStepData
@@ -829,9 +831,8 @@ namespace Low {
             l_Layout.pPushConstantRanges = &l_PushConstant;
             l_Layout.pushConstantRangeCount = 1;
 
-            LOWR_VK_CHECK_RETURN(vkCreatePipelineLayout(
-                Global::get_device(), &l_Layout, nullptr,
-                &g_BaseSsaoStepData.pipelineLayout));
+            g_BaseSsaoStepData.pipelineLayout =
+                PipelineUtil::create_layout(N(SSAO), l_Layout);
           }
 
           {
@@ -863,6 +864,7 @@ namespace Low {
             g_BaseSsaoStepData.pipeline =
                 l_Builder.register_pipeline();
           }
+          g_BaseSsaoStepData.initialized = true;
           return true;
         });
 
@@ -876,6 +878,22 @@ namespace Low {
               l_Data->tempBlurTexture =
                   Texture::make_gpu_ready(N(SsaoBlurTemp));
               p_RenderView.set_ssao_image(l_Data->texture);
+              return true;
+            });
+        l_RenderStep.set_teardown_callback(
+            [](RenderStep p_RenderStep,
+               RenderView p_RenderView) -> bool {
+              BaseSsaoStepData *l_Data =
+                  (BaseSsaoStepData *)GET_STEP_DATA(p_RenderView,
+                                                    p_RenderStep);
+              if (l_Data) {
+                if (l_Data->texture.is_alive()) {
+                  l_Data->texture.destroy();
+                }
+                if (l_Data->tempBlurTexture.is_alive()) {
+                  l_Data->tempBlurTexture.destroy();
+                }
+              }
               return true;
             });
 
@@ -1086,25 +1104,24 @@ namespace Low {
               nullptr);
           vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
 
-          vkCmdBindPipeline(
-              l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-              g_BaseSsaoStepData.pipeline.get_pipeline());
+          vkCmdBindPipeline(l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            g_BaseSsaoStepData.pipeline.get());
 
           {
             VkDescriptorSet l_Set =
                 Global::get_global_descriptor_set();
 
-            vkCmdBindDescriptorSets(l_Cmd,
-                                    VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                    g_BaseSsaoStepData.pipelineLayout,
-                                    0, 1, &l_Set, 0, nullptr);
+            vkCmdBindDescriptorSets(
+                l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                g_BaseSsaoStepData.pipelineLayout.get(), 0, 1, &l_Set,
+                0, nullptr);
 
             {
               VkDescriptorSet l_TextureSet =
                   Global::get_current_texture_descriptor_set();
               vkCmdBindDescriptorSets(
                   l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                  g_BaseSsaoStepData.pipelineLayout, 1, 1,
+                  g_BaseSsaoStepData.pipelineLayout.get(), 1, 1,
                   &l_TextureSet, 0, nullptr);
             }
 
@@ -1113,13 +1130,13 @@ namespace Low {
 
             vkCmdBindDescriptorSets(
                 l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                g_BaseSsaoStepData.pipelineLayout, 2, 1,
+                g_BaseSsaoStepData.pipelineLayout.get(), 2, 1,
                 &l_DescriptorSet, 0, nullptr);
           }
           {
             vkCmdBindDescriptorSets(
                 l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                g_BaseSsaoStepData.pipelineLayout, 3, 1,
+                g_BaseSsaoStepData.pipelineLayout.get(), 3, 1,
                 &g_BaseSsaoStepData.descriptorSet, 0, nullptr);
           }
 
@@ -1138,10 +1155,10 @@ namespace Low {
           l_PushConstants.bias = 0.025f;
           l_PushConstants.power = 1.0f;
 
-          vkCmdPushConstants(l_Cmd, g_BaseSsaoStepData.pipelineLayout,
-                             VK_SHADER_STAGE_FRAGMENT_BIT, 0,
-                             sizeof(BaseSsaoPushConstants),
-                             &l_PushConstants);
+          vkCmdPushConstants(
+              l_Cmd, g_BaseSsaoStepData.pipelineLayout.get(),
+              VK_SHADER_STAGE_FRAGMENT_BIT, 0,
+              sizeof(BaseSsaoPushConstants), &l_PushConstants);
 
           VkViewport l_Viewport = {};
           l_Viewport.x = 0;
@@ -1380,7 +1397,7 @@ namespace Low {
                 // Switch pipeline
                 vkCmdBindPipeline(l_Cmd,
                                   VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                  i_Pipeline.get_pipeline());
+                                  i_Pipeline.get());
 
                 // Bind descriptor sets
                 {
@@ -1389,7 +1406,7 @@ namespace Low {
 
                   vkCmdBindDescriptorSets(
                       l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                      i_Pipeline.get_layout(), 0, 1, &l_Set, 0,
+                      i_Pipeline.get_layout().get(), 0, 1, &l_Set, 0,
                       nullptr);
 
                   {
@@ -1397,8 +1414,8 @@ namespace Low {
                         Global::get_current_texture_descriptor_set();
                     vkCmdBindDescriptorSets(
                         l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                        i_Pipeline.get_layout(), 1, 1, &l_TextureSet,
-                        0, nullptr);
+                        i_Pipeline.get_layout().get(), 1, 1,
+                        &l_TextureSet, 0, nullptr);
                   }
 
                   VkDescriptorSet l_DescriptorSet =
@@ -1406,8 +1423,8 @@ namespace Low {
 
                   vkCmdBindDescriptorSets(
                       l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                      i_Pipeline.get_layout(), 2, 1, &l_DescriptorSet,
-                      0, nullptr);
+                      i_Pipeline.get_layout().get(), 2, 1,
+                      &l_DescriptorSet, 0, nullptr);
                 }
               }
 
@@ -1594,7 +1611,7 @@ namespace Low {
               // Switch pipeline
               vkCmdBindPipeline(l_Cmd,
                                 VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                i_Pipeline.get_pipeline());
+                                i_Pipeline.get());
 
               // Bind descriptor sets
               {
@@ -1603,7 +1620,7 @@ namespace Low {
 
                 vkCmdBindDescriptorSets(
                     l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    i_Pipeline.get_layout(), 0, 1, &l_Set, 0,
+                    i_Pipeline.get_layout().get(), 0, 1, &l_Set, 0,
                     nullptr);
 
                 {
@@ -1611,8 +1628,8 @@ namespace Low {
                       Global::get_current_texture_descriptor_set();
                   vkCmdBindDescriptorSets(
                       l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                      i_Pipeline.get_layout(), 1, 1, &l_TextureSet, 0,
-                      nullptr);
+                      i_Pipeline.get_layout().get(), 1, 1,
+                      &l_TextureSet, 0, nullptr);
                 }
 
                 VkDescriptorSet l_DescriptorSet =
@@ -1620,8 +1637,8 @@ namespace Low {
 
                 vkCmdBindDescriptorSets(
                     l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    i_Pipeline.get_layout(), 2, 1, &l_DescriptorSet,
-                    0, nullptr);
+                    i_Pipeline.get_layout().get(), 2, 1,
+                    &l_DescriptorSet, 0, nullptr);
               }
             }
 
@@ -1629,7 +1646,7 @@ namespace Low {
             RenderEntryPushConstant i_PushConstants;
             i_PushConstants.renderObjectSlot = i;
 
-            vkCmdPushConstants(l_Cmd, i_Pipeline.get_layout(),
+            vkCmdPushConstants(l_Cmd, i_Pipeline.get_layout().get(),
                                VK_SHADER_STAGE_ALL_GRAPHICS, 0,
                                sizeof(RenderEntryPushConstant),
                                &i_PushConstants);
@@ -1891,15 +1908,15 @@ namespace Low {
 
               vkCmdBindDescriptorSets(
                   l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                  g_BaseSsaoStepData.pipelineLayout, 0, 1, &l_Set, 0,
-                  nullptr);
+                  g_BaseSsaoStepData.pipelineLayout.get(), 0, 1,
+                  &l_Set, 0, nullptr);
 
               {
                 VkDescriptorSet l_TextureSet =
                     Global::get_current_texture_descriptor_set();
                 vkCmdBindDescriptorSets(
                     l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    g_BaseSsaoStepData.pipelineLayout, 1, 1,
+                    g_BaseSsaoStepData.pipelineLayout.get(), 1, 1,
                     &l_TextureSet, 0, nullptr);
               }
 
@@ -1908,13 +1925,13 @@ namespace Low {
 
               vkCmdBindDescriptorSets(
                   l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                  g_BaseSsaoStepData.pipelineLayout, 2, 1,
+                  g_BaseSsaoStepData.pipelineLayout.get(), 2, 1,
                   &l_DescriptorSet, 0, nullptr);
             }
             {
               vkCmdBindDescriptorSets(
                   l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                  g_BaseSsaoStepData.pipelineLayout, 3, 1,
+                  g_BaseSsaoStepData.pipelineLayout.get(), 3, 1,
                   &g_BaseSsaoStepData.descriptorSet, 0, nullptr);
             }
           }
@@ -1962,6 +1979,37 @@ namespace Low {
 
         LOWR_VK_ASSERT_RETURN(initialize_blur_renderstep(),
                               "Failed to initialize blur renderstep");
+        return true;
+      }
+
+      bool cleanup_basic_rendersteps()
+      {
+        // TODO: Move that into a lambda on the ssaobase renderstep
+        if (!g_BaseSsaoStepData.initialized) {
+          return true;
+        }
+
+        if (g_BaseSsaoStepData.noise.is_alive()) {
+          g_BaseSsaoStepData.noise.destroy();
+        } else if (g_BaseSsaoStepData.noiseImage.is_alive()) {
+          ImageUtil::destroy(g_BaseSsaoStepData.noiseImage);
+          g_BaseSsaoStepData.noiseImage.destroy();
+        }
+
+        BufferUtil::destroy_buffer(g_BaseSsaoStepData.kernelBuffer);
+
+        if (g_BaseSsaoStepData.pipeline.is_alive()) {
+          g_BaseSsaoStepData.pipeline.destroy();
+        }
+        if (g_BaseSsaoStepData.pipelineLayout.is_alive()) {
+          g_BaseSsaoStepData.pipelineLayout.destroy();
+        }
+
+        vkDestroyDescriptorSetLayout(
+            Global::get_device(),
+            g_BaseSsaoStepData.descriptorSetLayout, nullptr);
+
+        g_BaseSsaoStepData.initialized = false;
         return true;
       }
     } // namespace Vulkan

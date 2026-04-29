@@ -15,6 +15,25 @@
 #include "SDL.h"
 #include "SDL_vulkan.h"
 
+#include <cstdarg>
+#include <cstdio>
+#include <cstring>
+
+static void low_renderer_vma_debug_log(const char *p_Format, ...)
+{
+  char l_Buffer[2048];
+  va_list l_Args;
+  va_start(l_Args, p_Format);
+  std::vsnprintf(l_Buffer, sizeof(l_Buffer), p_Format, l_Args);
+  va_end(l_Args);
+
+  if (std::strstr(l_Buffer, "UNFREED") != nullptr) {
+    std::fprintf(stderr, "[VMA] %s\n", l_Buffer);
+  }
+}
+
+#define VMA_DEBUG_LOG_FORMAT(format, ...)                            \
+  low_renderer_vma_debug_log(format, __VA_ARGS__)
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 
@@ -102,6 +121,9 @@ namespace Low {
                 Global::get_allocator(), &l_ImageInfo,
                 &l_ImgAllocInfo, &p_Swapchain.drawImage.image,
                 &p_Swapchain.drawImage.allocation, nullptr);
+            vmaSetAllocationName(Global::get_allocator(),
+                                 p_Swapchain.drawImage.allocation,
+                                 "swapchain draw image");
 
             VkImageViewCreateInfo l_ImgViewInfo =
                 InitUtil::imageview_create_info(
