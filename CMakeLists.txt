@@ -121,6 +121,7 @@ SET(SUB_EXCEPTIONS
   LowScripts
   LowDocs
   LowData
+  LowCrashOpener
 )
 
 # Adds all subfolders that start with the prefix "Low" and are not

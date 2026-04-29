@@ -10,6 +10,7 @@ build/
 /packman-repo
 /release_symbols
 /Lowder/CrashReporter.local.cmake
+/LowCrashOpener/LowCrashOpener.config.ps1
 /misteda
 LowScriptingApi/bin
 LowScriptingApi/obj

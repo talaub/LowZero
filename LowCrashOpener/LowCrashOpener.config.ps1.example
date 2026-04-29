@@ -1,0 +1,12 @@
+$ServerBaseUrl = "https://crash-reporter.example.com"
+$Username = "admin"
+$Password = "replace-with-admin-password"
+
+$SymbolRoot = "C:\Path\To\LowEngine\release_symbols"
+$DownloadRoot = "$env:LOCALAPPDATA\LowEngine\CrashReports"
+$CleanupAfterVisualStudioCloses = $true
+$AutoStartVisualStudioDebugging = $true
+$VisualStudioAutoDebugCommand = "Debug.Start"
+
+# Leave empty to auto-detect Visual Studio through vswhere.exe.
+$DevenvPath = ""

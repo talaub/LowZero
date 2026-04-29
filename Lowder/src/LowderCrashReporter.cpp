@@ -982,8 +982,9 @@ namespace Lowder {
                        reinterpret_cast<WPARAM>(l_State->bodyFont),
                        TRUE);
 
-          SetFocus(l_State->nameControl ? l_State->nameControl
-                                        : l_State->editControl);
+          SetFocus(l_SavedUserName.empty() && l_State->nameControl
+                       ? l_State->nameControl
+                       : l_State->editControl);
           return 0;
         }
         case WM_COMMAND:
@@ -1049,7 +1050,7 @@ namespace Lowder {
 
           SetBkMode(l_DrawItem->hDC, TRANSPARENT);
           SetTextColor(l_DrawItem->hDC, l_TextColor);
-          const char *l_Label = l_IsSave ? "Save report" : "Skip";
+          const char *l_Label = l_IsSave ? "Send report" : "Skip";
           RECT l_TextRect = l_DrawItem->rcItem;
           DrawTextA(l_DrawItem->hDC, l_Label, -1, &l_TextRect,
                     DT_CENTER | DT_VCENTER | DT_SINGLELINE);
