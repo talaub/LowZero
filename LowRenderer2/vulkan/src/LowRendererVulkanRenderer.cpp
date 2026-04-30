@@ -2162,7 +2162,7 @@ namespace Low {
 
         prepare_render_views(p_Delta);
 
-        render_ss2d_canvases(p_Delta);
+        // render_ss2d_canvases(p_Delta);
 
         update_dirty_textures(p_Delta);
         update_dirty_editor_images(p_Delta);

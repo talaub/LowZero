@@ -150,6 +150,25 @@ namespace Low {
                !p_Texture.get_gpu().is_alive();
       }
 
+      bool override_loaded_texture(Texture p_Texture)
+      {
+        if (p_Texture.get_state() != TextureState::LOADED) {
+          return false;
+        }
+        const u64 l_TextureId =
+            p_Texture.get_resource().get_texture_id();
+
+        if (l_TextureId != 0) {
+          register_asset(l_TextureId, p_Texture);
+        }
+
+        p_Texture.get_gpu().loaded_mips().clear();
+        p_Texture.set_state(TextureState::SCHEDULEDTOLOAD);
+
+        g_LoadSchedules.textures.insert(p_Texture);
+        return true;
+      }
+
       bool load_texture(Texture p_Texture)
       {
         // Skip out on scheduling the load for this texture
@@ -291,6 +310,27 @@ namespace Low {
           g_UploadSchedules.emplace(i_Entry);
         }
 
+        GpuTexture l_GpuTexture = p_Texture.get_gpu();
+
+        if (!l_GpuTexture.is_alive()) {
+          if (GpuTexture::living_count() >=
+              GpuTexture::get_capacity()) {
+            // We have too many gpu textures living and we have to
+            // unload one first in order to be able to create this
+            // one.
+            // TODO: Implement
+            LOW_NOT_IMPLEMENTED;
+          }
+          l_GpuTexture = GpuTexture::make(p_Texture.get_name());
+          p_Texture.set_gpu(l_GpuTexture);
+        } else {
+          Vulkan::Image l_OldImage = l_GpuTexture.get_data_handle();
+          if (l_OldImage.is_alive()) {
+            Vulkan::ImageUtil::destroy(l_OldImage);
+            l_OldImage.destroy();
+          }
+        }
+
         Vulkan::Image l_Image =
             Vulkan::Image::make(p_Texture.get_name());
 
@@ -305,17 +345,6 @@ namespace Low {
             get_vk_format(
                 p_Texture.get_staging().get_mip0().get_format()),
             VK_IMAGE_USAGE_SAMPLED_BIT, true);
-
-        if (GpuTexture::living_count() >=
-            GpuTexture::get_capacity()) {
-          // We have too many gpu textures living and we have to
-          // unload one first in order to be able to create this one.
-          // TODO: Implement
-          LOW_NOT_IMPLEMENTED;
-        }
-        GpuTexture l_GpuTexture =
-            GpuTexture::make(p_Texture.get_name());
-        p_Texture.set_gpu(l_GpuTexture);
         l_GpuTexture.set_data_handle(l_Image.get_id());
         // TODO: Don't hardcode it to 4
         l_GpuTexture.set_full_mip_count(IMAGE_MIPMAP_COUNT);
@@ -482,6 +511,7 @@ namespace Low {
             l_Staging.set_mip3(
                 create_texture_pixels(N(Mip3), l_MipMaps.mip3));
           }
+          LOW_LOG_DEBUG << "LOADED TO MEMORY " << LOW_LOG_END;
 
           l_Texture.set_state(TextureState::MEMORYLOADED);
         });
@@ -1068,6 +1098,9 @@ namespace Low {
       static bool texture_upload(UploadEntry &p_UploadEntry)
       {
         Texture l_Texture = p_UploadEntry.data.texture.texture;
+
+        LOW_LOG_DEBUG << "UPLOADING TEX " << p_UploadEntry.lodPriority
+                      << LOW_LOG_END;
 
         // Get the correct texturepixels for the miplevel
         TexturePixels l_Mip =

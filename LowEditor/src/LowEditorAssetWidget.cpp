@@ -396,9 +396,13 @@ namespace Low {
         if (i_FileWatcher.hidden) {
           continue;
         }
-        AssetCardResult i_Result = draw_asset_card(i_FileWatcher);
-
         AssetType i_AssetType = (AssetType)i_FileWatcher.typeEnum;
+        if (i_AssetType == AssetType::File &&
+            i_FileWatcher.extension != "yaml") {
+          continue;
+        }
+
+        AssetCardResult i_Result = draw_asset_card(i_FileWatcher);
 
         if (i_Result.clicked) {
         }

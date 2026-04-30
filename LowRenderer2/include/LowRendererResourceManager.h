@@ -19,6 +19,9 @@ namespace Low {
       load_editor_image(EditorImage p_EditorImage);
       bool LOW_RENDERER2_API load_material(Material p_Material);
 
+      bool LOW_RENDERER2_API
+      override_loaded_texture(Texture p_Texture);
+
       void tick(float p_Delta);
 
       bool parse_mesh_resource_config(Util::String p_Path,

@@ -491,11 +491,15 @@ namespace Low {
                       ResourceManager::parse_texture_resource_config(
                           p_Path, i_ResourceNode, i_ResourceConfig),
                       "Failed to parse texture resource config.");
-
-                  ResourceManager::register_asset(
-                      i_ResourceConfig.textureId,
-                      Texture::make_from_resource_config(
-                          i_ResourceConfig));
+                  Texture l_ExistingTexture =
+                      ResourceManager::find_asset<Texture>(
+                          i_ResourceConfig.textureId);
+                  if (!l_ExistingTexture.is_alive()) {
+                    ResourceManager::register_asset(
+                        i_ResourceConfig.textureId,
+                        Texture::make_from_resource_config(
+                            i_ResourceConfig));
+                  }
                 })
             .no_saving()
             .importer([](const Util::String p_Path) -> Util::String {

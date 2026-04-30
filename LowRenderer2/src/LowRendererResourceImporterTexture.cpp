@@ -5,8 +5,10 @@
 
 #include "LowRendererResourceImporter.h"
 #include "LowRendererTextureResource.h"
+#include "LowRendererResourceManager.h"
 
 #include "LowMath.h"
+#include "LowRendererTextureState.h"
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilHashing.h"
@@ -161,6 +163,16 @@ namespace Low {
                                       l_ResourceNode);
 
         gli::save_ktx(l_TextureMipmaps, l_KtxPath.c_str());
+
+        if (l_Reimport) {
+          Texture l_ReimprotedTexture =
+              ResourceManager::find_asset<Texture>(l_TextureId);
+          if (l_ReimprotedTexture.get_state() ==
+              TextureState::LOADED) {
+            ResourceManager::override_loaded_texture(
+                l_ReimprotedTexture);
+          }
+        }
 
         return true;
       }
