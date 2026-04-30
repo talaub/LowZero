@@ -1772,7 +1772,7 @@ namespace Low {
 
             LOW_ASSERT(
                 Vulkan::Global::get_current_frame_staging_buffer()
-                    .write(&i_Info,
+                    .write(i_Infos.data(),
                            sizeof(PointLightInfo) * POINTLIGHT_COUNT,
                            i_StagingOffset),
                 "Failed to write pointlight data to staging "

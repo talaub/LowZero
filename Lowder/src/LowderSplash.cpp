@@ -1,4 +1,5 @@
 #include "LowderSplash.h"
+#include "LowUtilVersion.h"
 
 #include <atomic>
 #include <mutex>
@@ -301,6 +302,24 @@ namespace Lowder {
                       DT_END_ELLIPSIS);
         SelectObject(l_MemoryDc, l_PreviousFont);
         DeleteObject(l_StatusFont);
+
+        SetTextColor(l_MemoryDc, RGB(120, 114, 130));
+        HFONT l_VersionFont =
+            CreateFontA(12, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+                        DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
+                        CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+                        DEFAULT_PITCH | FF_DONTCARE, "Segoe UI");
+        l_PreviousFont = SelectObject(l_MemoryDc, l_VersionFont);
+        const std::string l_Version =
+            std::string(LOW_VERSION_YEAR) + "." + LOW_VERSION_MAJOR +
+            "." + LOW_VERSION_MINOR;
+        RECT l_VersionRect{SPLASH_WIDTH - 170, SPLASH_HEIGHT - 36,
+                           SPLASH_WIDTH - 22, SPLASH_HEIGHT - 16};
+        DrawTextA(l_MemoryDc, l_Version.c_str(), -1, &l_VersionRect,
+                  DT_RIGHT | DT_SINGLELINE | DT_VCENTER |
+                      DT_END_ELLIPSIS);
+        SelectObject(l_MemoryDc, l_PreviousFont);
+        DeleteObject(l_VersionFont);
 
         BitBlt(l_Hdc, 0, 0, l_Client.right - l_Client.left,
                l_Client.bottom - l_Client.top, l_MemoryDc, 0, 0,
