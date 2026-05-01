@@ -30,11 +30,6 @@ namespace Low {
                                   LOW_NAME(194095849));
     uint32_t UiDrawCommand::ms_Capacity = 0u;
     uint32_t UiDrawCommand::ms_PageSize = 0u;
-    Low::Util::SharedMutex UiDrawCommand::ms_LivingMutex;
-    Low::Util::SharedMutex UiDrawCommand::ms_PagesMutex;
-    Low::Util::UniqueLock<Low::Util::SharedMutex>
-        UiDrawCommand::ms_PagesLock(UiDrawCommand::ms_PagesMutex,
-                                    std::defer_lock);
     Low::Util::List<UiDrawCommand> UiDrawCommand::ms_LivingInstances;
     Low::Util::List<Low::Util::Instances::Page *>
         UiDrawCommand::ms_Pages;
@@ -48,19 +43,13 @@ namespace Low {
     {
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
-      uint32_t l_Index =
-          create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
+      uint32_t l_Index = create_instance(l_PageIndex, l_SlotIndex);
 
       UiDrawCommand l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = UiDrawCommand::ms_TypeId;
-
-      l_PageLock.unlock();
-
-      Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
 
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, UiDrawCommand,
                                  render_object,
@@ -82,11 +71,7 @@ namespace Low {
 
       l_Handle.set_name(p_Name);
 
-      {
-        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-            ms_LivingMutex);
-        ms_LivingInstances.push_back(l_Handle);
-      }
+      ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
 
@@ -104,7 +89,6 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       {
-        Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
         // LOW_CODEGEN::END::CUSTOM:DESTROY
@@ -118,14 +102,9 @@ namespace Low {
           get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Page->slots[l_SlotIndex].m_Occupied = false;
       l_Page->slots[l_SlotIndex].m_Generation++;
 
-      ms_PagesLock.lock();
-      Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -134,8 +113,6 @@ namespace Low {
           it++;
         }
       }
-      ms_PagesLock.unlock();
-      l_LivingLock.unlock();
     }
 
     void UiDrawCommand::initialize()
@@ -143,7 +120,6 @@ namespace Low {
       const Low::Util::TypeIdentifier l_IdentifierNames(
           N(LowRenderer2), N(UiDrawCommand));
 
-      LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -165,7 +141,6 @@ namespace Low {
         }
         ms_Capacity = l_Capacity;
       }
-      LOCK_UNLOCK(l_PagesLock);
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(UiDrawCommand);
@@ -202,7 +177,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           l_Handle.get_render_object();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, UiDrawCommand, render_object,
@@ -213,7 +187,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           *((Low::Renderer::UiRenderObject *)p_Data) =
               l_Handle.get_render_object();
         };
@@ -232,7 +205,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           l_Handle.get_canvas_handle();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiDrawCommand,
                                             canvas_handle, uint64_t);
@@ -245,7 +217,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           *((uint64_t *)p_Data) = l_Handle.get_canvas_handle();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -263,7 +234,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           l_Handle.get_slot();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiDrawCommand,
                                             slot, uint32_t);
@@ -276,7 +246,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           *((uint32_t *)p_Data) = l_Handle.get_slot();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -294,7 +263,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           l_Handle.get_texture();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiDrawCommand,
                                             texture, Texture);
@@ -307,7 +275,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           *((Texture *)p_Data) = l_Handle.get_texture();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -325,7 +292,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           l_Handle.get_position();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, UiDrawCommand, position, Low::Math::Vector3);
@@ -338,7 +304,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           *((Low::Math::Vector3 *)p_Data) = l_Handle.get_position();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -356,7 +321,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           l_Handle.get_size();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiDrawCommand,
                                             size, Low::Math::Vector2);
@@ -369,7 +333,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           *((Low::Math::Vector2 *)p_Data) = l_Handle.get_size();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -387,7 +350,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           l_Handle.get_rotation2D();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiDrawCommand,
                                             rotation2D, float);
@@ -400,7 +362,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           *((float *)p_Data) = l_Handle.get_rotation2D();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -418,7 +379,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           l_Handle.get_color();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiDrawCommand,
                                             color, Low::Math::Color);
@@ -431,7 +391,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           *((Low::Math::Color *)p_Data) = l_Handle.get_color();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -449,7 +408,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           l_Handle.get_uv_rect();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, UiDrawCommand, uv_rect, Low::Math::Vector4);
@@ -462,7 +420,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           *((Low::Math::Vector4 *)p_Data) = l_Handle.get_uv_rect();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -480,7 +437,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           l_Handle.get_material();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiDrawCommand,
                                             material, Material);
@@ -493,7 +449,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           *((Material *)p_Data) = l_Handle.get_material();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -511,7 +466,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           l_Handle.get_z_sorting();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiDrawCommand,
                                             z_sorting, uint32_t);
@@ -524,7 +478,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           *((uint32_t *)p_Data) = l_Handle.get_z_sorting();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -543,7 +496,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           l_Handle.get_submesh();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, UiDrawCommand, submesh,
@@ -554,7 +506,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           *((Low::Renderer::GpuSubmesh *)p_Data) =
               l_Handle.get_submesh();
         };
@@ -573,7 +524,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           l_Handle.is_uploaded();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiDrawCommand,
                                             uploaded, bool);
@@ -586,7 +536,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           *((bool *)p_Data) = l_Handle.is_uploaded();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -604,7 +553,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiDrawCommand,
                                             name, Low::Util::Name);
@@ -617,7 +565,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
           *((Low::Util::Name *)p_Data) = l_Handle.get_name();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -699,19 +646,15 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
-      ms_PagesLock.lock();
       for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
         Low::Util::Instances::Page *i_Page = *it;
         free(i_Page->buffer);
         free(i_Page->slots);
-        free(i_Page->lockWords);
         delete i_Page;
         it = ms_Pages.erase(it);
       }
 
       ms_Capacity = 0;
-
-      ms_PagesLock.unlock();
     }
 
     Low::Util::Handle UiDrawCommand::_find_by_index(uint32_t p_Index)
@@ -733,8 +676,6 @@ namespace Low {
         l_Handle.m_Data.m_Generation = 0;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Handle.m_Data.m_Generation =
           l_Page->slots[l_SlotIndex].m_Generation;
 
@@ -767,8 +708,6 @@ namespace Low {
         return false;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       return m_Data.m_Type == UiDrawCommand::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
@@ -793,8 +732,6 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
-      Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
@@ -934,7 +871,6 @@ namespace Low {
     UiDrawCommand::get_render_object() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_render_object
 
@@ -947,7 +883,6 @@ namespace Low {
         Low::Renderer::UiRenderObject p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_render_object
 
@@ -967,7 +902,6 @@ namespace Low {
     uint64_t UiDrawCommand::get_canvas_handle() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_canvas_handle
 
@@ -978,7 +912,6 @@ namespace Low {
     void UiDrawCommand::set_canvas_handle(uint64_t p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_canvas_handle
 
@@ -997,7 +930,6 @@ namespace Low {
     uint32_t UiDrawCommand::get_slot() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_slot
 
@@ -1008,7 +940,6 @@ namespace Low {
     void UiDrawCommand::set_slot(uint32_t p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_slot
 
@@ -1027,7 +958,6 @@ namespace Low {
     Texture UiDrawCommand::get_texture() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_texture
 
@@ -1038,7 +968,6 @@ namespace Low {
     void UiDrawCommand::set_texture(Texture p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_texture
 
@@ -1062,7 +991,6 @@ namespace Low {
     Low::Math::Vector3 UiDrawCommand::get_position() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_position
 
@@ -1100,7 +1028,6 @@ namespace Low {
     void UiDrawCommand::set_position(Low::Math::Vector3 p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_position
 
@@ -1125,7 +1052,6 @@ namespace Low {
     Low::Math::Vector2 UiDrawCommand::get_size() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_size
 
@@ -1156,7 +1082,6 @@ namespace Low {
     void UiDrawCommand::set_size(Low::Math::Vector2 p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_size
 
@@ -1180,7 +1105,6 @@ namespace Low {
     float UiDrawCommand::get_rotation2D() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_rotation2D
 
@@ -1191,7 +1115,6 @@ namespace Low {
     void UiDrawCommand::set_rotation2D(float p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_rotation2D
 
@@ -1215,7 +1138,6 @@ namespace Low {
     Low::Math::Color UiDrawCommand::get_color() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_color
 
@@ -1226,7 +1148,6 @@ namespace Low {
     void UiDrawCommand::set_color(Low::Math::Color p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_color
 
@@ -1250,7 +1171,6 @@ namespace Low {
     Low::Math::Vector4 UiDrawCommand::get_uv_rect() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_uv_rect
 
@@ -1261,7 +1181,6 @@ namespace Low {
     void UiDrawCommand::set_uv_rect(Low::Math::Vector4 p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_uv_rect
 
@@ -1286,7 +1205,6 @@ namespace Low {
     Material UiDrawCommand::get_material() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_material
 
@@ -1297,7 +1215,6 @@ namespace Low {
     void UiDrawCommand::set_material(Material p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material
 
@@ -1328,7 +1245,6 @@ namespace Low {
     uint32_t UiDrawCommand::get_z_sorting() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_z_sorting
 
@@ -1339,7 +1255,6 @@ namespace Low {
     void UiDrawCommand::set_z_sorting(uint32_t p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_z_sorting
 
@@ -1364,7 +1279,6 @@ namespace Low {
     Low::Renderer::GpuSubmesh UiDrawCommand::get_submesh() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_submesh
 
@@ -1376,7 +1290,6 @@ namespace Low {
     void UiDrawCommand::set_submesh(Low::Renderer::GpuSubmesh p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_submesh
 
@@ -1396,7 +1309,6 @@ namespace Low {
     bool UiDrawCommand::is_uploaded() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_uploaded
 
@@ -1412,7 +1324,6 @@ namespace Low {
     void UiDrawCommand::set_uploaded(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_uploaded
 
@@ -1450,7 +1361,6 @@ namespace Low {
     Low::Util::Name UiDrawCommand::get_name() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
 
@@ -1461,7 +1371,6 @@ namespace Low {
     void UiDrawCommand::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
 
@@ -1531,27 +1440,21 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_standalone
     }
 
-    uint32_t UiDrawCommand::create_instance(
-        u32 &p_PageIndex, u32 &p_SlotIndex,
-        Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
+    uint32_t UiDrawCommand::create_instance(u32 &p_PageIndex,
+                                            u32 &p_SlotIndex)
     {
-      LOCK_PAGES_WRITE(l_PagesLock);
       u32 l_Index = 0;
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
       bool l_FoundIndex = false;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
       for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
            ++l_PageIndex) {
-        Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
-            ms_Pages[l_PageIndex]->mutex);
         for (l_SlotIndex = 0;
              l_SlotIndex < ms_Pages[l_PageIndex]->size;
              ++l_SlotIndex) {
           if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied) {
             l_FoundIndex = true;
-            l_PageLock = std::move(i_PageLock);
             break;
           }
           l_Index++;
@@ -1563,15 +1466,10 @@ namespace Low {
       if (!l_FoundIndex) {
         l_SlotIndex = 0;
         l_PageIndex = create_page();
-        Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
-            ms_Pages[l_PageIndex]->mutex);
-        l_PageLock = std::move(l_NewLock);
       }
       ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
       p_PageIndex = l_PageIndex;
       p_SlotIndex = l_SlotIndex;
-      p_PageLock = std::move(l_PageLock);
-      LOCK_UNLOCK(l_PagesLock);
       return l_Index;
     }
 

@@ -34,11 +34,6 @@ namespace Low {
                               LOW_NAME(769703138));
       uint32_t Context::ms_Capacity = 0u;
       uint32_t Context::ms_PageSize = 0u;
-      Low::Util::SharedMutex Context::ms_LivingMutex;
-      Low::Util::SharedMutex Context::ms_PagesMutex;
-      Low::Util::UniqueLock<Low::Util::SharedMutex>
-          Context::ms_PagesLock(Context::ms_PagesMutex,
-                                std::defer_lock);
       Low::Util::List<Context> Context::ms_LivingInstances;
       Low::Util::List<Low::Util::Instances::Page *> Context::ms_Pages;
 
@@ -51,19 +46,13 @@ namespace Low {
       {
         u32 l_PageIndex = 0;
         u32 l_SlotIndex = 0;
-        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
-        uint32_t l_Index =
-            create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
+        uint32_t l_Index = create_instance(l_PageIndex, l_SlotIndex);
 
         Context l_Handle;
         l_Handle.m_Data.m_Index = l_Index;
         l_Handle.m_Data.m_Generation =
             ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
         l_Handle.m_Data.m_Type = Context::ms_TypeId;
-
-        l_PageLock.unlock();
-
-        Low::Util::HandleLock<Context> l_HandleLock(l_Handle);
 
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Context, context,
                                    Backend::Context))
@@ -85,11 +74,7 @@ namespace Low {
 
         l_Handle.set_name(p_Name);
 
-        {
-          Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-              ms_LivingMutex);
-          ms_LivingInstances.push_back(l_Handle);
-        }
+        ms_LivingInstances.push_back(l_Handle);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
 
@@ -103,7 +88,6 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         {
-          Low::Util::HandleLock<Context> l_Lock(get_id());
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
           Backend::callbacks().context_cleanup(get_context());
@@ -118,14 +102,9 @@ namespace Low {
                                        l_SlotIndex));
         Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
-        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-            l_Page->mutex);
         l_Page->slots[l_SlotIndex].m_Occupied = false;
         l_Page->slots[l_SlotIndex].m_Generation++;
 
-        ms_PagesLock.lock();
-        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-            ms_LivingMutex);
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end();) {
           if (it->get_id() == get_id()) {
@@ -134,8 +113,6 @@ namespace Low {
             it++;
           }
         }
-        ms_PagesLock.unlock();
-        l_LivingLock.unlock();
       }
 
       void Context::initialize()
@@ -143,7 +120,6 @@ namespace Low {
         const Low::Util::TypeIdentifier l_IdentifierNames(
             N(LowRenderer), N(Context));
 
-        LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -165,7 +141,6 @@ namespace Low {
           }
           ms_Capacity = l_Capacity;
         }
-        LOCK_UNLOCK(l_PagesLock);
 
         Low::Util::RTTI::TypeInfo l_TypeInfo;
         l_TypeInfo.name = N(Context);
@@ -202,7 +177,6 @@ namespace Low {
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<Context> l_HandleLock(l_Handle);
             l_Handle.get_context();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, Context, context, Backend::Context);
@@ -212,7 +186,6 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Context l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<Context> l_HandleLock(l_Handle);
             *((Backend::Context *)p_Data) = l_Handle.get_context();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -231,7 +204,6 @@ namespace Low {
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<Context> l_HandleLock(l_Handle);
             l_Handle.get_renderpasses();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Context,
                                               renderpasses,
@@ -242,7 +214,6 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Context l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<Context> l_HandleLock(l_Handle);
             *((Util::List<Renderpass> *)p_Data) =
                 l_Handle.get_renderpasses();
           };
@@ -262,7 +233,6 @@ namespace Low {
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<Context> l_HandleLock(l_Handle);
             l_Handle.get_global_signature();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, Context, global_signature,
@@ -273,7 +243,6 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Context l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<Context> l_HandleLock(l_Handle);
             *((PipelineResourceSignature *)p_Data) =
                 l_Handle.get_global_signature();
           };
@@ -292,7 +261,6 @@ namespace Low {
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<Context> l_HandleLock(l_Handle);
             l_Handle.get_frame_info_buffer();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Context,
                                               frame_info_buffer,
@@ -303,7 +271,6 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Context l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<Context> l_HandleLock(l_Handle);
             *((Resource::Buffer *)p_Data) =
                 l_Handle.get_frame_info_buffer();
           };
@@ -322,7 +289,6 @@ namespace Low {
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<Context> l_HandleLock(l_Handle);
             l_Handle.get_material_data_buffer();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Context,
                                               material_data_buffer,
@@ -333,7 +299,6 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Context l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<Context> l_HandleLock(l_Handle);
             *((Resource::Buffer *)p_Data) =
                 l_Handle.get_material_data_buffer();
           };
@@ -351,7 +316,6 @@ namespace Low {
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<Context> l_HandleLock(l_Handle);
             l_Handle.get_name();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Context, name,
                                               Low::Util::Name);
@@ -364,7 +328,6 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Context l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<Context> l_HandleLock(l_Handle);
             *((Low::Util::Name *)p_Data) = l_Handle.get_name();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -587,19 +550,15 @@ namespace Low {
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
-        ms_PagesLock.lock();
         for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
           Low::Util::Instances::Page *i_Page = *it;
           free(i_Page->buffer);
           free(i_Page->slots);
-          free(i_Page->lockWords);
           delete i_Page;
           it = ms_Pages.erase(it);
         }
 
         ms_Capacity = 0;
-
-        ms_PagesLock.unlock();
       }
 
       Low::Util::Handle Context::_find_by_index(uint32_t p_Index)
@@ -621,8 +580,6 @@ namespace Low {
           l_Handle.m_Data.m_Generation = 0;
         }
         Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-            l_Page->mutex);
         l_Handle.m_Data.m_Generation =
             l_Page->slots[l_SlotIndex].m_Generation;
 
@@ -655,8 +612,6 @@ namespace Low {
           return false;
         }
         Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-            l_Page->mutex);
         return m_Data.m_Type == Context::ms_TypeId &&
                l_Page->slots[l_SlotIndex].m_Occupied &&
                l_Page->slots[l_SlotIndex].m_Generation ==
@@ -680,8 +635,6 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
-        Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
-            ms_LivingMutex);
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
           if (it->get_name() == p_Name) {
@@ -848,7 +801,6 @@ namespace Low {
       Backend::Context &Context::get_context() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<Context> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_context
 
@@ -860,7 +812,6 @@ namespace Low {
       Util::List<Renderpass> &Context::get_renderpasses() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<Context> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_renderpasses
 
@@ -873,7 +824,6 @@ namespace Low {
       PipelineResourceSignature Context::get_global_signature() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<Context> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_global_signature
 
@@ -886,7 +836,6 @@ namespace Low {
       Context::set_global_signature(PipelineResourceSignature p_Value)
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<Context> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_global_signature
 
@@ -906,7 +855,6 @@ namespace Low {
       Resource::Buffer Context::get_frame_info_buffer() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<Context> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_frame_info_buffer
 
@@ -917,7 +865,6 @@ namespace Low {
       void Context::set_frame_info_buffer(Resource::Buffer p_Value)
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<Context> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_frame_info_buffer
 
@@ -937,7 +884,6 @@ namespace Low {
       Resource::Buffer Context::get_material_data_buffer() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<Context> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_material_data_buffer
 
@@ -949,7 +895,6 @@ namespace Low {
       void Context::set_material_data_buffer(Resource::Buffer p_Value)
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<Context> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material_data_buffer
 
@@ -969,7 +914,6 @@ namespace Low {
       Low::Util::Name Context::get_name() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<Context> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
 
@@ -980,7 +924,6 @@ namespace Low {
       void Context::set_name(Low::Util::Name p_Value)
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<Context> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
 
@@ -1127,7 +1070,6 @@ namespace Low {
 
       uint8_t Context::get_frames_in_flight()
       {
-        Low::Util::HandleLock<Context> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_frames_in_flight
 
         return get_context().framesInFlight;
@@ -1136,7 +1078,6 @@ namespace Low {
 
       uint8_t Context::get_image_count()
       {
-        Low::Util::HandleLock<Context> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_image_count
 
         return get_context().imageCount;
@@ -1145,7 +1086,6 @@ namespace Low {
 
       uint8_t Context::get_current_frame_index()
       {
-        Low::Util::HandleLock<Context> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_current_frame_index
 
         return get_context().currentFrameIndex;
@@ -1154,7 +1094,6 @@ namespace Low {
 
       uint8_t Context::get_current_image_index()
       {
-        Low::Util::HandleLock<Context> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_current_image_index
 
         return get_context().currentImageIndex;
@@ -1163,7 +1102,6 @@ namespace Low {
 
       Renderpass Context::get_current_renderpass()
       {
-        Low::Util::HandleLock<Context> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_current_renderpass
 
         return get_renderpasses()[get_current_image_index()];
@@ -1172,7 +1110,6 @@ namespace Low {
 
       Math::UVector2 Context::get_dimensions()
       {
-        Low::Util::HandleLock<Context> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_dimensions
 
         return get_context().dimensions;
@@ -1181,7 +1118,6 @@ namespace Low {
 
       uint8_t Context::get_image_format()
       {
-        Low::Util::HandleLock<Context> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_image_format
 
         return get_context().imageFormat;
@@ -1190,7 +1126,6 @@ namespace Low {
 
       Window &Context::get_window()
       {
-        Low::Util::HandleLock<Context> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_window
 
         return get_context().window;
@@ -1199,7 +1134,6 @@ namespace Low {
 
       uint8_t Context::get_state()
       {
-        Low::Util::HandleLock<Context> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_state
 
         return get_context().state;
@@ -1208,7 +1142,6 @@ namespace Low {
 
       bool Context::is_debug_enabled()
       {
-        Low::Util::HandleLock<Context> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_is_debug_enabled
 
         return get_context().debugEnabled;
@@ -1217,7 +1150,6 @@ namespace Low {
 
       void Context::wait_idle()
       {
-        Low::Util::HandleLock<Context> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_wait_idle
 
         Backend::callbacks().context_wait_idle(get_context());
@@ -1226,7 +1158,6 @@ namespace Low {
 
       uint8_t Context::prepare_frame()
       {
-        Low::Util::HandleLock<Context> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_prepare_frame
 
         LOW_PROFILE_CPU("Renderer", "Prepare frame");
@@ -1236,7 +1167,6 @@ namespace Low {
 
       void Context::render_frame()
       {
-        Low::Util::HandleLock<Context> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_render_frame
 
         LOW_PROFILE_CPU("Renderer", "Render frame");
@@ -1246,7 +1176,6 @@ namespace Low {
 
       void Context::begin_imgui_frame()
       {
-        Low::Util::HandleLock<Context> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_begin_imgui_frame
 
         Backend::callbacks().imgui_prepare_frame(get_context());
@@ -1255,7 +1184,6 @@ namespace Low {
 
       void Context::render_imgui()
       {
-        Low::Util::HandleLock<Context> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_render_imgui
 
         Backend::callbacks().imgui_render(get_context());
@@ -1264,7 +1192,6 @@ namespace Low {
 
       void Context::update_dimensions()
       {
-        Low::Util::HandleLock<Context> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_dimensions
 
         Backend::callbacks().context_wait_idle(get_context());
@@ -1287,7 +1214,6 @@ namespace Low {
 
       void Context::clear_committed_resource_signatures()
       {
-        Low::Util::HandleLock<Context> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_clear_committed_resource_signatures
 
         Backend::callbacks().pipeline_resource_signature_commit_clear(
@@ -1295,21 +1221,16 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_clear_committed_resource_signatures
       }
 
-      uint32_t Context::create_instance(
-          u32 &p_PageIndex, u32 &p_SlotIndex,
-          Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
+      uint32_t Context::create_instance(u32 &p_PageIndex,
+                                        u32 &p_SlotIndex)
       {
-        LOCK_PAGES_WRITE(l_PagesLock);
         u32 l_Index = 0;
         u32 l_PageIndex = 0;
         u32 l_SlotIndex = 0;
         bool l_FoundIndex = false;
-        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
         for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
              ++l_PageIndex) {
-          Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
-              ms_Pages[l_PageIndex]->mutex);
           for (l_SlotIndex = 0;
                l_SlotIndex < ms_Pages[l_PageIndex]->size;
                ++l_SlotIndex) {
@@ -1317,7 +1238,6 @@ namespace Low {
                      ->slots[l_SlotIndex]
                      .m_Occupied) {
               l_FoundIndex = true;
-              l_PageLock = std::move(i_PageLock);
               break;
             }
             l_Index++;
@@ -1329,15 +1249,10 @@ namespace Low {
         if (!l_FoundIndex) {
           l_SlotIndex = 0;
           l_PageIndex = create_page();
-          Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
-              ms_Pages[l_PageIndex]->mutex);
-          l_PageLock = std::move(l_NewLock);
         }
         ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
         p_PageIndex = l_PageIndex;
         p_SlotIndex = l_SlotIndex;
-        p_PageLock = std::move(l_PageLock);
-        LOCK_UNLOCK(l_PagesLock);
         return l_Index;
       }
 

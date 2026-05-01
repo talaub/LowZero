@@ -30,11 +30,6 @@ namespace Low {
                                     LOW_NAME(3802565009));
     uint32_t SS2DDrawCommand::ms_Capacity = 0u;
     uint32_t SS2DDrawCommand::ms_PageSize = 0u;
-    Low::Util::SharedMutex SS2DDrawCommand::ms_LivingMutex;
-    Low::Util::SharedMutex SS2DDrawCommand::ms_PagesMutex;
-    Low::Util::UniqueLock<Low::Util::SharedMutex>
-        SS2DDrawCommand::ms_PagesLock(SS2DDrawCommand::ms_PagesMutex,
-                                      std::defer_lock);
     Low::Util::List<SS2DDrawCommand>
         SS2DDrawCommand::ms_LivingInstances;
     Low::Util::List<Low::Util::Instances::Page *>
@@ -49,19 +44,13 @@ namespace Low {
     {
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
-      uint32_t l_Index =
-          create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
+      uint32_t l_Index = create_instance(l_PageIndex, l_SlotIndex);
 
       SS2DDrawCommand l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = SS2DDrawCommand::ms_TypeId;
-
-      l_PageLock.unlock();
-
-      Low::Util::HandleLock<SS2DDrawCommand> l_HandleLock(l_Handle);
 
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, SS2DDrawCommand, type,
                                  SS2DType)) SS2DType();
@@ -74,11 +63,7 @@ namespace Low {
 
       l_Handle.set_name(p_Name);
 
-      {
-        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-            ms_LivingMutex);
-        ms_LivingInstances.push_back(l_Handle);
-      }
+      ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
 
@@ -92,7 +77,6 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       {
-        Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
         // LOW_CODEGEN::END::CUSTOM:DESTROY
@@ -106,14 +90,9 @@ namespace Low {
           get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Page->slots[l_SlotIndex].m_Occupied = false;
       l_Page->slots[l_SlotIndex].m_Generation++;
 
-      ms_PagesLock.lock();
-      Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -122,8 +101,6 @@ namespace Low {
           it++;
         }
       }
-      ms_PagesLock.unlock();
-      l_LivingLock.unlock();
     }
 
     void SS2DDrawCommand::initialize()
@@ -131,7 +108,6 @@ namespace Low {
       const Low::Util::TypeIdentifier l_IdentifierNames(
           N(LowRenderer2), N(SS2DDrawCommand));
 
-      LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -145,7 +121,6 @@ namespace Low {
       Low::Util::Instances::initialize_page(
           l_Page, SS2DDrawCommand::Data::get_size(), ms_PageSize);
       ms_Pages.push_back(l_Page);
-      LOCK_UNLOCK(l_PagesLock);
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(SS2DDrawCommand);
@@ -181,8 +156,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           SS2DDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<SS2DDrawCommand> l_HandleLock(
-              l_Handle);
           l_Handle.get_type();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SS2DDrawCommand,
                                             type, SS2DType);
@@ -192,8 +165,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SS2DDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<SS2DDrawCommand> l_HandleLock(
-              l_Handle);
           *((SS2DType *)p_Data) = l_Handle.get_type();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -211,8 +182,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           SS2DDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<SS2DDrawCommand> l_HandleLock(
-              l_Handle);
           l_Handle.get_position();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SS2DDrawCommand,
                                             position,
@@ -226,8 +195,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SS2DDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<SS2DDrawCommand> l_HandleLock(
-              l_Handle);
           *((Low::Math::Vector2 *)p_Data) = l_Handle.get_position();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -245,8 +212,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           SS2DDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<SS2DDrawCommand> l_HandleLock(
-              l_Handle);
           l_Handle.get_half_extents();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SS2DDrawCommand,
                                             half_extents,
@@ -260,8 +225,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SS2DDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<SS2DDrawCommand> l_HandleLock(
-              l_Handle);
           *((Low::Math::Vector2 *)p_Data) =
               l_Handle.get_half_extents();
         };
@@ -280,8 +243,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           SS2DDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<SS2DDrawCommand> l_HandleLock(
-              l_Handle);
           l_Handle.get_rotation();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SS2DDrawCommand,
                                             rotation, float);
@@ -294,8 +255,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SS2DDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<SS2DDrawCommand> l_HandleLock(
-              l_Handle);
           *((float *)p_Data) = l_Handle.get_rotation();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -313,8 +272,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           SS2DDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<SS2DDrawCommand> l_HandleLock(
-              l_Handle);
           l_Handle.get_color();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SS2DDrawCommand,
                                             color, Low::Math::Color);
@@ -327,8 +284,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SS2DDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<SS2DDrawCommand> l_HandleLock(
-              l_Handle);
           *((Low::Math::Color *)p_Data) = l_Handle.get_color();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -346,8 +301,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           SS2DDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<SS2DDrawCommand> l_HandleLock(
-              l_Handle);
           l_Handle.get_corner_radius();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SS2DDrawCommand,
                                             corner_radius,
@@ -361,8 +314,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SS2DDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<SS2DDrawCommand> l_HandleLock(
-              l_Handle);
           *((Low::Math::Vector4 *)p_Data) =
               l_Handle.get_corner_radius();
         };
@@ -381,8 +332,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           SS2DDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<SS2DDrawCommand> l_HandleLock(
-              l_Handle);
           l_Handle.get_uv_rect();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, SS2DDrawCommand, uv_rect, Low::Math::Vector4);
@@ -395,8 +344,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SS2DDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<SS2DDrawCommand> l_HandleLock(
-              l_Handle);
           *((Low::Math::Vector4 *)p_Data) = l_Handle.get_uv_rect();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -414,8 +361,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           SS2DDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<SS2DDrawCommand> l_HandleLock(
-              l_Handle);
           l_Handle.get_z_sorting();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SS2DDrawCommand,
                                             z_sorting, uint32_t);
@@ -428,8 +373,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SS2DDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<SS2DDrawCommand> l_HandleLock(
-              l_Handle);
           *((uint32_t *)p_Data) = l_Handle.get_z_sorting();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -447,8 +390,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           SS2DDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<SS2DDrawCommand> l_HandleLock(
-              l_Handle);
           l_Handle.is_uploaded();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SS2DDrawCommand,
                                             uploaded, bool);
@@ -461,8 +402,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SS2DDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<SS2DDrawCommand> l_HandleLock(
-              l_Handle);
           *((bool *)p_Data) = l_Handle.is_uploaded();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -480,8 +419,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           SS2DDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<SS2DDrawCommand> l_HandleLock(
-              l_Handle);
           l_Handle.get_canvas_handle();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SS2DDrawCommand,
                                             canvas_handle, uint64_t);
@@ -491,8 +428,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SS2DDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<SS2DDrawCommand> l_HandleLock(
-              l_Handle);
           *((uint64_t *)p_Data) = l_Handle.get_canvas_handle();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -510,8 +445,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           SS2DDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<SS2DDrawCommand> l_HandleLock(
-              l_Handle);
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SS2DDrawCommand,
                                             name, Low::Util::Name);
@@ -524,8 +457,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SS2DDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<SS2DDrawCommand> l_HandleLock(
-              l_Handle);
           *((Low::Util::Name *)p_Data) = l_Handle.get_name();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -541,8 +472,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SS2DDrawCommand l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<SS2DDrawCommand> l_HandleLock(
-              l_Handle);
           float l_Data = l_Handle.get_radius();
           memcpy(p_Data, &l_Data, sizeof(float));
         };
@@ -626,19 +555,15 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
-      ms_PagesLock.lock();
       for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
         Low::Util::Instances::Page *i_Page = *it;
         free(i_Page->buffer);
         free(i_Page->slots);
-        free(i_Page->lockWords);
         delete i_Page;
         it = ms_Pages.erase(it);
       }
 
       ms_Capacity = 0;
-
-      ms_PagesLock.unlock();
     }
 
     Low::Util::Handle
@@ -661,8 +586,6 @@ namespace Low {
         l_Handle.m_Data.m_Generation = 0;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Handle.m_Data.m_Generation =
           l_Page->slots[l_SlotIndex].m_Generation;
 
@@ -696,8 +619,6 @@ namespace Low {
         return false;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       return m_Data.m_Type == SS2DDrawCommand::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
@@ -723,8 +644,6 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
-      Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
@@ -852,7 +771,6 @@ namespace Low {
     SS2DType &SS2DDrawCommand::get_type() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_type
 
@@ -863,7 +781,6 @@ namespace Low {
     void SS2DDrawCommand::set_type(SS2DType &p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_type
 
@@ -882,7 +799,6 @@ namespace Low {
     Low::Math::Vector2 SS2DDrawCommand::get_position() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_position
 
@@ -913,7 +829,6 @@ namespace Low {
     void SS2DDrawCommand::set_position(Low::Math::Vector2 p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_position
 
@@ -938,7 +853,6 @@ namespace Low {
     Low::Math::Vector2 SS2DDrawCommand::get_half_extents() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_half_extents
 
@@ -970,7 +884,6 @@ namespace Low {
     void SS2DDrawCommand::set_half_extents(Low::Math::Vector2 p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_half_extents
 
@@ -995,7 +908,6 @@ namespace Low {
     float SS2DDrawCommand::get_rotation() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_rotation
 
@@ -1006,7 +918,6 @@ namespace Low {
     void SS2DDrawCommand::set_rotation(float p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_rotation
 
@@ -1030,7 +941,6 @@ namespace Low {
     Low::Math::Color SS2DDrawCommand::get_color() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_color
 
@@ -1041,7 +951,6 @@ namespace Low {
     void SS2DDrawCommand::set_color(Low::Math::Color p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_color
 
@@ -1065,7 +974,6 @@ namespace Low {
     Low::Math::Vector4 SS2DDrawCommand::get_corner_radius() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_corner_radius
 
@@ -1078,7 +986,6 @@ namespace Low {
     SS2DDrawCommand::set_corner_radius(Low::Math::Vector4 p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_corner_radius
 
@@ -1103,7 +1010,6 @@ namespace Low {
     Low::Math::Vector4 SS2DDrawCommand::get_uv_rect() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_uv_rect
 
@@ -1114,7 +1020,6 @@ namespace Low {
     void SS2DDrawCommand::set_uv_rect(Low::Math::Vector4 p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_uv_rect
 
@@ -1139,7 +1044,6 @@ namespace Low {
     uint32_t SS2DDrawCommand::get_z_sorting() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_z_sorting
 
@@ -1150,7 +1054,6 @@ namespace Low {
     void SS2DDrawCommand::set_z_sorting(uint32_t p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_z_sorting
 
@@ -1175,7 +1078,6 @@ namespace Low {
     bool SS2DDrawCommand::is_uploaded() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_uploaded
 
@@ -1191,7 +1093,6 @@ namespace Low {
     void SS2DDrawCommand::set_uploaded(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_uploaded
 
@@ -1210,7 +1111,6 @@ namespace Low {
     uint64_t SS2DDrawCommand::get_canvas_handle() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_canvas_handle
 
@@ -1221,7 +1121,6 @@ namespace Low {
     void SS2DDrawCommand::set_canvas_handle(uint64_t p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_canvas_handle
 
@@ -1257,7 +1156,6 @@ namespace Low {
     Low::Util::Name SS2DDrawCommand::get_name() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
 
@@ -1268,7 +1166,6 @@ namespace Low {
     void SS2DDrawCommand::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
 
@@ -1303,7 +1200,6 @@ namespace Low {
 
     float SS2DDrawCommand::get_radius()
     {
-      Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_radius
 
       return get_half_extents().x;
@@ -1312,34 +1208,27 @@ namespace Low {
 
     void SS2DDrawCommand::set_radius(float p_Value)
     {
-      Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_radius
 
       set_half_extents_x(p_Value);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_radius
     }
 
-    uint32_t SS2DDrawCommand::create_instance(
-        u32 &p_PageIndex, u32 &p_SlotIndex,
-        Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
+    uint32_t SS2DDrawCommand::create_instance(u32 &p_PageIndex,
+                                              u32 &p_SlotIndex)
     {
-      LOCK_PAGES_WRITE(l_PagesLock);
       u32 l_Index = 0;
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
       bool l_FoundIndex = false;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
       for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
            ++l_PageIndex) {
-        Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
-            ms_Pages[l_PageIndex]->mutex);
         for (l_SlotIndex = 0;
              l_SlotIndex < ms_Pages[l_PageIndex]->size;
              ++l_SlotIndex) {
           if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied) {
             l_FoundIndex = true;
-            l_PageLock = std::move(i_PageLock);
             break;
           }
           l_Index++;
@@ -1353,8 +1242,6 @@ namespace Low {
       ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
       p_PageIndex = l_PageIndex;
       p_SlotIndex = l_SlotIndex;
-      p_PageLock = std::move(l_PageLock);
-      LOCK_UNLOCK(l_PagesLock);
       return l_Index;
     }
 

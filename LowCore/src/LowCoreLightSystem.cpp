@@ -56,8 +56,6 @@ namespace Low {
               i_PointLight.set_renderer_point_light(i_Renderer);
             }
 
-            LOCK_HANDLE(i_PointLight.get_renderer_point_light());
-
             // PERF: Only update if the point light is actually dirty
             if (i_PointLight.get_renderer_point_light().is_alive()) {
               i_PointLight.get_renderer_point_light().set_color(

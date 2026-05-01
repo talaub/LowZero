@@ -44,10 +44,6 @@ namespace Low {
       static u16 ms_TypeId;
 
     public:
-      static Low::Util::SharedMutex ms_LivingMutex;
-      static Low::Util::UniqueLock<Low::Util::SharedMutex>
-          ms_PagesLock;
-      static Low::Util::SharedMutex ms_PagesMutex;
       static Low::Util::List<Low::Util::Instances::Page *> ms_Pages;
 
       static Low::Util::List<AdaptiveRenderObject> ms_LivingInstances;
@@ -95,14 +91,10 @@ namespace Low {
 
       static uint32_t living_count()
       {
-        Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
-            ms_LivingMutex);
         return static_cast<uint32_t>(ms_LivingInstances.size());
       }
       static AdaptiveRenderObject *living_instances()
       {
-        Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
-            ms_LivingMutex);
         return ms_LivingInstances.data();
       }
 
@@ -192,9 +184,7 @@ namespace Low {
     private:
       static u32 ms_Capacity;
       static u32 ms_PageSize;
-      static u32 create_instance(
-          u32 &p_PageIndex, u32 &p_SlotIndex,
-          Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
+      static u32 create_instance(u32 &p_PageIndex, u32 &p_SlotIndex);
       static u32 create_page();
       void set_model(Low::Renderer::Model p_Value);
       void set_render_scene_handle(uint64_t p_Value);

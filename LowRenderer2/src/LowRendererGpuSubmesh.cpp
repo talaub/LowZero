@@ -27,11 +27,6 @@ namespace Low {
                                LOW_NAME(3790898865));
     uint32_t GpuSubmesh::ms_Capacity = 0u;
     uint32_t GpuSubmesh::ms_PageSize = 0u;
-    Low::Util::SharedMutex GpuSubmesh::ms_LivingMutex;
-    Low::Util::SharedMutex GpuSubmesh::ms_PagesMutex;
-    Low::Util::UniqueLock<Low::Util::SharedMutex>
-        GpuSubmesh::ms_PagesLock(GpuSubmesh::ms_PagesMutex,
-                                 std::defer_lock);
     Low::Util::List<GpuSubmesh> GpuSubmesh::ms_LivingInstances;
     Low::Util::List<Low::Util::Instances::Page *>
         GpuSubmesh::ms_Pages;
@@ -45,19 +40,13 @@ namespace Low {
     {
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
-      uint32_t l_Index =
-          create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
+      uint32_t l_Index = create_instance(l_PageIndex, l_SlotIndex);
 
       GpuSubmesh l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = GpuSubmesh::ms_TypeId;
-
-      l_PageLock.unlock();
-
-      Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
 
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, GpuSubmesh, state,
                                  MeshState)) MeshState();
@@ -80,11 +69,7 @@ namespace Low {
 
       l_Handle.set_name(p_Name);
 
-      {
-        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-            ms_LivingMutex);
-        ms_LivingInstances.push_back(l_Handle);
-      }
+      ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
 
@@ -98,7 +83,6 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       {
-        Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
         // LOW_CODEGEN::END::CUSTOM:DESTROY
@@ -112,14 +96,9 @@ namespace Low {
           get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Page->slots[l_SlotIndex].m_Occupied = false;
       l_Page->slots[l_SlotIndex].m_Generation++;
 
-      ms_PagesLock.lock();
-      Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -128,8 +107,6 @@ namespace Low {
           it++;
         }
       }
-      ms_PagesLock.unlock();
-      l_LivingLock.unlock();
     }
 
     void GpuSubmesh::initialize()
@@ -137,7 +114,6 @@ namespace Low {
       const Low::Util::TypeIdentifier l_IdentifierNames(
           N(LowRenderer2), N(GpuSubmesh));
 
-      LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -159,7 +135,6 @@ namespace Low {
         }
         ms_Capacity = l_Capacity;
       }
-      LOCK_UNLOCK(l_PagesLock);
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(GpuSubmesh);
@@ -195,7 +170,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           l_Handle.get_state();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GpuSubmesh,
                                             state, MeshState);
@@ -208,7 +182,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           *((MeshState *)p_Data) = l_Handle.get_state();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -226,7 +199,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           l_Handle.get_uploaded_vertex_count();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, GpuSubmesh, uploaded_vertex_count, uint32_t);
@@ -239,7 +211,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           *((uint32_t *)p_Data) =
               l_Handle.get_uploaded_vertex_count();
         };
@@ -258,7 +229,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           l_Handle.get_uploaded_index_count();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, GpuSubmesh, uploaded_index_count, uint32_t);
@@ -271,7 +241,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           *((uint32_t *)p_Data) = l_Handle.get_uploaded_index_count();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -289,7 +258,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           l_Handle.get_vertex_count();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GpuSubmesh,
                                             vertex_count, uint32_t);
@@ -302,7 +270,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           *((uint32_t *)p_Data) = l_Handle.get_vertex_count();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -320,7 +287,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           l_Handle.get_index_count();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GpuSubmesh,
                                             index_count, uint32_t);
@@ -333,7 +299,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           *((uint32_t *)p_Data) = l_Handle.get_index_count();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -351,7 +316,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           l_Handle.get_vertex_start();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GpuSubmesh,
                                             vertex_start, uint32_t);
@@ -364,7 +328,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           *((uint32_t *)p_Data) = l_Handle.get_vertex_start();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -382,7 +345,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           l_Handle.get_index_start();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GpuSubmesh,
                                             index_start, uint32_t);
@@ -395,7 +357,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           *((uint32_t *)p_Data) = l_Handle.get_index_start();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -413,7 +374,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           l_Handle.get_transform();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, GpuSubmesh, transform, Low::Math::Matrix4x4);
@@ -426,7 +386,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           *((Low::Math::Matrix4x4 *)p_Data) =
               l_Handle.get_transform();
         };
@@ -445,7 +404,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           l_Handle.get_parent_transform();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GpuSubmesh,
                                             parent_transform,
@@ -460,7 +418,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           *((Low::Math::Matrix4x4 *)p_Data) =
               l_Handle.get_parent_transform();
         };
@@ -479,7 +436,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           l_Handle.get_local_transform();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GpuSubmesh,
                                             local_transform,
@@ -494,7 +450,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           *((Low::Math::Matrix4x4 *)p_Data) =
               l_Handle.get_local_transform();
         };
@@ -512,7 +467,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           l_Handle.get_aabb();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GpuSubmesh,
                                             aabb, Low::Math::AABB);
@@ -525,7 +479,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           *((Low::Math::AABB *)p_Data) = l_Handle.get_aabb();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -543,7 +496,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           l_Handle.get_bounding_sphere();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GpuSubmesh,
                                             bounding_sphere,
@@ -557,7 +509,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           *((Low::Math::Sphere *)p_Data) =
               l_Handle.get_bounding_sphere();
         };
@@ -575,7 +526,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GpuSubmesh,
                                             name, Low::Util::Name);
@@ -588,7 +538,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<GpuSubmesh> l_HandleLock(l_Handle);
           *((Low::Util::Name *)p_Data) = l_Handle.get_name();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -607,19 +556,15 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
-      ms_PagesLock.lock();
       for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
         Low::Util::Instances::Page *i_Page = *it;
         free(i_Page->buffer);
         free(i_Page->slots);
-        free(i_Page->lockWords);
         delete i_Page;
         it = ms_Pages.erase(it);
       }
 
       ms_Capacity = 0;
-
-      ms_PagesLock.unlock();
     }
 
     Low::Util::Handle GpuSubmesh::_find_by_index(uint32_t p_Index)
@@ -641,8 +586,6 @@ namespace Low {
         l_Handle.m_Data.m_Generation = 0;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Handle.m_Data.m_Generation =
           l_Page->slots[l_SlotIndex].m_Generation;
 
@@ -675,8 +618,6 @@ namespace Low {
         return false;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       return m_Data.m_Type == GpuSubmesh::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
@@ -701,8 +642,6 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
-      Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
@@ -829,7 +768,6 @@ namespace Low {
     MeshState GpuSubmesh::get_state() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_state
 
@@ -840,7 +778,6 @@ namespace Low {
     void GpuSubmesh::set_state(MeshState p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_state
 
@@ -859,7 +796,6 @@ namespace Low {
     uint32_t GpuSubmesh::get_uploaded_vertex_count() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_uploaded_vertex_count
 
@@ -870,7 +806,6 @@ namespace Low {
     void GpuSubmesh::set_uploaded_vertex_count(uint32_t p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_uploaded_vertex_count
 
@@ -889,7 +824,6 @@ namespace Low {
     uint32_t GpuSubmesh::get_uploaded_index_count() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_uploaded_index_count
 
@@ -900,7 +834,6 @@ namespace Low {
     void GpuSubmesh::set_uploaded_index_count(uint32_t p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_uploaded_index_count
 
@@ -919,7 +852,6 @@ namespace Low {
     uint32_t GpuSubmesh::get_vertex_count() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_vertex_count
 
@@ -930,7 +862,6 @@ namespace Low {
     void GpuSubmesh::set_vertex_count(uint32_t p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_vertex_count
 
@@ -949,7 +880,6 @@ namespace Low {
     uint32_t GpuSubmesh::get_index_count() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_index_count
 
@@ -960,7 +890,6 @@ namespace Low {
     void GpuSubmesh::set_index_count(uint32_t p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_index_count
 
@@ -979,7 +908,6 @@ namespace Low {
     uint32_t GpuSubmesh::get_vertex_start() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_vertex_start
 
@@ -990,7 +918,6 @@ namespace Low {
     void GpuSubmesh::set_vertex_start(uint32_t p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_vertex_start
 
@@ -1009,7 +936,6 @@ namespace Low {
     uint32_t GpuSubmesh::get_index_start() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_index_start
 
@@ -1020,7 +946,6 @@ namespace Low {
     void GpuSubmesh::set_index_start(uint32_t p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_index_start
 
@@ -1039,7 +964,6 @@ namespace Low {
     Low::Math::Matrix4x4 &GpuSubmesh::get_transform() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_transform
 
@@ -1050,7 +974,6 @@ namespace Low {
     void GpuSubmesh::set_transform(Low::Math::Matrix4x4 &p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_transform
 
@@ -1069,7 +992,6 @@ namespace Low {
     Low::Math::Matrix4x4 &GpuSubmesh::get_parent_transform() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_parent_transform
 
@@ -1082,7 +1004,6 @@ namespace Low {
     GpuSubmesh::set_parent_transform(Low::Math::Matrix4x4 &p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_parent_transform
 
@@ -1102,7 +1023,6 @@ namespace Low {
     Low::Math::Matrix4x4 &GpuSubmesh::get_local_transform() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_local_transform
 
@@ -1115,7 +1035,6 @@ namespace Low {
     GpuSubmesh::set_local_transform(Low::Math::Matrix4x4 &p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_local_transform
 
@@ -1135,7 +1054,6 @@ namespace Low {
     Low::Math::AABB &GpuSubmesh::get_aabb() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_aabb
 
@@ -1146,7 +1064,6 @@ namespace Low {
     void GpuSubmesh::set_aabb(Low::Math::AABB &p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_aabb
 
@@ -1165,7 +1082,6 @@ namespace Low {
     Low::Math::Sphere &GpuSubmesh::get_bounding_sphere() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_bounding_sphere
 
@@ -1176,7 +1092,6 @@ namespace Low {
     void GpuSubmesh::set_bounding_sphere(Low::Math::Sphere &p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_bounding_sphere
 
@@ -1196,7 +1111,6 @@ namespace Low {
     Low::Util::Name GpuSubmesh::get_name() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
 
@@ -1207,7 +1121,6 @@ namespace Low {
     void GpuSubmesh::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
 
@@ -1223,27 +1136,21 @@ namespace Low {
       broadcast_observable(N(name));
     }
 
-    uint32_t GpuSubmesh::create_instance(
-        u32 &p_PageIndex, u32 &p_SlotIndex,
-        Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
+    uint32_t GpuSubmesh::create_instance(u32 &p_PageIndex,
+                                         u32 &p_SlotIndex)
     {
-      LOCK_PAGES_WRITE(l_PagesLock);
       u32 l_Index = 0;
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
       bool l_FoundIndex = false;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
       for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
            ++l_PageIndex) {
-        Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
-            ms_Pages[l_PageIndex]->mutex);
         for (l_SlotIndex = 0;
              l_SlotIndex < ms_Pages[l_PageIndex]->size;
              ++l_SlotIndex) {
           if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied) {
             l_FoundIndex = true;
-            l_PageLock = std::move(i_PageLock);
             break;
           }
           l_Index++;
@@ -1255,15 +1162,10 @@ namespace Low {
       if (!l_FoundIndex) {
         l_SlotIndex = 0;
         l_PageIndex = create_page();
-        Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
-            ms_Pages[l_PageIndex]->mutex);
-        l_PageLock = std::move(l_NewLock);
       }
       ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
       p_PageIndex = l_PageIndex;
       p_SlotIndex = l_SlotIndex;
-      p_PageLock = std::move(l_PageLock);
-      LOCK_UNLOCK(l_PagesLock);
       return l_Index;
     }
 

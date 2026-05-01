@@ -31,11 +31,6 @@ namespace Low {
                                LOW_NAME(1453839997));
     uint32_t RenderView::ms_Capacity = 0u;
     uint32_t RenderView::ms_PageSize = 0u;
-    Low::Util::SharedMutex RenderView::ms_LivingMutex;
-    Low::Util::SharedMutex RenderView::ms_PagesMutex;
-    Low::Util::UniqueLock<Low::Util::SharedMutex>
-        RenderView::ms_PagesLock(RenderView::ms_PagesMutex,
-                                 std::defer_lock);
     Low::Util::List<RenderView> RenderView::ms_LivingInstances;
     Low::Util::List<Low::Util::Instances::Page *>
         RenderView::ms_Pages;
@@ -49,19 +44,13 @@ namespace Low {
     {
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
-      uint32_t l_Index =
-          create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
+      uint32_t l_Index = create_instance(l_PageIndex, l_SlotIndex);
 
       RenderView l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = RenderView::ms_TypeId;
-
-      l_PageLock.unlock();
-
-      Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
 
       ACCESSOR_TYPE_SOA(l_Handle, RenderView, camera_fov, float) =
           0.0f;
@@ -124,11 +113,7 @@ namespace Low {
 
       l_Handle.set_name(p_Name);
 
-      {
-        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-            ms_LivingMutex);
-        ms_LivingInstances.push_back(l_Handle);
-      }
+      ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
 
@@ -151,7 +136,6 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       {
-        Low::Util::HandleLock<RenderView> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
         if (!ms_FullDestroy) {
           ms_ScheduledForDeletion.insert(get_id());
@@ -202,14 +186,9 @@ namespace Low {
           get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Page->slots[l_SlotIndex].m_Occupied = false;
       l_Page->slots[l_SlotIndex].m_Generation++;
 
-      ms_PagesLock.lock();
-      Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -218,8 +197,6 @@ namespace Low {
           it++;
         }
       }
-      ms_PagesLock.unlock();
-      l_LivingLock.unlock();
     }
 
     void RenderView::initialize()
@@ -227,7 +204,6 @@ namespace Low {
       const Low::Util::TypeIdentifier l_IdentifierNames(
           N(LowRenderer2), N(RenderView));
 
-      LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -249,7 +225,6 @@ namespace Low {
         }
         ms_Capacity = l_Capacity;
       }
-      LOCK_UNLOCK(l_PagesLock);
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(RenderView);
@@ -285,7 +260,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_camera_position();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
                                             camera_position,
@@ -299,7 +273,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((Low::Math::Vector3 *)p_Data) =
               l_Handle.get_camera_position();
         };
@@ -318,7 +291,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_camera_direction();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
                                             camera_direction,
@@ -333,7 +305,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((Low::Math::Vector3 *)p_Data) =
               l_Handle.get_camera_direction();
         };
@@ -352,7 +323,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_camera_fov();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
                                             camera_fov, float);
@@ -365,7 +335,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((float *)p_Data) = l_Handle.get_camera_fov();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -383,7 +352,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_ui_camera_position();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
                                             ui_camera_position,
@@ -398,7 +366,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((Low::Math::Vector2 *)p_Data) =
               l_Handle.get_ui_camera_position();
         };
@@ -417,7 +384,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_ui_camera_zoom();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
                                             ui_camera_zoom, float);
@@ -430,7 +396,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((float *)p_Data) = l_Handle.get_ui_camera_zoom();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -448,7 +413,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_ui_projection_matrix();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
                                             ui_projection_matrix,
@@ -463,7 +427,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((Low::Math::Matrix4x4 *)p_Data) =
               l_Handle.get_ui_projection_matrix();
         };
@@ -482,7 +445,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_ui_view_matrix();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
                                             ui_view_matrix,
@@ -497,7 +459,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((Low::Math::Matrix4x4 *)p_Data) =
               l_Handle.get_ui_view_matrix();
         };
@@ -516,7 +477,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_render_target_handle();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, RenderView, render_target_handle, uint64_t);
@@ -529,7 +489,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((uint64_t *)p_Data) = l_Handle.get_render_target_handle();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -547,7 +506,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_view_info_handle();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, RenderView, view_info_handle, uint64_t);
@@ -560,7 +518,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((uint64_t *)p_Data) = l_Handle.get_view_info_handle();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -578,7 +535,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_dimensions();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, RenderView, dimensions, Low::Math::UVector2);
@@ -592,7 +548,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((Low::Math::UVector2 *)p_Data) =
               l_Handle.get_dimensions();
         };
@@ -611,7 +566,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_desired_dimensions();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
                                             desired_dimensions,
@@ -625,7 +579,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((Low::Math::UVector2 *)p_Data) =
               l_Handle.get_desired_dimensions();
         };
@@ -645,7 +598,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_render_scene();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, RenderView, render_scene,
@@ -660,7 +612,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((Low::Renderer::RenderScene *)p_Data) =
               l_Handle.get_render_scene();
         };
@@ -680,7 +631,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_gbuffer_albedo();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
                                             gbuffer_albedo,
@@ -695,7 +645,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((Low::Renderer::Texture *)p_Data) =
               l_Handle.get_gbuffer_albedo();
         };
@@ -715,7 +664,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_gbuffer_normals();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
                                             gbuffer_normals,
@@ -730,7 +678,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((Low::Renderer::Texture *)p_Data) =
               l_Handle.get_gbuffer_normals();
         };
@@ -750,7 +697,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_gbuffer_depth();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
                                             gbuffer_depth,
@@ -765,7 +711,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((Low::Renderer::Texture *)p_Data) =
               l_Handle.get_gbuffer_depth();
         };
@@ -785,7 +730,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_gbuffer_viewposition();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
                                             gbuffer_viewposition,
@@ -800,7 +744,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((Low::Renderer::Texture *)p_Data) =
               l_Handle.get_gbuffer_viewposition();
         };
@@ -820,7 +763,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_object_map();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
                                             object_map,
@@ -834,7 +776,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((Low::Renderer::Texture *)p_Data) =
               l_Handle.get_object_map();
         };
@@ -854,7 +795,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_lit_image();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
                                             lit_image,
@@ -868,7 +808,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((Low::Renderer::Texture *)p_Data) =
               l_Handle.get_lit_image();
         };
@@ -888,7 +827,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_blurred_image();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
                                             blurred_image,
@@ -903,7 +841,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((Low::Renderer::Texture *)p_Data) =
               l_Handle.get_blurred_image();
         };
@@ -923,7 +860,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_ssao_image();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
                                             ssao_image,
@@ -937,7 +873,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((Low::Renderer::Texture *)p_Data) =
               l_Handle.get_ssao_image();
         };
@@ -955,7 +890,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_steps();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, RenderView, steps,
@@ -966,7 +900,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((Low::Util::List<Low::Renderer::RenderStep> *)p_Data) =
               l_Handle.get_steps();
         };
@@ -985,7 +918,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_step_data();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, RenderView, step_data,
@@ -1000,7 +932,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((Low::Util::List<RenderStepDataPtr> *)p_Data) =
               l_Handle.get_step_data();
         };
@@ -1019,7 +950,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_ui_canvases();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, RenderView, ui_canvases,
@@ -1030,7 +960,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((Low::Util::List<Low::Renderer::UiCanvas> *)p_Data) =
               l_Handle.get_ui_canvases();
         };
@@ -1049,7 +978,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_debug_geometry();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, RenderView, debug_geometry,
@@ -1060,7 +988,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((Low::Util::List<Low::Renderer::DebugGeometryDraw> *)
                 p_Data) = l_Handle.get_debug_geometry();
         };
@@ -1079,7 +1006,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.is_camera_dirty();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
                                             camera_dirty, bool);
@@ -1092,7 +1018,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((bool *)p_Data) = l_Handle.is_camera_dirty();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -1110,7 +1035,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.is_dimensions_dirty();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
                                             dimensions_dirty, bool);
@@ -1123,7 +1047,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((bool *)p_Data) = l_Handle.is_dimensions_dirty();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -1140,7 +1063,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
                                             name, Low::Util::Name);
@@ -1153,7 +1075,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
           *((Low::Util::Name *)p_Data) = l_Handle.get_name();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -1275,19 +1196,15 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
-      ms_PagesLock.lock();
       for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
         Low::Util::Instances::Page *i_Page = *it;
         free(i_Page->buffer);
         free(i_Page->slots);
-        free(i_Page->lockWords);
         delete i_Page;
         it = ms_Pages.erase(it);
       }
 
       ms_Capacity = 0;
-
-      ms_PagesLock.unlock();
     }
 
     Low::Util::Handle RenderView::_find_by_index(uint32_t p_Index)
@@ -1309,8 +1226,6 @@ namespace Low {
         l_Handle.m_Data.m_Generation = 0;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Handle.m_Data.m_Generation =
           l_Page->slots[l_SlotIndex].m_Generation;
 
@@ -1343,8 +1258,6 @@ namespace Low {
         return false;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       return m_Data.m_Type == RenderView::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
@@ -1369,8 +1282,6 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
-      Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
@@ -1526,7 +1437,6 @@ namespace Low {
     Low::Math::Vector3 RenderView::get_camera_position() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_camera_position
 
@@ -1566,7 +1476,6 @@ namespace Low {
     void RenderView::set_camera_position(Low::Math::Vector3 p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_camera_position
 
@@ -1591,7 +1500,6 @@ namespace Low {
     Low::Math::Vector3 RenderView::get_camera_direction() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_camera_direction
 
@@ -1631,7 +1539,6 @@ namespace Low {
     void RenderView::set_camera_direction(Low::Math::Vector3 p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_camera_direction
 
@@ -1656,7 +1563,6 @@ namespace Low {
     float RenderView::get_camera_fov() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_camera_fov
 
@@ -1667,7 +1573,6 @@ namespace Low {
     void RenderView::set_camera_fov(float p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_camera_fov
 
@@ -1691,7 +1596,6 @@ namespace Low {
     Low::Math::Vector2 RenderView::get_ui_camera_position() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ui_camera_position
 
@@ -1724,7 +1628,6 @@ namespace Low {
     RenderView::set_ui_camera_position(Low::Math::Vector2 p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ui_camera_position
 
@@ -1749,7 +1652,6 @@ namespace Low {
     float RenderView::get_ui_camera_zoom() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ui_camera_zoom
 
@@ -1760,7 +1662,6 @@ namespace Low {
     void RenderView::set_ui_camera_zoom(float p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ui_camera_zoom
 
@@ -1784,7 +1685,6 @@ namespace Low {
     Low::Math::Matrix4x4 &RenderView::get_ui_projection_matrix() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ui_projection_matrix
 
@@ -1797,7 +1697,6 @@ namespace Low {
         Low::Math::Matrix4x4 &p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ui_projection_matrix
 
@@ -1817,7 +1716,6 @@ namespace Low {
     Low::Math::Matrix4x4 &RenderView::get_ui_view_matrix() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ui_view_matrix
 
@@ -1829,7 +1727,6 @@ namespace Low {
     void RenderView::set_ui_view_matrix(Low::Math::Matrix4x4 &p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ui_view_matrix
 
@@ -1849,7 +1746,6 @@ namespace Low {
     uint64_t RenderView::get_render_target_handle() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_render_target_handle
 
@@ -1860,7 +1756,6 @@ namespace Low {
     void RenderView::set_render_target_handle(uint64_t p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_render_target_handle
 
@@ -1879,7 +1774,6 @@ namespace Low {
     uint64_t RenderView::get_view_info_handle() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_view_info_handle
 
@@ -1890,7 +1784,6 @@ namespace Low {
     void RenderView::set_view_info_handle(uint64_t p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_view_info_handle
 
@@ -1909,7 +1802,6 @@ namespace Low {
     Low::Math::UVector2 RenderView::get_dimensions() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dimensions
 
@@ -1941,7 +1833,6 @@ namespace Low {
     RenderView::set_actual_dimensions(Low::Math::UVector2 p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dimensions
 
@@ -1960,7 +1851,6 @@ namespace Low {
     Low::Math::UVector2 RenderView::get_desired_dimensions() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_desired_dimensions
 
@@ -1992,7 +1882,6 @@ namespace Low {
     void RenderView::set_dimensions(Low::Math::UVector2 p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_desired_dimensions
 
@@ -2017,7 +1906,6 @@ namespace Low {
     Low::Renderer::RenderScene RenderView::get_render_scene() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_render_scene
 
@@ -2030,7 +1918,6 @@ namespace Low {
     RenderView::set_render_scene(Low::Renderer::RenderScene p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_render_scene
 
@@ -2050,7 +1937,6 @@ namespace Low {
     Low::Renderer::Texture RenderView::get_gbuffer_albedo() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gbuffer_albedo
 
@@ -2063,7 +1949,6 @@ namespace Low {
     RenderView::set_gbuffer_albedo(Low::Renderer::Texture p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gbuffer_albedo
 
@@ -2083,7 +1968,6 @@ namespace Low {
     Low::Renderer::Texture RenderView::get_gbuffer_normals() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gbuffer_normals
 
@@ -2096,7 +1980,6 @@ namespace Low {
     RenderView::set_gbuffer_normals(Low::Renderer::Texture p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gbuffer_normals
 
@@ -2116,7 +1999,6 @@ namespace Low {
     Low::Renderer::Texture RenderView::get_gbuffer_depth() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gbuffer_depth
 
@@ -2128,7 +2010,6 @@ namespace Low {
     void RenderView::set_gbuffer_depth(Low::Renderer::Texture p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gbuffer_depth
 
@@ -2149,7 +2030,6 @@ namespace Low {
     RenderView::get_gbuffer_viewposition() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gbuffer_viewposition
 
@@ -2162,7 +2042,6 @@ namespace Low {
         Low::Renderer::Texture p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gbuffer_viewposition
 
@@ -2182,7 +2061,6 @@ namespace Low {
     Low::Renderer::Texture RenderView::get_object_map() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_object_map
 
@@ -2193,7 +2071,6 @@ namespace Low {
     void RenderView::set_object_map(Low::Renderer::Texture p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_object_map
 
@@ -2213,7 +2090,6 @@ namespace Low {
     Low::Renderer::Texture RenderView::get_lit_image() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_lit_image
 
@@ -2224,7 +2100,6 @@ namespace Low {
     void RenderView::set_lit_image(Low::Renderer::Texture p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_lit_image
 
@@ -2244,7 +2119,6 @@ namespace Low {
     Low::Renderer::Texture RenderView::get_blurred_image() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_blurred_image
 
@@ -2256,7 +2130,6 @@ namespace Low {
     void RenderView::set_blurred_image(Low::Renderer::Texture p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_blurred_image
 
@@ -2276,7 +2149,6 @@ namespace Low {
     Low::Renderer::Texture RenderView::get_ssao_image() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ssao_image
 
@@ -2287,7 +2159,6 @@ namespace Low {
     void RenderView::set_ssao_image(Low::Renderer::Texture p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ssao_image
 
@@ -2308,7 +2179,6 @@ namespace Low {
     RenderView::get_steps() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_steps
 
@@ -2322,7 +2192,6 @@ namespace Low {
     RenderView::get_step_data() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_step_data
 
@@ -2335,7 +2204,6 @@ namespace Low {
         Low::Util::List<RenderStepDataPtr> &p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_step_data
 
@@ -2356,7 +2224,6 @@ namespace Low {
     RenderView::get_ui_canvases() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ui_canvases
 
@@ -2370,7 +2237,6 @@ namespace Low {
     RenderView::get_debug_geometry() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_debug_geometry
 
@@ -2384,7 +2250,6 @@ namespace Low {
     bool RenderView::is_camera_dirty() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_camera_dirty
 
@@ -2400,7 +2265,6 @@ namespace Low {
     void RenderView::set_camera_dirty(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_camera_dirty
 
@@ -2429,7 +2293,6 @@ namespace Low {
     bool RenderView::is_dimensions_dirty() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dimensions_dirty
 
@@ -2445,7 +2308,6 @@ namespace Low {
     void RenderView::set_dimensions_dirty(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dimensions_dirty
 
@@ -2474,7 +2336,6 @@ namespace Low {
     Low::Util::Name RenderView::get_name() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
 
@@ -2485,7 +2346,6 @@ namespace Low {
     void RenderView::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
 
@@ -2503,7 +2363,6 @@ namespace Low {
 
     void RenderView::add_step(Low::Renderer::RenderStep p_Step)
     {
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_step
 
       get_steps().push_back(p_Step);
@@ -2514,7 +2373,6 @@ namespace Low {
 
     void RenderView::add_step_by_name(Low::Util::Name p_StepName)
     {
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_step_by_name
 
       add_step(RenderStep::find_by_name(p_StepName));
@@ -2523,7 +2381,6 @@ namespace Low {
 
     void RenderView::add_ui_canvas(Low::Renderer::UiCanvas p_Canvas)
     {
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_ui_canvas
 
       get_ui_canvases().push_back(p_Canvas);
@@ -2533,7 +2390,6 @@ namespace Low {
     void RenderView::add_debug_geometry(
         Low::Renderer::DebugGeometryDraw &p_DebugGeometryDraw)
     {
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_debug_geometry
 
       get_debug_geometry().push_back(p_DebugGeometryDraw);
@@ -2543,7 +2399,6 @@ namespace Low {
     uint32_t RenderView::read_object_id_px(
         const Low::Math::UVector2 p_PixelPosition)
     {
-      Low::Util::HandleLock<RenderView> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_read_object_id_px
 
       if (!get_object_map().is_alive() ||
@@ -2590,27 +2445,21 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_default
     }
 
-    uint32_t RenderView::create_instance(
-        u32 &p_PageIndex, u32 &p_SlotIndex,
-        Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
+    uint32_t RenderView::create_instance(u32 &p_PageIndex,
+                                         u32 &p_SlotIndex)
     {
-      LOCK_PAGES_WRITE(l_PagesLock);
       u32 l_Index = 0;
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
       bool l_FoundIndex = false;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
       for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
            ++l_PageIndex) {
-        Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
-            ms_Pages[l_PageIndex]->mutex);
         for (l_SlotIndex = 0;
              l_SlotIndex < ms_Pages[l_PageIndex]->size;
              ++l_SlotIndex) {
           if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied) {
             l_FoundIndex = true;
-            l_PageLock = std::move(i_PageLock);
             break;
           }
           l_Index++;
@@ -2622,15 +2471,10 @@ namespace Low {
       if (!l_FoundIndex) {
         l_SlotIndex = 0;
         l_PageIndex = create_page();
-        Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
-            ms_Pages[l_PageIndex]->mutex);
-        l_PageLock = std::move(l_NewLock);
       }
       ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
       p_PageIndex = l_PageIndex;
       p_SlotIndex = l_SlotIndex;
-      p_PageLock = std::move(l_PageLock);
-      LOCK_UNLOCK(l_PagesLock);
       return l_Index;
     }
 

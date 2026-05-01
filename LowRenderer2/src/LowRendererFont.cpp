@@ -27,10 +27,6 @@ namespace Low {
         Font::IDENTIFIER(LOW_NAME(509652687), LOW_NAME(1889970156));
     uint32_t Font::ms_Capacity = 0u;
     uint32_t Font::ms_PageSize = 0u;
-    Low::Util::SharedMutex Font::ms_LivingMutex;
-    Low::Util::SharedMutex Font::ms_PagesMutex;
-    Low::Util::UniqueLock<Low::Util::SharedMutex>
-        Font::ms_PagesLock(Font::ms_PagesMutex, std::defer_lock);
     Low::Util::List<Font> Font::ms_LivingInstances;
     Low::Util::List<Low::Util::Instances::Page *> Font::ms_Pages;
 
@@ -49,19 +45,13 @@ namespace Low {
     {
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
-      uint32_t l_Index =
-          create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
+      uint32_t l_Index = create_instance(l_PageIndex, l_SlotIndex);
 
       Font l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = Font::ms_TypeId;
-
-      l_PageLock.unlock();
-
-      Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
 
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Font, texture,
                                  Low::Renderer::Texture))
@@ -86,11 +76,7 @@ namespace Low {
 
       l_Handle.set_name(p_Name);
 
-      {
-        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-            ms_LivingMutex);
-        ms_LivingInstances.push_back(l_Handle);
-      }
+      ms_LivingInstances.push_back(l_Handle);
 
       if (p_UniqueId > 0ull) {
         l_Handle.set_unique_id(p_UniqueId);
@@ -117,7 +103,6 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       {
-        Low::Util::HandleLock<Font> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
         if (get_texture().is_alive()) {
@@ -136,14 +121,9 @@ namespace Low {
           get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Page->slots[l_SlotIndex].m_Occupied = false;
       l_Page->slots[l_SlotIndex].m_Generation++;
 
-      ms_PagesLock.lock();
-      Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -152,8 +132,6 @@ namespace Low {
           it++;
         }
       }
-      ms_PagesLock.unlock();
-      l_LivingLock.unlock();
     }
 
     void Font::initialize()
@@ -161,7 +139,6 @@ namespace Low {
       const Low::Util::TypeIdentifier l_IdentifierNames(
           N(LowRenderer2), N(Font));
 
-      LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -183,7 +160,6 @@ namespace Low {
         }
         ms_Capacity = l_Capacity;
       }
-      LOCK_UNLOCK(l_PagesLock);
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(Font);
@@ -219,7 +195,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Font l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
           l_Handle.get_texture();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Font, texture,
                                             Low::Renderer::Texture);
@@ -232,7 +207,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Font l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
           *((Low::Renderer::Texture *)p_Data) =
               l_Handle.get_texture();
         };
@@ -251,7 +225,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Font l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
           l_Handle.get_resource();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, Font, resource, Low::Renderer::FontResource);
@@ -265,7 +238,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Font l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
           *((Low::Renderer::FontResource *)p_Data) =
               l_Handle.get_resource();
         };
@@ -283,7 +255,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Font l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
           l_Handle.get_glyphs();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, Font, glyphs,
@@ -298,7 +269,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Font l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
           *((Low::Util::UnorderedMap<char, Glyph> *)p_Data) =
               l_Handle.get_glyphs();
         };
@@ -317,7 +287,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Font l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
           l_Handle.is_sidecar_loaded();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Font,
                                             sidecar_loaded, bool);
@@ -330,7 +299,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Font l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
           *((bool *)p_Data) = l_Handle.is_sidecar_loaded();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -347,7 +315,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Font l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
           l_Handle.get_ascender();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Font, ascender,
                                             float);
@@ -360,7 +327,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Font l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
           *((float *)p_Data) = l_Handle.get_ascender();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -377,7 +343,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Font l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
           l_Handle.get_descender();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Font, descender,
                                             float);
@@ -390,7 +355,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Font l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
           *((float *)p_Data) = l_Handle.get_descender();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -407,7 +371,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Font l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
           l_Handle.get_line_height();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Font,
                                             line_height, float);
@@ -420,7 +383,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Font l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
           *((float *)p_Data) = l_Handle.get_line_height();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -438,7 +400,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Font l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
           l_Handle.get_import_height();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Font,
                                             import_height, float);
@@ -451,7 +412,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Font l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
           *((float *)p_Data) = l_Handle.get_import_height();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -487,7 +447,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Font l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
           l_Handle.get_unique_id();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Font, unique_id,
                                             Low::Util::UniqueId);
@@ -497,7 +456,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Font l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
           *((Low::Util::UniqueId *)p_Data) = l_Handle.get_unique_id();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -514,7 +472,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Font l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Font, name,
                                             Low::Util::Name);
@@ -527,7 +484,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Font l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
           *((Low::Util::Name *)p_Data) = l_Handle.get_name();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -615,19 +571,15 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
-      ms_PagesLock.lock();
       for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
         Low::Util::Instances::Page *i_Page = *it;
         free(i_Page->buffer);
         free(i_Page->slots);
-        free(i_Page->lockWords);
         delete i_Page;
         it = ms_Pages.erase(it);
       }
 
       ms_Capacity = 0;
-
-      ms_PagesLock.unlock();
     }
 
     Low::Util::Handle Font::_find_by_index(uint32_t p_Index)
@@ -649,8 +601,6 @@ namespace Low {
         l_Handle.m_Data.m_Generation = 0;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Handle.m_Data.m_Generation =
           l_Page->slots[l_SlotIndex].m_Generation;
 
@@ -683,8 +633,6 @@ namespace Low {
         return false;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       return m_Data.m_Type == Font::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
@@ -708,8 +656,6 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
-      Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
@@ -837,7 +783,6 @@ namespace Low {
     {
       _LOW_ASSERT(is_alive());
 
-      Low::Util::HandleLock<Font> l_HandleLock(get_id());
       const u32 l_OldReferences =
           (TYPE_SOA(Font, references, Low::Util::Set<u64>)).size();
 
@@ -860,7 +805,6 @@ namespace Low {
     {
       _LOW_ASSERT(is_alive());
 
-      Low::Util::HandleLock<Font> l_HandleLock(get_id());
       const u32 l_OldReferences =
           (TYPE_SOA(Font, references, Low::Util::Set<u64>)).size();
 
@@ -884,7 +828,6 @@ namespace Low {
     Low::Renderer::Texture Font::get_texture() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_texture
 
@@ -895,7 +838,6 @@ namespace Low {
     void Font::set_texture(Low::Renderer::Texture p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_texture
 
@@ -920,7 +862,6 @@ namespace Low {
     Low::Renderer::FontResource Font::get_resource() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_resource
 
@@ -931,7 +872,6 @@ namespace Low {
     void Font::set_resource(Low::Renderer::FontResource p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_resource
 
@@ -950,7 +890,6 @@ namespace Low {
     Low::Util::UnorderedMap<char, Glyph> &Font::get_glyphs() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_glyphs
 
@@ -964,7 +903,6 @@ namespace Low {
     Font::set_glyphs(Low::Util::UnorderedMap<char, Glyph> &p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_glyphs
 
@@ -985,7 +923,6 @@ namespace Low {
     bool Font::is_sidecar_loaded() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_sidecar_loaded
 
@@ -1001,7 +938,6 @@ namespace Low {
     void Font::set_sidecar_loaded(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_sidecar_loaded
 
@@ -1020,7 +956,6 @@ namespace Low {
     float Font::get_ascender() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ascender
 
@@ -1031,7 +966,6 @@ namespace Low {
     void Font::set_ascender(float p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ascender
 
@@ -1050,7 +984,6 @@ namespace Low {
     float Font::get_descender() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_descender
 
@@ -1061,7 +994,6 @@ namespace Low {
     void Font::set_descender(float p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_descender
 
@@ -1080,7 +1012,6 @@ namespace Low {
     float Font::get_line_height() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_line_height
 
@@ -1091,7 +1022,6 @@ namespace Low {
     void Font::set_line_height(float p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_line_height
 
@@ -1110,7 +1040,6 @@ namespace Low {
     float Font::get_import_height() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_import_height
 
@@ -1121,7 +1050,6 @@ namespace Low {
     void Font::set_import_height(float p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_import_height
 
@@ -1140,7 +1068,6 @@ namespace Low {
     Low::Util::Set<u64> &Font::get_references() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_references
 
@@ -1152,7 +1079,6 @@ namespace Low {
     Low::Util::UniqueId Font::get_unique_id() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
 
@@ -1163,7 +1089,6 @@ namespace Low {
     void Font::set_unique_id(Low::Util::UniqueId p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
 
@@ -1182,7 +1107,6 @@ namespace Low {
     Low::Util::Name Font::get_name() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
 
@@ -1193,7 +1117,6 @@ namespace Low {
     void Font::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
 
@@ -1211,7 +1134,6 @@ namespace Low {
 
     bool Font::is_fully_loaded()
     {
-      Low::Util::HandleLock<Font> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_is_fully_loaded
 
       return get_texture().is_alive() &&
@@ -1247,7 +1169,6 @@ namespace Low {
 
     EditorImage Font::get_editor_image()
     {
-      Low::Util::HandleLock<Font> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_editor_image
 
       return Util::Handle::DEAD;
@@ -1256,7 +1177,6 @@ namespace Low {
 
     Glyph &Font::find_glyph(char p_Glyph)
     {
-      Low::Util::HandleLock<Font> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_find_glyph
 
       return get_glyphs()[p_Glyph];
@@ -1265,7 +1185,6 @@ namespace Low {
 
     Low::Math::Vector4 Font::find_glyph_uvrect(char p_Glyph)
     {
-      Low::Util::HandleLock<Font> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_find_glyph_uvrect
 
       Glyph &l_Glyph = find_glyph(p_Glyph);
@@ -1274,27 +1193,20 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_find_glyph_uvrect
     }
 
-    uint32_t Font::create_instance(
-        u32 &p_PageIndex, u32 &p_SlotIndex,
-        Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
+    uint32_t Font::create_instance(u32 &p_PageIndex, u32 &p_SlotIndex)
     {
-      LOCK_PAGES_WRITE(l_PagesLock);
       u32 l_Index = 0;
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
       bool l_FoundIndex = false;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
       for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
            ++l_PageIndex) {
-        Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
-            ms_Pages[l_PageIndex]->mutex);
         for (l_SlotIndex = 0;
              l_SlotIndex < ms_Pages[l_PageIndex]->size;
              ++l_SlotIndex) {
           if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied) {
             l_FoundIndex = true;
-            l_PageLock = std::move(i_PageLock);
             break;
           }
           l_Index++;
@@ -1306,15 +1218,10 @@ namespace Low {
       if (!l_FoundIndex) {
         l_SlotIndex = 0;
         l_PageIndex = create_page();
-        Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
-            ms_Pages[l_PageIndex]->mutex);
-        l_PageLock = std::move(l_NewLock);
       }
       ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
       p_PageIndex = l_PageIndex;
       p_SlotIndex = l_SlotIndex;
-      p_PageLock = std::move(l_PageLock);
-      LOCK_UNLOCK(l_PagesLock);
       return l_Index;
     }
 

@@ -28,10 +28,6 @@ namespace Low {
         Mesh::IDENTIFIER(LOW_NAME(509652687), LOW_NAME(1096652136));
     uint32_t Mesh::ms_Capacity = 0u;
     uint32_t Mesh::ms_PageSize = 0u;
-    Low::Util::SharedMutex Mesh::ms_LivingMutex;
-    Low::Util::SharedMutex Mesh::ms_PagesMutex;
-    Low::Util::UniqueLock<Low::Util::SharedMutex>
-        Mesh::ms_PagesLock(Mesh::ms_PagesMutex, std::defer_lock);
     Low::Util::List<Mesh> Mesh::ms_LivingInstances;
     Low::Util::List<Low::Util::Instances::Page *> Mesh::ms_Pages;
 
@@ -50,19 +46,13 @@ namespace Low {
     {
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
-      uint32_t l_Index =
-          create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
+      uint32_t l_Index = create_instance(l_PageIndex, l_SlotIndex);
 
       Mesh l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = Mesh::ms_TypeId;
-
-      l_PageLock.unlock();
-
-      Low::Util::HandleLock<Mesh> l_HandleLock(l_Handle);
 
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Mesh, resource,
                                  Low::Renderer::MeshResource))
@@ -84,11 +74,7 @@ namespace Low {
 
       l_Handle.set_name(p_Name);
 
-      {
-        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-            ms_LivingMutex);
-        ms_LivingInstances.push_back(l_Handle);
-      }
+      ms_LivingInstances.push_back(l_Handle);
 
       if (p_UniqueId > 0ull) {
         l_Handle.set_unique_id(p_UniqueId);
@@ -116,7 +102,6 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       {
-        Low::Util::HandleLock<Mesh> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
         // TODO: Unload if loaded
@@ -142,14 +127,9 @@ namespace Low {
           get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Page->slots[l_SlotIndex].m_Occupied = false;
       l_Page->slots[l_SlotIndex].m_Generation++;
 
-      ms_PagesLock.lock();
-      Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -158,8 +138,6 @@ namespace Low {
           it++;
         }
       }
-      ms_PagesLock.unlock();
-      l_LivingLock.unlock();
     }
 
     void Mesh::initialize()
@@ -167,7 +145,6 @@ namespace Low {
       const Low::Util::TypeIdentifier l_IdentifierNames(
           N(LowRenderer2), N(Mesh));
 
-      LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -189,7 +166,6 @@ namespace Low {
         }
         ms_Capacity = l_Capacity;
       }
-      LOCK_UNLOCK(l_PagesLock);
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(Mesh);
@@ -225,7 +201,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Mesh> l_HandleLock(l_Handle);
           l_Handle.get_resource();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, Mesh, resource, Low::Renderer::MeshResource);
@@ -239,7 +214,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Mesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Mesh> l_HandleLock(l_Handle);
           *((Low::Renderer::MeshResource *)p_Data) =
               l_Handle.get_resource();
         };
@@ -258,7 +232,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Mesh> l_HandleLock(l_Handle);
           l_Handle.get_state();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, state,
                                             MeshState);
@@ -271,7 +244,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Mesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Mesh> l_HandleLock(l_Handle);
           *((MeshState *)p_Data) = l_Handle.get_state();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -289,7 +261,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Mesh> l_HandleLock(l_Handle);
           l_Handle.get_geometry();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, Mesh, geometry, Low::Renderer::MeshGeometry);
@@ -303,7 +274,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Mesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Mesh> l_HandleLock(l_Handle);
           *((Low::Renderer::MeshGeometry *)p_Data) =
               l_Handle.get_geometry();
         };
@@ -322,7 +292,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Mesh> l_HandleLock(l_Handle);
           l_Handle.get_gpu();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, gpu,
                                             Low::Renderer::GpuMesh);
@@ -335,7 +304,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Mesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Mesh> l_HandleLock(l_Handle);
           *((Low::Renderer::GpuMesh *)p_Data) = l_Handle.get_gpu();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -352,7 +320,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Mesh> l_HandleLock(l_Handle);
           l_Handle.is_unloadable();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh,
                                             unloadable, bool);
@@ -365,7 +332,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Mesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Mesh> l_HandleLock(l_Handle);
           *((bool *)p_Data) = l_Handle.is_unloadable();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -383,7 +349,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Mesh> l_HandleLock(l_Handle);
           l_Handle.get_submesh_count();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh,
                                             submesh_count, uint32_t);
@@ -396,7 +361,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Mesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Mesh> l_HandleLock(l_Handle);
           *((uint32_t *)p_Data) = l_Handle.get_submesh_count();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -432,7 +396,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Mesh> l_HandleLock(l_Handle);
           l_Handle.get_unique_id();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, unique_id,
                                             Low::Util::UniqueId);
@@ -442,7 +405,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Mesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Mesh> l_HandleLock(l_Handle);
           *((Low::Util::UniqueId *)p_Data) = l_Handle.get_unique_id();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -459,7 +421,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Mesh> l_HandleLock(l_Handle);
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, name,
                                             Low::Util::Name);
@@ -472,7 +433,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Mesh l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Mesh> l_HandleLock(l_Handle);
           *((Low::Util::Name *)p_Data) = l_Handle.get_name();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -517,19 +477,15 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
-      ms_PagesLock.lock();
       for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
         Low::Util::Instances::Page *i_Page = *it;
         free(i_Page->buffer);
         free(i_Page->slots);
-        free(i_Page->lockWords);
         delete i_Page;
         it = ms_Pages.erase(it);
       }
 
       ms_Capacity = 0;
-
-      ms_PagesLock.unlock();
     }
 
     Low::Util::Handle Mesh::_find_by_index(uint32_t p_Index)
@@ -551,8 +507,6 @@ namespace Low {
         l_Handle.m_Data.m_Generation = 0;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Handle.m_Data.m_Generation =
           l_Page->slots[l_SlotIndex].m_Generation;
 
@@ -585,8 +539,6 @@ namespace Low {
         return false;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       return m_Data.m_Type == Mesh::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
@@ -610,8 +562,6 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
-      Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
@@ -737,7 +687,6 @@ namespace Low {
     {
       _LOW_ASSERT(is_alive());
 
-      Low::Util::HandleLock<Mesh> l_HandleLock(get_id());
       const u32 l_OldReferences =
           (TYPE_SOA(Mesh, references, Low::Util::Set<u64>)).size();
 
@@ -760,7 +709,6 @@ namespace Low {
     {
       _LOW_ASSERT(is_alive());
 
-      Low::Util::HandleLock<Mesh> l_HandleLock(get_id());
       const u32 l_OldReferences =
           (TYPE_SOA(Mesh, references, Low::Util::Set<u64>)).size();
 
@@ -784,7 +732,6 @@ namespace Low {
     Low::Renderer::MeshResource Mesh::get_resource() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Mesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_resource
 
@@ -795,7 +742,6 @@ namespace Low {
     void Mesh::set_resource(Low::Renderer::MeshResource p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Mesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_resource
 
@@ -814,7 +760,6 @@ namespace Low {
     MeshState Mesh::get_state() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Mesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_state
 
@@ -825,7 +770,6 @@ namespace Low {
     void Mesh::set_state(MeshState p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Mesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_state
 
@@ -844,7 +788,6 @@ namespace Low {
     Low::Renderer::MeshGeometry Mesh::get_geometry() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Mesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_geometry
 
@@ -855,7 +798,6 @@ namespace Low {
     void Mesh::set_geometry(Low::Renderer::MeshGeometry p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Mesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_geometry
 
@@ -866,7 +808,6 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_geometry
 
-      LOCK_HANDLE(p_Value);
       if (p_Value.is_alive()) {
         set_submesh_count(p_Value.get_submesh_count());
       }
@@ -878,7 +819,6 @@ namespace Low {
     Low::Renderer::GpuMesh Mesh::get_gpu() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Mesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gpu
 
@@ -889,7 +829,6 @@ namespace Low {
     void Mesh::set_gpu(Low::Renderer::GpuMesh p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Mesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gpu
 
@@ -908,7 +847,6 @@ namespace Low {
     bool Mesh::is_unloadable() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Mesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unloadable
 
@@ -924,7 +862,6 @@ namespace Low {
     void Mesh::set_unloadable(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Mesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unloadable
 
@@ -943,7 +880,6 @@ namespace Low {
     uint32_t Mesh::get_submesh_count() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Mesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_submesh_count
 
@@ -954,7 +890,6 @@ namespace Low {
     void Mesh::set_submesh_count(uint32_t p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Mesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_submesh_count
 
@@ -973,7 +908,6 @@ namespace Low {
     Low::Util::Set<u64> &Mesh::get_references() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Mesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_references
 
@@ -985,7 +919,6 @@ namespace Low {
     Low::Util::UniqueId Mesh::get_unique_id() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Mesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
 
@@ -996,7 +929,6 @@ namespace Low {
     void Mesh::set_unique_id(Low::Util::UniqueId p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Mesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
 
@@ -1015,7 +947,6 @@ namespace Low {
     Low::Util::Name Mesh::get_name() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Mesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
 
@@ -1026,7 +957,6 @@ namespace Low {
     void Mesh::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Mesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
 
@@ -1063,7 +993,6 @@ namespace Low {
 
     EditorImage Mesh::get_editor_image()
     {
-      Low::Util::HandleLock<Mesh> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_editor_image
 
       if (get_resource().is_alive()) {
@@ -1077,27 +1006,20 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_editor_image
     }
 
-    uint32_t Mesh::create_instance(
-        u32 &p_PageIndex, u32 &p_SlotIndex,
-        Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
+    uint32_t Mesh::create_instance(u32 &p_PageIndex, u32 &p_SlotIndex)
     {
-      LOCK_PAGES_WRITE(l_PagesLock);
       u32 l_Index = 0;
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
       bool l_FoundIndex = false;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
       for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
            ++l_PageIndex) {
-        Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
-            ms_Pages[l_PageIndex]->mutex);
         for (l_SlotIndex = 0;
              l_SlotIndex < ms_Pages[l_PageIndex]->size;
              ++l_SlotIndex) {
           if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied) {
             l_FoundIndex = true;
-            l_PageLock = std::move(i_PageLock);
             break;
           }
           l_Index++;
@@ -1109,15 +1031,10 @@ namespace Low {
       if (!l_FoundIndex) {
         l_SlotIndex = 0;
         l_PageIndex = create_page();
-        Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
-            ms_Pages[l_PageIndex]->mutex);
-        l_PageLock = std::move(l_NewLock);
       }
       ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
       p_PageIndex = l_PageIndex;
       p_SlotIndex = l_SlotIndex;
-      p_PageLock = std::move(l_PageLock);
-      LOCK_UNLOCK(l_PagesLock);
       return l_Index;
     }
 

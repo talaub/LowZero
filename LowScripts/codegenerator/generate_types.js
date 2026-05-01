@@ -422,9 +422,6 @@ function generate_header(p_Type) {
   t += line("static u16 ms_TypeId;", n);
   t += line("public:", --n);
   n++;
-  t += line("static Low::Util::SharedMutex ms_LivingMutex;", n);
-  t += line("static Low::Util::UniqueLock<Low::Util::SharedMutex> ms_PagesLock;");
-  t += line("static Low::Util::SharedMutex ms_PagesMutex;", n);
   t += line("static Low::Util::List<Low::Util::Instances::Page*> ms_Pages;", n);
   t += empty();
   t += line(`static Low::Util::List<${p_Type.name}> ms_LivingInstances;`, n);
@@ -495,11 +492,9 @@ return ms_TypeId;
   t += line(`${p_Type.name} &operator=(${p_Type.name}&&) noexcept = default;`);
   t += empty();
   t += line("static uint32_t living_count() {");
-  t += line(`Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(ms_LivingMutex);`);
   t += line("return static_cast<uint32_t>(ms_LivingInstances.size());");
   t += line("}");
   t += line(`static ${p_Type.name} *living_instances() {`);
-  t += line(`Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(ms_LivingMutex);`);
   t += line("return ms_LivingInstances.data();");
   t += line("}");
   t += empty();
@@ -709,7 +704,7 @@ return ms_TypeId;
   t += line("private:");
   t += line(`static u32 ms_Capacity;`);
   t += line(`static u32 ms_PageSize;`);
-  t += line(`static u32 create_instance(u32& p_PageIndex, u32&p_SlotIndex, Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);`);
+  t += line(`static u32 create_instance(u32& p_PageIndex, u32&p_SlotIndex);`);
   t += line(`static u32 create_page();`);
   if (privatelines.length) {
     for (const l of privatelines) {
@@ -889,9 +884,6 @@ function generate_source(p_Type) {
   t += line(`const Low::Util::TypeIdentifier ${p_Type.name}::IDENTIFIER(LOW_NAME(${hash_name(p_Type.module)}), LOW_NAME(${hash_name(p_Type.name)}));`, n);
   t += line(`uint32_t ${p_Type.name}::ms_Capacity = 0u;`, n);
   t += line(`uint32_t ${p_Type.name}::ms_PageSize = 0u;`, n);
-  t += line(`Low::Util::SharedMutex ${p_Type.name}::ms_LivingMutex;`, n);
-  t += line(`Low::Util::SharedMutex ${p_Type.name}::ms_PagesMutex;`, n);
-  t += line(`Low::Util::UniqueLock<Low::Util::SharedMutex> ${p_Type.name}::ms_PagesLock(${p_Type.name}::ms_PagesMutex, std::defer_lock);`, n);
   t += line(
     `Low::Util::List<${p_Type.name}> ${p_Type.name}::ms_LivingInstances;`,
     n,
@@ -981,17 +973,12 @@ function generate_source(p_Type) {
   }
   t += line(`u32 l_PageIndex = 0;`);
   t += line(`u32 l_SlotIndex = 0;`);
-  t += line(`Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;`)
-  t += line(`uint32_t l_Index = create_instance(l_PageIndex, l_SlotIndex, l_PageLock);`);
+  t += line(`uint32_t l_Index = create_instance(l_PageIndex, l_SlotIndex);`);
   t += empty();
   t += line(`${p_Type.name} l_Handle;`);
   t += line(`l_Handle.m_Data.m_Index = l_Index;`);
   t += line(`l_Handle.m_Data.m_Generation = ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;`);
   t += line(`l_Handle.m_Data.m_Type = ${p_Type.name}::ms_TypeId;`);
-  t += empty();
-  t += line(`l_PageLock.unlock();`)
-  t += empty();
-  t += line(`Low::Util::HandleLock<${p_Type.name}> l_HandleLock(l_Handle);`)
   t += empty();
   for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
     if (i_Prop.no_data) {
@@ -1028,10 +1015,7 @@ function generate_source(p_Type) {
     t += line("l_Handle.set_name(p_Name);");
     t += empty();
   }
-  t += line('{');
-  t += line(`Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(ms_LivingMutex);`);
   t += line(`ms_LivingInstances.push_back(l_Handle);`);
-  t += line('}');
   if (p_Type.unique_id) {
     t += empty();
     t += line(`if (p_UniqueId > 0ull) {`);
@@ -1094,7 +1078,6 @@ function generate_source(p_Type) {
   }
 
   t += line('{');
-  t += line(`Low::Util::HandleLock<${p_Type.name}> l_Lock(get_id());`);
   t += line(l_DestroyBeginMarker);
   t += l_CustomCode;
   t += line(l_DestroyEndMarker);
@@ -1112,7 +1095,6 @@ function generate_source(p_Type) {
   t += line(`_LOW_ASSERT(get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));`)
   t += line(`Low::Util::Instances::Page* l_Page = ms_Pages[l_PageIndex];`)
   t += empty();
-  t += line(`Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(l_Page->mutex);`)
   t += line("l_Page->slots[l_SlotIndex].m_Occupied = false;");
   t += line("l_Page->slots[l_SlotIndex].m_Generation++;");
   t += empty();
@@ -1128,9 +1110,6 @@ function generate_source(p_Type) {
   t += line("}");
   t += line("}");
   */
-  t += line(`ms_PagesLock.lock();`);
-
-  t += line(`Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(ms_LivingMutex);`);
   t += line(
     `for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();) {`,
   );
@@ -1141,14 +1120,11 @@ function generate_source(p_Type) {
   t += line("}");
   t += line("}");
   //t += line(`_LOW_ASSERT(l_LivingInstanceFound);`);
-  t += line(`ms_PagesLock.unlock();`);
-  t += line(`l_LivingLock.unlock();`);
   t += line("}");
   t += empty();
   t += line(`void ${p_Type.name}::initialize() {`);
   t += line(`const Low::Util::TypeIdentifier l_IdentifierNames(N(${p_Type.module}), N(${p_Type.name}));`);
   t += empty();
-  t += line(`LOCK_PAGES_WRITE(l_PagesLock);`);
   if (true) {
     const l_MarkerName = `CUSTOM:PREINITIALIZE`;
 
@@ -1200,7 +1176,6 @@ function generate_source(p_Type) {
   );
   t += line(`);`);
   */
-  t += line(`LOCK_UNLOCK(l_PagesLock);`);
   t += empty();
   t += line(`Low::Util::RTTI::TypeInfo l_TypeInfo;`);
   t += line(`l_TypeInfo.name = N(${p_Type.name});`);
@@ -1283,7 +1258,6 @@ function generate_source(p_Type) {
     );
     if (!i_Prop.no_getter && !i_Prop.private_getter) {
       t += line(`${p_Type.name} l_Handle = p_Handle.get_id();`);
-      t += line(`Low::Util::HandleLock<${p_Type.name}> l_HandleLock(l_Handle);`);
       t += line(`l_Handle.${i_Prop.getter_name}();`);
       t +=
         line(`return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ${p_Type.name}, ${i_PropName},
@@ -1309,7 +1283,6 @@ function generate_source(p_Type) {
     );
     if (!i_Prop.no_getter && !i_Prop.private_getter) {
       t += line(`${p_Type.name} l_Handle = p_Handle.get_id();`);
-      t += line(`Low::Util::HandleLock<${p_Type.name}> l_HandleLock(l_Handle);`);
       t += line(
         `*((${i_Prop.plain_type}*) p_Data) = l_Handle.${i_Prop.getter_name}();`,
       );
@@ -1357,7 +1330,6 @@ function generate_source(p_Type) {
       );
       if (!i_VProp.no_getter && !i_VProp.private_getter) {
         t += line(`${p_Type.name} l_Handle = p_Handle.get_id();`);
-        t += line(`Low::Util::HandleLock<${p_Type.name}> l_HandleLock(l_Handle);`);
         t += line(
           `${i_VProp.plain_type} l_Data = l_Handle.${i_VProp.getter_name}();`,
         );
@@ -1478,19 +1450,16 @@ function generate_source(p_Type) {
   t += line(`for (uint32_t i = 0u; i < l_Instances.size(); ++i) {`);
   t += line(`l_Instances[i].destroy();`);
   t += line("}");
-  t += line(`ms_PagesLock.lock();`);
   t += line(`for (auto it = ms_Pages.begin(); it != ms_Pages.end();){`)
   t += line(`Low::Util::Instances::Page* i_Page = *it;`)
   t += line(`free(i_Page->buffer);`);
   t += line(`free(i_Page->slots);`);
-  t += line(`free(i_Page->lockWords);`)
   t += line(`delete i_Page;`);
   t += line(`it = ms_Pages.erase(it);`);
   t += line(`}`);
   t += empty();
   t += line(`ms_Capacity = 0;`);
   t += empty();
-  t += line(`ms_PagesLock.unlock();`);
   t += line("}");
   t += empty();
 
@@ -1513,7 +1482,6 @@ function generate_source(p_Type) {
   t += line(`u32 l_SlotIndex = 0;`)
   t += line(`if (!get_page_for_index(p_Index, l_PageIndex, l_SlotIndex)){l_Handle.m_Data.m_Generation = 0;}`)
   t += line(`Low::Util::Instances::Page* l_Page = ms_Pages[l_PageIndex];`)
-  t += line(`Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(l_Page->mutex);`);
   t += line(`l_Handle.m_Data.m_Generation = l_Page->slots[l_SlotIndex].m_Generation;`);
   t += empty();
   t += line("return l_Handle;");
@@ -1542,7 +1510,6 @@ function generate_source(p_Type) {
   t += line(`u32 l_SlotIndex = 0;`)
   t += line(`if (!get_page_for_index(get_index(), l_PageIndex, l_SlotIndex)){return false;}`)
   t += line(`Low::Util::Instances::Page* l_Page = ms_Pages[l_PageIndex];`)
-  t += line(`Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(l_Page->mutex);`);
   t += line(
     `return m_Data.m_Type == ${p_Type.name}::ms_TypeId && l_Page->slots[l_SlotIndex].m_Occupied && l_Page->slots[l_SlotIndex].m_Generation == m_Data.m_Generation;`,
   );
@@ -1590,7 +1557,6 @@ function generate_source(p_Type) {
       t += empty();
     }
 
-    t += line(`Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(ms_LivingMutex);`);
     t += line(
       `for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end(); ++it) {`,
     );
@@ -2097,7 +2063,6 @@ function generate_source(p_Type) {
     t += line(`void ${p_Type.name}::reference(const u64 p_Id) {`);
     t += line(`_LOW_ASSERT(is_alive());`);
     t += empty();
-    t += line(`Low::Util::HandleLock<${p_Type.name}> l_HandleLock(get_id());`);
     t += line(`const u32 l_OldReferences = ${l_GetReferences}.size();`);
     t += empty();
     t += line(`${l_GetReferences}.insert(p_Id);`);
@@ -2134,7 +2099,6 @@ function generate_source(p_Type) {
     t += line(`void ${p_Type.name}::dereference(const u64 p_Id) {`);
     t += line(`_LOW_ASSERT(is_alive());`);
     t += empty();
-    t += line(`Low::Util::HandleLock<${p_Type.name}> l_HandleLock(get_id());`);
     t += line(`const u32 l_OldReferences = ${l_GetReferences}.size();`);
     t += empty();
     t += line(`${l_GetReferences}.erase(p_Id);`);
@@ -2182,7 +2146,6 @@ function generate_source(p_Type) {
       );
       t += line("{", n++);
       t += line("_LOW_ASSERT(is_alive());");
-      t += line(`Low::Util::HandleLock<${p_Type.name}> l_Lock(get_id());`);
       const l_MarkerName = `CUSTOM:GETTER_${i_PropName}`;
 
       const i_GetterBeginMarker = get_marker_begin(l_MarkerName);
@@ -2323,7 +2286,6 @@ function generate_source(p_Type) {
       );
       t += line("{", n++);
       t += line("_LOW_ASSERT(is_alive());");
-      t += line(`Low::Util::HandleLock<${p_Type.name}> l_Lock(get_id());`);
       t += empty();
       if (true) {
         const l_MarkerName = `CUSTOM:PRESETTER_${i_PropName}`;
@@ -2354,8 +2316,6 @@ function generate_source(p_Type) {
         t += line(i_SetterEndMarker);
         t += empty();
       }
-
-      let i_GeneratedWriteLock = false;
 
       if (i_Prop.dirty_flag) {
         if (!i_Prop.dirty_flag_no_check) {
@@ -2493,9 +2453,6 @@ function generate_source(p_Type) {
         t += write(" const");
       }
       t += line("{");
-      if (!i_Func.static) {
-        t += line(`Low::Util::HandleLock<${p_Type.name}> l_Lock(get_id());`);
-      }
       t += line(i_FunctionBeginMarker);
       t += i_CustomCode;
       t += line(i_FunctionEndMarker);
@@ -2504,23 +2461,17 @@ function generate_source(p_Type) {
     }
   }
 
-  t += line(`uint32_t ${p_Type.name}::create_instance(u32& p_PageIndex, u32&p_SlotIndex, Low::Util::UniqueLock<Low::Util::Mutex>& p_PageLock){`);
-  t += line(`LOCK_PAGES_WRITE(l_PagesLock);`)
+  t += line(`uint32_t ${p_Type.name}::create_instance(u32& p_PageIndex, u32&p_SlotIndex){`);
   t += line(`u32 l_Index = 0;`);
   t += line(`u32 l_PageIndex = 0;`)
   t += line(`u32 l_SlotIndex = 0;`)
   t += line(`bool l_FoundIndex = false;`);
-  t += line(
-    `Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;`);
   t += empty();
   t += line(`for (;!l_FoundIndex && l_PageIndex<ms_Pages.size();++l_PageIndex){`);
-  t += line(
-    `Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(ms_Pages[l_PageIndex]->mutex);`);
   t += line(
     `for (l_SlotIndex=0; l_SlotIndex < ms_Pages[l_PageIndex]->size; ++l_SlotIndex) {`);
   t += line(`if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied){`);
   t += line(`l_FoundIndex = true;`);
-  t += line(`l_PageLock = std::move(i_PageLock);`)
   t += line(`break;`);
   t += line("}");
   t += line(`l_Index++;`);
@@ -2531,8 +2482,6 @@ function generate_source(p_Type) {
     t += line(`if (!l_FoundIndex) {`);
     t += line(`l_SlotIndex = 0;`);
     t += line(`l_PageIndex = create_page();`);
-    t += line(`Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(ms_Pages[l_PageIndex]->mutex);`);
-    t += line(`l_PageLock = std::move(l_NewLock);`);
     t += line("}");
   } else {
     t += line(
@@ -2542,8 +2491,6 @@ function generate_source(p_Type) {
   t += line(`ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;`);
   t += line(`p_PageIndex = l_PageIndex;`);
   t += line(`p_SlotIndex = l_SlotIndex;`);
-  t += line(`p_PageLock = std::move(l_PageLock);`);
-  t += line(`LOCK_UNLOCK(l_PagesLock);`);
   t += line("return l_Index;");
   t += line("}");
   t += empty();

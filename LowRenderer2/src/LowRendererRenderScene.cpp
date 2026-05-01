@@ -29,11 +29,6 @@ namespace Low {
                                 LOW_NAME(4251260417));
     uint32_t RenderScene::ms_Capacity = 0u;
     uint32_t RenderScene::ms_PageSize = 0u;
-    Low::Util::SharedMutex RenderScene::ms_LivingMutex;
-    Low::Util::SharedMutex RenderScene::ms_PagesMutex;
-    Low::Util::UniqueLock<Low::Util::SharedMutex>
-        RenderScene::ms_PagesLock(RenderScene::ms_PagesMutex,
-                                  std::defer_lock);
     Low::Util::List<RenderScene> RenderScene::ms_LivingInstances;
     Low::Util::List<Low::Util::Instances::Page *>
         RenderScene::ms_Pages;
@@ -47,19 +42,13 @@ namespace Low {
     {
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
-      uint32_t l_Index =
-          create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
+      uint32_t l_Index = create_instance(l_PageIndex, l_SlotIndex);
 
       RenderScene l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = RenderScene::ms_TypeId;
-
-      l_PageLock.unlock();
-
-      Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
 
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderScene, draw_commands,
                                  Low::Util::List<DrawCommand>))
@@ -74,11 +63,7 @@ namespace Low {
 
       l_Handle.set_name(p_Name);
 
-      {
-        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-            ms_LivingMutex);
-        ms_LivingInstances.push_back(l_Handle);
-      }
+      ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
 
@@ -99,7 +84,6 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       {
-        Low::Util::HandleLock<RenderScene> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
         for (auto it = get_draw_commands().begin();
@@ -119,14 +103,9 @@ namespace Low {
           get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Page->slots[l_SlotIndex].m_Occupied = false;
       l_Page->slots[l_SlotIndex].m_Generation++;
 
-      ms_PagesLock.lock();
-      Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -135,8 +114,6 @@ namespace Low {
           it++;
         }
       }
-      ms_PagesLock.unlock();
-      l_LivingLock.unlock();
     }
 
     void RenderScene::initialize()
@@ -144,7 +121,6 @@ namespace Low {
       const Low::Util::TypeIdentifier l_IdentifierNames(
           N(LowRenderer2), N(RenderScene));
 
-      LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -166,7 +142,6 @@ namespace Low {
         }
         ms_Capacity = l_Capacity;
       }
-      LOCK_UNLOCK(l_PagesLock);
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(RenderScene);
@@ -202,7 +177,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderScene l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
           l_Handle.get_draw_commands();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, RenderScene, draw_commands,
@@ -213,7 +187,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderScene l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
           *((Low::Util::List<DrawCommand> *)p_Data) =
               l_Handle.get_draw_commands();
         };
@@ -232,7 +205,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderScene l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
           l_Handle.get_pointlight_deleted_slots();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderScene,
                                             pointlight_deleted_slots,
@@ -243,7 +215,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderScene l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
           *((Low::Util::Set<u32> *)p_Data) =
               l_Handle.get_pointlight_deleted_slots();
         };
@@ -262,7 +233,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderScene l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
           l_Handle.get_data_handle();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderScene,
                                             data_handle, uint64_t);
@@ -275,7 +245,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderScene l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
           *((uint64_t *)p_Data) = l_Handle.get_data_handle();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -293,7 +262,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderScene l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
           l_Handle.get_directional_light_direction();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, RenderScene, directional_light_direction,
@@ -308,7 +276,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderScene l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
           *((Low::Math::Vector3 *)p_Data) =
               l_Handle.get_directional_light_direction();
         };
@@ -327,7 +294,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderScene l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
           l_Handle.get_directional_light_color();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderScene,
                                             directional_light_color,
@@ -342,7 +308,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderScene l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
           *((Low::Math::ColorRGB *)p_Data) =
               l_Handle.get_directional_light_color();
         };
@@ -361,7 +326,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderScene l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
           l_Handle.get_directional_light_intensity();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, RenderScene, directional_light_intensity,
@@ -375,7 +339,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderScene l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
           *((float *)p_Data) =
               l_Handle.get_directional_light_intensity();
         };
@@ -393,7 +356,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderScene l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderScene,
                                             name, Low::Util::Name);
@@ -406,7 +368,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderScene l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
           *((Low::Util::Name *)p_Data) = l_Handle.get_name();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -443,19 +404,15 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
-      ms_PagesLock.lock();
       for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
         Low::Util::Instances::Page *i_Page = *it;
         free(i_Page->buffer);
         free(i_Page->slots);
-        free(i_Page->lockWords);
         delete i_Page;
         it = ms_Pages.erase(it);
       }
 
       ms_Capacity = 0;
-
-      ms_PagesLock.unlock();
     }
 
     Low::Util::Handle RenderScene::_find_by_index(uint32_t p_Index)
@@ -477,8 +434,6 @@ namespace Low {
         l_Handle.m_Data.m_Generation = 0;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Handle.m_Data.m_Generation =
           l_Page->slots[l_SlotIndex].m_Generation;
 
@@ -511,8 +466,6 @@ namespace Low {
         return false;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       return m_Data.m_Type == RenderScene::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
@@ -537,8 +490,6 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
-      Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
@@ -663,7 +614,6 @@ namespace Low {
     RenderScene::get_draw_commands() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_draw_commands
 
@@ -677,7 +627,6 @@ namespace Low {
     RenderScene::get_pointlight_deleted_slots() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pointlight_deleted_slots
 
@@ -690,7 +639,6 @@ namespace Low {
         Low::Util::Set<u32> &p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_pointlight_deleted_slots
 
@@ -710,7 +658,6 @@ namespace Low {
     uint64_t RenderScene::get_data_handle() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_data_handle
 
@@ -721,7 +668,6 @@ namespace Low {
     void RenderScene::set_data_handle(uint64_t p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_data_handle
 
@@ -741,7 +687,6 @@ namespace Low {
     RenderScene::get_directional_light_direction() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_directional_light_direction
 
@@ -783,7 +728,6 @@ namespace Low {
         Low::Math::Vector3 p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_directional_light_direction
 
@@ -804,7 +748,6 @@ namespace Low {
     RenderScene::get_directional_light_color() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_directional_light_color
 
@@ -846,7 +789,6 @@ namespace Low {
         Low::Math::ColorRGB p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_directional_light_color
 
@@ -866,7 +808,6 @@ namespace Low {
     float RenderScene::get_directional_light_intensity() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_directional_light_intensity
 
@@ -878,7 +819,6 @@ namespace Low {
     void RenderScene::set_directional_light_intensity(float p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_directional_light_intensity
 
@@ -898,7 +838,6 @@ namespace Low {
     Low::Util::Name RenderScene::get_name() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
 
@@ -909,7 +848,6 @@ namespace Low {
     void RenderScene::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
 
@@ -928,7 +866,6 @@ namespace Low {
     bool RenderScene::insert_draw_command(
         Low::Renderer::DrawCommand p_DrawCommand)
     {
-      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_insert_draw_command
 
       _LOW_ASSERT(is_alive());
@@ -971,27 +908,21 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_insert_draw_command
     }
 
-    uint32_t RenderScene::create_instance(
-        u32 &p_PageIndex, u32 &p_SlotIndex,
-        Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
+    uint32_t RenderScene::create_instance(u32 &p_PageIndex,
+                                          u32 &p_SlotIndex)
     {
-      LOCK_PAGES_WRITE(l_PagesLock);
       u32 l_Index = 0;
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
       bool l_FoundIndex = false;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
       for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
            ++l_PageIndex) {
-        Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
-            ms_Pages[l_PageIndex]->mutex);
         for (l_SlotIndex = 0;
              l_SlotIndex < ms_Pages[l_PageIndex]->size;
              ++l_SlotIndex) {
           if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied) {
             l_FoundIndex = true;
-            l_PageLock = std::move(i_PageLock);
             break;
           }
           l_Index++;
@@ -1003,15 +934,10 @@ namespace Low {
       if (!l_FoundIndex) {
         l_SlotIndex = 0;
         l_PageIndex = create_page();
-        Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
-            ms_Pages[l_PageIndex]->mutex);
-        l_PageLock = std::move(l_NewLock);
       }
       ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
       p_PageIndex = l_PageIndex;
       p_SlotIndex = l_SlotIndex;
-      p_PageLock = std::move(l_PageLock);
-      LOCK_UNLOCK(l_PagesLock);
       return l_Index;
     }
 

@@ -536,11 +536,6 @@ namespace Low {
 
         initialize_buffer(&p_Page->buffer, p_ElementSize,
                           p_ElementCount, &p_Page->slots);
-
-        p_Page->lockWords = new std::atomic<u64>[p_ElementCount];
-        for (size_t i = 0; i < p_ElementCount; ++i) {
-          p_Page->lockWords[i].store(0, std::memory_order_relaxed);
-        }
       }
     } // namespace Instances
   } // namespace Util

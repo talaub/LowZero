@@ -27,11 +27,6 @@ namespace Low {
                              LOW_NAME(615435132));
     uint32_t Skeleton::ms_Capacity = 0u;
     uint32_t Skeleton::ms_PageSize = 0u;
-    Low::Util::SharedMutex Skeleton::ms_LivingMutex;
-    Low::Util::SharedMutex Skeleton::ms_PagesMutex;
-    Low::Util::UniqueLock<Low::Util::SharedMutex>
-        Skeleton::ms_PagesLock(Skeleton::ms_PagesMutex,
-                               std::defer_lock);
     Low::Util::List<Skeleton> Skeleton::ms_LivingInstances;
     Low::Util::List<Low::Util::Instances::Page *> Skeleton::ms_Pages;
 
@@ -44,19 +39,13 @@ namespace Low {
     {
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
-      uint32_t l_Index =
-          create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
+      uint32_t l_Index = create_instance(l_PageIndex, l_SlotIndex);
 
       Skeleton l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = Skeleton::ms_TypeId;
-
-      l_PageLock.unlock();
-
-      Low::Util::HandleLock<Skeleton> l_HandleLock(l_Handle);
 
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Skeleton, root_bone, Bone))
           Bone();
@@ -68,11 +57,7 @@ namespace Low {
 
       l_Handle.set_name(p_Name);
 
-      {
-        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-            ms_LivingMutex);
-        ms_LivingInstances.push_back(l_Handle);
-      }
+      ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
 
@@ -86,7 +71,6 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       {
-        Low::Util::HandleLock<Skeleton> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
         // LOW_CODEGEN::END::CUSTOM:DESTROY
@@ -100,14 +84,9 @@ namespace Low {
           get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Page->slots[l_SlotIndex].m_Occupied = false;
       l_Page->slots[l_SlotIndex].m_Generation++;
 
-      ms_PagesLock.lock();
-      Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -116,8 +95,6 @@ namespace Low {
           it++;
         }
       }
-      ms_PagesLock.unlock();
-      l_LivingLock.unlock();
     }
 
     void Skeleton::initialize()
@@ -125,7 +102,6 @@ namespace Low {
       const Low::Util::TypeIdentifier l_IdentifierNames(
           N(LowRenderer), N(Skeleton));
 
-      LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -147,7 +123,6 @@ namespace Low {
         }
         ms_Capacity = l_Capacity;
       }
-      LOCK_UNLOCK(l_PagesLock);
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(Skeleton);
@@ -183,7 +158,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Skeleton l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Skeleton> l_HandleLock(l_Handle);
           l_Handle.get_root_bone();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Skeleton,
                                             root_bone, Bone);
@@ -196,7 +170,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Skeleton l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Skeleton> l_HandleLock(l_Handle);
           *((Bone *)p_Data) = l_Handle.get_root_bone();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -214,7 +187,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Skeleton l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Skeleton> l_HandleLock(l_Handle);
           l_Handle.get_bone_count();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Skeleton,
                                             bone_count, uint32_t);
@@ -227,7 +199,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Skeleton l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Skeleton> l_HandleLock(l_Handle);
           *((uint32_t *)p_Data) = l_Handle.get_bone_count();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -245,7 +216,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Skeleton l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Skeleton> l_HandleLock(l_Handle);
           l_Handle.get_animations();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, Skeleton, animations,
@@ -256,7 +226,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Skeleton l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Skeleton> l_HandleLock(l_Handle);
           *((Util::List<SkeletalAnimation> *)p_Data) =
               l_Handle.get_animations();
         };
@@ -274,7 +243,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Skeleton l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Skeleton> l_HandleLock(l_Handle);
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Skeleton, name,
                                             Low::Util::Name);
@@ -287,7 +255,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Skeleton l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Skeleton> l_HandleLock(l_Handle);
           *((Low::Util::Name *)p_Data) = l_Handle.get_name();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -306,19 +273,15 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
-      ms_PagesLock.lock();
       for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
         Low::Util::Instances::Page *i_Page = *it;
         free(i_Page->buffer);
         free(i_Page->slots);
-        free(i_Page->lockWords);
         delete i_Page;
         it = ms_Pages.erase(it);
       }
 
       ms_Capacity = 0;
-
-      ms_PagesLock.unlock();
     }
 
     Low::Util::Handle Skeleton::_find_by_index(uint32_t p_Index)
@@ -340,8 +303,6 @@ namespace Low {
         l_Handle.m_Data.m_Generation = 0;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Handle.m_Data.m_Generation =
           l_Page->slots[l_SlotIndex].m_Generation;
 
@@ -374,8 +335,6 @@ namespace Low {
         return false;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       return m_Data.m_Type == Skeleton::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
@@ -399,8 +358,6 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
-      Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
@@ -532,7 +489,6 @@ namespace Low {
     Bone &Skeleton::get_root_bone() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Skeleton> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_root_bone
 
@@ -543,7 +499,6 @@ namespace Low {
     void Skeleton::set_root_bone(Bone &p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Skeleton> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_root_bone
 
@@ -562,7 +517,6 @@ namespace Low {
     uint32_t Skeleton::get_bone_count() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Skeleton> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_bone_count
 
@@ -573,7 +527,6 @@ namespace Low {
     void Skeleton::set_bone_count(uint32_t p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Skeleton> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_bone_count
 
@@ -592,7 +545,6 @@ namespace Low {
     Util::List<SkeletalAnimation> &Skeleton::get_animations() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Skeleton> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_animations
 
@@ -605,7 +557,6 @@ namespace Low {
     Low::Util::Name Skeleton::get_name() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Skeleton> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
 
@@ -616,7 +567,6 @@ namespace Low {
     void Skeleton::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Skeleton> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
 
@@ -632,27 +582,21 @@ namespace Low {
       broadcast_observable(N(name));
     }
 
-    uint32_t Skeleton::create_instance(
-        u32 &p_PageIndex, u32 &p_SlotIndex,
-        Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
+    uint32_t Skeleton::create_instance(u32 &p_PageIndex,
+                                       u32 &p_SlotIndex)
     {
-      LOCK_PAGES_WRITE(l_PagesLock);
       u32 l_Index = 0;
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
       bool l_FoundIndex = false;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
       for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
            ++l_PageIndex) {
-        Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
-            ms_Pages[l_PageIndex]->mutex);
         for (l_SlotIndex = 0;
              l_SlotIndex < ms_Pages[l_PageIndex]->size;
              ++l_SlotIndex) {
           if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied) {
             l_FoundIndex = true;
-            l_PageLock = std::move(i_PageLock);
             break;
           }
           l_Index++;
@@ -664,15 +608,10 @@ namespace Low {
       if (!l_FoundIndex) {
         l_SlotIndex = 0;
         l_PageIndex = create_page();
-        Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
-            ms_Pages[l_PageIndex]->mutex);
-        l_PageLock = std::move(l_NewLock);
       }
       ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
       p_PageIndex = l_PageIndex;
       p_SlotIndex = l_SlotIndex;
-      p_PageLock = std::move(l_PageLock);
-      LOCK_UNLOCK(l_PagesLock);
       return l_Index;
     }
 

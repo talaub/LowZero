@@ -767,8 +767,6 @@ namespace Low {
 
     static bool upload_material(float p_Delta, GpuMaterial p_Gpu)
     {
-      LOCK_HANDLE(p_Gpu);
-
       size_t l_StagingOffset = 0;
 
       const u64 l_FrameUploadSpace =
@@ -805,8 +803,6 @@ namespace Low {
           Material::ms_PendingTextureBindingsMutex);
       for (auto it = Material::ms_PendingTextureBindings.begin();
            it != Material::ms_PendingTextureBindings.end();) {
-        Util::HandleLock l_MaterialLock(it->material);
-        Util::HandleLock l_TextureLock(it->texture);
         if (!it->texture.is_alive() || !it->material.is_alive()) {
           it = Material::ms_PendingTextureBindings.erase(it);
           continue;
@@ -823,9 +819,7 @@ namespace Low {
 
       for (u32 i = 0; i < GpuMaterial::living_count(); ++i) {
         GpuMaterial i_Gpu = GpuMaterial::living_instances()[i];
-        LOCK_HANDLE(i_Gpu);
         Material i_Material = i_Gpu.get_material_handle();
-        LOCK_HANDLE(i_Material);
 
         if (!i_Gpu.is_dirty()) {
           continue;

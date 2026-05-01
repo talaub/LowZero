@@ -27,10 +27,6 @@ namespace Low {
         Model::IDENTIFIER(LOW_NAME(509652687), LOW_NAME(374627805));
     uint32_t Model::ms_Capacity = 0u;
     uint32_t Model::ms_PageSize = 0u;
-    Low::Util::SharedMutex Model::ms_LivingMutex;
-    Low::Util::SharedMutex Model::ms_PagesMutex;
-    Low::Util::UniqueLock<Low::Util::SharedMutex>
-        Model::ms_PagesLock(Model::ms_PagesMutex, std::defer_lock);
     Low::Util::List<Model> Model::ms_LivingInstances;
     Low::Util::List<Low::Util::Instances::Page *> Model::ms_Pages;
 
@@ -49,19 +45,13 @@ namespace Low {
     {
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
-      uint32_t l_Index =
-          create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
+      uint32_t l_Index = create_instance(l_PageIndex, l_SlotIndex);
 
       Model l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = Model::ms_TypeId;
-
-      l_PageLock.unlock();
-
-      Low::Util::HandleLock<Model> l_HandleLock(l_Handle);
 
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Model, resource,
                                  Low::Renderer::ModelResource))
@@ -83,11 +73,7 @@ namespace Low {
 
       l_Handle.set_name(p_Name);
 
-      {
-        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-            ms_LivingMutex);
-        ms_LivingInstances.push_back(l_Handle);
-      }
+      ms_LivingInstances.push_back(l_Handle);
 
       if (p_UniqueId > 0ull) {
         l_Handle.set_unique_id(p_UniqueId);
@@ -112,7 +98,6 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       {
-        Low::Util::HandleLock<Model> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
         // LOW_CODEGEN::END::CUSTOM:DESTROY
@@ -128,14 +113,9 @@ namespace Low {
           get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Page->slots[l_SlotIndex].m_Occupied = false;
       l_Page->slots[l_SlotIndex].m_Generation++;
 
-      ms_PagesLock.lock();
-      Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -144,8 +124,6 @@ namespace Low {
           it++;
         }
       }
-      ms_PagesLock.unlock();
-      l_LivingLock.unlock();
     }
 
     void Model::initialize()
@@ -153,7 +131,6 @@ namespace Low {
       const Low::Util::TypeIdentifier l_IdentifierNames(
           N(LowRenderer2), N(Model));
 
-      LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -175,7 +152,6 @@ namespace Low {
         }
         ms_Capacity = l_Capacity;
       }
-      LOCK_UNLOCK(l_PagesLock);
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(Model);
@@ -211,7 +187,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Model l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Model> l_HandleLock(l_Handle);
           l_Handle.get_resource();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, Model, resource,
@@ -226,7 +201,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Model l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Model> l_HandleLock(l_Handle);
           *((Low::Renderer::ModelResource *)p_Data) =
               l_Handle.get_resource();
         };
@@ -244,7 +218,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Model l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Model> l_HandleLock(l_Handle);
           l_Handle.get_lod0();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Model, lod0,
                                             Low::Renderer::Mesh);
@@ -257,7 +230,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Model l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Model> l_HandleLock(l_Handle);
           *((Low::Renderer::Mesh *)p_Data) = l_Handle.get_lod0();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -274,7 +246,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Model l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Model> l_HandleLock(l_Handle);
           l_Handle.get_lod1();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Model, lod1,
                                             Low::Renderer::Mesh);
@@ -287,7 +258,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Model l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Model> l_HandleLock(l_Handle);
           *((Low::Renderer::Mesh *)p_Data) = l_Handle.get_lod1();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -304,7 +274,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Model l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Model> l_HandleLock(l_Handle);
           l_Handle.get_lod2();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Model, lod2,
                                             Low::Renderer::Mesh);
@@ -317,7 +286,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Model l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Model> l_HandleLock(l_Handle);
           *((Low::Renderer::Mesh *)p_Data) = l_Handle.get_lod2();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -334,7 +302,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Model l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Model> l_HandleLock(l_Handle);
           l_Handle.get_lod3();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Model, lod3,
                                             Low::Renderer::Mesh);
@@ -347,7 +314,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Model l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Model> l_HandleLock(l_Handle);
           *((Low::Renderer::Mesh *)p_Data) = l_Handle.get_lod3();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -364,7 +330,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Model l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Model> l_HandleLock(l_Handle);
           l_Handle.get_unique_id();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, Model, unique_id, Low::Util::UniqueId);
@@ -374,7 +339,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Model l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Model> l_HandleLock(l_Handle);
           *((Low::Util::UniqueId *)p_Data) = l_Handle.get_unique_id();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -391,7 +355,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Model l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Model> l_HandleLock(l_Handle);
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Model, name,
                                             Low::Util::Name);
@@ -404,7 +367,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Model l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Model> l_HandleLock(l_Handle);
           *((Low::Util::Name *)p_Data) = l_Handle.get_name();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -423,19 +385,15 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
-      ms_PagesLock.lock();
       for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
         Low::Util::Instances::Page *i_Page = *it;
         free(i_Page->buffer);
         free(i_Page->slots);
-        free(i_Page->lockWords);
         delete i_Page;
         it = ms_Pages.erase(it);
       }
 
       ms_Capacity = 0;
-
-      ms_PagesLock.unlock();
     }
 
     Low::Util::Handle Model::_find_by_index(uint32_t p_Index)
@@ -457,8 +415,6 @@ namespace Low {
         l_Handle.m_Data.m_Generation = 0;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Handle.m_Data.m_Generation =
           l_Page->slots[l_SlotIndex].m_Generation;
 
@@ -491,8 +447,6 @@ namespace Low {
         return false;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       return m_Data.m_Type == Model::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
@@ -516,8 +470,6 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
-      Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
@@ -710,7 +662,6 @@ namespace Low {
     Low::Renderer::ModelResource Model::get_resource() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_resource
 
@@ -721,7 +672,6 @@ namespace Low {
     void Model::set_resource(Low::Renderer::ModelResource p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_resource
 
@@ -741,7 +691,6 @@ namespace Low {
     Low::Renderer::Mesh Model::get_lod0() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_lod0
 
@@ -752,7 +701,6 @@ namespace Low {
     void Model::set_lod0(Low::Renderer::Mesh p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_lod0
 
@@ -771,7 +719,6 @@ namespace Low {
     Low::Renderer::Mesh Model::get_lod1() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_lod1
 
@@ -782,7 +729,6 @@ namespace Low {
     void Model::set_lod1(Low::Renderer::Mesh p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_lod1
 
@@ -801,7 +747,6 @@ namespace Low {
     Low::Renderer::Mesh Model::get_lod2() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_lod2
 
@@ -812,7 +757,6 @@ namespace Low {
     void Model::set_lod2(Low::Renderer::Mesh p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_lod2
 
@@ -831,7 +775,6 @@ namespace Low {
     Low::Renderer::Mesh Model::get_lod3() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_lod3
 
@@ -842,7 +785,6 @@ namespace Low {
     void Model::set_lod3(Low::Renderer::Mesh p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_lod3
 
@@ -861,7 +803,6 @@ namespace Low {
     Low::Util::UniqueId Model::get_unique_id() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
 
@@ -872,7 +813,6 @@ namespace Low {
     void Model::set_unique_id(Low::Util::UniqueId p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
 
@@ -891,7 +831,6 @@ namespace Low {
     Low::Util::Name Model::get_name() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
 
@@ -902,7 +841,6 @@ namespace Low {
     void Model::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
 
@@ -918,27 +856,21 @@ namespace Low {
       broadcast_observable(N(name));
     }
 
-    uint32_t Model::create_instance(
-        u32 &p_PageIndex, u32 &p_SlotIndex,
-        Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
+    uint32_t Model::create_instance(u32 &p_PageIndex,
+                                    u32 &p_SlotIndex)
     {
-      LOCK_PAGES_WRITE(l_PagesLock);
       u32 l_Index = 0;
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
       bool l_FoundIndex = false;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
       for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
            ++l_PageIndex) {
-        Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
-            ms_Pages[l_PageIndex]->mutex);
         for (l_SlotIndex = 0;
              l_SlotIndex < ms_Pages[l_PageIndex]->size;
              ++l_SlotIndex) {
           if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied) {
             l_FoundIndex = true;
-            l_PageLock = std::move(i_PageLock);
             break;
           }
           l_Index++;
@@ -950,15 +882,10 @@ namespace Low {
       if (!l_FoundIndex) {
         l_SlotIndex = 0;
         l_PageIndex = create_page();
-        Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
-            ms_Pages[l_PageIndex]->mutex);
-        l_PageLock = std::move(l_NewLock);
       }
       ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
       p_PageIndex = l_PageIndex;
       p_SlotIndex = l_SlotIndex;
-      p_PageLock = std::move(l_PageLock);
-      LOCK_UNLOCK(l_PagesLock);
       return l_Index;
     }
 

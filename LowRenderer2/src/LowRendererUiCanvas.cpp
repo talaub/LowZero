@@ -27,11 +27,6 @@ namespace Low {
                              LOW_NAME(1966859120));
     uint32_t UiCanvas::ms_Capacity = 0u;
     uint32_t UiCanvas::ms_PageSize = 0u;
-    Low::Util::SharedMutex UiCanvas::ms_LivingMutex;
-    Low::Util::SharedMutex UiCanvas::ms_PagesMutex;
-    Low::Util::UniqueLock<Low::Util::SharedMutex>
-        UiCanvas::ms_PagesLock(UiCanvas::ms_PagesMutex,
-                               std::defer_lock);
     Low::Util::List<UiCanvas> UiCanvas::ms_LivingInstances;
     Low::Util::List<Low::Util::Instances::Page *> UiCanvas::ms_Pages;
 
@@ -44,19 +39,13 @@ namespace Low {
     {
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
-      uint32_t l_Index =
-          create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
+      uint32_t l_Index = create_instance(l_PageIndex, l_SlotIndex);
 
       UiCanvas l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = UiCanvas::ms_TypeId;
-
-      l_PageLock.unlock();
-
-      Low::Util::HandleLock<UiCanvas> l_HandleLock(l_Handle);
 
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, UiCanvas, draw_commands,
                                  Low::Util::List<UiDrawCommand>))
@@ -67,11 +56,7 @@ namespace Low {
 
       l_Handle.set_name(p_Name);
 
-      {
-        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-            ms_LivingMutex);
-        ms_LivingInstances.push_back(l_Handle);
-      }
+      ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
 
@@ -85,7 +70,6 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       {
-        Low::Util::HandleLock<UiCanvas> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
         // LOW_CODEGEN::END::CUSTOM:DESTROY
@@ -99,14 +83,9 @@ namespace Low {
           get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Page->slots[l_SlotIndex].m_Occupied = false;
       l_Page->slots[l_SlotIndex].m_Generation++;
 
-      ms_PagesLock.lock();
-      Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -115,8 +94,6 @@ namespace Low {
           it++;
         }
       }
-      ms_PagesLock.unlock();
-      l_LivingLock.unlock();
     }
 
     void UiCanvas::initialize()
@@ -124,7 +101,6 @@ namespace Low {
       const Low::Util::TypeIdentifier l_IdentifierNames(
           N(LowRenderer2), N(UiCanvas));
 
-      LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -146,7 +122,6 @@ namespace Low {
         }
         ms_Capacity = l_Capacity;
       }
-      LOCK_UNLOCK(l_PagesLock);
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(UiCanvas);
@@ -182,7 +157,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiCanvas l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiCanvas> l_HandleLock(l_Handle);
           l_Handle.get_z_sorting();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiCanvas,
                                             z_sorting, uint32_t);
@@ -195,7 +169,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiCanvas l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiCanvas> l_HandleLock(l_Handle);
           *((uint32_t *)p_Data) = l_Handle.get_z_sorting();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -213,7 +186,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiCanvas l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiCanvas> l_HandleLock(l_Handle);
           l_Handle.get_draw_commands();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, UiCanvas, draw_commands,
@@ -224,7 +196,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiCanvas l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiCanvas> l_HandleLock(l_Handle);
           *((Low::Util::List<UiDrawCommand> *)p_Data) =
               l_Handle.get_draw_commands();
         };
@@ -242,7 +213,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiCanvas l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiCanvas> l_HandleLock(l_Handle);
           l_Handle.is_z_dirty();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiCanvas,
                                             z_dirty, bool);
@@ -255,7 +225,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiCanvas l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiCanvas> l_HandleLock(l_Handle);
           *((bool *)p_Data) = l_Handle.is_z_dirty();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -272,7 +241,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiCanvas l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiCanvas> l_HandleLock(l_Handle);
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiCanvas, name,
                                             Low::Util::Name);
@@ -285,7 +253,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiCanvas l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiCanvas> l_HandleLock(l_Handle);
           *((Low::Util::Name *)p_Data) = l_Handle.get_name();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -304,19 +271,15 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
-      ms_PagesLock.lock();
       for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
         Low::Util::Instances::Page *i_Page = *it;
         free(i_Page->buffer);
         free(i_Page->slots);
-        free(i_Page->lockWords);
         delete i_Page;
         it = ms_Pages.erase(it);
       }
 
       ms_Capacity = 0;
-
-      ms_PagesLock.unlock();
     }
 
     Low::Util::Handle UiCanvas::_find_by_index(uint32_t p_Index)
@@ -338,8 +301,6 @@ namespace Low {
         l_Handle.m_Data.m_Generation = 0;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Handle.m_Data.m_Generation =
           l_Page->slots[l_SlotIndex].m_Generation;
 
@@ -372,8 +333,6 @@ namespace Low {
         return false;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       return m_Data.m_Type == UiCanvas::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
@@ -397,8 +356,6 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
-      Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
@@ -528,7 +485,6 @@ namespace Low {
     uint32_t UiCanvas::get_z_sorting() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiCanvas> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_z_sorting
 
@@ -539,7 +495,6 @@ namespace Low {
     void UiCanvas::set_z_sorting(uint32_t p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiCanvas> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_z_sorting
 
@@ -564,7 +519,6 @@ namespace Low {
     UiCanvas::get_draw_commands() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiCanvas> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_draw_commands
 
@@ -577,7 +531,6 @@ namespace Low {
     bool UiCanvas::is_z_dirty() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiCanvas> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_z_dirty
 
@@ -593,7 +546,6 @@ namespace Low {
     void UiCanvas::set_z_dirty(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiCanvas> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_z_dirty
 
@@ -622,7 +574,6 @@ namespace Low {
     Low::Util::Name UiCanvas::get_name() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiCanvas> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
 
@@ -633,7 +584,6 @@ namespace Low {
     void UiCanvas::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiCanvas> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
 
@@ -649,27 +599,21 @@ namespace Low {
       broadcast_observable(N(name));
     }
 
-    uint32_t UiCanvas::create_instance(
-        u32 &p_PageIndex, u32 &p_SlotIndex,
-        Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
+    uint32_t UiCanvas::create_instance(u32 &p_PageIndex,
+                                       u32 &p_SlotIndex)
     {
-      LOCK_PAGES_WRITE(l_PagesLock);
       u32 l_Index = 0;
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
       bool l_FoundIndex = false;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
       for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
            ++l_PageIndex) {
-        Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
-            ms_Pages[l_PageIndex]->mutex);
         for (l_SlotIndex = 0;
              l_SlotIndex < ms_Pages[l_PageIndex]->size;
              ++l_SlotIndex) {
           if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied) {
             l_FoundIndex = true;
-            l_PageLock = std::move(i_PageLock);
             break;
           }
           l_Index++;
@@ -681,15 +625,10 @@ namespace Low {
       if (!l_FoundIndex) {
         l_SlotIndex = 0;
         l_PageIndex = create_page();
-        Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
-            ms_Pages[l_PageIndex]->mutex);
-        l_PageLock = std::move(l_NewLock);
       }
       ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
       p_PageIndex = l_PageIndex;
       p_SlotIndex = l_SlotIndex;
-      p_PageLock = std::move(l_PageLock);
-      LOCK_UNLOCK(l_PagesLock);
       return l_Index;
     }
 

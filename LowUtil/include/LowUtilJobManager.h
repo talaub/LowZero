@@ -16,20 +16,26 @@ namespace Low {
       public:
         ThreadPool(int p_NumThreads);
 
-        template <class F> auto enqueue(F &&f) -> Future<decltype(f())>
+        template <class F>
+        auto enqueue(F &&f) -> Future<decltype(f())>
         {
           using ReturnType = decltype(f());
 
-          auto task = std::make_shared<std::packaged_task<ReturnType()>>(
-              std::forward<F>(f));
+          auto task =
+              std::make_shared<std::packaged_task<ReturnType()>>(
+                  std::forward<F>(f));
           std::future<ReturnType> result = task->get_future();
 
+#if 0
           {
             std::unique_lock<std::mutex> lock(m_QueueMutex);
             m_JobQueue.emplace([task]() { (*task)(); });
           }
 
           m_Condition.notify_one();
+#else
+          (*task)();
+#endif
 
           return result;
         }
@@ -49,5 +55,5 @@ namespace Low {
 
       LOW_EXPORT ThreadPool &default_pool();
     } // namespace JobManager
-  }   // namespace Util
+  } // namespace Util
 } // namespace Low

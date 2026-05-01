@@ -29,11 +29,6 @@ namespace Low {
                             LOW_NAME(1306211566));
     uint32_t Texture::ms_Capacity = 0u;
     uint32_t Texture::ms_PageSize = 0u;
-    Low::Util::SharedMutex Texture::ms_LivingMutex;
-    Low::Util::SharedMutex Texture::ms_PagesMutex;
-    Low::Util::UniqueLock<Low::Util::SharedMutex>
-        Texture::ms_PagesLock(Texture::ms_PagesMutex,
-                              std::defer_lock);
     Low::Util::List<Texture> Texture::ms_LivingInstances;
     Low::Util::List<Low::Util::Instances::Page *> Texture::ms_Pages;
 
@@ -52,19 +47,13 @@ namespace Low {
     {
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
-      uint32_t l_Index =
-          create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
+      uint32_t l_Index = create_instance(l_PageIndex, l_SlotIndex);
 
       Texture l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = Texture::ms_TypeId;
-
-      l_PageLock.unlock();
-
-      Low::Util::HandleLock<Texture> l_HandleLock(l_Handle);
 
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Texture, gpu, GpuTexture))
           GpuTexture();
@@ -83,11 +72,7 @@ namespace Low {
 
       l_Handle.set_name(p_Name);
 
-      {
-        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-            ms_LivingMutex);
-        ms_LivingInstances.push_back(l_Handle);
-      }
+      ms_LivingInstances.push_back(l_Handle);
 
       if (p_UniqueId > 0ull) {
         l_Handle.set_unique_id(p_UniqueId);
@@ -114,7 +99,6 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       {
-        Low::Util::HandleLock<Texture> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
         // TODO: unload of loaded
@@ -140,14 +124,9 @@ namespace Low {
           get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Page->slots[l_SlotIndex].m_Occupied = false;
       l_Page->slots[l_SlotIndex].m_Generation++;
 
-      ms_PagesLock.lock();
-      Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -156,8 +135,6 @@ namespace Low {
           it++;
         }
       }
-      ms_PagesLock.unlock();
-      l_LivingLock.unlock();
     }
 
     void Texture::initialize()
@@ -165,7 +142,6 @@ namespace Low {
       const Low::Util::TypeIdentifier l_IdentifierNames(
           N(LowRenderer2), N(Texture));
 
-      LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -187,7 +163,6 @@ namespace Low {
         }
         ms_Capacity = l_Capacity;
       }
-      LOCK_UNLOCK(l_PagesLock);
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(Texture);
@@ -222,7 +197,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Texture l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Texture> l_HandleLock(l_Handle);
           l_Handle.get_gpu();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture, gpu,
                                             GpuTexture);
@@ -235,7 +209,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Texture l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Texture> l_HandleLock(l_Handle);
           *((GpuTexture *)p_Data) = l_Handle.get_gpu();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -252,7 +225,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Texture l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Texture> l_HandleLock(l_Handle);
           l_Handle.get_resource();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, Texture, resource, TextureResource);
@@ -265,7 +237,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Texture l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Texture> l_HandleLock(l_Handle);
           *((TextureResource *)p_Data) = l_Handle.get_resource();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -282,7 +253,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Texture l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Texture> l_HandleLock(l_Handle);
           l_Handle.get_staging();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture,
                                             staging, TextureStaging);
@@ -295,7 +265,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Texture l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Texture> l_HandleLock(l_Handle);
           *((TextureStaging *)p_Data) = l_Handle.get_staging();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -313,7 +282,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Texture l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Texture> l_HandleLock(l_Handle);
           l_Handle.get_state();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, Texture, state, Low::Renderer::TextureState);
@@ -326,7 +294,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Texture l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Texture> l_HandleLock(l_Handle);
           *((Low::Renderer::TextureState *)p_Data) =
               l_Handle.get_state();
         };
@@ -365,7 +332,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Texture l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Texture> l_HandleLock(l_Handle);
           l_Handle.get_unique_id();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, Texture, unique_id, Low::Util::UniqueId);
@@ -375,7 +341,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Texture l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Texture> l_HandleLock(l_Handle);
           *((Low::Util::UniqueId *)p_Data) = l_Handle.get_unique_id();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -392,7 +357,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Texture l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Texture> l_HandleLock(l_Handle);
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture, name,
                                             Low::Util::Name);
@@ -405,7 +369,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Texture l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<Texture> l_HandleLock(l_Handle);
           *((Low::Util::Name *)p_Data) = l_Handle.get_name();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -466,19 +429,15 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
-      ms_PagesLock.lock();
       for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
         Low::Util::Instances::Page *i_Page = *it;
         free(i_Page->buffer);
         free(i_Page->slots);
-        free(i_Page->lockWords);
         delete i_Page;
         it = ms_Pages.erase(it);
       }
 
       ms_Capacity = 0;
-
-      ms_PagesLock.unlock();
     }
 
     Low::Util::Handle Texture::_find_by_index(uint32_t p_Index)
@@ -500,8 +459,6 @@ namespace Low {
         l_Handle.m_Data.m_Generation = 0;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Handle.m_Data.m_Generation =
           l_Page->slots[l_SlotIndex].m_Generation;
 
@@ -534,8 +491,6 @@ namespace Low {
         return false;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       return m_Data.m_Type == Texture::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
@@ -559,8 +514,6 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
-      Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
@@ -687,7 +640,6 @@ namespace Low {
     {
       _LOW_ASSERT(is_alive());
 
-      Low::Util::HandleLock<Texture> l_HandleLock(get_id());
       const u32 l_OldReferences =
           (TYPE_SOA(Texture, references, Low::Util::Set<u64>)).size();
 
@@ -715,7 +667,6 @@ namespace Low {
     {
       _LOW_ASSERT(is_alive());
 
-      Low::Util::HandleLock<Texture> l_HandleLock(get_id());
       const u32 l_OldReferences =
           (TYPE_SOA(Texture, references, Low::Util::Set<u64>)).size();
 
@@ -740,7 +691,6 @@ namespace Low {
     GpuTexture Texture::get_gpu() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gpu
 
@@ -751,7 +701,6 @@ namespace Low {
     void Texture::set_gpu(GpuTexture p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gpu
 
@@ -773,7 +722,6 @@ namespace Low {
     TextureResource Texture::get_resource() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_resource
 
@@ -784,7 +732,6 @@ namespace Low {
     void Texture::set_resource(TextureResource p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_resource
 
@@ -803,7 +750,6 @@ namespace Low {
     TextureStaging Texture::get_staging() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_staging
 
@@ -814,7 +760,6 @@ namespace Low {
     void Texture::set_staging(TextureStaging p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_staging
 
@@ -833,7 +778,6 @@ namespace Low {
     Low::Renderer::TextureState Texture::get_state() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_state
 
@@ -844,7 +788,6 @@ namespace Low {
     void Texture::set_state(Low::Renderer::TextureState p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_state
 
@@ -866,7 +809,6 @@ namespace Low {
     Low::Util::Set<u64> &Texture::get_references() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_references
 
@@ -878,7 +820,6 @@ namespace Low {
     Low::Util::UniqueId Texture::get_unique_id() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
 
@@ -889,7 +830,6 @@ namespace Low {
     void Texture::set_unique_id(Low::Util::UniqueId p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
 
@@ -908,7 +848,6 @@ namespace Low {
     Low::Util::Name Texture::get_name() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
 
@@ -919,7 +858,6 @@ namespace Low {
     void Texture::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
 
@@ -957,7 +895,6 @@ namespace Low {
 
     EditorImage Texture::get_editor_image()
     {
-      Low::Util::HandleLock<Texture> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_editor_image
 
       if (get_resource().is_alive()) {
@@ -991,27 +928,21 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_from_resource_config
     }
 
-    uint32_t Texture::create_instance(
-        u32 &p_PageIndex, u32 &p_SlotIndex,
-        Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
+    uint32_t Texture::create_instance(u32 &p_PageIndex,
+                                      u32 &p_SlotIndex)
     {
-      LOCK_PAGES_WRITE(l_PagesLock);
       u32 l_Index = 0;
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
       bool l_FoundIndex = false;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
       for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
            ++l_PageIndex) {
-        Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
-            ms_Pages[l_PageIndex]->mutex);
         for (l_SlotIndex = 0;
              l_SlotIndex < ms_Pages[l_PageIndex]->size;
              ++l_SlotIndex) {
           if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied) {
             l_FoundIndex = true;
-            l_PageLock = std::move(i_PageLock);
             break;
           }
           l_Index++;
@@ -1023,15 +954,10 @@ namespace Low {
       if (!l_FoundIndex) {
         l_SlotIndex = 0;
         l_PageIndex = create_page();
-        Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
-            ms_Pages[l_PageIndex]->mutex);
-        l_PageLock = std::move(l_NewLock);
       }
       ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
       p_PageIndex = l_PageIndex;
       p_SlotIndex = l_SlotIndex;
-      p_PageLock = std::move(l_PageLock);
-      LOCK_UNLOCK(l_PagesLock);
       return l_Index;
     }
 

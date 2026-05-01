@@ -27,11 +27,6 @@ namespace Low {
                              LOW_NAME(193471262));
       uint32_t Module::ms_Capacity = 0u;
       uint32_t Module::ms_PageSize = 0u;
-      Low::Util::SharedMutex Module::ms_LivingMutex;
-      Low::Util::SharedMutex Module::ms_PagesMutex;
-      Low::Util::UniqueLock<Low::Util::SharedMutex>
-          Module::ms_PagesLock(Module::ms_PagesMutex,
-                               std::defer_lock);
       Low::Util::List<Module> Module::ms_LivingInstances;
       Low::Util::List<Low::Util::Instances::Page *> Module::ms_Pages;
 
@@ -44,19 +39,13 @@ namespace Low {
       {
         u32 l_PageIndex = 0;
         u32 l_SlotIndex = 0;
-        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
-        uint32_t l_Index =
-            create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
+        uint32_t l_Index = create_instance(l_PageIndex, l_SlotIndex);
 
         Module l_Handle;
         l_Handle.m_Data.m_Index = l_Index;
         l_Handle.m_Data.m_Generation =
             ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
         l_Handle.m_Data.m_Type = Module::ms_TypeId;
-
-        l_PageLock.unlock();
-
-        Low::Util::HandleLock<Module> l_HandleLock(l_Handle);
 
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Module, scripts,
                                    Low::Util::List<uint64_t>))
@@ -72,11 +61,7 @@ namespace Low {
 
         l_Handle.set_name(p_Name);
 
-        {
-          Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-              ms_LivingMutex);
-          ms_LivingInstances.push_back(l_Handle);
-        }
+        ms_LivingInstances.push_back(l_Handle);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
         l_Handle.set_as_module(nullptr);
@@ -91,7 +76,6 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         {
-          Low::Util::HandleLock<Module> l_Lock(get_id());
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
           // LOW_CODEGEN::END::CUSTOM:DESTROY
         }
@@ -104,14 +88,9 @@ namespace Low {
                                        l_SlotIndex));
         Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
-        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-            l_Page->mutex);
         l_Page->slots[l_SlotIndex].m_Occupied = false;
         l_Page->slots[l_SlotIndex].m_Generation++;
 
-        ms_PagesLock.lock();
-        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-            ms_LivingMutex);
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end();) {
           if (it->get_id() == get_id()) {
@@ -120,8 +99,6 @@ namespace Low {
             it++;
           }
         }
-        ms_PagesLock.unlock();
-        l_LivingLock.unlock();
       }
 
       void Module::initialize()
@@ -129,7 +106,6 @@ namespace Low {
         const Low::Util::TypeIdentifier l_IdentifierNames(N(LowCore),
                                                           N(Module));
 
-        LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
@@ -150,7 +126,6 @@ namespace Low {
           }
           ms_Capacity = l_Capacity;
         }
-        LOCK_UNLOCK(l_PagesLock);
 
         Low::Util::RTTI::TypeInfo l_TypeInfo;
         l_TypeInfo.name = N(Module);
@@ -186,7 +161,6 @@ namespace Low {
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Module l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<Module> l_HandleLock(l_Handle);
             l_Handle.get_scripts();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, Module, scripts, Low::Util::List<uint64_t>);
@@ -196,7 +170,6 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Module l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<Module> l_HandleLock(l_Handle);
             *((Low::Util::List<uint64_t> *)p_Data) =
                 l_Handle.get_scripts();
           };
@@ -216,7 +189,6 @@ namespace Low {
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Module l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<Module> l_HandleLock(l_Handle);
             l_Handle.get_as_module();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Module,
                                               as_module, char *);
@@ -229,7 +201,6 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Module l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<Module> l_HandleLock(l_Handle);
             *((char **)p_Data) = l_Handle.get_as_module();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -247,7 +218,6 @@ namespace Low {
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Module l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<Module> l_HandleLock(l_Handle);
             l_Handle.get_classes();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, Module, classes, Low::Util::List<uint64_t>);
@@ -257,7 +227,6 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Module l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<Module> l_HandleLock(l_Handle);
             *((Low::Util::List<uint64_t> *)p_Data) =
                 l_Handle.get_classes();
           };
@@ -276,7 +245,6 @@ namespace Low {
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Module l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<Module> l_HandleLock(l_Handle);
             l_Handle.get_reload_index();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Module,
                                               reload_index, uint32_t);
@@ -289,7 +257,6 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Module l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<Module> l_HandleLock(l_Handle);
             *((uint32_t *)p_Data) = l_Handle.get_reload_index();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -308,7 +275,6 @@ namespace Low {
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Module l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<Module> l_HandleLock(l_Handle);
             l_Handle.get_ticking_functions();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, Module, ticking_functions,
@@ -319,7 +285,6 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Module l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<Module> l_HandleLock(l_Handle);
             *((Low::Util::List<char *> *)p_Data) =
                 l_Handle.get_ticking_functions();
           };
@@ -337,7 +302,6 @@ namespace Low {
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Module l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<Module> l_HandleLock(l_Handle);
             l_Handle.get_name();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Module, name,
                                               Low::Util::Name);
@@ -350,7 +314,6 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Module l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<Module> l_HandleLock(l_Handle);
             *((Low::Util::Name *)p_Data) = l_Handle.get_name();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -385,19 +348,15 @@ namespace Low {
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
-        ms_PagesLock.lock();
         for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
           Low::Util::Instances::Page *i_Page = *it;
           free(i_Page->buffer);
           free(i_Page->slots);
-          free(i_Page->lockWords);
           delete i_Page;
           it = ms_Pages.erase(it);
         }
 
         ms_Capacity = 0;
-
-        ms_PagesLock.unlock();
       }
 
       Low::Util::Handle Module::_find_by_index(uint32_t p_Index)
@@ -419,8 +378,6 @@ namespace Low {
           l_Handle.m_Data.m_Generation = 0;
         }
         Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-            l_Page->mutex);
         l_Handle.m_Data.m_Generation =
             l_Page->slots[l_SlotIndex].m_Generation;
 
@@ -453,8 +410,6 @@ namespace Low {
           return false;
         }
         Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-            l_Page->mutex);
         return m_Data.m_Type == Module::ms_TypeId &&
                l_Page->slots[l_SlotIndex].m_Occupied &&
                l_Page->slots[l_SlotIndex].m_Generation ==
@@ -477,8 +432,6 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
         // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
-        Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
-            ms_LivingMutex);
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
           if (it->get_name() == p_Name) {
@@ -586,7 +539,6 @@ namespace Low {
       Low::Util::List<uint64_t> &Module::get_scripts() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<Module> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_scripts
         // LOW_CODEGEN::END::CUSTOM:GETTER_scripts
@@ -597,7 +549,6 @@ namespace Low {
       char *Module::get_as_module() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<Module> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_as_module
         // LOW_CODEGEN::END::CUSTOM:GETTER_as_module
@@ -607,7 +558,6 @@ namespace Low {
       void Module::set_as_module(char *p_Value)
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<Module> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_as_module
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_as_module
@@ -624,7 +574,6 @@ namespace Low {
       Low::Util::List<uint64_t> &Module::get_classes() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<Module> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_classes
         // LOW_CODEGEN::END::CUSTOM:GETTER_classes
@@ -635,7 +584,6 @@ namespace Low {
       uint32_t Module::get_reload_index() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<Module> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_reload_index
         // LOW_CODEGEN::END::CUSTOM:GETTER_reload_index
@@ -645,7 +593,6 @@ namespace Low {
       void Module::set_reload_index(uint32_t p_Value)
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<Module> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_reload_index
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_reload_index
@@ -662,7 +609,6 @@ namespace Low {
       Low::Util::List<char *> &Module::get_ticking_functions() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<Module> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ticking_functions
         // LOW_CODEGEN::END::CUSTOM:GETTER_ticking_functions
@@ -674,7 +620,6 @@ namespace Low {
       Low::Util::Name Module::get_name() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<Module> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
@@ -684,7 +629,6 @@ namespace Low {
       void Module::set_name(Low::Util::Name p_Value)
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<Module> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
@@ -700,7 +644,6 @@ namespace Low {
 
       uint64_t Module::find_class_by_name(Low::Util::Name p_Name)
       {
-        Low::Util::HandleLock<Module> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_find_class_by_name
         for (u64 i_ClassId : get_classes()) {
           ScriptClass i_Class = i_ClassId;
@@ -713,21 +656,16 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_find_class_by_name
       }
 
-      uint32_t Module::create_instance(
-          u32 &p_PageIndex, u32 &p_SlotIndex,
-          Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
+      uint32_t Module::create_instance(u32 &p_PageIndex,
+                                       u32 &p_SlotIndex)
       {
-        LOCK_PAGES_WRITE(l_PagesLock);
         u32 l_Index = 0;
         u32 l_PageIndex = 0;
         u32 l_SlotIndex = 0;
         bool l_FoundIndex = false;
-        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
         for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
              ++l_PageIndex) {
-          Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
-              ms_Pages[l_PageIndex]->mutex);
           for (l_SlotIndex = 0;
                l_SlotIndex < ms_Pages[l_PageIndex]->size;
                ++l_SlotIndex) {
@@ -735,7 +673,6 @@ namespace Low {
                      ->slots[l_SlotIndex]
                      .m_Occupied) {
               l_FoundIndex = true;
-              l_PageLock = std::move(i_PageLock);
               break;
             }
             l_Index++;
@@ -747,15 +684,10 @@ namespace Low {
         if (!l_FoundIndex) {
           l_SlotIndex = 0;
           l_PageIndex = create_page();
-          Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
-              ms_Pages[l_PageIndex]->mutex);
-          l_PageLock = std::move(l_NewLock);
         }
         ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
         p_PageIndex = l_PageIndex;
         p_SlotIndex = l_SlotIndex;
-        p_PageLock = std::move(l_PageLock);
-        LOCK_UNLOCK(l_PagesLock);
         return l_Index;
       }
 

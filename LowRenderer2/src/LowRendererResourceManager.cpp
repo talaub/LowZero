@@ -195,8 +195,6 @@ namespace Low {
 
       bool load_material(Material p_Material)
       {
-        LOCK_HANDLE(p_Material);
-
         if (p_Material.is_alive()) {
           register_asset(p_Material.get_unique_id(), p_Material);
         }
@@ -444,7 +442,6 @@ namespace Low {
                             Util::Resource::Image2D &p_Image2D)
       {
         TexturePixels l_Pixels = TexturePixels::make(N(Mip0));
-        Util::HandleLock l_PixelsLock(l_Pixels);
 
         l_Pixels.set_state(TextureState::MEMORYLOADED);
         // TODO: Maybe not force 4 channels and not hardcode format
@@ -521,9 +518,10 @@ namespace Low {
         // into the texturestaging instance stored on
         // the texture and we'll set the state of the
         // texture to MEMORYLOADED once this is done.
+
+        p_Texture.set_state(TextureState::LOADINGTOMEMORY);
         Util::JobManager::default_pool().enqueue([l_TextureId]() {
           Texture l_Texture = l_TextureId;
-          Util::HandleLock l_TextureLock(l_Texture);
 
           Util::Resource::ImageMipMaps l_MipMaps;
           Util::Resource::load_image_mipmaps(
@@ -531,7 +529,6 @@ namespace Low {
 
           TextureStaging l_Staging =
               TextureStaging::make(l_Texture.get_name());
-          Util::HandleLock l_StagingLock(l_Staging);
 
           l_Texture.set_staging(l_Staging);
 
@@ -552,7 +549,6 @@ namespace Low {
           l_Texture.set_state(TextureState::MEMORYLOADED);
         });
 
-        p_Texture.set_state(TextureState::LOADINGTOMEMORY);
         return true;
       }
 
@@ -566,13 +562,13 @@ namespace Low {
             "already loading/loaded.");
         u64 l_EditorImageId = p_EditorImage.get_id();
 
+        p_EditorImage.set_state(TextureState::LOADINGTOMEMORY);
+
         Util::JobManager::default_pool().enqueue([l_EditorImageId]() {
           EditorImage l_EditorImage = l_EditorImageId;
-          Util::HandleLock l_EditorImageLock(l_EditorImage);
 
           EditorImageStaging l_Staging =
               EditorImageStaging::make(l_EditorImage.get_name());
-          Util::HandleLock l_StagingLock(l_Staging);
           l_EditorImage.set_staging(l_Staging);
 
           int l_Width, l_Height, l_Channels;
@@ -609,7 +605,6 @@ namespace Low {
           l_EditorImage.set_state(TextureState::MEMORYLOADED);
         });
 
-        p_EditorImage.set_state(TextureState::LOADINGTOMEMORY);
         return true;
       }
 
@@ -625,12 +620,12 @@ namespace Low {
         // Overall this schedules a job that will load the mesh data
         // into the meshgeometry and we'll set the state of the mesh
         // to MEMORYLOADED once this is done.
+
+        p_Mesh.set_state(MeshState::LOADINGTOMEMORY);
         Util::JobManager::default_pool().enqueue([l_MeshId]() {
           Mesh l_Mesh = l_MeshId;
-          Util::HandleLock l_MeshLock(l_Mesh);
           MeshGeometry l_MeshGeometry =
               MeshGeometry::make(l_Mesh.get_name());
-          Util::HandleLock l_MeshGeometryLock(l_MeshGeometry);
           l_Mesh.set_geometry(l_MeshGeometry);
 
           Util::Resource::Mesh l_ResourceMesh;
@@ -693,7 +688,6 @@ namespace Low {
           l_Mesh.set_state(MeshState::MEMORYLOADED);
         });
 
-        p_Mesh.set_state(MeshState::LOADINGTOMEMORY);
         return true;
       }
 

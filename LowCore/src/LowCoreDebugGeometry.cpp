@@ -138,12 +138,6 @@ namespace Low {
                                  float p_Size,
                                  Renderer::EditorImage p_EditorImage)
       {
-        Util::HandleLock l_ImageLock(p_EditorImage, false);
-
-        if (!l_ImageLock.owns_lock()) {
-          return;
-        }
-
         if (!p_EditorImage.is_alive()) {
           return;
         }

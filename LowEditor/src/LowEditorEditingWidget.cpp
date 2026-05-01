@@ -1,5 +1,6 @@
 #include "LowEditorEditingWidget.h"
 
+#include "LowCoreMeshRenderer.h"
 #include "LowEditor.h"
 #include "LowEditorMainWindow.h"
 #include "LowEditorCommonOperations.h"
@@ -7,6 +8,8 @@
 #include "LowEditorBase.h"
 
 #include "LowRendererEditorImage.h"
+#include "LowRendererPointLight.h"
+#include "LowUtilHandle.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "ImGuizmo.h"
@@ -330,53 +333,65 @@ namespace Low {
       Renderer::RenderView l_RenderView =
           p_RenderViewWidget.get_renderview();
 
-      for (Core::Component::DirectionalLight i_Light :
-           Core::Component::DirectionalLight::ms_LivingInstances) {
-        Core::Component::Transform i_Transform =
-            i_Light.get_entity().get_transform();
+      static Renderer::EditorImage l_PointLightIcon =
+          Util::Handle::DEAD;
+      static Renderer::EditorImage l_DirectionalLightIcon =
+          Util::Handle::DEAD;
+      static Renderer::EditorImage l_CameraIcon = Util::Handle::DEAD;
+      static Renderer::EditorImage l_EntityIcon = Util::Handle::DEAD;
+      static Renderer::EditorImage l_NavmeshAgentIcon =
+          Util::Handle::DEAD;
 
-        float l_ScreenSpaceAdjustment =
-            Core::DebugGeometry::screen_space_multiplier(
-                l_RenderView, i_Transform.get_world_position());
-
-        Core::DebugGeometry::render_spherical_billboard(
-            i_Transform.get_world_position(),
-            LOW_EDITOR_BILLBOARD_SIZE * l_ScreenSpaceAdjustment,
-            Renderer::EditorImage::find_by_name(
-                N(directional_light)));
-        // TODO: Fix lookup by name
+      if (!l_PointLightIcon.is_alive()) {
+        l_PointLightIcon =
+            Renderer::EditorImage::find_by_name(N(point_light));
       }
-
-      for (Core::Component::PointLight i_Light :
-           Core::Component::PointLight::ms_LivingInstances) {
-        Core::Component::Transform i_Transform =
-            i_Light.get_entity().get_transform();
-
-        float l_ScreenSpaceAdjustment =
-            Core::DebugGeometry::screen_space_multiplier(
-                l_RenderView, i_Transform.get_world_position());
-
-        Core::DebugGeometry::render_spherical_billboard(
-            i_Transform.get_world_position(),
-            LOW_EDITOR_BILLBOARD_SIZE * l_ScreenSpaceAdjustment,
-            Renderer::EditorImage::find_by_name(N(point_light)));
-        // TODO: Fix lookup by name
+      if (!l_EntityIcon.is_alive()) {
+        l_EntityIcon = Renderer::EditorImage::find_by_name(N(entity));
       }
+      /*
+      if (!l_NavmeshAgentIcon.is_alive()) {
+        l_NavmeshAgentIcon =
+            Renderer::EditorImage::find_by_name(N(npc));
+      }
+      */
 
-      for (Core::Component::Camera i_Camera :
-           Core::Component::Camera::ms_LivingInstances) {
+      for (u32 i = 0; i < Core::Entity::living_count(); ++i) {
+        Core::Entity i_Entity = Core::Entity::living_instances()[i];
+
+        if (i_Entity.has_component(
+                Core::Component::MeshRenderer::type_id())) {
+          continue;
+        }
         Core::Component::Transform i_Transform =
-            i_Camera.get_entity().get_transform();
-
+            i_Entity.get_transform();
         float l_ScreenSpaceAdjustment =
             Core::DebugGeometry::screen_space_multiplier(
                 l_RenderView, i_Transform.get_world_position());
 
-        // TODO: Fix
+        if (i_Entity.has_component(
+                Core::Component::PointLight::type_id())) {
+          Core::DebugGeometry::render_spherical_billboard(
+              i_Transform.get_world_position(),
+              LOW_EDITOR_BILLBOARD_SIZE * l_ScreenSpaceAdjustment,
+              l_PointLightIcon);
+          continue;
+        }
+        /*
+        if (i_Entity.has_component(
+                Core::Component::NavmeshAgent::type_id())) {
+          Core::DebugGeometry::render_spherical_billboard(
+              i_Transform.get_world_position(),
+              LOW_EDITOR_BILLBOARD_SIZE * l_ScreenSpaceAdjustment,
+              l_NavmeshAgentIcon);
+          continue;
+        }
+        */
+
         Core::DebugGeometry::render_spherical_billboard(
             i_Transform.get_world_position(),
             LOW_EDITOR_BILLBOARD_SIZE * l_ScreenSpaceAdjustment,
-            Util::Handle::DEAD);
+            l_EntityIcon);
       }
     }
 

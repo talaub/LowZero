@@ -32,11 +32,6 @@ namespace Low {
                                    LOW_NAME(3856848271));
       uint32_t NavmeshAgent::ms_Capacity = 0u;
       uint32_t NavmeshAgent::ms_PageSize = 0u;
-      Low::Util::SharedMutex NavmeshAgent::ms_LivingMutex;
-      Low::Util::SharedMutex NavmeshAgent::ms_PagesMutex;
-      Low::Util::UniqueLock<Low::Util::SharedMutex>
-          NavmeshAgent::ms_PagesLock(NavmeshAgent::ms_PagesMutex,
-                                     std::defer_lock);
       Low::Util::List<NavmeshAgent> NavmeshAgent::ms_LivingInstances;
       Low::Util::List<Low::Util::Instances::Page *>
           NavmeshAgent::ms_Pages;
@@ -60,19 +55,13 @@ namespace Low {
       {
         u32 l_PageIndex = 0;
         u32 l_SlotIndex = 0;
-        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
-        uint32_t l_Index =
-            create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
+        uint32_t l_Index = create_instance(l_PageIndex, l_SlotIndex);
 
         NavmeshAgent l_Handle;
         l_Handle.m_Data.m_Index = l_Index;
         l_Handle.m_Data.m_Generation =
             ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
         l_Handle.m_Data.m_Type = NavmeshAgent::ms_TypeId;
-
-        l_PageLock.unlock();
-
-        Low::Util::HandleLock<NavmeshAgent> l_HandleLock(l_Handle);
 
         ACCESSOR_TYPE_SOA(l_Handle, NavmeshAgent, speed, float) =
             0.0f;
@@ -87,11 +76,7 @@ namespace Low {
         l_Handle.set_entity(p_Entity);
         p_Entity.add_component(l_Handle);
 
-        {
-          Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-              ms_LivingMutex);
-          ms_LivingInstances.push_back(l_Handle);
-        }
+        ms_LivingInstances.push_back(l_Handle);
 
         if (p_UniqueId > 0ull) {
           l_Handle.set_unique_id(p_UniqueId);
@@ -115,7 +100,6 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         {
-          Low::Util::HandleLock<NavmeshAgent> l_Lock(get_id());
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
           // LOW_CODEGEN::END::CUSTOM:DESTROY
@@ -131,14 +115,9 @@ namespace Low {
                                        l_SlotIndex));
         Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
-        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-            l_Page->mutex);
         l_Page->slots[l_SlotIndex].m_Occupied = false;
         l_Page->slots[l_SlotIndex].m_Generation++;
 
-        ms_PagesLock.lock();
-        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-            ms_LivingMutex);
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end();) {
           if (it->get_id() == get_id()) {
@@ -147,8 +126,6 @@ namespace Low {
             it++;
           }
         }
-        ms_PagesLock.unlock();
-        l_LivingLock.unlock();
       }
 
       void NavmeshAgent::initialize()
@@ -156,7 +133,6 @@ namespace Low {
         const Low::Util::TypeIdentifier l_IdentifierNames(
             N(LowCore), N(NavmeshAgent));
 
-        LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -178,7 +154,6 @@ namespace Low {
           }
           ms_Capacity = l_Capacity;
         }
-        LOCK_UNLOCK(l_PagesLock);
 
         Low::Util::RTTI::TypeInfo l_TypeInfo;
         l_TypeInfo.name = N(NavmeshAgent);
@@ -213,8 +188,6 @@ namespace Low {
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             NavmeshAgent l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<NavmeshAgent> l_HandleLock(
-                l_Handle);
             l_Handle.get_speed();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, NavmeshAgent,
                                               speed, float);
@@ -227,8 +200,6 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             NavmeshAgent l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<NavmeshAgent> l_HandleLock(
-                l_Handle);
             *((float *)p_Data) = l_Handle.get_speed();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -246,8 +217,6 @@ namespace Low {
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             NavmeshAgent l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<NavmeshAgent> l_HandleLock(
-                l_Handle);
             l_Handle.get_height();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, NavmeshAgent,
                                               height, float);
@@ -260,8 +229,6 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             NavmeshAgent l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<NavmeshAgent> l_HandleLock(
-                l_Handle);
             *((float *)p_Data) = l_Handle.get_height();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -279,8 +246,6 @@ namespace Low {
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             NavmeshAgent l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<NavmeshAgent> l_HandleLock(
-                l_Handle);
             l_Handle.get_radius();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, NavmeshAgent,
                                               radius, float);
@@ -293,8 +258,6 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             NavmeshAgent l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<NavmeshAgent> l_HandleLock(
-                l_Handle);
             *((float *)p_Data) = l_Handle.get_radius();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -313,8 +276,6 @@ namespace Low {
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             NavmeshAgent l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<NavmeshAgent> l_HandleLock(
-                l_Handle);
             l_Handle.get_offset();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, NavmeshAgent, offset, Low::Math::Vector3);
@@ -327,8 +288,6 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             NavmeshAgent l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<NavmeshAgent> l_HandleLock(
-                l_Handle);
             *((Low::Math::Vector3 *)p_Data) = l_Handle.get_offset();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -346,8 +305,6 @@ namespace Low {
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             NavmeshAgent l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<NavmeshAgent> l_HandleLock(
-                l_Handle);
             l_Handle.get_agent_index();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, NavmeshAgent,
                                               agent_index, int);
@@ -360,8 +317,6 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             NavmeshAgent l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<NavmeshAgent> l_HandleLock(
-                l_Handle);
             *((int *)p_Data) = l_Handle.get_agent_index();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -379,8 +334,6 @@ namespace Low {
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             NavmeshAgent l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<NavmeshAgent> l_HandleLock(
-                l_Handle);
             l_Handle.get_entity();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, NavmeshAgent, entity, Low::Core::Entity);
@@ -393,8 +346,6 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             NavmeshAgent l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<NavmeshAgent> l_HandleLock(
-                l_Handle);
             *((Low::Core::Entity *)p_Data) = l_Handle.get_entity();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -412,8 +363,6 @@ namespace Low {
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             NavmeshAgent l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<NavmeshAgent> l_HandleLock(
-                l_Handle);
             l_Handle.get_unique_id();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, NavmeshAgent,
                                               unique_id,
@@ -424,8 +373,6 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             NavmeshAgent l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<NavmeshAgent> l_HandleLock(
-                l_Handle);
             *((Low::Util::UniqueId *)p_Data) =
                 l_Handle.get_unique_id();
           };
@@ -463,19 +410,15 @@ namespace Low {
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
-        ms_PagesLock.lock();
         for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
           Low::Util::Instances::Page *i_Page = *it;
           free(i_Page->buffer);
           free(i_Page->slots);
-          free(i_Page->lockWords);
           delete i_Page;
           it = ms_Pages.erase(it);
         }
 
         ms_Capacity = 0;
-
-        ms_PagesLock.unlock();
       }
 
       Low::Util::Handle NavmeshAgent::_find_by_index(uint32_t p_Index)
@@ -497,8 +440,6 @@ namespace Low {
           l_Handle.m_Data.m_Generation = 0;
         }
         Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-            l_Page->mutex);
         l_Handle.m_Data.m_Generation =
             l_Page->slots[l_SlotIndex].m_Generation;
 
@@ -531,8 +472,6 @@ namespace Low {
           return false;
         }
         Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-            l_Page->mutex);
         return m_Data.m_Type == NavmeshAgent::ms_TypeId &&
                l_Page->slots[l_SlotIndex].m_Occupied &&
                l_Page->slots[l_SlotIndex].m_Generation ==
@@ -697,7 +636,6 @@ namespace Low {
       float NavmeshAgent::get_speed() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<NavmeshAgent> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_speed
 
@@ -708,7 +646,6 @@ namespace Low {
       void NavmeshAgent::set_speed(float p_Value)
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<NavmeshAgent> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_speed
 
@@ -742,7 +679,6 @@ namespace Low {
       float NavmeshAgent::get_height() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<NavmeshAgent> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_height
 
@@ -753,7 +689,6 @@ namespace Low {
       void NavmeshAgent::set_height(float p_Value)
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<NavmeshAgent> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_height
 
@@ -787,7 +722,6 @@ namespace Low {
       float NavmeshAgent::get_radius() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<NavmeshAgent> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_radius
 
@@ -798,7 +732,6 @@ namespace Low {
       void NavmeshAgent::set_radius(float p_Value)
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<NavmeshAgent> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_radius
 
@@ -832,7 +765,6 @@ namespace Low {
       Low::Math::Vector3 NavmeshAgent::get_offset() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<NavmeshAgent> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_offset
 
@@ -870,7 +802,6 @@ namespace Low {
       void NavmeshAgent::set_offset(Low::Math::Vector3 p_Value)
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<NavmeshAgent> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_offset
 
@@ -904,7 +835,6 @@ namespace Low {
       int NavmeshAgent::get_agent_index() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<NavmeshAgent> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_agent_index
 
@@ -915,7 +845,6 @@ namespace Low {
       void NavmeshAgent::set_agent_index(int p_Value)
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<NavmeshAgent> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_agent_index
 
@@ -934,7 +863,6 @@ namespace Low {
       Low::Core::Entity NavmeshAgent::get_entity() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<NavmeshAgent> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_entity
 
@@ -945,7 +873,6 @@ namespace Low {
       void NavmeshAgent::set_entity(Low::Core::Entity p_Value)
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<NavmeshAgent> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_entity
 
@@ -964,7 +891,6 @@ namespace Low {
       Low::Util::UniqueId NavmeshAgent::get_unique_id() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<NavmeshAgent> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
 
@@ -975,7 +901,6 @@ namespace Low {
       void NavmeshAgent::set_unique_id(Low::Util::UniqueId p_Value)
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<NavmeshAgent> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
 
@@ -995,7 +920,6 @@ namespace Low {
       void NavmeshAgent::set_target_position(
           Low::Math::Vector3 p_TargetPosition)
       {
-        Low::Util::HandleLock<NavmeshAgent> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_target_position
 
         System::Navmesh::set_agent_target_position(get_id(),
@@ -1003,21 +927,16 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_target_position
       }
 
-      uint32_t NavmeshAgent::create_instance(
-          u32 &p_PageIndex, u32 &p_SlotIndex,
-          Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
+      uint32_t NavmeshAgent::create_instance(u32 &p_PageIndex,
+                                             u32 &p_SlotIndex)
       {
-        LOCK_PAGES_WRITE(l_PagesLock);
         u32 l_Index = 0;
         u32 l_PageIndex = 0;
         u32 l_SlotIndex = 0;
         bool l_FoundIndex = false;
-        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
         for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
              ++l_PageIndex) {
-          Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
-              ms_Pages[l_PageIndex]->mutex);
           for (l_SlotIndex = 0;
                l_SlotIndex < ms_Pages[l_PageIndex]->size;
                ++l_SlotIndex) {
@@ -1025,7 +944,6 @@ namespace Low {
                      ->slots[l_SlotIndex]
                      .m_Occupied) {
               l_FoundIndex = true;
-              l_PageLock = std::move(i_PageLock);
               break;
             }
             l_Index++;
@@ -1037,15 +955,10 @@ namespace Low {
         if (!l_FoundIndex) {
           l_SlotIndex = 0;
           l_PageIndex = create_page();
-          Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
-              ms_Pages[l_PageIndex]->mutex);
-          l_PageLock = std::move(l_NewLock);
         }
         ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
         p_PageIndex = l_PageIndex;
         p_SlotIndex = l_SlotIndex;
-        p_PageLock = std::move(l_PageLock);
-        LOCK_UNLOCK(l_PagesLock);
         return l_Index;
       }
 

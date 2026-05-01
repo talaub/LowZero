@@ -32,11 +32,6 @@ namespace Low {
                                    LOW_NAME(2636542117));
     uint32_t EditorImageGpu::ms_Capacity = 0u;
     uint32_t EditorImageGpu::ms_PageSize = 0u;
-    Low::Util::SharedMutex EditorImageGpu::ms_LivingMutex;
-    Low::Util::SharedMutex EditorImageGpu::ms_PagesMutex;
-    Low::Util::UniqueLock<Low::Util::SharedMutex>
-        EditorImageGpu::ms_PagesLock(EditorImageGpu::ms_PagesMutex,
-                                     std::defer_lock);
     Low::Util::List<EditorImageGpu>
         EditorImageGpu::ms_LivingInstances;
     Low::Util::List<Low::Util::Instances::Page *>
@@ -51,19 +46,13 @@ namespace Low {
     {
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
-      uint32_t l_Index =
-          create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
+      uint32_t l_Index = create_instance(l_PageIndex, l_SlotIndex);
 
       EditorImageGpu l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = EditorImageGpu::ms_TypeId;
-
-      l_PageLock.unlock();
-
-      Low::Util::HandleLock<EditorImageGpu> l_HandleLock(l_Handle);
 
       ACCESSOR_TYPE_SOA(l_Handle, EditorImageGpu,
                         imgui_texture_initialized, bool) = false;
@@ -75,11 +64,7 @@ namespace Low {
 
       l_Handle.set_name(p_Name);
 
-      {
-        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-            ms_LivingMutex);
-        ms_LivingInstances.push_back(l_Handle);
-      }
+      ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
 
@@ -94,7 +79,6 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       {
-        Low::Util::HandleLock<EditorImageGpu> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
         Vulkan::Image l_Image = get_data_handle();
@@ -117,14 +101,9 @@ namespace Low {
           get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Page->slots[l_SlotIndex].m_Occupied = false;
       l_Page->slots[l_SlotIndex].m_Generation++;
 
-      ms_PagesLock.lock();
-      Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -133,8 +112,6 @@ namespace Low {
           it++;
         }
       }
-      ms_PagesLock.unlock();
-      l_LivingLock.unlock();
     }
 
     void EditorImageGpu::initialize()
@@ -142,7 +119,6 @@ namespace Low {
       const Low::Util::TypeIdentifier l_IdentifierNames(
           N(LowRenderer2), N(EditorImageGpu));
 
-      LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -156,7 +132,6 @@ namespace Low {
       Low::Util::Instances::initialize_page(
           l_Page, EditorImageGpu::Data::get_size(), ms_PageSize);
       ms_Pages.push_back(l_Page);
-      LOCK_UNLOCK(l_PagesLock);
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(EditorImageGpu);
@@ -192,8 +167,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           EditorImageGpu l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<EditorImageGpu> l_HandleLock(
-              l_Handle);
           l_Handle.is_imgui_texture_initialized();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, EditorImageGpu,
                                             imgui_texture_initialized,
@@ -207,8 +180,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           EditorImageGpu l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<EditorImageGpu> l_HandleLock(
-              l_Handle);
           *((bool *)p_Data) = l_Handle.is_imgui_texture_initialized();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -226,8 +197,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           EditorImageGpu l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<EditorImageGpu> l_HandleLock(
-              l_Handle);
           l_Handle.get_data_handle();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, EditorImageGpu,
                                             data_handle, uint64_t);
@@ -240,8 +209,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           EditorImageGpu l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<EditorImageGpu> l_HandleLock(
-              l_Handle);
           *((uint64_t *)p_Data) = l_Handle.get_data_handle();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -259,8 +226,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           EditorImageGpu l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<EditorImageGpu> l_HandleLock(
-              l_Handle);
           l_Handle.get_editor_image_handle();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, EditorImageGpu,
                                             editor_image_handle,
@@ -274,8 +239,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           EditorImageGpu l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<EditorImageGpu> l_HandleLock(
-              l_Handle);
           *((uint64_t *)p_Data) = l_Handle.get_editor_image_handle();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -293,8 +256,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           EditorImageGpu l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<EditorImageGpu> l_HandleLock(
-              l_Handle);
           l_Handle.get_imgui_texture_id();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, EditorImageGpu,
                                             imgui_texture_id,
@@ -308,8 +269,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           EditorImageGpu l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<EditorImageGpu> l_HandleLock(
-              l_Handle);
           *((ImTextureID *)p_Data) = l_Handle.get_imgui_texture_id();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -327,8 +286,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           EditorImageGpu l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<EditorImageGpu> l_HandleLock(
-              l_Handle);
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, EditorImageGpu,
                                             name, Low::Util::Name);
@@ -341,8 +298,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           EditorImageGpu l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<EditorImageGpu> l_HandleLock(
-              l_Handle);
           *((Low::Util::Name *)p_Data) = l_Handle.get_name();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -362,19 +317,15 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
-      ms_PagesLock.lock();
       for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
         Low::Util::Instances::Page *i_Page = *it;
         free(i_Page->buffer);
         free(i_Page->slots);
-        free(i_Page->lockWords);
         delete i_Page;
         it = ms_Pages.erase(it);
       }
 
       ms_Capacity = 0;
-
-      ms_PagesLock.unlock();
     }
 
     Low::Util::Handle EditorImageGpu::_find_by_index(uint32_t p_Index)
@@ -396,8 +347,6 @@ namespace Low {
         l_Handle.m_Data.m_Generation = 0;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Handle.m_Data.m_Generation =
           l_Page->slots[l_SlotIndex].m_Generation;
 
@@ -430,8 +379,6 @@ namespace Low {
         return false;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       return m_Data.m_Type == EditorImageGpu::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
@@ -457,8 +404,6 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
-      Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
@@ -607,7 +552,6 @@ namespace Low {
     bool EditorImageGpu::is_imgui_texture_initialized() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<EditorImageGpu> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_imgui_texture_initialized
 
@@ -624,7 +568,6 @@ namespace Low {
     void EditorImageGpu::set_imgui_texture_initialized(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<EditorImageGpu> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_imgui_texture_initialized
 
@@ -644,7 +587,6 @@ namespace Low {
     uint64_t EditorImageGpu::get_data_handle() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<EditorImageGpu> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_data_handle
 
@@ -655,7 +597,6 @@ namespace Low {
     void EditorImageGpu::set_data_handle(uint64_t p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<EditorImageGpu> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_data_handle
 
@@ -675,7 +616,6 @@ namespace Low {
     uint64_t EditorImageGpu::get_editor_image_handle() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<EditorImageGpu> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_editor_image_handle
 
@@ -686,7 +626,6 @@ namespace Low {
     void EditorImageGpu::set_editor_image_handle(uint64_t p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<EditorImageGpu> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_editor_image_handle
 
@@ -706,7 +645,6 @@ namespace Low {
     ImTextureID EditorImageGpu::get_imgui_texture_id() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<EditorImageGpu> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_imgui_texture_id
 
@@ -717,7 +655,6 @@ namespace Low {
     void EditorImageGpu::set_imgui_texture_id(ImTextureID p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<EditorImageGpu> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_imgui_texture_id
 
@@ -737,7 +674,6 @@ namespace Low {
     Low::Util::Name EditorImageGpu::get_name() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<EditorImageGpu> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
 
@@ -748,7 +684,6 @@ namespace Low {
     void EditorImageGpu::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<EditorImageGpu> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
 
@@ -764,27 +699,21 @@ namespace Low {
       broadcast_observable(N(name));
     }
 
-    uint32_t EditorImageGpu::create_instance(
-        u32 &p_PageIndex, u32 &p_SlotIndex,
-        Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
+    uint32_t EditorImageGpu::create_instance(u32 &p_PageIndex,
+                                             u32 &p_SlotIndex)
     {
-      LOCK_PAGES_WRITE(l_PagesLock);
       u32 l_Index = 0;
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
       bool l_FoundIndex = false;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
       for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
            ++l_PageIndex) {
-        Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
-            ms_Pages[l_PageIndex]->mutex);
         for (l_SlotIndex = 0;
              l_SlotIndex < ms_Pages[l_PageIndex]->size;
              ++l_SlotIndex) {
           if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied) {
             l_FoundIndex = true;
-            l_PageLock = std::move(i_PageLock);
             break;
           }
           l_Index++;
@@ -798,8 +727,6 @@ namespace Low {
       ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
       p_PageIndex = l_PageIndex;
       p_SlotIndex = l_SlotIndex;
-      p_PageLock = std::move(l_PageLock);
-      LOCK_UNLOCK(l_PagesLock);
       return l_Index;
     }
 

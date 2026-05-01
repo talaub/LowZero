@@ -34,11 +34,6 @@ namespace Low {
                                    LOW_NAME(958953127));
     uint32_t UiRenderObject::ms_Capacity = 0u;
     uint32_t UiRenderObject::ms_PageSize = 0u;
-    Low::Util::SharedMutex UiRenderObject::ms_LivingMutex;
-    Low::Util::SharedMutex UiRenderObject::ms_PagesMutex;
-    Low::Util::UniqueLock<Low::Util::SharedMutex>
-        UiRenderObject::ms_PagesLock(UiRenderObject::ms_PagesMutex,
-                                     std::defer_lock);
     Low::Util::List<UiRenderObject>
         UiRenderObject::ms_LivingInstances;
     Low::Util::List<Low::Util::Instances::Page *>
@@ -53,19 +48,13 @@ namespace Low {
     {
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
-      uint32_t l_Index =
-          create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
+      uint32_t l_Index = create_instance(l_PageIndex, l_SlotIndex);
 
       UiRenderObject l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = UiRenderObject::ms_TypeId;
-
-      l_PageLock.unlock();
-
-      Low::Util::HandleLock<UiRenderObject> l_HandleLock(l_Handle);
 
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, UiRenderObject, texture,
                                  Texture)) Texture();
@@ -91,11 +80,7 @@ namespace Low {
 
       l_Handle.set_name(p_Name);
 
-      {
-        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-            ms_LivingMutex);
-        ms_LivingInstances.push_back(l_Handle);
-      }
+      ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
 
@@ -112,7 +97,6 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       {
-        Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
         for (auto i_DrawCommand : get_draw_commands()) {
@@ -129,14 +113,9 @@ namespace Low {
           get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Page->slots[l_SlotIndex].m_Occupied = false;
       l_Page->slots[l_SlotIndex].m_Generation++;
 
-      ms_PagesLock.lock();
-      Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -145,8 +124,6 @@ namespace Low {
           it++;
         }
       }
-      ms_PagesLock.unlock();
-      l_LivingLock.unlock();
     }
 
     void UiRenderObject::initialize()
@@ -154,7 +131,6 @@ namespace Low {
       const Low::Util::TypeIdentifier l_IdentifierNames(
           N(LowRenderer2), N(UiRenderObject));
 
-      LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -176,7 +152,6 @@ namespace Low {
         }
         ms_Capacity = l_Capacity;
       }
-      LOCK_UNLOCK(l_PagesLock);
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(UiRenderObject);
@@ -212,8 +187,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           l_Handle.get_canvas_handle();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiRenderObject,
                                             canvas_handle, uint64_t);
@@ -223,8 +196,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           *((uint64_t *)p_Data) = l_Handle.get_canvas_handle();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -242,8 +213,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           l_Handle.get_texture();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiRenderObject,
                                             texture, Texture);
@@ -256,8 +225,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           *((Texture *)p_Data) = l_Handle.get_texture();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -275,8 +242,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           l_Handle.get_position();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, UiRenderObject, position, Low::Math::Vector3);
@@ -289,8 +254,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           *((Low::Math::Vector3 *)p_Data) = l_Handle.get_position();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -308,8 +271,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           l_Handle.get_size();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiRenderObject,
                                             size, Low::Math::Vector2);
@@ -322,8 +283,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           *((Low::Math::Vector2 *)p_Data) = l_Handle.get_size();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -341,8 +300,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           l_Handle.get_rotation2D();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiRenderObject,
                                             rotation2D, float);
@@ -355,8 +312,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           *((float *)p_Data) = l_Handle.get_rotation2D();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -374,8 +329,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           l_Handle.get_color();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiRenderObject,
                                             color, Low::Math::Color);
@@ -388,8 +341,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           *((Low::Math::Color *)p_Data) = l_Handle.get_color();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -407,8 +358,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           l_Handle.get_uv_rect();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, UiRenderObject, uv_rect, Low::Math::Vector4);
@@ -421,8 +370,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           *((Low::Math::Vector4 *)p_Data) = l_Handle.get_uv_rect();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -440,8 +387,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           l_Handle.get_material();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiRenderObject,
                                             material, Material);
@@ -454,8 +399,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           *((Material *)p_Data) = l_Handle.get_material();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -473,8 +416,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           l_Handle.get_z_sorting();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiRenderObject,
                                             z_sorting, uint32_t);
@@ -487,8 +428,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           *((uint32_t *)p_Data) = l_Handle.get_z_sorting();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -506,8 +445,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           l_Handle.get_mesh();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, UiRenderObject, mesh, Low::Renderer::Mesh);
@@ -517,8 +454,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           *((Low::Renderer::Mesh *)p_Data) = l_Handle.get_mesh();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -536,8 +471,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           l_Handle.get_draw_commands();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, UiRenderObject, draw_commands,
@@ -548,8 +481,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           *((Low::Util::List<UiDrawCommand> *)p_Data) =
               l_Handle.get_draw_commands();
         };
@@ -568,8 +499,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           l_Handle.is_uploaded();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiRenderObject,
                                             uploaded, bool);
@@ -582,8 +511,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           *((bool *)p_Data) = l_Handle.is_uploaded();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -601,8 +528,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           l_Handle.get_slot();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiRenderObject,
                                             slot, uint32_t);
@@ -615,8 +540,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           *((uint32_t *)p_Data) = l_Handle.get_slot();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -634,8 +557,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           l_Handle.is_dirty();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiRenderObject,
                                             dirty, bool);
@@ -648,8 +569,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           *((bool *)p_Data) = l_Handle.is_dirty();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -667,8 +586,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           l_Handle.is_z_dirty();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiRenderObject,
                                             z_dirty, bool);
@@ -681,8 +598,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           *((bool *)p_Data) = l_Handle.is_z_dirty();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -700,8 +615,6 @@ namespace Low {
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiRenderObject,
                                             name, Low::Util::Name);
@@ -714,8 +627,6 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiRenderObject l_Handle = p_Handle.get_id();
-          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
-              l_Handle);
           *((Low::Util::Name *)p_Data) = l_Handle.get_name();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -760,19 +671,15 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
-      ms_PagesLock.lock();
       for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
         Low::Util::Instances::Page *i_Page = *it;
         free(i_Page->buffer);
         free(i_Page->slots);
-        free(i_Page->lockWords);
         delete i_Page;
         it = ms_Pages.erase(it);
       }
 
       ms_Capacity = 0;
-
-      ms_PagesLock.unlock();
     }
 
     Low::Util::Handle UiRenderObject::_find_by_index(uint32_t p_Index)
@@ -794,8 +701,6 @@ namespace Low {
         l_Handle.m_Data.m_Generation = 0;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       l_Handle.m_Data.m_Generation =
           l_Page->slots[l_SlotIndex].m_Generation;
 
@@ -828,8 +733,6 @@ namespace Low {
         return false;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-          l_Page->mutex);
       return m_Data.m_Type == UiRenderObject::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
@@ -855,8 +758,6 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
-      Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
-          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
@@ -994,7 +895,6 @@ namespace Low {
     uint64_t UiRenderObject::get_canvas_handle() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_canvas_handle
 
@@ -1005,7 +905,6 @@ namespace Low {
     void UiRenderObject::set_canvas_handle(uint64_t p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_canvas_handle
 
@@ -1024,7 +923,6 @@ namespace Low {
     Texture UiRenderObject::get_texture() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_texture
 
@@ -1035,7 +933,6 @@ namespace Low {
     void UiRenderObject::set_texture(Texture p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_texture
 
@@ -1065,7 +962,6 @@ namespace Low {
     Low::Math::Vector3 UiRenderObject::get_position() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_position
 
@@ -1103,7 +999,6 @@ namespace Low {
     void UiRenderObject::set_position(Low::Math::Vector3 p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_position
 
@@ -1128,7 +1023,6 @@ namespace Low {
     Low::Math::Vector2 UiRenderObject::get_size() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_size
 
@@ -1159,7 +1053,6 @@ namespace Low {
     void UiRenderObject::set_size(Low::Math::Vector2 p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_size
 
@@ -1183,7 +1076,6 @@ namespace Low {
     float UiRenderObject::get_rotation2D() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_rotation2D
 
@@ -1194,7 +1086,6 @@ namespace Low {
     void UiRenderObject::set_rotation2D(float p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_rotation2D
 
@@ -1218,7 +1109,6 @@ namespace Low {
     Low::Math::Color UiRenderObject::get_color() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_color
 
@@ -1229,7 +1119,6 @@ namespace Low {
     void UiRenderObject::set_color(Low::Math::Color p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_color
 
@@ -1253,7 +1142,6 @@ namespace Low {
     Low::Math::Vector4 UiRenderObject::get_uv_rect() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_uv_rect
 
@@ -1264,7 +1152,6 @@ namespace Low {
     void UiRenderObject::set_uv_rect(Low::Math::Vector4 p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_uv_rect
 
@@ -1292,7 +1179,6 @@ namespace Low {
     Material UiRenderObject::get_material() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_material
 
@@ -1303,7 +1189,6 @@ namespace Low {
     void UiRenderObject::set_material(Material p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material
 
@@ -1334,7 +1219,6 @@ namespace Low {
     uint32_t UiRenderObject::get_z_sorting() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_z_sorting
 
@@ -1345,7 +1229,6 @@ namespace Low {
     void UiRenderObject::set_z_sorting(uint32_t p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_z_sorting
 
@@ -1370,7 +1253,6 @@ namespace Low {
     Low::Renderer::Mesh UiRenderObject::get_mesh() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mesh
 
@@ -1381,7 +1263,6 @@ namespace Low {
     void UiRenderObject::set_mesh(Low::Renderer::Mesh p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mesh
 
@@ -1407,7 +1288,6 @@ namespace Low {
     UiRenderObject::get_draw_commands() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_draw_commands
 
@@ -1420,7 +1300,6 @@ namespace Low {
     bool UiRenderObject::is_uploaded() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_uploaded
 
@@ -1436,7 +1315,6 @@ namespace Low {
     void UiRenderObject::set_uploaded(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_uploaded
 
@@ -1455,7 +1333,6 @@ namespace Low {
     uint32_t UiRenderObject::get_slot() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_slot
 
@@ -1466,7 +1343,6 @@ namespace Low {
     void UiRenderObject::set_slot(uint32_t p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_slot
 
@@ -1485,7 +1361,6 @@ namespace Low {
     bool UiRenderObject::is_dirty() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dirty
 
@@ -1501,7 +1376,6 @@ namespace Low {
     void UiRenderObject::set_dirty(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dirty
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
@@ -1532,7 +1406,6 @@ namespace Low {
     bool UiRenderObject::is_z_dirty() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_z_dirty
 
@@ -1548,7 +1421,6 @@ namespace Low {
     void UiRenderObject::set_z_dirty(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_z_dirty
 
@@ -1581,7 +1453,6 @@ namespace Low {
     Low::Util::Name UiRenderObject::get_name() const
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
 
@@ -1592,7 +1463,6 @@ namespace Low {
     void UiRenderObject::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
-      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
 
@@ -1626,27 +1496,21 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
     }
 
-    uint32_t UiRenderObject::create_instance(
-        u32 &p_PageIndex, u32 &p_SlotIndex,
-        Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
+    uint32_t UiRenderObject::create_instance(u32 &p_PageIndex,
+                                             u32 &p_SlotIndex)
     {
-      LOCK_PAGES_WRITE(l_PagesLock);
       u32 l_Index = 0;
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
       bool l_FoundIndex = false;
-      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
       for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
            ++l_PageIndex) {
-        Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
-            ms_Pages[l_PageIndex]->mutex);
         for (l_SlotIndex = 0;
              l_SlotIndex < ms_Pages[l_PageIndex]->size;
              ++l_SlotIndex) {
           if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied) {
             l_FoundIndex = true;
-            l_PageLock = std::move(i_PageLock);
             break;
           }
           l_Index++;
@@ -1658,15 +1522,10 @@ namespace Low {
       if (!l_FoundIndex) {
         l_SlotIndex = 0;
         l_PageIndex = create_page();
-        Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
-            ms_Pages[l_PageIndex]->mutex);
-        l_PageLock = std::move(l_NewLock);
       }
       ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
       p_PageIndex = l_PageIndex;
       p_SlotIndex = l_SlotIndex;
-      p_PageLock = std::move(l_PageLock);
-      LOCK_UNLOCK(l_PagesLock);
       return l_Index;
     }
 

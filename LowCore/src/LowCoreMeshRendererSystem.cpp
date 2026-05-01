@@ -28,8 +28,6 @@ namespace Low {
             Component::MeshRenderer i_MeshRenderer =
                 l_MeshRenderers[i];
 
-            LOCK_HANDLE(i_MeshRenderer);
-
             Component::Transform i_Transform =
                 i_MeshRenderer.get_entity().get_transform();
 
@@ -51,8 +49,6 @@ namespace Low {
 
             Renderer::RenderObject i_RenderObject =
                 i_MeshRenderer.get_render_object();
-
-            LOCK_HANDLE(i_RenderObject);
 
             if (!i_RenderObject.is_alive()) {
               continue;

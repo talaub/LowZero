@@ -32,11 +32,6 @@ namespace Low {
                                      LOW_NAME(3059545723));
       uint32_t PrefabInstance::ms_Capacity = 0u;
       uint32_t PrefabInstance::ms_PageSize = 0u;
-      Low::Util::SharedMutex PrefabInstance::ms_LivingMutex;
-      Low::Util::SharedMutex PrefabInstance::ms_PagesMutex;
-      Low::Util::UniqueLock<Low::Util::SharedMutex>
-          PrefabInstance::ms_PagesLock(PrefabInstance::ms_PagesMutex,
-                                       std::defer_lock);
       Low::Util::List<PrefabInstance>
           PrefabInstance::ms_LivingInstances;
       Low::Util::List<Low::Util::Instances::Page *>
@@ -62,19 +57,13 @@ namespace Low {
       {
         u32 l_PageIndex = 0;
         u32 l_SlotIndex = 0;
-        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
-        uint32_t l_Index =
-            create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
+        uint32_t l_Index = create_instance(l_PageIndex, l_SlotIndex);
 
         PrefabInstance l_Handle;
         l_Handle.m_Data.m_Index = l_Index;
         l_Handle.m_Data.m_Generation =
             ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
         l_Handle.m_Data.m_Type = PrefabInstance::ms_TypeId;
-
-        l_PageLock.unlock();
-
-        Low::Util::HandleLock<PrefabInstance> l_HandleLock(l_Handle);
 
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, PrefabInstance, prefab,
                                    Prefab)) Prefab();
@@ -89,11 +78,7 @@ namespace Low {
         l_Handle.set_entity(p_Entity);
         p_Entity.add_component(l_Handle);
 
-        {
-          Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-              ms_LivingMutex);
-          ms_LivingInstances.push_back(l_Handle);
-        }
+        ms_LivingInstances.push_back(l_Handle);
 
         if (p_UniqueId > 0ull) {
           l_Handle.set_unique_id(p_UniqueId);
@@ -116,7 +101,6 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         {
-          Low::Util::HandleLock<PrefabInstance> l_Lock(get_id());
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
           // LOW_CODEGEN::END::CUSTOM:DESTROY
@@ -132,14 +116,9 @@ namespace Low {
                                        l_SlotIndex));
         Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
-        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-            l_Page->mutex);
         l_Page->slots[l_SlotIndex].m_Occupied = false;
         l_Page->slots[l_SlotIndex].m_Generation++;
 
-        ms_PagesLock.lock();
-        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
-            ms_LivingMutex);
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end();) {
           if (it->get_id() == get_id()) {
@@ -148,8 +127,6 @@ namespace Low {
             it++;
           }
         }
-        ms_PagesLock.unlock();
-        l_LivingLock.unlock();
       }
 
       void PrefabInstance::initialize()
@@ -157,7 +134,6 @@ namespace Low {
         const Low::Util::TypeIdentifier l_IdentifierNames(
             N(LowCore), N(PrefabInstance));
 
-        LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -180,7 +156,6 @@ namespace Low {
           }
           ms_Capacity = l_Capacity;
         }
-        LOCK_UNLOCK(l_PagesLock);
 
         Low::Util::RTTI::TypeInfo l_TypeInfo;
         l_TypeInfo.name = N(PrefabInstance);
@@ -215,8 +190,6 @@ namespace Low {
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             PrefabInstance l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<PrefabInstance> l_HandleLock(
-                l_Handle);
             l_Handle.get_prefab();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, PrefabInstance, prefab, Prefab);
@@ -229,8 +202,6 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             PrefabInstance l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<PrefabInstance> l_HandleLock(
-                l_Handle);
             *((Prefab *)p_Data) = l_Handle.get_prefab();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -249,8 +220,6 @@ namespace Low {
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             PrefabInstance l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<PrefabInstance> l_HandleLock(
-                l_Handle);
             l_Handle.get_overrides();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, PrefabInstance, overrides,
@@ -266,8 +235,6 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             PrefabInstance l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<PrefabInstance> l_HandleLock(
-                l_Handle);
             *((Util::Map<uint16_t, Util::List<Util::Name>> *)p_Data) =
                 l_Handle.get_overrides();
           };
@@ -286,8 +253,6 @@ namespace Low {
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             PrefabInstance l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<PrefabInstance> l_HandleLock(
-                l_Handle);
             l_Handle.get_entity();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, PrefabInstance, entity, Low::Core::Entity);
@@ -300,8 +265,6 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             PrefabInstance l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<PrefabInstance> l_HandleLock(
-                l_Handle);
             *((Low::Core::Entity *)p_Data) = l_Handle.get_entity();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -319,8 +282,6 @@ namespace Low {
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             PrefabInstance l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<PrefabInstance> l_HandleLock(
-                l_Handle);
             l_Handle.get_unique_id();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, PrefabInstance, unique_id,
@@ -331,8 +292,6 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             PrefabInstance l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<PrefabInstance> l_HandleLock(
-                l_Handle);
             *((Low::Util::UniqueId *)p_Data) =
                 l_Handle.get_unique_id();
           };
@@ -412,19 +371,15 @@ namespace Low {
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
-        ms_PagesLock.lock();
         for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
           Low::Util::Instances::Page *i_Page = *it;
           free(i_Page->buffer);
           free(i_Page->slots);
-          free(i_Page->lockWords);
           delete i_Page;
           it = ms_Pages.erase(it);
         }
 
         ms_Capacity = 0;
-
-        ms_PagesLock.unlock();
       }
 
       Low::Util::Handle
@@ -447,8 +402,6 @@ namespace Low {
           l_Handle.m_Data.m_Generation = 0;
         }
         Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-            l_Page->mutex);
         l_Handle.m_Data.m_Generation =
             l_Page->slots[l_SlotIndex].m_Generation;
 
@@ -482,8 +435,6 @@ namespace Low {
           return false;
         }
         Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
-            l_Page->mutex);
         return m_Data.m_Type == PrefabInstance::ms_TypeId &&
                l_Page->slots[l_SlotIndex].m_Occupied &&
                l_Page->slots[l_SlotIndex].m_Generation ==
@@ -662,7 +613,6 @@ namespace Low {
       Prefab PrefabInstance::get_prefab() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<PrefabInstance> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_prefab
 
@@ -673,7 +623,6 @@ namespace Low {
       void PrefabInstance::set_prefab(Prefab p_Value)
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<PrefabInstance> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_prefab
 
@@ -693,7 +642,6 @@ namespace Low {
       PrefabInstance::get_overrides() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<PrefabInstance> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_overrides
 
@@ -707,7 +655,6 @@ namespace Low {
           Util::Map<uint16_t, Util::List<Util::Name>> &p_Value)
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<PrefabInstance> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_overrides
 
@@ -729,7 +676,6 @@ namespace Low {
       Low::Core::Entity PrefabInstance::get_entity() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<PrefabInstance> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_entity
 
@@ -740,7 +686,6 @@ namespace Low {
       void PrefabInstance::set_entity(Low::Core::Entity p_Value)
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<PrefabInstance> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_entity
 
@@ -759,7 +704,6 @@ namespace Low {
       Low::Util::UniqueId PrefabInstance::get_unique_id() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<PrefabInstance> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
 
@@ -771,7 +715,6 @@ namespace Low {
       void PrefabInstance::set_unique_id(Low::Util::UniqueId p_Value)
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<PrefabInstance> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
 
@@ -791,7 +734,6 @@ namespace Low {
       void PrefabInstance::update_component_from_prefab(
           uint16_t p_ComponentType)
       {
-        Low::Util::HandleLock<PrefabInstance> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_component_from_prefab
 
         Util::RTTI::TypeInfo &l_TypeInfo =
@@ -830,7 +772,6 @@ namespace Low {
 
       void PrefabInstance::update_from_prefab()
       {
-        Low::Util::HandleLock<PrefabInstance> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_from_prefab
 
         Entity l_Entity = get_entity();
@@ -865,7 +806,6 @@ namespace Low {
                                     Util::Name p_PropertyName,
                                     bool p_IsOverride)
       {
-        Low::Util::HandleLock<PrefabInstance> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_override
 
         if (p_IsOverride) {
@@ -888,21 +828,16 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_override
       }
 
-      uint32_t PrefabInstance::create_instance(
-          u32 &p_PageIndex, u32 &p_SlotIndex,
-          Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
+      uint32_t PrefabInstance::create_instance(u32 &p_PageIndex,
+                                               u32 &p_SlotIndex)
       {
-        LOCK_PAGES_WRITE(l_PagesLock);
         u32 l_Index = 0;
         u32 l_PageIndex = 0;
         u32 l_SlotIndex = 0;
         bool l_FoundIndex = false;
-        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
         for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
              ++l_PageIndex) {
-          Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
-              ms_Pages[l_PageIndex]->mutex);
           for (l_SlotIndex = 0;
                l_SlotIndex < ms_Pages[l_PageIndex]->size;
                ++l_SlotIndex) {
@@ -910,7 +845,6 @@ namespace Low {
                      ->slots[l_SlotIndex]
                      .m_Occupied) {
               l_FoundIndex = true;
-              l_PageLock = std::move(i_PageLock);
               break;
             }
             l_Index++;
@@ -922,15 +856,10 @@ namespace Low {
         if (!l_FoundIndex) {
           l_SlotIndex = 0;
           l_PageIndex = create_page();
-          Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
-              ms_Pages[l_PageIndex]->mutex);
-          l_PageLock = std::move(l_NewLock);
         }
         ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
         p_PageIndex = l_PageIndex;
         p_SlotIndex = l_SlotIndex;
-        p_PageLock = std::move(l_PageLock);
-        LOCK_UNLOCK(l_PagesLock);
         return l_Index;
       }
 
