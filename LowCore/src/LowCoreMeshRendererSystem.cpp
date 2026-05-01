@@ -28,6 +28,8 @@ namespace Low {
             Component::MeshRenderer i_MeshRenderer =
                 l_MeshRenderers[i];
 
+            Entity i_Entity = i_MeshRenderer.get_entity();
+
             Component::Transform i_Transform =
                 i_MeshRenderer.get_entity().get_transform();
 
@@ -45,6 +47,8 @@ namespace Low {
                   Renderer::RenderObject::make(
                       Renderer::get_global_renderscene(),
                       i_MeshRenderer.get_mesh()));
+              i_MeshRenderer.get_render_object().set_object_id(
+                  i_Entity.get_index());
             }
 
             Renderer::RenderObject i_RenderObject =

@@ -11,3 +11,4 @@ layout(location = 4) in mat3 in_TBN;
 layout (location = 0) out vec4 o_Albedo;
 layout (location = 1) out vec4 o_Normals;
 layout (location = 2) out vec4 o_ViewPosition;
+layout (location = 3) out uint o_ObjectId;

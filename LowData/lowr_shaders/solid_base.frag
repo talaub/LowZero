@@ -28,6 +28,7 @@ void main()
             */
 
     o_ViewPosition = vec4(in_ViewPosition, 1.0f);
+    o_ObjectId = uint(RENDER_OBJECT.objectId);
 
     o_Normals = vec4(vec3((in_SurfaceNormal.x + 1.0) / 2.0,
                 (in_SurfaceNormal.y + 1.0) / 2.0,

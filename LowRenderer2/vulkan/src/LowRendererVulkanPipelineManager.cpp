@@ -5,6 +5,10 @@
 
 #include "LowUtil.h"
 
+#ifndef LOW_RENDERER_COMPILE_SHADERS
+#define LOW_RENDERER_COMPILE_SHADERS 0
+#endif
+
 namespace Low {
   namespace Renderer {
     namespace Vulkan {
@@ -23,7 +27,7 @@ namespace Low {
         static bool compile_shader(Util::String p_SourcePath,
                                    Util::String p_OutPath)
         {
-#if 1
+#if LOW_RENDERER_COMPILE_SHADERS
           Util::String l_IncludeCommand =
               "-I " + Util::get_project().engineDataPath +
               "\\lowr_shaders\\lib";
@@ -57,12 +61,10 @@ namespace Low {
           vkDestroyPipeline(Global::get_device(), p_Pipeline.get(),
                             nullptr);
 
-          // #if LOW_RENDERER_COMPILE_SHADERS
           if (p_CompileShaders) {
             compile_shader(l_Builder.vertexShaderPath);
             compile_shader(l_Builder.fragmentShaderPath);
           }
-          // #endif
 
           // Update shaders in builder
           l_Builder.update_shaders();
@@ -86,11 +88,9 @@ namespace Low {
           vkDestroyPipeline(Global::get_device(), p_Pipeline.get(),
                             nullptr);
 
-          // #if LOW_RENDERER_COMPILE_SHADERS
           if (p_CompileShaders) {
             compile_shader(l_Builder.computeShaderPath);
           }
-          // #endif
 
           // Update shaders in builder
           l_Builder.update_shader();
@@ -170,7 +170,9 @@ namespace Low {
             if (i_SourcesEntry != g_Sources.end()) {
               Pipeline i_Pipeline = i_SourcesEntry->second;
 
+#if LOW_RENDERER_COMPILE_SHADERS
               compile_shader(i_SourcePath);
+#endif
 
               auto i_GraphicsEntry =
                   g_GraphicsPipelines.find(i_Pipeline);
@@ -190,14 +192,14 @@ namespace Low {
         bool tick(float p_Delta)
         {
           // LOW_PROFILE_CPU("Renderer", "Pipeline manager");
-          // #if LOW_RENDERER_COMPILE_SHADERS
+#if LOW_RENDERER_COMPILE_SHADERS
           static float l_Count = 100.0f;
           if (l_Count > 1.0f) {
             do_tick(p_Delta);
             l_Count = 0.0f;
           }
           l_Count += p_Delta;
-          // #endif
+#endif
 
           return true;
         }
