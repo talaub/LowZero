@@ -46,7 +46,7 @@ vec3 compute_lighting(vec3 fragPos, vec3 normal) {
     //uvec2 record = clusterRecords[clusterIndex];
     //uint offset = record.x;
     //uint count  = record.y;
-    uint offset = clusterIndex;
+    uint offset = clusterIndex * MAX_POINTLIGHTS_PER_CLUSTER;
 
     vec3 color = vec3(0.0);
 
@@ -103,11 +103,11 @@ void main() {
 
     // Fetch the albedo (diffuse color) from the albedo texture
     vec3 albedo = texture(g_Texture2Ds[g_ViewInfo.gbufferIndices.x], uv).rgb;
-    // Fetch the normal from the normal texture (assuming normals are stored in tangent space)
-    vec3 normal = normalize(texture(g_Texture2Ds[g_ViewInfo.gbufferIndices.y], uv).rgb * 2.0 - 1.0); // Assuming normal map is in [0, 1] range
+    vec3 normalWorld = normalize(texture(g_Texture2Ds[g_ViewInfo.gbufferIndices.y], uv).rgb * 2.0 - 1.0);
+    vec3 normalView = normalize(mat3(g_ViewInfo.viewMatrix) * normalWorld);
 
     // Compute lighting
-    vec3 lighting = compute_lighting(fragPosView, normal);
+    vec3 lighting = compute_lighting(fragPosView, normalView);
 
     // Sample SSAO texture
     float ao = texture(g_Texture2Ds[g_ViewInfo.textureIndices.x], uv).r;

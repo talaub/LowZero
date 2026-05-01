@@ -36,7 +36,8 @@ void main() {
      //vec3 fragPos = reconstructViewPos(texCoords, depth);
      vec3 fragPos = texture(VIEW_GBUFFER_VIEWPOSITION, texCoords).xyz;
 
-    vec3 normal = normalize(texture(VIEW_GBUFFER_NORMAL, texCoords).xyz);
+    vec3 normalWorld = normalize(texture(VIEW_GBUFFER_NORMAL, texCoords).xyz * 2.0 - 1.0);
+    vec3 normal = normalize(mat3(g_ViewInfo.viewMatrix) * normalWorld);
 
     // Get random vector from noise texture
     vec3 randomVec = normalize(texture(texNoise, texCoords * params.noiseScale).xyz);

@@ -10,7 +10,8 @@ void main()
 
   o_InstanceId = 1;
   o_TextureCoordinates = VERTEX.textureCoordinates;
-  o_SurfaceNormal = VERTEX.normal;
+  mat3 normalMatrix = transpose(inverse(mat3(RENDER_OBJECT.worldMatrix)));
+  o_SurfaceNormal = normalize(normalMatrix * VERTEX.normal);
 
   o_ViewPosition = (g_ViewInfo.viewMatrix*l_WorldPosition).xyz;
 
@@ -18,8 +19,7 @@ void main()
                           vec4(VERTEX.tangent, 0.0)));
   vec3 B = normalize(vec3(RENDER_OBJECT.worldMatrix *
                           vec4(VERTEX.bitangent, 0.0)));
-  vec3 N = normalize(vec3(RENDER_OBJECT.worldMatrix *
-                          vec4(VERTEX.normal, 0.0)));
+  vec3 N = o_SurfaceNormal;
   mat3 TBN = mat3(T, B, N);
   o_TBN = TBN;
 }

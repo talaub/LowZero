@@ -25,11 +25,12 @@
 namespace Low {
   namespace Renderer {
     namespace Vulkan {
-      struct PointLightInfo
+      struct alignas(16) PointLightInfo
       {
-        Math::Vector4 transform;
-        Math::Vector4 color;
-        bool active;
+        alignas(16) Math::Vector4 transform;
+        alignas(16) Math::Vector4 color;
+        uint32_t active;
+        uint32_t _padding[3];
       };
 
       struct RenderEntryPushConstant

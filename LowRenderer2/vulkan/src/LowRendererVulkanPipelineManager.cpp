@@ -23,7 +23,7 @@ namespace Low {
         static bool compile_shader(Util::String p_SourcePath,
                                    Util::String p_OutPath)
         {
-#if 0
+#if 1
           Util::String l_IncludeCommand =
               "-I " + Util::get_project().engineDataPath +
               "\\lowr_shaders\\lib";
@@ -54,8 +54,8 @@ namespace Low {
               g_GraphicsPipelines[p_Pipeline];
 
           // Destroy old pipeline
-          vkDestroyPipeline(Global::get_device(),
-                            p_Pipeline.get(), nullptr);
+          vkDestroyPipeline(Global::get_device(), p_Pipeline.get(),
+                            nullptr);
 
           // #if LOW_RENDERER_COMPILE_SHADERS
           if (p_CompileShaders) {
@@ -83,8 +83,8 @@ namespace Low {
               g_ComputePipelines[p_Pipeline];
 
           // Destroy old pipeline
-          vkDestroyPipeline(Global::get_device(),
-                            p_Pipeline.get(), nullptr);
+          vkDestroyPipeline(Global::get_device(), p_Pipeline.get(),
+                            nullptr);
 
           // #if LOW_RENDERER_COMPILE_SHADERS
           if (p_CompileShaders) {

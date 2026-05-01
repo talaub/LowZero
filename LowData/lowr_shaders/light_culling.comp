@@ -34,16 +34,16 @@ vec3 ClusterCorner(uvec3 clusterID, vec3 corner) {
     // Mix min/max depending on corner (0 or 1 per axis)
     vec3 c = mix(cMin, cMax, corner);
 
-    // Logarithmic depth
+    // Logarithmic view depth. The camera looks down -Z in view space.
     float logDepth = mix(log(g_ViewInfo.nearFarPlane.x), log(g_ViewInfo.nearFarPlane.y), c.z);
     float depth = exp(logDepth);
 
-    // Map NDC XY from 0..1 to -1..1
-    vec4 clipPos = vec4(c.xy * 2.0 - 1.0, depth, 1.0);
-
-    // Convert to view space
+    // Unproject the screen-space corner onto the near plane, then scale the
+    // ray to the requested view-space depth.
+    vec4 clipPos = vec4(c.xy * 2.0 - 1.0, 0.0, 1.0);
     vec4 viewPos = g_ViewInfo.inverseProjectionMatrix * clipPos;
-    return viewPos.xyz / viewPos.w;
+    viewPos /= viewPos.w;
+    return viewPos.xyz * (-depth / viewPos.z);
 }
 
 void GetClusterAABB(uvec3 clusterID, out vec3 minBounds, out vec3 maxBounds) {
