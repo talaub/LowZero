@@ -2,7 +2,6 @@
 #include "LowUtilVersion.h"
 
 #include <iostream>
-#include <string>
 
 #include "LowMath.h"
 #include "imgui.h"
@@ -55,8 +54,11 @@
 #include "LowCorePrefabInstance.h"
 #include "LowCorePhysicsSystem.h"
 
+#include <array>
+#include <cctype>
 #include <chrono>
 #include <cstddef>
+#include <cstdio>
 #include <functional>
 #include <future>
 #include <ctype.h>
@@ -115,6 +117,162 @@ namespace Low {
 #else
       return false;
 #endif
+    }
+
+    static Util::String trim_status_text(const Util::String &p_Text)
+    {
+      size_t l_Begin = 0;
+      while (
+          l_Begin < p_Text.size() &&
+          std::isspace(static_cast<unsigned char>(p_Text[l_Begin]))) {
+        l_Begin++;
+      }
+
+      size_t l_End = p_Text.size();
+      while (l_End > l_Begin &&
+             std::isspace(
+                 static_cast<unsigned char>(p_Text[l_End - 1]))) {
+        l_End--;
+      }
+
+      return p_Text.substr(l_Begin, l_End - l_Begin);
+    }
+
+    static Util::String
+    quote_command_argument(const Util::String &p_Text)
+    {
+      Util::String l_Result = "\"";
+      for (char i_Char : p_Text) {
+        if (i_Char == '"') {
+          l_Result += "\\\"";
+        } else {
+          l_Result += i_Char;
+        }
+      }
+      l_Result += "\"";
+      return l_Result;
+    }
+
+    static Util::String
+    run_status_command(const Util::String &p_Command)
+    {
+      std::array<char, 256> l_Buffer;
+      Util::String l_Result;
+
+#ifdef _WIN32
+      FILE *l_Pipe = _popen(p_Command.c_str(), "r");
+#else
+      FILE *l_Pipe = popen(p_Command.c_str(), "r");
+#endif
+      if (!l_Pipe) {
+        return "";
+      }
+
+      while (fgets(l_Buffer.data(), static_cast<int>(l_Buffer.size()),
+                   l_Pipe)) {
+        l_Result += l_Buffer.data();
+      }
+
+#ifdef _WIN32
+      _pclose(l_Pipe);
+#else
+      pclose(l_Pipe);
+#endif
+
+      return l_Result;
+    }
+
+    static Util::String refresh_project_git_status()
+    {
+      const Util::String l_ProjectRoot = Util::get_project().rootPath;
+      if (l_ProjectRoot.empty()) {
+        return "";
+      }
+
+      const Util::String l_Command =
+          Util::StringBuilder()
+              .append("git -C ")
+              .append(quote_command_argument(l_ProjectRoot))
+              .append(" status --short --branch 2>nul")
+              .get();
+      const Util::String l_Output = run_status_command(l_Command);
+      if (l_Output.empty()) {
+        return "";
+      }
+
+      size_t l_LineStart = 0;
+      bool l_ReadBranch = false;
+      Util::String l_Branch = "";
+      uint32_t l_ChangedFiles = 0;
+
+      while (l_LineStart < l_Output.size()) {
+        size_t l_LineEnd = l_Output.find('\n', l_LineStart);
+        if (l_LineEnd == Util::String::npos) {
+          l_LineEnd = l_Output.size();
+        }
+
+        Util::String l_Line = trim_status_text(
+            l_Output.substr(l_LineStart, l_LineEnd - l_LineStart));
+        if (!l_Line.empty()) {
+          if (!l_ReadBranch && l_Line.rfind("## ", 0) == 0) {
+            l_Branch = l_Line.substr(3);
+            const size_t l_TrackingStart = l_Branch.find("...");
+            if (l_TrackingStart != Util::String::npos) {
+              l_Branch = l_Branch.substr(0, l_TrackingStart);
+            }
+
+            const size_t l_StatusStart = l_Branch.find(" [");
+            if (l_StatusStart != Util::String::npos) {
+              l_Branch = l_Branch.substr(0, l_StatusStart);
+            }
+
+            l_Branch = trim_status_text(l_Branch);
+            l_ReadBranch = true;
+          } else {
+            l_ChangedFiles++;
+          }
+        }
+
+        l_LineStart = l_LineEnd + 1;
+      }
+
+      if (l_Branch.empty()) {
+        return "";
+      }
+
+      Util::String l_Status = ICON_CI_GIT_BRANCH " ";
+      l_Status += l_Branch;
+      /*
+      if (l_ChangedFiles > 0) {
+        l_Status += " +";
+        l_Status += LOW_TO_STRING(l_ChangedFiles);
+      }
+      */
+
+      return l_Status;
+    }
+
+    static Util::String get_project_git_status(float p_Delta)
+    {
+      static float l_RefreshTimer = 10.0f;
+      static Util::String l_CachedStatus = "";
+      static std::future<Util::String> l_PendingRefresh;
+
+      if (l_PendingRefresh.valid() &&
+          l_PendingRefresh.wait_for(std::chrono::seconds(0)) ==
+              std::future_status::ready) {
+        l_CachedStatus = l_PendingRefresh.get();
+      }
+
+      l_RefreshTimer += p_Delta;
+      if (l_RefreshTimer >= 10.0f && !l_PendingRefresh.valid()) {
+        l_RefreshTimer = 0.0f;
+        l_PendingRefresh = std::async(std::launch::async, [] {
+          return refresh_project_git_status();
+        });
+      }
+
+      return l_CachedStatus;
     }
 
     Util::Map<Util::String, EditorWidget> &get_editor_widgets()
@@ -543,21 +701,20 @@ namespace Low {
           ImGui::EndMenu();
         }
 
-        std::string l_MinorVersion = LOW_VERSION_MINOR;
-        const std::string l_DevSuffix = "-DEV";
+        Util::String l_MinorVersion = LOW_VERSION_MINOR;
+        const Util::String l_DevSuffix = "-DEV";
         const bool l_IsDevVersion =
             l_MinorVersion.size() >= l_DevSuffix.size() &&
-            l_MinorVersion.compare(l_MinorVersion.size() -
-                                       l_DevSuffix.size(),
-                                   l_DevSuffix.size(),
-                                   l_DevSuffix) == 0;
+            l_MinorVersion.compare(
+                l_MinorVersion.size() - l_DevSuffix.size(),
+                l_DevSuffix.size(), l_DevSuffix) == 0;
 
         if (l_IsDevVersion) {
           l_MinorVersion.resize(l_MinorVersion.size() -
                                 l_DevSuffix.size());
         }
 
-        std::string l_VersionString = "";
+        Util::String l_VersionString = "";
         l_VersionString += LOW_VERSION_YEAR;
         l_VersionString += ".";
         l_VersionString += LOW_VERSION_MAJOR;
@@ -574,22 +731,21 @@ namespace Low {
         const float l_VersionWidth =
             ImGui::CalcTextSize(l_VersionString.c_str()).x;
         const float l_DevWidth =
-            l_IsDevVersion ? ImGui::CalcTextSize(l_DevLabel).x
-                           : 0.0f;
+            l_IsDevVersion ? ImGui::CalcTextSize(l_DevLabel).x : 0.0f;
         const float l_DebuggerWidth =
             l_DebuggerAttached
                 ? ImGui::CalcTextSize(l_DebuggerLabel).x
                 : 0.0f;
-        const float l_StatusWidth =
-            l_VersionWidth + l_DevSpacing + l_DevWidth +
-            l_DebuggerSpacing + l_DebuggerWidth;
+        const float l_StatusWidth = l_VersionWidth + l_DevSpacing +
+                                    l_DevWidth + l_DebuggerSpacing +
+                                    l_DebuggerWidth;
 
         ImGuiViewport *l_Viewport = ImGui::GetMainViewport();
         ImVec2 l_Cursor = ImGui::GetCursorPos();
         const float l_ControlWidth = 46.0f * 3.0f;
-        float l_PointToAchieve =
-            l_Viewport->WorkSize.x - l_StatusWidth - 12.0f -
-            l_ControlWidth;
+        float l_PointToAchieve = l_Viewport->WorkSize.x -
+                                 l_StatusWidth - 12.0f -
+                                 l_ControlWidth;
         float l_CurrentMargin = l_Cursor.x;
         float l_Spacing = l_PointToAchieve - l_CurrentMargin;
 
@@ -701,6 +857,95 @@ namespace Low {
       }
     }
 
+    static Util::String build_status_bar_context()
+    {
+      Util::String l_Context;
+
+      Core::Scene l_Scene = Core::Scene::get_loaded_scene();
+      if (l_Scene.is_alive()) {
+        l_Context += ICON_CI_SYMBOL_CLASS " ";
+        l_Context += l_Scene.get_name().c_str();
+      } else {
+        l_Context += ICON_CI_SYMBOL_CLASS " No scene";
+      }
+
+      Util::Handle l_SelectedHandle = get_selected_handle();
+      if (l_SelectedHandle.get_id() == 0 ||
+          !Util::Handle::is_registered_type(
+              l_SelectedHandle.get_type())) {
+        l_Context += "    ";
+        l_Context += ICON_CI_CIRCLE_SLASH " Nothing selected";
+        return l_Context;
+      }
+
+      Util::RTTI::TypeInfo &l_TypeInfo =
+          Util::Handle::get_type_info(l_SelectedHandle.get_type());
+
+      if (!l_TypeInfo.is_alive(l_SelectedHandle)) {
+        l_Context += "    ";
+        l_Context += ICON_CI_CIRCLE_SLASH " Nothing selected";
+        return l_Context;
+      }
+
+      l_Context += "    ";
+      l_Context += ICON_CI_INSPECT " ";
+
+      Core::Entity l_Entity = l_SelectedHandle.get_id();
+      if (l_Entity.is_alive()) {
+        l_Context += l_Entity.get_name().c_str();
+        l_Context += "  ";
+        l_Context += LOW_TO_STRING(l_Entity.get_components().size());
+        l_Context += " components";
+      } else {
+        l_Context += l_TypeInfo.name.c_str();
+      }
+
+      return l_Context;
+    }
+
+    static Util::String build_status_bar_system_text(float p_Delta)
+    {
+      static float l_UpdateTimer = 0.0f;
+      static float l_AccumulatedDelta = 0.0f;
+      static uint32_t l_AccumulatedFrames = 0;
+      static float l_DisplayedFrameMs = 0.0f;
+      static float l_DisplayedFps = 0.0f;
+
+      l_UpdateTimer += p_Delta;
+      l_AccumulatedDelta += p_Delta;
+      l_AccumulatedFrames++;
+
+      if (l_UpdateTimer >= 0.25f && l_AccumulatedDelta > 0.0f) {
+        l_DisplayedFrameMs =
+            (l_AccumulatedDelta /
+             static_cast<float>(l_AccumulatedFrames)) *
+            1000.0f;
+        l_DisplayedFps = static_cast<float>(l_AccumulatedFrames) /
+                         l_AccumulatedDelta;
+        l_UpdateTimer = 0.0f;
+        l_AccumulatedDelta = 0.0f;
+        l_AccumulatedFrames = 0;
+      }
+
+      char l_FrameText[64];
+      std::snprintf(l_FrameText, sizeof(l_FrameText),
+                    "%5.1f ms  %4.0f FPS", l_DisplayedFrameMs,
+                    l_DisplayedFps);
+
+      Util::String l_Text = get_project_git_status(p_Delta);
+      if (!l_Text.empty()) {
+        l_Text += "    ";
+      }
+
+      if (is_editor_job_in_progress()) {
+        l_Text += get_active_editor_job_name().c_str();
+        l_Text += "    ";
+      }
+
+      l_Text += l_FrameText;
+      return l_Text;
+    }
+
     static inline void render_status_bar(float p_Delta)
     {
       float height = ImGui::GetFrameHeight();
@@ -712,12 +957,51 @@ namespace Low {
               ImGuiWindowFlags_NoSavedSettings |
               ImGuiWindowFlags_MenuBar);
       if (ImGui::BeginMenuBar()) {
+        const float l_TextYOffset = 2.0f;
+        ImVec2 l_StatusCursor = ImGui::GetCursorPos();
+        ImGui::SetCursorPos(
+            {l_StatusCursor.x, l_StatusCursor.y + l_TextYOffset});
+
+        ImGui::PushFont(Fonts::UI(12));
+        ImGui::PushStyleColor(
+            ImGuiCol_Text,
+            color_to_imvec4(theme_get_current().subtext));
+        const Util::String l_ContextText = build_status_bar_context();
+        ImGui::TextUnformatted(l_ContextText.c_str());
+        ImGui::PopStyleColor();
+
+        const Util::String l_SystemText =
+            build_status_bar_system_text(p_Delta);
+        const float l_SystemWidth =
+            ImGui::CalcTextSize(l_SystemText.c_str()).x;
+        const float l_SpinnerWidth =
+            is_editor_job_in_progress() ? 24.0f : 0.0f;
+        const float l_RightWidth = l_SystemWidth + l_SpinnerWidth;
+        const float l_RightPadding = 12.0f;
+        const float l_RightX = ImGui::GetWindowContentRegionMax().x -
+                               l_RightWidth - l_RightPadding;
+        const float l_CurrentX = ImGui::GetCursorPosX();
+
+        if (l_RightX > l_CurrentX) {
+          ImGui::SameLine(l_RightX);
+        } else {
+          ImGui::SameLine();
+        }
+        l_StatusCursor = ImGui::GetCursorPos();
+        ImGui::SetCursorPos(
+            {l_StatusCursor.x, l_StatusCursor.y + l_TextYOffset});
+
         if (is_editor_job_in_progress()) {
           Gui::spinner("Loading", 6.0f, 2.0f,
                        Math::Color(0.0f, 0.7f, 0.73f, 1.0f));
-          ImGui::SameLine();
-          ImGui::Text(get_active_editor_job_name().c_str());
+          ImGui::SameLine(0.0f, 8.0f);
         }
+        ImGui::PushStyleColor(
+            ImGuiCol_Text,
+            color_to_imvec4(theme_get_current().subtext));
+        ImGui::TextUnformatted(l_SystemText.c_str());
+        ImGui::PopStyleColor();
+        ImGui::PopFont();
         ImGui::EndMenuBar();
       }
 
