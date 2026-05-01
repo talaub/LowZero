@@ -960,6 +960,13 @@ namespace Low {
       Low::Util::HandleLock<Texture> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_editor_image
 
+      if (get_resource().is_alive()) {
+        Util::String l_ImageName = "texture_";
+        l_ImageName +=
+            Util::hash_to_string(get_resource().get_texture_id());
+        return EditorImage::find_by_name(
+            LOW_NAME(l_ImageName.c_str()));
+      }
       return Util::Handle::DEAD;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_editor_image
     }

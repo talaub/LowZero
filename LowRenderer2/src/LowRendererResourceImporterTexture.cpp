@@ -21,8 +21,11 @@
 #include <filesystem>
 
 #define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
 #include "../../LowDependencies/stb/stb_image.h"
+#include "../../LowDependencies/stb/stb_image_write.h"
+#include "../../LowDependencies/stb/stb_image_resize.h"
 
 namespace Low {
   namespace Renderer {
@@ -78,6 +81,30 @@ namespace Low {
           }
         }
 
+        const u64 l_TextureId =
+            l_Reimport ? l_OriginalTextureResource.get_texture_id()
+                       : l_AssetHash;
+
+        // Generate thumbnail
+        {
+          Util::String l_ThumbName =
+              "texture_" + Util::hash_to_string(l_TextureId) + ".png";
+          Util::String l_ThumbnailPath =
+              Util::project_editor_images_path()
+                  .join("thumbnails")
+                  .join(l_ThumbName)
+                  .get();
+          Util::List<u8> l_ThumbnailPixels;
+          l_ThumbnailPixels.resize(500 * 500 * 4);
+
+          stbir_resize_uint8(l_Data, l_Width, l_Height, 0,
+                             l_ThumbnailPixels.data(), 500, 500, 0,
+                             4);
+
+          stbi_write_png(l_ThumbnailPath.c_str(), 500, 500, 4,
+                         l_ThumbnailPixels.data(), 500 * 4);
+        }
+
         Math::UVector2 l_Dimensions(l_Width, l_Height);
 
         Util::String l_FileName =
@@ -111,10 +138,6 @@ namespace Low {
         // TODO: Allow different filter methods
         gli::texture2d l_TextureMipmaps =
             gli::generate_mipmaps(l_Texture, gli::FILTER_LINEAR);
-
-        const u64 l_TextureId =
-            l_Reimport ? l_OriginalTextureResource.get_texture_id()
-                       : l_AssetHash;
 
         const Util::String l_BaseAssetPath =
             Util::get_project().assetCachePath + "\\" +
@@ -168,6 +191,8 @@ namespace Low {
         if (l_Reimport) {
           Texture l_ReimprotedTexture =
               ResourceManager::find_asset<Texture>(l_TextureId);
+          l_ReimprotedTexture.get_resource().set_asset_hash(
+              l_AssetHash);
           if (l_ReimprotedTexture.get_state() ==
               TextureState::LOADED) {
             ResourceManager::override_loaded_texture(

@@ -10,6 +10,8 @@
 #include "LowRendererMesh.h"
 #include "LowRendererTexture.h"
 #include "LowRendererFont.h"
+#include "LowRendererTextureState.h"
+#include "LowRendererResourceManager.h"
 #include "LowUtilHashing.h"
 #include "LowUtilLogger.h"
 #include <imgui.h>
@@ -152,10 +154,19 @@ namespace Low {
       show_line("Source file",
                 l_Texture.get_resource().get_source_file());
 
-      if (l_Texture.get_state() == Renderer::TextureState::LOADED) {
-        const ImVec2 l_Avail = ImGui::GetContentRegionAvail();
-        ImGui::Image(l_Texture.get_gpu().get_imgui_texture_id(),
-                     ImVec2(l_Avail.x, l_Avail.y));
+      Renderer::EditorImage l_EditorImage =
+          l_Texture.get_editor_image();
+      const ImVec2 l_Avail = ImGui::GetContentRegionAvail();
+      if (l_EditorImage.is_alive()) {
+        if (l_EditorImage.get_state() ==
+            Renderer::TextureState::UNLOADED) {
+          Renderer::ResourceManager::load_editor_image(l_EditorImage);
+        }
+        if (l_EditorImage.get_state() ==
+            Renderer::TextureState::LOADED) {
+          ImGui::Image(l_EditorImage.get_gpu().get_imgui_texture_id(),
+                       ImVec2(l_Avail.x, l_Avail.y));
+        }
       }
     }
 

@@ -396,6 +396,8 @@ namespace Low {
           l_WasLoaded = l_Mesh.get_state() == MeshState::LOADED;
         }
 
+        l_Mesh.get_resource().set_asset_hash(l_AssetHash);
+
         if (l_WasLoaded) {
           ResourceManager::reload_mesh(l_Mesh);
         }

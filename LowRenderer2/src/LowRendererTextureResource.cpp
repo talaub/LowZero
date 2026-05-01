@@ -337,7 +337,10 @@ namespace Low {
                                             asset_hash, uint64_t);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {};
+                                const void *p_Data) -> void {
+          TextureResource l_Handle = p_Handle.get_id();
+          l_Handle.set_asset_hash(*(uint64_t *)p_Data);
+        };
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           TextureResource l_Handle = p_Handle.get_id();

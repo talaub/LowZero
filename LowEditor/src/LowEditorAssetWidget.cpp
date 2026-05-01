@@ -271,6 +271,14 @@ namespace Low {
         }
         break;
       }
+      case AssetType::Texture: {
+        Renderer::Texture l_Texture = p_FileWatcher.handle.get_id();
+
+        if (l_Texture.is_alive()) {
+          l_EditorImage = l_Texture.get_editor_image();
+        }
+        break;
+      }
       }
 
       Util::HandleLock l_EditorImageLock(l_EditorImage, false);

@@ -173,6 +173,7 @@ namespace Low {
       uint64_t get_font_id() const;
 
       uint64_t get_asset_hash() const;
+      void set_asset_hash(uint64_t p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
@@ -201,7 +202,6 @@ namespace Low {
       void set_source_file(Util::String p_Value);
       void set_source_file(const char *p_Value);
       void set_font_id(uint64_t p_Value);
-      void set_asset_hash(uint64_t p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
 

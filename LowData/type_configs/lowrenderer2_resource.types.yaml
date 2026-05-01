@@ -108,7 +108,6 @@ types:
         private_setter: true
       asset_hash:
         type: u64
-        private_setter: true
     functions:
       make:
         static: true
@@ -204,7 +203,6 @@ types:
         private_setter: true
       asset_hash:
         type: u64
-        private_setter: true
     functions:
       make:
         static: true
@@ -393,7 +391,6 @@ types:
         private_setter: true
       asset_hash:
         type: u64
-        private_setter: true
     functions:
       make:
         static: true
