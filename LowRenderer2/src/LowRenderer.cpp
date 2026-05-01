@@ -406,6 +406,7 @@ namespace Low {
     static bool preload_resources()
     {
       {
+#if 0
         Util::List<Util::String> l_FilePaths;
 
         Util::FileIO::list_directory(
@@ -422,8 +423,33 @@ namespace Low {
             i_EditorImage.set_path(i_Path);
           }
         }
+#else
+        Util::AssetManager::TypeRegistratorBuilder l_Builder(
+            N(EditorImage), Renderer::EditorImage::IDENTIFIER);
+        l_Builder.auto_initialize(true)
+            .initialize_on_startup(true)
+            .add_asset_suffix(".png");
+        l_Builder.add_initialize_directory(
+            Util::get_project().editorImagesPath, true);
+        l_Builder
+            .initializer(
+                [](const Util::String p_Path) -> Util::Handle {
+                  Util::String i_NameString =
+                      Util::PathHelper::get_base_name_no_ext(p_Path);
+                  EditorImage i_EditorImage = EditorImage::make(
+                      LOW_NAME(i_NameString.c_str()));
+                  i_EditorImage.set_path(
+                      Util::PathHelper::normalize(p_Path));
+
+                  return i_EditorImage.get_id();
+                })
+            .no_saving();
+
+        Util::AssetManager::register_asset_type(l_Builder.build());
+#endif
       }
 
+#if 0
       {
         Util::List<Util::String> l_MeshResources;
         Util::FileSystem::collect_files_with_suffix(
@@ -446,6 +472,72 @@ namespace Low {
               Mesh::make_from_resource_config(i_ResourceConfig));
         }
       }
+#else
+      Util::AssetManager::TypeRegistratorBuilder l_Builder(
+          N(Mesh), Renderer::Mesh::IDENTIFIER);
+      l_Builder.auto_initialize(true)
+          .initialize_on_startup(true)
+          .add_asset_suffix(".meshresource.yaml");
+      l_Builder.add_initialize_directory(Util::get_project().dataPath,
+                                         true);
+      l_Builder.add_raw_suffix(".obj");
+      l_Builder
+          .add_import_directory(Util::get_project().dataPath, true,
+                                true)
+          .import_on_startup(true);
+
+      l_Builder
+          .initializer([](const Util::String p_Path) -> Util::Handle {
+            Util::Serial::Node i_ResourceNode =
+                Util::Serial::load_yaml_file(p_Path.c_str());
+            MeshResourceConfig i_ResourceConfig;
+
+            LOWR_ASSERT_RETURN(
+                ResourceManager::parse_mesh_resource_config(
+                    p_Path, i_ResourceNode, i_ResourceConfig),
+                "Failed to parse mesh resource config.");
+            Mesh l_ExistingMesh = ResourceManager::find_asset<Mesh>(
+                i_ResourceConfig.meshId);
+            if (!l_ExistingMesh.is_alive()) {
+              ResourceManager::register_asset(
+                  i_ResourceConfig.meshId,
+                  Mesh::make_from_resource_config(i_ResourceConfig));
+            }
+          })
+          .no_saving()
+          .importer([](const Util::String p_Path) -> Util::String {
+            std::filesystem::path l_FilePath(p_Path.c_str());
+            const Util::String l_Output =
+                l_FilePath.replace_extension("").string().c_str();
+            if (!ResourceImporter::import_mesh(p_Path, l_Output)) {
+              LOW_LOG_ERROR << "Failed to import mesh."
+                            << LOW_LOG_END;
+              return "";
+            }
+
+            return l_Output + ".meshresource.yaml";
+          });
+
+      l_Builder.raw_deleter([](const Util::String p_Path) {
+        std::filesystem::path l_FilePath(p_Path.c_str());
+
+        for (u32 i = 0; i < MeshResource::living_count(); ++i) {
+          MeshResource i_Resource =
+              MeshResource::living_instances()[i];
+
+          if (i_Resource.get_source_file() == p_Path) {
+            Util::FileIO::delete_sync(i_Resource.get_path().c_str());
+            break;
+          }
+        }
+      });
+
+      l_Builder.deleter([](const Util::String p_Path) {
+        std::filesystem::path l_FilePath(p_Path.c_str());
+      });
+
+      Util::AssetManager::register_asset_type(l_Builder.build());
+#endif
 
       if (0) {
         Util::List<Util::String> l_TextureResources;
@@ -477,8 +569,10 @@ namespace Low {
         l_Builder.add_initialize_directory(
             Util::get_project().dataPath, true);
         l_Builder.add_raw_suffix(".png");
-        l_Builder.add_import_directory(Util::get_project().dataPath,
-                                       true, true);
+        l_Builder
+            .add_import_directory(Util::get_project().dataPath, true,
+                                  true)
+            .import_on_startup(true);
 
         l_Builder
             .initializer(
@@ -503,8 +597,7 @@ namespace Low {
                 })
             .no_saving()
             .importer([](const Util::String p_Path) -> Util::String {
-              std::filesystem::path l_FilePath(
-                  (Util::get_project().dataPath + p_Path).c_str());
+              std::filesystem::path l_FilePath(p_Path.c_str());
 
               if (Util::FileSystem::is_file_in_directory(
                       l_FilePath,
@@ -514,19 +607,16 @@ namespace Low {
                       true)) {
                 return "";
               }
-              const Util::String l_Path =
-                  Util::get_project().dataPath + "/" + p_Path;
               const Util::String l_Output =
                   l_FilePath.replace_extension("").string().c_str();
-              if (!ResourceImporter::import_texture(l_Path,
+              if (!ResourceImporter::import_texture(p_Path,
                                                     l_Output)) {
                 LOW_LOG_ERROR << "Failed to import texture."
                               << LOW_LOG_END;
                 return "";
               }
 
-              return Util::get_project().dataPath + "/" + l_Output +
-                     ".texresource.yaml";
+              return l_Output + ".texresource.yaml";
             });
 
         l_Builder.raw_deleter([](const Util::String p_Path) {
@@ -912,6 +1002,11 @@ namespace Low {
     submit_thumbnail_creation(ThumbnailCreationSchedule p_Schedule)
     {
       p_Schedule.state = ThumbnailCreationState::SCHEDULED;
+      _LOW_ASSERT(p_Schedule.view.is_alive());
+      _LOW_ASSERT(p_Schedule.scene.is_alive());
+      _LOW_ASSERT(p_Schedule.view.get_render_scene().is_alive());
+      _LOW_ASSERT(p_Schedule.view.get_render_scene() ==
+                  p_Schedule.scene);
       g_ThumbnailCreationSchedules.push_back(p_Schedule);
     }
 

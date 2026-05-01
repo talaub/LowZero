@@ -548,14 +548,6 @@ namespace Low {
                 g_Context, Math::UVector2(l_Width, l_Height)),
             "Failed to initialize global vulkan context");
 
-        {
-          Util::Resource::Mesh l_Mesh;
-          Util::String l_Path = Util::get_project().dataPath;
-          l_Path += "/_internal/assets/meshes/";
-          l_Path += "cube.glb";
-          Util::Resource::load_mesh(l_Path, l_Mesh);
-        }
-
         LOWR_VK_ASSERT_RETURN(setup_renderflow(g_Context),
                               "Failed to setup renderflow");
 
@@ -602,6 +594,10 @@ namespace Low {
       {
         for (u32 i = 0u; i < RenderView::living_count(); ++i) {
           RenderView i_RenderView = RenderView::living_instances()[i];
+          RenderScene i_RenderScene = i_RenderView.get_render_scene();
+          if (!i_RenderScene.is_alive()) {
+            continue;
+          }
           ViewInfo i_ViewInfo = i_RenderView.get_view_info_handle();
           if (!i_ViewInfo.is_alive() ||
               !i_ViewInfo.is_initialized()) {
@@ -695,6 +691,9 @@ namespace Low {
         VkCommandBuffer l_Cmd = Global::get_current_command_buffer();
 
         RenderScene l_RenderScene = p_RenderView.get_render_scene();
+        if (!l_RenderScene.is_alive()) {
+          return true;
+        }
 
         const Math::Matrix4x4 l_ViewMatrix =
             glm::lookAt(p_RenderView.get_camera_position(),
@@ -2358,6 +2357,22 @@ namespace Low {
 
           Base::context_present(g_Context);
         }
+
+        if (!RenderView::ms_ScheduledForDeletion.empty()) {
+          vkDeviceWaitIdle(Global::get_device());
+          RenderView::ms_FullDestroy = true;
+          for (auto it = RenderView::ms_ScheduledForDeletion.begin();
+               it != RenderView::ms_ScheduledForDeletion.end();
+               ++it) {
+            RenderView i_RenderView = *it;
+            if (i_RenderView.is_alive()) {
+              i_RenderView.destroy();
+            }
+          }
+          RenderView::ms_ScheduledForDeletion.clear();
+          RenderView::ms_FullDestroy = false;
+        }
+
         Global::advance_frame_count();
 
         return true;

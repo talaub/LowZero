@@ -5,6 +5,7 @@
 #include "LowRendererGlobals.h"
 #include "LowRendererRenderObject.h"
 #include "LowRendererAdaptiveRenderObject.h"
+#include "LowRendererRenderScene.h"
 #include "LowRendererTextureState.h"
 #include "LowRendererUiDrawCommand.h"
 #include "LowRendererUiRenderObject.h"
@@ -134,13 +135,33 @@ namespace Low {
             continue;
           }
 
+          RenderScene i_RenderScene =
+              i_RenderObject.get_render_scene_handle();
+
           if (i_RenderObject.get_mesh().get_state() !=
-              MeshState::LOADED) {
+                  MeshState::LOADED ||
+              !i_RenderObject.get_mesh().get_gpu().is_alive()) {
             // If the renderobject's meshresource has not been loaded
             // yet we reschedule its update so that we can initialize
             // everything properly
             l_RescheduleRenderObjects.push_back(i_RenderObject);
             continue;
+          }
+
+          // The mesh we last uploaded was refreshed
+          if (i_RenderObject.is_uploaded() &&
+              i_RenderObject.get_mesh().get_gpu().get_id() !=
+                  i_RenderObject.get_last_uploaded_mesh_gpu_id()) {
+            for (DrawCommand i_DrawCommand :
+                 i_RenderObject.get_draw_commands()) {
+              i_DrawCommand.destroy();
+            }
+
+            Vulkan::Global::get_drawcommand_buffer().free(
+                i_RenderObject.get_slot(),
+                i_RenderObject.get_draw_commands().size());
+            i_RenderObject.set_uploaded(false);
+            i_RenderObject.get_draw_commands().clear();
           }
 
           if (i_RenderObject.get_draw_commands().empty()) {
@@ -199,6 +220,8 @@ namespace Low {
             i_RenderObject.set_uploaded(true);
             i_IsFirstTimeUpload = true;
           }
+          i_RenderObject.set_last_uploaded_mesh_gpu_id(
+              i_RenderObject.get_mesh().get_gpu().get_id());
 
           Util::List<DrawCommandUpload> i_Uploads;
 

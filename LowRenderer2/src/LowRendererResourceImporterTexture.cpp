@@ -12,6 +12,7 @@
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilHashing.h"
+#include "LowUtilLogger.h"
 #include "LowUtilYaml.h"
 #include "LowUtilString.h"
 #include "LowUtilSerialization.h"
@@ -45,10 +46,6 @@ namespace Low {
       bool import_texture(Util::String p_ImportPath,
                           Util::String p_OutputPath)
       {
-        LOW_LOG_DEBUG << "IMPORT: '" << p_ImportPath << "'"
-                      << LOW_LOG_END;
-        LOW_LOG_DEBUG << "OUTPUT: '" << p_OutputPath << "'"
-                      << LOW_LOG_END;
 
         if (!Util::FileIO::file_exists_sync(p_ImportPath.c_str())) {
           LOW_LOG_ERROR << "File does not exist" << LOW_LOG_END;
@@ -71,16 +68,20 @@ namespace Low {
 
         const bool l_Reimport = l_OriginalTextureResource.is_alive();
 
-        LOW_LOG_DEBUG << "W: '" << l_Width << "'" << ", HEIGHT: '"
-                      << l_Height << "'" << LOW_LOG_END;
+        if (l_Reimport) {
+          if (l_OriginalTextureResource.get_asset_hash() ==
+              l_AssetHash) {
+            LOW_LOG_DEBUG << "Exiting reimport early because texture "
+                             "didn't change."
+                          << LOW_LOG_END;
+            return "";
+          }
+        }
 
         Math::UVector2 l_Dimensions(l_Width, l_Height);
 
         Util::String l_FileName =
             Util::PathHelper::get_base_name_no_ext(p_ImportPath);
-
-        LOW_LOG_DEBUG << "FILENAME: '" << l_FileName << "'"
-                      << LOW_LOG_END;
 
         struct Pixel
         {

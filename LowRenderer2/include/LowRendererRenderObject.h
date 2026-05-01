@@ -29,6 +29,7 @@ namespace Low {
       public:
         Low::Math::Matrix4x4 world_transform;
         Low::Renderer::Mesh mesh;
+        uint64_t last_uploaded_mesh_gpu_id;
         bool uploaded;
         uint32_t slot;
         uint64_t render_scene_handle;
@@ -163,6 +164,9 @@ namespace Low {
       void set_world_transform(Low::Math::Matrix4x4 &p_Value);
 
       Low::Renderer::Mesh get_mesh() const;
+
+      uint64_t get_last_uploaded_mesh_gpu_id() const;
+      void set_last_uploaded_mesh_gpu_id(uint64_t p_Value);
 
       bool is_uploaded() const;
       void set_uploaded(bool p_Value);

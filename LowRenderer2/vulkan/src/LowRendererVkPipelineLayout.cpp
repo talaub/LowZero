@@ -1,7 +1,6 @@
 #include "LowRendererVkPipelineLayout.h"
 
 #include <algorithm>
-#include <vulkan/vulkan_core.h>
 
 #include "LowUtil.h"
 #include "LowUtilAssert.h"

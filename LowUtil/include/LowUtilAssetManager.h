@@ -57,6 +57,7 @@ namespace Low {
         List<Directory> initializeDirectories;
         bool autoInitialize;
         bool initializeOnStartup;
+        bool importOnStartup;
         bool creatable;
         List<String> assetSuffixes;
         List<String> rawSuffixes;
@@ -82,6 +83,7 @@ namespace Low {
           m_Registrator.typeId = Handle::type_id(p_TypeIdentifier);
           m_Registrator.loader = nullptr;
           m_Registrator.creatable = false;
+          m_Registrator.importOnStartup = false;
         }
 
         TypeRegistratorBuilder &
@@ -161,6 +163,12 @@ namespace Low {
         {
           m_Registrator.storeSettings.pathPropertyName =
               p_Propertyname;
+          return *this;
+        }
+
+        TypeRegistratorBuilder &import_on_startup(const bool p_Value)
+        {
+          m_Registrator.importOnStartup = p_Value;
           return *this;
         }
 

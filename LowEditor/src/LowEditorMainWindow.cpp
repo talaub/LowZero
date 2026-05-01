@@ -2,11 +2,13 @@
 #include "LowUtilVersion.h"
 
 #include <iostream>
+#include <string>
 
 #include "LowMath.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 
+#include "IconsCodicons.h"
 #include "IconsFontAwesome5.h"
 #include "IconsLucide.h"
 
@@ -541,25 +543,46 @@ namespace Low {
           ImGui::EndMenu();
         }
 
-        Util::String l_VersionString = "";
+        std::string l_MinorVersion = LOW_VERSION_MINOR;
+        const std::string l_DevSuffix = "-DEV";
+        const bool l_IsDevVersion =
+            l_MinorVersion.size() >= l_DevSuffix.size() &&
+            l_MinorVersion.compare(l_MinorVersion.size() -
+                                       l_DevSuffix.size(),
+                                   l_DevSuffix.size(),
+                                   l_DevSuffix) == 0;
+
+        if (l_IsDevVersion) {
+          l_MinorVersion.resize(l_MinorVersion.size() -
+                                l_DevSuffix.size());
+        }
+
+        std::string l_VersionString = "";
         l_VersionString += LOW_VERSION_YEAR;
         l_VersionString += ".";
         l_VersionString += LOW_VERSION_MAJOR;
         l_VersionString += ".";
-        l_VersionString += LOW_VERSION_MINOR;
+        l_VersionString += l_MinorVersion;
 
         const bool l_DebuggerAttached = is_debugger_attached();
-        const char *l_DebuggerLabel = "DEBUGGER";
+        const char *l_DevLabel = ICON_CI_CODE " DEV";
+        const char *l_DebuggerLabel =
+            ICON_CI_DEBUG_ALT_SMALL " DEBUGGER";
+        const float l_DevSpacing = l_IsDevVersion ? 14.0f : 0.0f;
         const float l_DebuggerSpacing =
-            l_DebuggerAttached ? 12.0f : 0.0f;
+            l_DebuggerAttached ? 16.0f : 0.0f;
         const float l_VersionWidth =
             ImGui::CalcTextSize(l_VersionString.c_str()).x;
+        const float l_DevWidth =
+            l_IsDevVersion ? ImGui::CalcTextSize(l_DevLabel).x
+                           : 0.0f;
         const float l_DebuggerWidth =
             l_DebuggerAttached
                 ? ImGui::CalcTextSize(l_DebuggerLabel).x
                 : 0.0f;
         const float l_StatusWidth =
-            l_VersionWidth + l_DebuggerSpacing + l_DebuggerWidth;
+            l_VersionWidth + l_DevSpacing + l_DevWidth +
+            l_DebuggerSpacing + l_DebuggerWidth;
 
         ImGuiViewport *l_Viewport = ImGui::GetMainViewport();
         ImVec2 l_Cursor = ImGui::GetCursorPos();
@@ -584,6 +607,19 @@ namespace Low {
         ImGui::Text(l_VersionString.c_str());
         ImGui::PopFont();
         ImGui::PopStyleColor();
+
+        if (l_IsDevVersion) {
+          ImGui::SameLine(0.0f, l_DevSpacing);
+          ImGui::PushStyleColor(
+              ImGuiCol_Text,
+              color_to_imvec4(theme_get_current().debug));
+          ImGui::PushFont(Fonts::UI(12));
+          cursor = ImGui::GetCursorPos();
+          ImGui::SetCursorPos(cursor + ImVec2(0.0f, 3.0f));
+          ImGui::TextUnformatted(l_DevLabel);
+          ImGui::PopFont();
+          ImGui::PopStyleColor();
+        }
 
         if (l_DebuggerAttached) {
           ImGui::SameLine(0.0f, l_DebuggerSpacing);

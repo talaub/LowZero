@@ -68,6 +68,8 @@ types:
         type: Low::Renderer::Mesh
         handle: true
         private_setter: true
+      last_uploaded_mesh_gpu_id:
+        type: uint64_t
       uploaded:
         type: bool
       slot:

@@ -5,6 +5,7 @@
 #include "LowRendererEditorImageStaging.h"
 #include "LowRendererMaterialState.h"
 #include "LowRendererMeshResourceState.h"
+#include "LowRendererMeshState.h"
 #include "LowRendererTextureResource.h"
 #include "LowRendererTextureState.h"
 #include "LowRendererVulkanRenderer.h"
@@ -227,6 +228,51 @@ namespace Low {
                p_Mesh.get_resource().is_alive();
       }
 
+      bool reload_mesh(Mesh p_Mesh)
+      {
+        if (p_Mesh.get_state() == MeshState::LOADED) {
+          LOW_ASSERT_ERROR_RETURN_FALSE(unload_mesh(p_Mesh),
+                                        "Failed to unload mesh.");
+        }
+        LOW_ASSERT_ERROR_RETURN_FALSE(load_mesh(p_Mesh),
+                                      "Failed to load mesh.");
+
+        return true;
+      }
+
+      bool unload_mesh(Mesh p_Mesh)
+      {
+        LOW_ASSERT_ERROR_RETURN_FALSE(
+            p_Mesh.get_state() == MeshState::LOADED,
+            "Cannot unload mesh that is not loaded.");
+
+        GpuMesh l_Gpu = p_Mesh.get_gpu();
+
+        for (GpuSubmesh i_Submesh : l_Gpu.get_submeshes()) {
+          Vulkan::Global::get_mesh_vertex_buffer().free(
+              i_Submesh.get_vertex_start(),
+              i_Submesh.get_vertex_count());
+          Vulkan::Global::get_mesh_index_buffer().free(
+              i_Submesh.get_index_start(),
+              i_Submesh.get_index_count());
+          i_Submesh.destroy();
+        }
+        l_Gpu.destroy();
+
+        for (auto it = g_MeshEntriesContainer.begin();
+             it != g_MeshEntriesContainer.end();) {
+          if (it->mesh == p_Mesh) {
+            it = g_MeshEntriesContainer.erase(it);
+          } else {
+            ++it;
+          }
+        }
+
+        p_Mesh.set_state(MeshState::UNLOADED);
+
+        return true;
+      }
+
       bool load_mesh(Mesh p_Mesh)
       {
         if (p_Mesh.is_alive() && p_Mesh.get_resource().is_alive()) {
@@ -256,13 +302,6 @@ namespace Low {
 
         g_LoadSchedules.meshes.insert(p_Mesh);
 
-        return true;
-      }
-
-      bool unload_mesh(Mesh p_Mesh)
-      {
-        // TODO: Check for mesh being unloadable
-        LOW_NOT_IMPLEMENTED;
         return true;
       }
 
@@ -461,8 +500,6 @@ namespace Low {
 
           if (l_Font.get_texture().get_state() ==
               TextureState::UNLOADED) {
-            LOW_LOG_DEBUG << "LOAD FONT TEX: " << l_Font.get_name()
-                          << LOW_LOG_END;
             load_texture(l_Font.get_texture());
           }
         });
@@ -511,7 +548,6 @@ namespace Low {
             l_Staging.set_mip3(
                 create_texture_pixels(N(Mip3), l_MipMaps.mip3));
           }
-          LOW_LOG_DEBUG << "LOADED TO MEMORY " << LOW_LOG_END;
 
           l_Texture.set_state(TextureState::MEMORYLOADED);
         });
@@ -1098,9 +1134,6 @@ namespace Low {
       static bool texture_upload(UploadEntry &p_UploadEntry)
       {
         Texture l_Texture = p_UploadEntry.data.texture.texture;
-
-        LOW_LOG_DEBUG << "UPLOADING TEX " << p_UploadEntry.lodPriority
-                      << LOW_LOG_END;
 
         // Get the correct texturepixels for the miplevel
         TexturePixels l_Mip =

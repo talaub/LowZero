@@ -208,6 +208,19 @@ namespace Low {
               continue;
             }
 
+            // Mesh was refreshed since last time we rendered this
+            if (it->get_render_object().is_uploaded() &&
+                it->get_render_object()
+                        .get_mesh()
+                        .get_gpu()
+                        .get_id() !=
+                    it->get_render_object()
+                        .get_last_uploaded_mesh_gpu_id()) {
+              it->get_render_object().mark_dirty();
+              it++;
+              continue;
+            }
+
             GpuSubmesh i_GpuSubmesh = it->get_submesh();
 
             LOW_ASSERT(i_GpuSubmesh.is_alive(),

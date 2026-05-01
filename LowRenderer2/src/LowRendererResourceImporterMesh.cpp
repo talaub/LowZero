@@ -3,6 +3,8 @@
 #include <gli/save_ktx.hpp>
 #include <gli/generate_mipmaps.hpp>
 
+#include "LowRendererMeshResource.h"
+#include "LowRendererMeshState.h"
 #include "LowRendererResourceImporter.h"
 
 #include <assimp/scene.h>
@@ -71,6 +73,21 @@ namespace Low {
       };
 
       namespace MeshImport {
+        static MeshResource
+        get_reimport(const u64 p_AssetHash,
+                     const Util::String p_SourcePath)
+        {
+          for (u32 i = 0; i < MeshResource::living_count(); ++i) {
+            MeshResource i_Resource =
+                MeshResource::living_instances()[i];
+            if (i_Resource.get_source_file() != p_SourcePath) {
+              continue;
+            }
+            return i_Resource;
+          }
+
+          return Util::Handle::DEAD;
+        }
 
         static bool
         calculate_bounding_sphere(const aiMesh *p_Mesh,
@@ -242,7 +259,7 @@ namespace Low {
         l_Schedule.object = l_RenderObject;
 
         l_Schedule.path = Util::get_project().editorImagesPath +
-                          "\\mesh_" +
+                          "\\thumbnails\\mesh_" +
                           Util::hash_to_string(
                               p_Mesh.get_resource().get_mesh_id()) +
                           ".png";
@@ -267,14 +284,29 @@ namespace Low {
         Util::FileIO::read_sync(l_File, l_FileContent.data());
 
         Util::String l_Content = l_FileContent.data();
+
+        const u64 l_AssetHash = Util::fnv1a_64(l_Content.c_str());
+
+        const MeshResource l_OriginalResource =
+            get_reimport(l_AssetHash, p_ImportPath);
+
+        const bool l_Reimport = l_OriginalResource.is_alive();
+
+        if (l_Reimport) {
+          if (l_OriginalResource.get_asset_hash() == l_AssetHash) {
+            LOW_LOG_DEBUG << "Exiting reimport early because texture "
+                             "didn't change."
+                          << LOW_LOG_END;
+            return "";
+          }
+        }
+
         Util::List<Util::String> l_Lines;
         Util::StringHelper::split(l_Content, '\n', l_Lines);
 
-        const bool l_Reimport = is_reimport();
-
-        const u64 l_AssetHash = Util::fnv1a_64(l_Content.c_str());
-        // TODO: Fix reimport
-        const u64 l_MeshId = l_Reimport ? 0 : l_AssetHash;
+        const u64 l_MeshId = l_Reimport
+                                 ? l_OriginalResource.get_mesh_id()
+                                 : l_AssetHash;
 
         l_Content = "";
         for (uint32_t i = 0; i < l_Lines.size(); ++i) {
@@ -313,8 +345,7 @@ namespace Low {
             l_BaseAssetPath + ".mesh.yaml";
 
         const Util::String l_ResourcePath =
-            Util::get_project().dataPath + "\\" + p_OutputPath +
-            ".meshresource.yaml";
+            p_OutputPath + ".meshresource.yaml";
 
         Util::String l_FileName =
             p_OutputPath.substr(p_OutputPath.find_last_of("/\\") + 1);
@@ -349,19 +380,27 @@ namespace Low {
         Util::Serial::write_yaml_file(l_ResourcePath.c_str(),
                                       l_ResourceNode);
 
-        // TODO: FIX REIMPORT
-        if (!l_Reimport) {
-          MeshResourceConfig l_Config;
+        MeshResourceConfig l_Config;
 
+        Mesh l_Mesh = ResourceManager::find_asset<Mesh>(l_MeshId);
+        bool l_WasLoaded = false;
+        if (!l_Reimport) {
           LOW_ASSERT_ERROR_RETURN_FALSE(
               ResourceManager::parse_mesh_resource_config(
                   l_ResourcePath, l_ResourceNode, l_Config),
               "Failed to parse resource config on mesh import");
-
-          Mesh l_Mesh = Mesh::make_from_resource_config(l_Config);
-
-          create_thumbnail_picture(l_Mesh);
+          l_Mesh = Mesh::make_from_resource_config(l_Config);
+        } else {
+          // TODO: Check what happens if it's LOADING or something
+          // similar
+          l_WasLoaded = l_Mesh.get_state() == MeshState::LOADED;
         }
+
+        if (l_WasLoaded) {
+          ResourceManager::reload_mesh(l_Mesh);
+        }
+
+        create_thumbnail_picture(l_Mesh);
 
         return true;
       }

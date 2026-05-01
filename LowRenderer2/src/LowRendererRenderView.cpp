@@ -21,7 +21,8 @@
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-
+    Util::Set<RenderView> RenderView::ms_ScheduledForDeletion;
+    bool RenderView::ms_FullDestroy = false;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     u16 RenderView::ms_TypeId = 0;
@@ -152,6 +153,10 @@ namespace Low {
       {
         Low::Util::HandleLock<RenderView> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        if (!ms_FullDestroy) {
+          ms_ScheduledForDeletion.insert(get_id());
+          return;
+        }
 
         for (auto it = get_steps().begin(); it != get_steps().end();
              ++it) {

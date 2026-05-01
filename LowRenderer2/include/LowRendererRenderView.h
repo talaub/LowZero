@@ -317,7 +317,9 @@ namespace Low {
       static u32 create_page();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
-
+    public:
+      static Util::Set<RenderView> ms_ScheduledForDeletion;
+      static bool ms_FullDestroy;
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
     };
 

@@ -906,7 +906,6 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_from_config
 
       FontResource l_FontResource = FontResource::make(p_Config.name);
-      LOW_LOG_DEBUG << "CREATING: " << p_Config.path << LOW_LOG_END;
       l_FontResource.set_path(p_Config.path);
       l_FontResource.set_font_id(p_Config.fontId);
       l_FontResource.set_asset_hash(p_Config.assetHash);

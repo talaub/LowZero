@@ -75,6 +75,25 @@ namespace Low {
     }
 
     static void
+    import(const AssetManager::TypeRegistrator &p_AssetType,
+           const String &p_Path)
+    {
+      AM_LOG_DEBUG << "Importing " << p_AssetType.name << " from '"
+                   << p_Path << "'" << LOW_LOG_END;
+      const Util::String l_ImportedPath =
+          p_AssetType.importer(Util::String(p_Path.c_str()));
+
+      if (!l_ImportedPath.empty()) {
+        AM_LOG_DEBUG << "Import sucessful" << LOW_LOG_END;
+        Handle i_Handle = p_AssetType.initializer(l_ImportedPath);
+        g_AssetRecords.emplace_back(
+            i_Handle, PathHelper::normalize(l_ImportedPath));
+      } else {
+        AM_LOG_DEBUG << "Import aborted" << LOW_LOG_END;
+      }
+    }
+
+    static void
     initialize_assets(const AssetManager::TypeRegistrator p_AssetType)
     {
       List<String> l_Paths;
@@ -91,11 +110,6 @@ namespace Low {
       for (auto it : l_Paths) {
         Handle i_Handle = p_AssetType.initializer(it);
 
-        if (l_Info.name == N(WidgetAsset)) {
-          LOW_LOG_DEBUG << "init widget is alive: "
-                        << l_Info.is_alive(i_Handle) << LOW_LOG_END;
-        }
-
         g_AssetRecords.emplace_back(i_Handle,
                                     PathHelper::normalize(it));
       }
@@ -108,6 +122,20 @@ namespace Low {
 
       if (p_Registrator.initializeOnStartup) {
         initialize_assets(p_Registrator);
+      }
+
+      if (p_Registrator.importOnStartup) {
+        List<String> l_Paths;
+        for (auto it : p_Registrator.importDirectories) {
+          for (auto sit : p_Registrator.rawSuffixes) {
+            Util::FileSystem::collect_files_with_suffix(
+                it.path.c_str(), sit.c_str(), l_Paths, it.recursive);
+          }
+        }
+
+        for (auto i_Path : l_Paths) {
+          import(p_Registrator, PathHelper::normalize(i_Path));
+        }
       }
     }
 
@@ -124,17 +152,45 @@ namespace Low {
 
     static void handle_file_event(FileSystem::Watcher::Event p_Event)
     {
-      const String l_FullEventPath = get_project().dataPath + '/' +
-                                     p_Event.path.string().c_str();
+      const String l_FullEventPath =
+          PathHelper::normalize(get_project().dataPath + '/' +
+                                p_Event.path.string().c_str());
 
       for (auto i_Type : g_AssetTypes) {
         bool i_IsImport = false;
 
+        const Util::String i_FileSuffix =
+            String(p_Event.path.extension().string().c_str());
+
         for (auto i_RawSuffix : i_Type.rawSuffixes) {
-          if (i_RawSuffix ==
-              String(p_Event.path.extension().string().c_str())) {
+          if (i_RawSuffix == i_FileSuffix) {
             i_IsImport = true;
             break;
+          }
+        }
+
+        if (!i_IsImport) {
+          for (auto i_Suffix : i_Type.assetSuffixes) {
+            if (i_Suffix == i_FileSuffix) {
+              for (auto i_Dir : i_Type.initializeDirectories) {
+                const bool i_IsValidInitDir =
+                    FileSystem::is_file_in_directory(
+                        std::filesystem::path(
+                            l_FullEventPath.c_str()),
+                        std::filesystem::path(i_Dir.path.c_str()),
+                        i_Dir.recursive);
+
+                if (i_IsValidInitDir) {
+                  String i_Path = PathHelper::normalize(
+                      Util::get_project().dataPath + "/" +
+                      p_Event.path.string().c_str());
+                  Handle i_Handle = i_Type.initializer(i_Path);
+
+                  g_AssetRecords.emplace_back(i_Handle, i_Path);
+                }
+              }
+              break;
+            }
           }
         }
 
@@ -155,16 +211,10 @@ namespace Low {
                   FileSystem::Watcher::EventType::Removed) {
                 i_Type.rawDeleter(l_FullEventPath);
               } else {
-                const Util::String i_ImportedPath = i_Type.importer(
-                    Util::String(p_Event.path.string().c_str()));
-
-                if (!i_ImportedPath.empty()) {
-                  Handle i_Handle =
-                      i_Type.initializer(i_ImportedPath);
-                  g_AssetRecords.emplace_back(
-                      i_Handle,
-                      PathHelper::normalize(i_ImportedPath));
-                }
+                String i_Path = PathHelper::normalize(
+                    i_ImportDir.path + "/" +
+                    p_Event.path.string().c_str());
+                import(i_Type, i_Path);
               }
 
               break;

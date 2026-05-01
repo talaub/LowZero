@@ -12,6 +12,8 @@ namespace Low {
     namespace ResourceManager {
       bool LOW_RENDERER2_API load_mesh(Mesh p_Mesh);
       bool upload_mesh(Mesh p_Mesh);
+      bool LOW_RENDERER2_API unload_mesh(Mesh p_Mesh);
+      bool LOW_RENDERER2_API reload_mesh(Mesh p_Mesh);
 
       bool LOW_RENDERER2_API load_texture(Texture p_Texture);
       bool LOW_RENDERER2_API load_font(Font p_Font);

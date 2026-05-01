@@ -355,9 +355,11 @@ namespace Low {
         {
           if (auto sp = std::get_if<Seq>(&data))
             return sp->size();
+          if (auto mp = std::get_if<Dict>(&data))
+            return mp->size();
           if (std::holds_alternative<std::monostate>(data))
             return 0;
-          throw std::logic_error("Node is not a sequence");
+          throw std::logic_error("Node is not a sequence or dict");
         }
         bool empty() const
         {

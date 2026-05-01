@@ -364,10 +364,10 @@ namespace Low {
     void cleanup()
     {
       Input::cleanup();
+      cleanup_types();
       Scripting::cleanup_as();
       Scripting::cleanup();
       GameLoop::cleanup();
-      cleanup_types();
     }
 
     Util::EngineState get_engine_state()

@@ -85,7 +85,8 @@ namespace Low {
           // Break on error or warning
           if (messageSeverity >=
               VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-            DEBUG_BREAK();
+            // DEBUG_BREAK();
+            LOW_LOG_DEBUG << "CRASHY" << LOW_LOG_END;
           }
 
           return VK_FALSE;

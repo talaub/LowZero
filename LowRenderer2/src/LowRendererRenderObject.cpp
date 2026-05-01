@@ -273,6 +273,39 @@ namespace Low {
         // End property: mesh
       }
       {
+        // Property: last_uploaded_mesh_gpu_id
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(last_uploaded_mesh_gpu_id);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderObject::Data, last_uploaded_mesh_gpu_id);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderObject> l_HandleLock(l_Handle);
+          l_Handle.get_last_uploaded_mesh_gpu_id();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderObject,
+                                            last_uploaded_mesh_gpu_id,
+                                            uint64_t);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderObject l_Handle = p_Handle.get_id();
+          l_Handle.set_last_uploaded_mesh_gpu_id(*(uint64_t *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderObject> l_HandleLock(l_Handle);
+          *((uint64_t *)p_Data) =
+              l_Handle.get_last_uploaded_mesh_gpu_id();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: last_uploaded_mesh_gpu_id
+      }
+      {
         // Property: uploaded
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(uploaded);
@@ -671,6 +704,8 @@ namespace Low {
       if (get_mesh().is_alive()) {
         l_Handle.set_mesh(get_mesh());
       }
+      l_Handle.set_last_uploaded_mesh_gpu_id(
+          get_last_uploaded_mesh_gpu_id());
       l_Handle.set_uploaded(is_uploaded());
       l_Handle.set_slot(get_slot());
       l_Handle.set_render_scene_handle(get_render_scene_handle());
@@ -850,6 +885,35 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_mesh
 
       broadcast_observable(N(mesh));
+    }
+
+    uint64_t RenderObject::get_last_uploaded_mesh_gpu_id() const
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderObject> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_last_uploaded_mesh_gpu_id
+      // LOW_CODEGEN::END::CUSTOM:GETTER_last_uploaded_mesh_gpu_id
+
+      return TYPE_SOA(RenderObject, last_uploaded_mesh_gpu_id,
+                      uint64_t);
+    }
+    void RenderObject::set_last_uploaded_mesh_gpu_id(uint64_t p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderObject> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_last_uploaded_mesh_gpu_id
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_last_uploaded_mesh_gpu_id
+
+      // Set new value
+      TYPE_SOA(RenderObject, last_uploaded_mesh_gpu_id, uint64_t) =
+          p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_last_uploaded_mesh_gpu_id
+      // LOW_CODEGEN::END::CUSTOM:SETTER_last_uploaded_mesh_gpu_id
+
+      broadcast_observable(N(last_uploaded_mesh_gpu_id));
     }
 
     bool RenderObject::is_uploaded() const
@@ -1084,7 +1148,7 @@ namespace Low {
       if (!is_dirty()) {
         TYPE_SOA(RenderObject, dirty, bool) = true;
         // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
-
+        ms_Dirty.insert(get_id());
         // LOW_CODEGEN::END::CUSTOM:MARK_dirty
       }
     }
