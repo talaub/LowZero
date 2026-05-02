@@ -462,44 +462,41 @@ namespace Low {
       static bool font_schedule_memory_load(Font p_Font)
       {
         u64 l_FontId = p_Font.get_id();
-        Util::JobManager::default_pool().enqueue([l_FontId]() {
-          Font l_Font = l_FontId;
+        Util::String l_SidecarPath =
+            p_Font.get_resource().get_sidecar_path();
 
-          Util::Serial::Node l_Sidecar = Util::Serial::load_yaml_file(
-              l_Font.get_resource().get_sidecar_path().c_str());
+        Util::JobManager::IO::schedule_read_yaml(
+            l_SidecarPath,
+            [l_FontId](bool p_Success, Util::Serial::Node &p_Node) {
+              Font l_Font = l_FontId;
 
-          Util::Serial::Node l_Glyphs = l_Sidecar["glyphs"];
+              l_Font.set_ascender(p_Node["ascender"].as<float>());
+              l_Font.set_descender(p_Node["descender"].as<float>());
+              l_Font.set_line_height(
+                  p_Node["line_height"].as<float>());
+              l_Font.set_import_height(
+                  p_Node["import_height"].as<float>());
 
-          l_Font.set_ascender(l_Sidecar["ascender"].as<float>());
-          l_Font.set_descender(l_Sidecar["descender"].as<float>());
-          l_Font.set_line_height(
-              l_Sidecar["line_height"].as<float>());
+              for (auto [k, v] : p_Node["glyphs"]) {
+                Util::Serial::Node i_Node = v;
+                Glyph i_Glyph;
+                char i_Codepoint = i_Node["codepoint"].as<u8>();
+                i_Glyph.uvMin = i_Node["uv_min"].as<Math::Vector2>();
+                i_Glyph.uvMax = i_Node["uv_max"].as<Math::Vector2>();
+                i_Glyph.bearing =
+                    i_Node["bearing"].as<Math::Vector2>();
+                i_Glyph.size = i_Node["size"].as<Math::Vector2>();
+                i_Glyph.advance = i_Node["advance"].as<float>();
+                l_Font.get_glyphs()[i_Codepoint] = i_Glyph;
+              }
 
-          l_Font.set_import_height(
-              l_Sidecar["import_height"].as<float>());
+              l_Font.set_sidecar_loaded(true);
 
-          for (auto [k, v] : l_Glyphs) {
-            Util::Serial::Node i_Node = v;
-            Glyph i_Glyph;
-            char i_Codepoint = i_Node["codepoint"].as<u8>();
-            i_Glyph.uvMin = i_Node["uv_min"].as<Math::Vector2>();
-            i_Glyph.uvMax = i_Node["uv_max"].as<Math::Vector2>();
-
-            i_Glyph.bearing = i_Node["bearing"].as<Math::Vector2>();
-            i_Glyph.size = i_Node["size"].as<Math::Vector2>();
-
-            i_Glyph.advance = i_Node["advance"].as<float>();
-
-            l_Font.get_glyphs()[i_Codepoint] = i_Glyph;
-          }
-
-          l_Font.set_sidecar_loaded(true);
-
-          if (l_Font.get_texture().get_state() ==
-              TextureState::UNLOADED) {
-            load_texture(l_Font.get_texture());
-          }
-        });
+              if (l_Font.get_texture().get_state() ==
+                  TextureState::UNLOADED) {
+                load_texture(l_Font.get_texture());
+              }
+            });
 
         return true;
       }
@@ -510,44 +507,36 @@ namespace Low {
                        TextureState::SCHEDULEDTOLOAD,
                    "Texture is either not scheduled for loading or "
                    "already loading/loaded.");
-        // Small hack. Passing the texture in there directly
-        // does not work for some reason so we're passing in the ID
-        // and converting it back to a texture in the job
+
         u64 l_TextureId = p_Texture.get_id();
-        // Overall this schedules a job that will load the image data
-        // into the texturestaging instance stored on
-        // the texture and we'll set the state of the
-        // texture to MEMORYLOADED once this is done.
+        Util::String l_Path =
+            p_Texture.get_resource().get_texture_path();
 
         p_Texture.set_state(TextureState::LOADINGTOMEMORY);
-        Util::JobManager::default_pool().enqueue([l_TextureId]() {
-          Texture l_Texture = l_TextureId;
 
-          Util::Resource::ImageMipMaps l_MipMaps;
-          Util::Resource::load_image_mipmaps(
-              l_Texture.get_resource().get_texture_path(), l_MipMaps);
+        Util::JobManager::IO::schedule_read_texture(
+            l_Path,
+            [l_TextureId](bool p_Success,
+                          Util::Resource::ImageMipMaps &p_MipMaps) {
+              Texture l_Texture = l_TextureId;
 
-          TextureStaging l_Staging =
-              TextureStaging::make(l_Texture.get_name());
+              TextureStaging l_Staging =
+                  TextureStaging::make(l_Texture.get_name());
+              l_Texture.set_staging(l_Staging);
 
-          l_Texture.set_staging(l_Staging);
+              // TODO: Remove requirement for all miplevels to be
+              // present
+              l_Staging.set_mip0(
+                  create_texture_pixels(N(Mip0), p_MipMaps.mip0));
+              l_Staging.set_mip1(
+                  create_texture_pixels(N(Mip1), p_MipMaps.mip1));
+              l_Staging.set_mip2(
+                  create_texture_pixels(N(Mip2), p_MipMaps.mip2));
+              l_Staging.set_mip3(
+                  create_texture_pixels(N(Mip3), p_MipMaps.mip3));
 
-          // Copy pixel data for all mips
-          {
-            // TODO: Remove requirement for all miplevels to be
-            // present
-            l_Staging.set_mip0(
-                create_texture_pixels(N(Mip0), l_MipMaps.mip0));
-            l_Staging.set_mip1(
-                create_texture_pixels(N(Mip1), l_MipMaps.mip1));
-            l_Staging.set_mip2(
-                create_texture_pixels(N(Mip2), l_MipMaps.mip2));
-            l_Staging.set_mip3(
-                create_texture_pixels(N(Mip3), l_MipMaps.mip3));
-          }
-
-          l_Texture.set_state(TextureState::MEMORYLOADED);
-        });
+              l_Texture.set_state(TextureState::MEMORYLOADED);
+            });
 
         return true;
       }
@@ -560,50 +549,58 @@ namespace Low {
                 TextureState::SCHEDULEDTOLOAD,
             "EditorImage is either not scheduled for loading or "
             "already loading/loaded.");
+
         u64 l_EditorImageId = p_EditorImage.get_id();
+        Util::String l_Path = p_EditorImage.get_path();
 
         p_EditorImage.set_state(TextureState::LOADINGTOMEMORY);
 
-        Util::JobManager::default_pool().enqueue([l_EditorImageId]() {
-          EditorImage l_EditorImage = l_EditorImageId;
+        Util::JobManager::IO::schedule_read_raw(
+            l_Path,
+            [l_EditorImageId](bool p_Success,
+                              Util::List<uint8_t> &p_RawData) {
+              EditorImage l_EditorImage = l_EditorImageId;
 
-          EditorImageStaging l_Staging =
-              EditorImageStaging::make(l_EditorImage.get_name());
-          l_EditorImage.set_staging(l_Staging);
+              int l_Width, l_Height, l_Channels;
+              const uint8_t *l_Data = stbi_load_from_memory(
+                  p_RawData.data(), (int)p_RawData.size(), &l_Width,
+                  &l_Height, &l_Channels, 0);
 
-          int l_Width, l_Height, l_Channels;
+              EditorImageStaging l_Staging =
+                  EditorImageStaging::make(l_EditorImage.get_name());
+              l_EditorImage.set_staging(l_Staging);
 
-          const uint8_t *l_Data =
-              stbi_load(l_EditorImage.get_path().c_str(), &l_Width,
-                        &l_Height, &l_Channels, 0);
+              l_Staging.set_channels(l_Channels);
+              l_Staging.set_data_size(l_Width * l_Height *
+                                      l_Channels);
+              l_Staging.set_dimensions_x(l_Width);
+              l_Staging.set_dimensions_y(l_Height);
+              l_Staging.set_format(
+                  Util::Resource::Image2DFormat::RGBA8);
+              l_Staging.get_pixel_data().resize(l_Width * l_Height *
+                                                4);
 
-          l_Staging.set_channels(l_Channels);
-          l_Staging.set_data_size(l_Width * l_Height * l_Channels);
-          l_Staging.set_dimensions_x(l_Width);
-          l_Staging.set_dimensions_y(l_Height);
-
-          l_Staging.set_format(Util::Resource::Image2DFormat::RGBA8);
-
-          l_Staging.get_pixel_data().resize(l_Width * l_Height * 4);
-
-          for (uint32_t y = 0u; y < l_Height; ++y) {
-            for (uint32_t x = 0u; x < l_Width; ++x) {
-              uint32_t c = 0;
-              for (; c < l_Channels; ++c) {
-                l_Staging
-                    .get_pixel_data()[(((y * l_Width) + x) * 4) + c] =
-                    l_Data[(((y * l_Width) + x) * l_Channels) + c];
+              for (uint32_t i_Y = 0u; i_Y < l_Height; ++i_Y) {
+                for (uint32_t i_X = 0u; i_X < l_Width; ++i_X) {
+                  uint32_t i_C = 0;
+                  for (; i_C < l_Channels; ++i_C) {
+                    l_Staging.get_pixel_data()
+                        [(((i_Y * l_Width) + i_X) * 4) + i_C] =
+                        l_Data[(((i_Y * l_Width) + i_X) *
+                                l_Channels) +
+                               i_C];
+                  }
+                  for (; i_C < 4; ++i_C) {
+                    l_Staging.get_pixel_data()
+                        [(((i_Y * l_Width) + i_X) * 4) + i_C] = 255;
+                  }
+                }
               }
-              for (; c < 4; ++c) {
-                l_Staging
-                    .get_pixel_data()[(((y * l_Width) + x) * 4) + c] =
-                    255;
-              }
-            }
-          }
 
-          l_EditorImage.set_state(TextureState::MEMORYLOADED);
-        });
+              stbi_image_free((void *)l_Data);
+
+              l_EditorImage.set_state(TextureState::MEMORYLOADED);
+            });
 
         return true;
       }
@@ -613,80 +610,69 @@ namespace Low {
         LOW_ASSERT(p_Mesh.get_state() == MeshState::SCHEDULEDTOLOAD,
                    "Mesh is either not scheduled for loading or "
                    "already loading/loaded.");
-        // Small hack. Passing the mesh in there directly does
-        // not work for some reason so we're passing in the ID and
-        // converting it back to a mesh in the job
+
         u64 l_MeshId = p_Mesh.get_id();
-        // Overall this schedules a job that will load the mesh data
-        // into the meshgeometry and we'll set the state of the mesh
-        // to MEMORYLOADED once this is done.
+        Util::String l_MeshPath =
+            p_Mesh.get_resource().get_mesh_path();
+        Util::String l_SidecarPath =
+            p_Mesh.get_resource().get_sidecar_path();
 
         p_Mesh.set_state(MeshState::LOADINGTOMEMORY);
-        Util::JobManager::default_pool().enqueue([l_MeshId]() {
-          Mesh l_Mesh = l_MeshId;
-          MeshGeometry l_MeshGeometry =
-              MeshGeometry::make(l_Mesh.get_name());
-          l_Mesh.set_geometry(l_MeshGeometry);
 
-          Util::Resource::Mesh l_ResourceMesh;
+        Util::JobManager::IO::schedule_read_mesh(
+            l_MeshPath, l_SidecarPath,
+            [l_MeshId](
+                bool p_Success,
+                Util::JobManager::IO::MeshLoadResult &p_Result) {
+              Mesh l_Mesh = l_MeshId;
 
-          Util::Resource::load_mesh(
-              l_Mesh.get_resource().get_mesh_path(), l_ResourceMesh);
+              MeshGeometry l_MeshGeometry =
+                  MeshGeometry::make(l_Mesh.get_name());
+              l_Mesh.set_geometry(l_MeshGeometry);
 
-          u32 l_SubmeshCount = 0u;
+              l_MeshGeometry.set_aabb(p_Result.aabb);
+              l_MeshGeometry.set_bounding_sphere(
+                  p_Result.bounding_sphere);
 
-          Util::Serial::Node l_SidecarNode =
-              Util::Serial::load_yaml_file(
-                  l_Mesh.get_resource().get_sidecar_path().c_str());
+              u32 l_SubmeshCount = 0u;
+              for (auto &i_Submesh : p_Result.mesh.submeshes) {
+                for (auto &i_MeshInfo : i_Submesh.meshInfos) {
+                  SubmeshGeometry i_SubmeshGeometry =
+                      SubmeshGeometry::make(i_MeshInfo.name);
+                  i_SubmeshGeometry.set_vertex_count(
+                      i_MeshInfo.vertices.size());
+                  i_SubmeshGeometry.set_index_count(
+                      i_MeshInfo.indices.size());
+                  i_SubmeshGeometry.set_state(
+                      MeshState::MEMORYLOADED);
+                  i_SubmeshGeometry.set_vertices(i_MeshInfo.vertices);
+                  i_SubmeshGeometry.set_indices(i_MeshInfo.indices);
 
-          Util::UnorderedMap<Util::Name, Util::Serial::Node>
-              l_SubmeshNodes;
+                  auto i_AabbIt =
+                      p_Result.submesh_aabbs.find(i_MeshInfo.name);
+                  if (i_AabbIt != p_Result.submesh_aabbs.end()) {
+                    i_SubmeshGeometry.set_aabb(i_AabbIt->second);
+                  }
 
-          Math::AABB l_AABB = l_SidecarNode["aabb"].as<Math::AABB>();
-          l_MeshGeometry.set_aabb(l_AABB);
-          if (l_SidecarNode["bounding_sphere"]) {
-            Math::Sphere l_Sphere =
-                l_SidecarNode["bounding_sphere"].as<Math::Sphere>();
-            l_MeshGeometry.set_bounding_sphere(l_Sphere);
-          }
+                  auto i_SphereIt =
+                      p_Result.submesh_bounding_spheres.find(
+                          i_MeshInfo.name);
+                  if (i_SphereIt !=
+                      p_Result.submesh_bounding_spheres.end()) {
+                    i_SubmeshGeometry.set_bounding_sphere(
+                        i_SphereIt->second);
+                  }
 
-          for (auto it = l_ResourceMesh.submeshes.begin();
-               it != l_ResourceMesh.submeshes.end(); ++it) {
-            for (auto mit = it->meshInfos.begin();
-                 mit != it->meshInfos.end(); ++mit) {
-              SubmeshGeometry i_SubmeshGeometry =
-                  SubmeshGeometry::make(mit->name);
-              i_SubmeshGeometry.set_vertex_count(
-                  mit->vertices.size());
-              i_SubmeshGeometry.set_index_count(mit->indices.size());
-              i_SubmeshGeometry.set_state(MeshState::MEMORYLOADED);
-              i_SubmeshGeometry.set_vertices(mit->vertices);
-              i_SubmeshGeometry.set_indices(mit->indices);
+                  l_MeshGeometry.get_submeshes().push_back(
+                      i_SubmeshGeometry);
+                  l_SubmeshCount++;
+                }
+              }
 
-              const char *i_NameBuffer =
-                  i_SubmeshGeometry.get_name().c_str();
-
-              Math::AABB i_AABB =
-                  l_SidecarNode["submeshes"][i_NameBuffer]["aabb"]
-                      .as<Math::AABB>();
-              Math::Sphere i_BoundingSphere =
-                  l_SidecarNode["submeshes"][i_NameBuffer]
-                               ["bounding_sphere"]
-                                   .as<Math::Sphere>();
-              i_SubmeshGeometry.set_aabb(i_AABB);
-              i_SubmeshGeometry.set_bounding_sphere(i_BoundingSphere);
-
-              l_MeshGeometry.get_submeshes().push_back(
-                  i_SubmeshGeometry);
-              l_SubmeshCount++;
-            }
-          }
-
-          l_MeshGeometry.set_submesh_count(l_SubmeshCount);
-          l_Mesh.set_submesh_count(l_SubmeshCount);
-
-          l_Mesh.set_state(MeshState::MEMORYLOADED);
-        });
+              l_MeshGeometry.set_submesh_count(l_SubmeshCount);
+              l_Mesh.set_submesh_count(l_SubmeshCount);
+              l_Mesh.set_state(MeshState::MEMORYLOADED);
+            });
 
         return true;
       }

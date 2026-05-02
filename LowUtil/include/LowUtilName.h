@@ -41,3 +41,13 @@ namespace Low {
 
   } // namespace Util
 } // namespace Low
+
+namespace eastl {
+  template <> struct hash<Low::Util::Name>
+  {
+    size_t operator()(const Low::Util::Name &p_Name) const noexcept
+    {
+      return static_cast<size_t>(p_Name.m_Index);
+    }
+  };
+} // namespace eastl

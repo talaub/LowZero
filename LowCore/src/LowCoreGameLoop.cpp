@@ -179,6 +179,8 @@ namespace Low {
         }
         System::Transform::late_tick(p_Delta, get_engine_state());
 
+        Util::JobManager::IO::flush_callbacks();
+
         Input::late_tick(p_Delta);
         Renderer::tick(p_Delta);
 
