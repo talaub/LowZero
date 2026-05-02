@@ -81,6 +81,9 @@ namespace Low {
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderView, object_map,
                                  Low::Renderer::Texture))
           Low::Renderer::Texture();
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderView, highlight_map,
+                                 Low::Renderer::Texture))
+          Low::Renderer::Texture();
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderView, lit_image,
                                  Low::Renderer::Texture))
           Low::Renderer::Texture();
@@ -163,6 +166,9 @@ namespace Low {
         }
         if (get_object_map().is_alive()) {
           get_object_map().destroy();
+        }
+        if (get_highlight_map().is_alive()) {
+          get_highlight_map().destroy();
         }
         if (get_lit_image().is_alive()) {
           get_lit_image().destroy();
@@ -785,6 +791,39 @@ namespace Low {
         // End property: object_map
       }
       {
+        // Property: highlight_map
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(highlight_map);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderView::Data, highlight_map);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType =
+            Low::Renderer::Texture::IDENTIFIER;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.get_highlight_map();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
+                                            highlight_map,
+                                            Low::Renderer::Texture);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.set_highlight_map(
+              *(Low::Renderer::Texture *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          *((Low::Renderer::Texture *)p_Data) =
+              l_Handle.get_highlight_map();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: highlight_map
+      }
+      {
         // Property: lit_image
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(lit_image);
@@ -1326,6 +1365,9 @@ namespace Low {
       }
       if (get_object_map().is_alive()) {
         l_Handle.set_object_map(get_object_map());
+      }
+      if (get_highlight_map().is_alive()) {
+        l_Handle.set_highlight_map(get_highlight_map());
       }
       if (get_lit_image().is_alive()) {
         l_Handle.set_lit_image(get_lit_image());
@@ -2087,6 +2129,33 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_object_map
 
       broadcast_observable(N(object_map));
+    }
+
+    Low::Renderer::Texture RenderView::get_highlight_map() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_highlight_map
+      // LOW_CODEGEN::END::CUSTOM:GETTER_highlight_map
+
+      return TYPE_SOA(RenderView, highlight_map,
+                      Low::Renderer::Texture);
+    }
+    void RenderView::set_highlight_map(Low::Renderer::Texture p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_highlight_map
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_highlight_map
+
+      // Set new value
+      TYPE_SOA(RenderView, highlight_map, Low::Renderer::Texture) =
+          p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_highlight_map
+      // LOW_CODEGEN::END::CUSTOM:SETTER_highlight_map
+
+      broadcast_observable(N(highlight_map));
     }
 
     Low::Renderer::Texture RenderView::get_lit_image() const

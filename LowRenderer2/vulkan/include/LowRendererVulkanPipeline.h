@@ -7,6 +7,7 @@
 
 #include "LowRendererVkPipeline.h"
 #include "LowRendererVkPipelineLayout.h"
+#include "LowRendererShaderVariant.h"
 
 namespace Low {
   namespace Renderer {
@@ -46,6 +47,9 @@ namespace Low {
           Util::String vertexSpirvPath;
           Util::String fragmentSpirvPath;
 
+          ShaderVariant vertexShader;
+          ShaderVariant fragmentShader;
+
           GraphicsPipelineBuilder()
           {
             clear();
@@ -72,6 +76,8 @@ namespace Low {
           void set_shaders(Util::String p_VertexShader,
                            Util::String p_FragmentShader,
                            bool p_Project = false);
+          void set_shaders(ShaderVariant p_VertexShader,
+                           ShaderVariant p_FragmentShader);
 
           void update_shaders();
 

@@ -60,6 +60,7 @@ namespace Low {
         Low::Renderer::Texture gbuffer_depth;
         Low::Renderer::Texture gbuffer_viewposition;
         Low::Renderer::Texture object_map;
+        Low::Renderer::Texture highlight_map;
         Low::Renderer::Texture lit_image;
         Low::Renderer::Texture blurred_image;
         Low::Renderer::Texture ssao_image;
@@ -249,6 +250,9 @@ namespace Low {
 
       Low::Renderer::Texture get_object_map() const;
       void set_object_map(Low::Renderer::Texture p_Value);
+
+      Low::Renderer::Texture get_highlight_map() const;
+      void set_highlight_map(Low::Renderer::Texture p_Value);
 
       Low::Renderer::Texture get_lit_image() const;
       void set_lit_image(Low::Renderer::Texture p_Value);

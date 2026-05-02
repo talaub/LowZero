@@ -19,11 +19,56 @@ namespace Low {
         Util::Map<Pipeline, PipelineUtil::ComputePipelineBuilder>
             g_ComputePipelines;
 
-        Util::Map<Util::String, Pipeline> g_Sources;
+        Util::Map<Util::String, Util::List<Pipeline>> g_Sources;
 
         Util::Map<Util::String, u64> g_SourceTimes;
 
-        Util::Map<Util::String, Util::String> g_SourceOutMapping;
+        static bool has_pipeline(Util::List<Pipeline> &p_Pipelines,
+                                 Pipeline p_Pipeline)
+        {
+          for (auto it = p_Pipelines.begin();
+               it != p_Pipelines.end(); ++it) {
+            if (it->get_id() == p_Pipeline.get_id()) {
+              return true;
+            }
+          }
+
+          return false;
+        }
+
+        static void register_pipeline_source(
+            Util::String p_SourcePath, Pipeline p_Pipeline)
+        {
+          if (!has_pipeline(g_Sources[p_SourcePath], p_Pipeline)) {
+            g_Sources[p_SourcePath].push_back(p_Pipeline);
+          }
+
+          if (g_SourceTimes.find(p_SourcePath) ==
+              g_SourceTimes.end()) {
+            g_SourceTimes[p_SourcePath] =
+                Util::FileIO::modified_sync(p_SourcePath.c_str());
+          }
+        }
+
+        static void register_dependent_pipeline(
+            ShaderVariant p_Variant, Pipeline p_Pipeline)
+        {
+          if (!p_Variant.is_alive()) {
+            return;
+          }
+
+          Util::List<uint64_t> &l_DependentPipelines =
+              p_Variant.get_dependent_pipelines();
+
+          for (auto it = l_DependentPipelines.begin();
+               it != l_DependentPipelines.end(); ++it) {
+            if (*it == p_Pipeline.get_id()) {
+              return;
+            }
+          }
+
+          l_DependentPipelines.push_back(p_Pipeline.get_id());
+        }
 
         static bool compile_shader(Util::String p_SourcePath,
                                    Util::String p_OutPath)
@@ -46,12 +91,6 @@ namespace Low {
           return true;
         }
 
-        static bool compile_shader(Util::String p_SourcePath)
-        {
-          return compile_shader(p_SourcePath,
-                                g_SourceOutMapping[p_SourcePath]);
-        }
-
         bool compile_graphics_pipeline(Pipeline p_Pipeline,
                                        bool p_CompileShaders)
         {
@@ -63,8 +102,10 @@ namespace Low {
                             nullptr);
 
           if (p_CompileShaders) {
-            compile_shader(l_Builder.vertexShaderPath);
-            compile_shader(l_Builder.fragmentShaderPath);
+            compile_shader(l_Builder.vertexShaderPath,
+                           l_Builder.vertexSpirvPath);
+            compile_shader(l_Builder.fragmentShaderPath,
+                           l_Builder.fragmentSpirvPath);
           }
 
           // Update shaders in builder
@@ -90,7 +131,8 @@ namespace Low {
                             nullptr);
 
           if (p_CompileShaders) {
-            compile_shader(l_Builder.computeShaderPath);
+            compile_shader(l_Builder.computeShaderPath,
+                           l_Builder.computeSpirvPath);
           }
 
           // Update shaders in builder
@@ -111,20 +153,15 @@ namespace Low {
         {
           g_GraphicsPipelines[p_Pipeline] = p_Builder;
 
-          g_Sources[p_Builder.vertexShaderPath] = p_Pipeline;
-          g_Sources[p_Builder.fragmentShaderPath] = p_Pipeline;
+          register_pipeline_source(p_Builder.vertexShaderPath,
+                                   p_Pipeline);
+          register_pipeline_source(p_Builder.fragmentShaderPath,
+                                   p_Pipeline);
 
-          g_SourceTimes[p_Builder.vertexShaderPath] =
-              Util::FileIO::modified_sync(
-                  p_Builder.vertexShaderPath.c_str());
-          g_SourceTimes[p_Builder.fragmentShaderPath] =
-              Util::FileIO::modified_sync(
-                  p_Builder.fragmentShaderPath.c_str());
-
-          g_SourceOutMapping[p_Builder.vertexShaderPath] =
-              p_Builder.vertexSpirvPath;
-          g_SourceOutMapping[p_Builder.fragmentShaderPath] =
-              p_Builder.fragmentSpirvPath;
+          register_dependent_pipeline(p_Builder.vertexShader,
+                                      p_Pipeline);
+          register_dependent_pipeline(p_Builder.fragmentShader,
+                                      p_Pipeline);
 
           compile_graphics_pipeline(p_Pipeline);
 
@@ -137,14 +174,8 @@ namespace Low {
         {
           g_ComputePipelines[p_Pipeline] = p_Builder;
 
-          g_Sources[p_Builder.computeShaderPath] = p_Pipeline;
-
-          g_SourceTimes[p_Builder.computeShaderPath] =
-              Util::FileIO::modified_sync(
-                  p_Builder.computeShaderPath.c_str());
-
-          g_SourceOutMapping[p_Builder.computeShaderPath] =
-              p_Builder.computeSpirvPath;
+          register_pipeline_source(p_Builder.computeShaderPath,
+                                   p_Pipeline);
 
           compile_compute_pipeline(p_Pipeline);
           return true;
@@ -169,20 +200,21 @@ namespace Low {
 
             auto i_SourcesEntry = g_Sources.find(i_SourcePath);
             if (i_SourcesEntry != g_Sources.end()) {
-              Pipeline i_Pipeline = i_SourcesEntry->second;
+              for (auto i_PipelineIt = i_SourcesEntry->second.begin();
+                   i_PipelineIt != i_SourcesEntry->second.end();
+                   ++i_PipelineIt) {
+                Pipeline i_Pipeline = *i_PipelineIt;
 
-#if LOW_RENDERER_COMPILE_SHADERS
-              compile_shader(i_SourcePath);
-#endif
-
-              auto i_GraphicsEntry =
-                  g_GraphicsPipelines.find(i_Pipeline);
-              auto i_ComputeEntry =
-                  g_ComputePipelines.find(i_Pipeline);
-              if (i_GraphicsEntry != g_GraphicsPipelines.end()) {
-                compile_graphics_pipeline(i_Pipeline, false);
-              } else if (i_ComputeEntry != g_ComputePipelines.end()) {
-                compile_compute_pipeline(i_Pipeline, false);
+                auto i_GraphicsEntry =
+                    g_GraphicsPipelines.find(i_Pipeline);
+                auto i_ComputeEntry =
+                    g_ComputePipelines.find(i_Pipeline);
+                if (i_GraphicsEntry != g_GraphicsPipelines.end()) {
+                  compile_graphics_pipeline(i_Pipeline, true);
+                } else if (i_ComputeEntry !=
+                           g_ComputePipelines.end()) {
+                  compile_compute_pipeline(i_Pipeline, true);
+                }
               }
             }
           }

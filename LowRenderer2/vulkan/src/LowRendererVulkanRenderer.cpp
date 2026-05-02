@@ -153,8 +153,8 @@ namespace Low {
         Vulkan::PipelineUtil::GraphicsPipelineBuilder l_Builder;
 
         l_Builder.pipelineLayout = p_PipelineLayout;
-        l_Builder.set_shaders(p_Config.vertexShaderPath,
-                              p_Config.fragmentShaderPath);
+        l_Builder.set_shaders(p_Config.vertexShader,
+                              p_Config.fragmentShader);
         l_Builder.set_input_topology(
             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
         l_Builder.set_polygon_mode(VK_POLYGON_MODE_FILL);
@@ -860,6 +860,19 @@ namespace Low {
             l_Image.destroy();
           }
           {
+            Image l_Image = p_RenderView.get_highlight_map()
+                                .get_gpu()
+                                .get_data_handle();
+
+            ImGui_ImplVulkan_RemoveTexture(
+                (VkDescriptorSet)p_RenderView.get_highlight_map()
+                    .get_gpu()
+                    .get_imgui_texture_id());
+
+            ImageUtil::destroy(l_Image);
+            l_Image.destroy();
+          }
+          {
             Image l_Image = p_RenderView.get_object_map()
                                 .get_gpu()
                                 .get_data_handle();
@@ -1073,6 +1086,36 @@ namespace Low {
           }
 
           ImageUtil::create(l_Image, l_Extent, l_ImageFormat,
+                            VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                                VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                                VK_IMAGE_USAGE_STORAGE_BIT |
+                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                                VK_IMAGE_USAGE_SAMPLED_BIT,
+                            false);
+
+          ImageUtil::cmd_transition(
+              l_Cmd, l_Image, VK_IMAGE_LAYOUT_UNDEFINED,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }
+
+        {
+          if (!p_RenderView.get_highlight_map().is_alive()) {
+            p_RenderView.set_highlight_map(
+                Texture::make_gpu_ready(N(Highlight)));
+          }
+
+          Image l_Image = p_RenderView.get_highlight_map()
+                              .get_gpu()
+                              .get_data_handle();
+
+          if (!l_Image.is_alive()) {
+            l_Image = Image::make(N(HighlightMap));
+            p_RenderView.get_highlight_map()
+                .get_gpu()
+                .set_data_handle(l_Image.get_id());
+          }
+
+          ImageUtil::create(l_Image, l_Extent, VK_FORMAT_R32_UINT,
                             VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
                                 VK_IMAGE_USAGE_TRANSFER_DST_BIT |
                                 VK_IMAGE_USAGE_STORAGE_BIT |

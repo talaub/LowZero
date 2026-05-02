@@ -4,6 +4,7 @@
 #include "LowRendererVulkanInit.h"
 #include "LowRendererVulkanBase.h"
 #include "LowRendererVulkanPipelineManager.h"
+#include "LowRendererShaderSource.h"
 
 #include "LowUtilContainers.h"
 #include "LowUtil.h"
@@ -16,6 +17,53 @@ namespace Low {
   namespace Renderer {
     namespace Vulkan {
       namespace PipelineUtil {
+        static bool is_absolute_path(Util::String p_Path)
+        {
+          return p_Path.find(":") != Util::String::npos ||
+                 p_Path.find("/") == 0 || p_Path.find("\\") == 0;
+        }
+
+        static Util::String resolve_shader_source_path(
+            ShaderVariant p_Variant)
+        {
+          LOW_ASSERT(p_Variant.is_alive(),
+                     "Cannot resolve dead shader variant source");
+
+          ShaderSource l_Source = p_Variant.get_source_handle();
+          LOW_ASSERT(l_Source.is_alive(),
+                     "Shader variant has a dead source handle");
+
+          Util::String l_Path = l_Source.get_path();
+          if (is_absolute_path(l_Path)) {
+            return l_Path;
+          }
+
+          return Util::get_project().engineDataPath +
+                 "/lowr_shaders/" + l_Path;
+        }
+
+        static Util::String resolve_shader_spirv_path(
+            ShaderVariant p_Variant)
+        {
+          LOW_ASSERT(p_Variant.is_alive(),
+                     "Cannot resolve dead shader variant SPIR-V path");
+
+          Util::String l_Path = p_Variant.get_compiled_path();
+          if (l_Path.empty()) {
+            ShaderSource l_Source = p_Variant.get_source_handle();
+            LOW_ASSERT(l_Source.is_alive(),
+                       "Shader variant has no compiled path and a dead source handle");
+            l_Path = l_Source.get_path() + ".spv";
+          }
+
+          if (is_absolute_path(l_Path)) {
+            return l_Path;
+          }
+
+          return Util::get_project().engineDataPath +
+                 "/lowr_spirv/" + l_Path;
+        }
+
         PipelineLayout
         create_layout(Util::Name p_Name,
                       const VkPipelineLayoutCreateInfo &p_CreateInfo)
@@ -312,6 +360,9 @@ namespace Low {
             Util::String p_VertexShader,
             Util::String p_FragmentShader, bool p_Project)
         {
+          vertexShader = Util::Handle::DEAD;
+          fragmentShader = Util::Handle::DEAD;
+
           vertexShaderPath = Util::get_project().engineDataPath +
                              "/lowr_shaders/" + p_VertexShader;
           fragmentShaderPath = Util::get_project().engineDataPath +
@@ -322,6 +373,22 @@ namespace Low {
           fragmentSpirvPath = Util::get_project().engineDataPath +
                               "/lowr_spirv/" + p_FragmentShader +
                               ".spv";
+        }
+
+        void GraphicsPipelineBuilder::set_shaders(
+            ShaderVariant p_VertexShader,
+            ShaderVariant p_FragmentShader)
+        {
+          vertexShader = p_VertexShader;
+          fragmentShader = p_FragmentShader;
+
+          vertexShaderPath = resolve_shader_source_path(p_VertexShader);
+          fragmentShaderPath =
+              resolve_shader_source_path(p_FragmentShader);
+
+          vertexSpirvPath = resolve_shader_spirv_path(p_VertexShader);
+          fragmentSpirvPath =
+              resolve_shader_spirv_path(p_FragmentShader);
         }
 
         void GraphicsPipelineBuilder::update_shaders()

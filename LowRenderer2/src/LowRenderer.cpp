@@ -47,6 +47,8 @@
 #include "LowRendererSS2DDrawCommand.h"
 #include "LowRendererSS2DCanvas.h"
 #include "LowRendererBuffer.h"
+#include "LowRendererShaderSource.h"
+#include "LowRendererShaderVariant.h"
 
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
@@ -166,10 +168,14 @@ namespace Low {
       AdaptiveRenderObject::initialize();
       SS2DCanvas::initialize();
       SS2DDrawCommand::initialize();
+      ShaderVariant::initialize();
+      ShaderSource::initialize();
     }
 
     static void cleanup_types()
     {
+      ShaderSource::cleanup();
+      ShaderVariant::cleanup();
       SS2DDrawCommand::cleanup();
       SS2DCanvas::cleanup();
       AdaptiveRenderObject::cleanup();

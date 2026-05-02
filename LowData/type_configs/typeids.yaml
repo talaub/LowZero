@@ -107,6 +107,8 @@ LowRenderer2:
   DataBuffer: 95
   SS2DCanvasBackend: 96
   PipelineLayout: 108
+  ShaderVariant: 109
+  ShaderSource: 110
 LowRendjrer2:
   RenderObject: 56
   RenderView: 57

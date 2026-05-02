@@ -1,5 +1,6 @@
 #pragma once
 
+#include "LowRendererShaderVariant.h"
 #include "LowUtilContainers.h"
 
 namespace Low {
@@ -28,8 +29,8 @@ namespace Low {
 
     struct GraphicsPipelineConfig
     {
-      Util::String vertexShaderPath;
-      Util::String fragmentShaderPath;
+      ShaderVariant vertexShader;
+      ShaderVariant fragmentShader;
       bool depthTest;
       GraphicsPipelineCullMode cullMode;
       GraphicsPipelineFrontFace frontFace;
