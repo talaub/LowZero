@@ -133,10 +133,9 @@ namespace Low {
         render_cone(l_Head, p_Color, p_DepthTest, p_Wireframe);
       }
 
-      void
-      render_spherical_billboard(Math::Vector3 p_Position,
-                                 float p_Size,
-                                 Renderer::EditorImage p_EditorImage)
+      void render_spherical_billboard(
+          Math::Vector3 p_Position, float p_Size,
+          Renderer::EditorImage p_EditorImage, Entity p_Entity)
       {
         if (!p_EditorImage.is_alive()) {
           return;
@@ -170,6 +169,11 @@ namespace Low {
                                .get_submeshes()[0];
           l_Draw.transform = l_Transform;
           l_Draw.editorImage = p_EditorImage;
+
+          l_Draw.pickId = LOW_UINT32_MAX;
+          if (p_Entity.is_alive()) {
+            l_Draw.pickId = p_Entity.get_index();
+          }
 
           l_RenderView.add_debug_geometry(l_Draw);
         }

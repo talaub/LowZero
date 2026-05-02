@@ -1378,12 +1378,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dirty
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
 
       // Set new value
       TYPE_SOA(UiRenderObject, dirty, bool) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
+
       if (p_Value) {
         ms_Dirty.insert(get_id());
       }

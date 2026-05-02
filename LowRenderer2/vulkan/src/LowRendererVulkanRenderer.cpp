@@ -612,6 +612,8 @@ namespace Low {
                          "Failed to execute renderstep");
             }
           }
+
+          i_RenderView.get_debug_geometry().clear();
         }
 
         return true;
@@ -1884,8 +1886,6 @@ namespace Low {
                     .buffer.buffer,
                 i_Scene.get_point_light_buffer().buffer, 1,
                 &i_CopyRegion);
-
-            LOW_LOG_DEBUG << "Upload pointlight" << LOW_LOG_END;
           }
         }
 
@@ -2124,8 +2124,6 @@ namespace Low {
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
 
-        // ImGui::ShowDemoWindow();
-
         {
           for (u32 i = 0; i < MaterialType::living_count(); ++i) {
             MaterialType i_MaterialType =
@@ -2133,6 +2131,8 @@ namespace Low {
 
             Pipeline i_DrawPipeline =
                 i_MaterialType.get_draw_pipeline_handle();
+            Pipeline i_PickPipeline =
+                i_MaterialType.get_pick_pipeline_handle();
 
             // TODO: Choose different layout based on family
 
@@ -2141,6 +2141,14 @@ namespace Low {
                   create_pipeline_from_config(
                       i_MaterialType.get_draw_pipeline_config(),
                       g_Pipelines.solidBasePipelineLayout));
+            }
+            if (i_MaterialType.allows_picking()) {
+              if (!i_PickPipeline.is_alive()) {
+                i_MaterialType.set_pick_pipeline_handle(
+                    create_pipeline_from_config(
+                        i_MaterialType.get_pick_pipeline_config(),
+                        g_Pipelines.solidBasePipelineLayout));
+              }
             }
           }
         }

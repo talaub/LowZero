@@ -12,6 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowUtilAssetManager.h"
 #include "LowCoreScripting.h"
 #include "LowUtilString.h"
@@ -719,6 +720,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_generator
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_generator
 
         return TYPE_SOA(Asset, generator,
@@ -730,6 +732,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_generator
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_generator
 
         // Set new value
@@ -737,6 +740,7 @@ namespace Low {
                  Low::Core::Scripting::AssetGenerator) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_generator
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_generator
 
         broadcast_observable(N(generator));

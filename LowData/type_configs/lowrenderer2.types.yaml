@@ -245,6 +245,12 @@ types:
     properties:
       transparent:
         type: bool
+      pick_pipeline_handle:
+        type: uint64_t
+      allows_picking:
+        type: bool
+        getter_name: allows_picking
+        setter_name: allows_picking
       draw_pipeline_handle:
         type: uint64_t
       depth_pipeline_handle:
@@ -255,6 +261,9 @@ types:
         no_setter: true
       initialized:
         type: bool
+      pick_pipeline_config:
+        type: Low::Renderer::GraphicsPipelineConfig
+        no_setter: true
       draw_pipeline_config:
         type: Low::Renderer::GraphicsPipelineConfig
         no_setter: true

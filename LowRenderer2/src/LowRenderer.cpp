@@ -748,6 +748,8 @@ namespace Low {
 
       // TODO: Create separate editor renderview in editor builds
       g_EditorRenderView = g_GameRenderView;
+
+      g_EditorRenderView.add_step_by_name(RENDERSTEP_PICKINGMAP_DRAW);
       // g_EditorRenderView = RenderView::make(N(Editor));
 
       Util::Window::get_main_window().eventCallbacks.push_back(

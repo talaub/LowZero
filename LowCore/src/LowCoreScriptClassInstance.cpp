@@ -12,6 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowCoreScriptClass.h"
 #include "LowCoreScripting.h"
 #include <angelscript.h>
@@ -21,6 +22,7 @@ namespace Low {
   namespace Core {
     namespace Scripting {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       u16 ClassInstance::ms_TypeId = 0;
@@ -59,6 +61,7 @@ namespace Low {
         ms_LivingInstances.push_back(l_Handle);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -70,6 +73,7 @@ namespace Low {
 
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
           asIScriptObject *l_Object = (asIScriptObject *)get_ptr();
           l_Object->Release();
           // LOW_CODEGEN::END::CUSTOM:DESTROY
@@ -102,6 +106,7 @@ namespace Low {
             N(LowCore), N(ClassInstance));
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity = Low::Util::Config::get_capacity(
@@ -314,6 +319,7 @@ namespace Low {
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
         // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
       }
 
@@ -409,6 +415,7 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
         // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
         for (auto it = ms_LivingInstances.begin();
@@ -426,6 +433,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         LOW_ASSERT_WARN(false, "Not implemented");
         return 0;
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -451,6 +459,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -467,6 +476,7 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         return Util::Handle::DEAD;
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
       }
@@ -508,6 +518,7 @@ namespace Low {
                                  Low::Util::Name p_Observable)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
         // LOW_CODEGEN::END::CUSTOM:NOTIFY
       }
 
@@ -524,6 +535,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_script_class
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_script_class
 
         return TYPE_SOA(ClassInstance, script_class, uint64_t);
@@ -533,12 +545,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_script_class
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_script_class
 
         // Set new value
         TYPE_SOA(ClassInstance, script_class, uint64_t) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_script_class
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_script_class
 
         broadcast_observable(N(script_class));
@@ -549,6 +563,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_reload_index
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_reload_index
 
         return TYPE_SOA(ClassInstance, reload_index, uint32_t);
@@ -558,12 +573,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_reload_index
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_reload_index
 
         // Set new value
         TYPE_SOA(ClassInstance, reload_index, uint32_t) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_reload_index
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_reload_index
 
         broadcast_observable(N(reload_index));
@@ -574,6 +591,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ptr
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_ptr
 
         return TYPE_SOA(ClassInstance, ptr, char *);
@@ -583,12 +601,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ptr
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_ptr
 
         // Set new value
         TYPE_SOA(ClassInstance, ptr, char *) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_ptr
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_ptr
 
         broadcast_observable(N(ptr));
@@ -599,6 +619,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
         return TYPE_SOA(ClassInstance, name, Low::Util::Name);
@@ -608,12 +629,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(ClassInstance, name, Low::Util::Name) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
         broadcast_observable(N(name));
@@ -622,6 +645,7 @@ namespace Low {
       bool ClassInstance::needs_refresh()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_needs_refresh
+
         ScriptClass l_Class = get_script_class();
         if (l_Class.needs_refresh()) {
           return true;
@@ -633,6 +657,7 @@ namespace Low {
       char *ClassInstance::get_ptr()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_ptr
+
         if (needs_refresh()) {
           asIScriptObject *l_OldPtr = (asIScriptObject *)_ptr();
           if (l_OldPtr) {
@@ -648,6 +673,7 @@ namespace Low {
       char *ClassInstance::spawn()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_spawn
+
         ScriptClass l_Class = get_script_class();
         LOW_ASSERT(l_Class.is_valid(),
                    "Can't spawn instance of class that is invalid.");
@@ -674,6 +700,7 @@ namespace Low {
                           Low::Core::Scripting::Class p_ScriptClass)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
         LOW_ASSERT(p_ScriptClass.is_alive(),
                    "Cannot create instance of dead class.");
         LOW_ASSERT(p_ScriptClass.is_valid(),
@@ -758,6 +785,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       static bool set_arg(asIScriptContext *p_Context, asUINT p_Index,
                           const void *p_Value, const char *p_TypeKey)
       {

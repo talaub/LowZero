@@ -7,9 +7,11 @@
 #include "LowEditorGui.h"
 #include "LowEditorBase.h"
 
+#include "LowMath.h"
 #include "LowRendererEditorImage.h"
 #include "LowRendererPointLight.h"
 #include "LowUtilHandle.h"
+#include "LowUtilLogger.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "ImGuizmo.h"
@@ -374,7 +376,7 @@ namespace Low {
           Core::DebugGeometry::render_spherical_billboard(
               i_Transform.get_world_position(),
               LOW_EDITOR_BILLBOARD_SIZE * l_ScreenSpaceAdjustment,
-              l_PointLightIcon);
+              l_PointLightIcon, i_Entity);
           continue;
         }
         /*
@@ -391,7 +393,7 @@ namespace Low {
         Core::DebugGeometry::render_spherical_billboard(
             i_Transform.get_world_position(),
             LOW_EDITOR_BILLBOARD_SIZE * l_ScreenSpaceAdjustment,
-            l_EntityIcon);
+            l_EntityIcon, i_Entity);
       }
     }
 
@@ -429,7 +431,7 @@ namespace Low {
         Core::DebugGeometry::render_spherical_billboard(
             p_Region.get_streaming_position(),
             LOW_EDITOR_BILLBOARD_SIZE * l_ScreenSpaceAdjustment,
-            Util::Handle::DEAD);
+            Util::Handle::DEAD, Util::Handle::DEAD);
       }
     }
 
@@ -914,13 +916,35 @@ namespace Low {
         l_HoverCoordinates =
             m_RenderViewWidget->get_relative_hover_position();
 
-        uint32_t l_EntityIndex = 0;
-        // TODO: Hover readback
+        // Readback
+        Math::Vector2 l_Relative =
+            m_RenderViewWidget->get_relative_hover_position();
+
+        Math::UVector2 l_Dimensions =
+            m_RenderViewWidget->get_widget_dimensions();
+
+        uint32_t l_EntityIndex = LOW_UINT32_MAX;
+
+        if (l_Dimensions.x > 0u && l_Dimensions.y > 0u) {
+          Math::UVector2 l_Pixel;
+          l_Pixel.x = Math::Util::clamp(
+              (uint32_t)(l_Relative.x * (float)l_Dimensions.x), 0u,
+              l_Dimensions.x - 1u);
+          l_Pixel.y = Math::Util::clamp(
+              (uint32_t)(l_Relative.y * (float)l_Dimensions.y), 0u,
+              l_Dimensions.y - 1u);
+
+          l_EntityIndex =
+              m_RenderViewWidget->get_renderview().read_object_id_px(
+                  l_Pixel);
+        }
 
         if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
 
           Core::Entity l_Entity;
           if (l_EntityIndex != ~0u) {
+            l_EntityIndex = LOW_MATH_MIN(
+                l_EntityIndex, Core::Entity::get_capacity() - 1);
             l_Entity = Core::Entity::find_by_index(l_EntityIndex);
           }
 

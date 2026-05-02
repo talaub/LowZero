@@ -8,6 +8,7 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
+
 #include <vulkan/vulkan.h>
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
@@ -15,6 +16,7 @@ namespace Low {
   namespace Renderer {
     namespace Vulkan {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       struct LOW_RENDERER2_API PipelineLayout
@@ -158,10 +160,12 @@ namespace Low {
         static u32 create_page();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+
         // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
       };
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
     } // namespace Vulkan
@@ -169,4 +173,5 @@ namespace Low {
 } // namespace Low
 
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE
+
 // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_HEADER_CODE

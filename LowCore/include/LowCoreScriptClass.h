@@ -8,6 +8,7 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
+
 #include "LowCoreScriptModule.h"
 #include "LowCoreScriptClassInstance.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
@@ -16,6 +17,7 @@ namespace Low {
   namespace Core {
     namespace Scripting {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       struct LOW_CORE_API Class : public Low::Util::Handle
@@ -169,12 +171,14 @@ namespace Low {
         static u32 create_page();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+
       public:
         ClassInstance create_instance();
         // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
       };
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
     } // namespace Scripting
@@ -182,6 +186,7 @@ namespace Low {
 } // namespace Low
 
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE
+
 namespace Low {
   namespace Core {
     typedef Scripting::Class ScriptClass;

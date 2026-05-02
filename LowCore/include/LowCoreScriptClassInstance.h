@@ -8,6 +8,7 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
+
 #include <type_traits>
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
@@ -15,6 +16,7 @@ namespace Low {
   namespace Core {
     namespace Scripting {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       struct Class;
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
@@ -174,6 +176,7 @@ namespace Low {
         char *spawn();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+
       public:
         template <typename... TArgs>
         bool call_method(const char *p_Declaration,
@@ -188,6 +191,7 @@ namespace Low {
       };
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+
       namespace Detail {
         template <typename T> struct ScriptArgTraits
         {
@@ -313,4 +317,5 @@ namespace Low {
 } // namespace Low
 
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE
+
 // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_HEADER_CODE

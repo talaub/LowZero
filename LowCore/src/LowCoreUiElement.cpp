@@ -85,6 +85,7 @@ namespace Low {
                                       l_Handle.get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         l_Handle.set_widget_instance(Util::Handle::DEAD);
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
@@ -1023,6 +1024,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_widget_instance
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_widget_instance
 
         return TYPE_SOA(Element, widget_instance, uint64_t);
@@ -1032,12 +1034,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_widget_instance
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_widget_instance
 
         // Set new value
         TYPE_SOA(Element, widget_instance, uint64_t) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_widget_instance
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_widget_instance
 
         broadcast_observable(N(widget_instance));
@@ -1048,6 +1052,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_local_id
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_local_id
 
         return TYPE_SOA(Element, local_id, uint64_t);
@@ -1057,12 +1062,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_local_id
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_local_id
 
         // Set new value
         TYPE_SOA(Element, local_id, uint64_t) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_local_id
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_local_id
 
         broadcast_observable(N(local_id));

@@ -847,6 +847,7 @@ namespace Low {
           p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
           if (get_parent().is_alive()) {
             p_Node["parent"] =
                 Util::U64Id{get_parent().get_unique_id()};
@@ -896,6 +897,7 @@ namespace Low {
           }
 
           // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
           if (p_Node["parent"]) {
             const u64 l_ParentUid =
                 p_Node["parent"].as<Util::U64Id>();
@@ -1680,6 +1682,7 @@ namespace Low {
         Display::point_is_in_bounding_box(Low::Math::Vector2 p_Point)
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_point_is_in_bounding_box
+
           const Math::Vector2 l_Center =
               get_absolute_pixel_position();
           const Math::Vector2 l_HalfExtents(

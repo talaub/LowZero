@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "LowRendererHelper.h"
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
@@ -50,11 +51,17 @@ namespace Low {
 
       ACCESSOR_TYPE_SOA(l_Handle, MaterialType, transparent, bool) =
           false;
+      ACCESSOR_TYPE_SOA(l_Handle, MaterialType, allows_picking,
+                        bool) = false;
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, MaterialType, inputs,
                                  Util::List<MaterialTypeInput>))
           Util::List<MaterialTypeInput>();
       ACCESSOR_TYPE_SOA(l_Handle, MaterialType, initialized, bool) =
           false;
+      new (ACCESSOR_TYPE_SOA_PTR(
+          l_Handle, MaterialType, pick_pipeline_config,
+          Low::Renderer::GraphicsPipelineConfig))
+          Low::Renderer::GraphicsPipelineConfig();
       new (ACCESSOR_TYPE_SOA_PTR(
           l_Handle, MaterialType, draw_pipeline_config,
           Low::Renderer::GraphicsPipelineConfig))
@@ -202,6 +209,64 @@ namespace Low {
         // End property: transparent
       }
       {
+        // Property: pick_pipeline_handle
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(pick_pipeline_handle);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(MaterialType::Data, pick_pipeline_handle);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          MaterialType l_Handle = p_Handle.get_id();
+          l_Handle.get_pick_pipeline_handle();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, MaterialType, pick_pipeline_handle, uint64_t);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          MaterialType l_Handle = p_Handle.get_id();
+          l_Handle.set_pick_pipeline_handle(*(uint64_t *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MaterialType l_Handle = p_Handle.get_id();
+          *((uint64_t *)p_Data) = l_Handle.get_pick_pipeline_handle();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: pick_pipeline_handle
+      }
+      {
+        // Property: allows_picking
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(allows_picking);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(MaterialType::Data, allows_picking);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          MaterialType l_Handle = p_Handle.get_id();
+          l_Handle.allows_picking();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MaterialType,
+                                            allows_picking, bool);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          MaterialType l_Handle = p_Handle.get_id();
+          l_Handle.allows_picking(*(bool *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MaterialType l_Handle = p_Handle.get_id();
+          *((bool *)p_Data) = l_Handle.allows_picking();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: allows_picking
+      }
+      {
         // Property: draw_pipeline_handle
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(draw_pipeline_handle);
@@ -309,6 +374,34 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: initialized
+      }
+      {
+        // Property: pick_pipeline_config
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(pick_pipeline_config);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(MaterialType::Data, pick_pipeline_config);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          MaterialType l_Handle = p_Handle.get_id();
+          l_Handle.get_pick_pipeline_config();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, MaterialType, pick_pipeline_config,
+              Low::Renderer::GraphicsPipelineConfig);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MaterialType l_Handle = p_Handle.get_id();
+          *((Low::Renderer::GraphicsPipelineConfig *)p_Data) =
+              l_Handle.get_pick_pipeline_config();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: pick_pipeline_config
       }
       {
         // Property: draw_pipeline_config
@@ -762,6 +855,8 @@ namespace Low {
 
       MaterialType l_Handle = make(p_Name);
       l_Handle.set_transparent(is_transparent());
+      l_Handle.set_pick_pipeline_handle(get_pick_pipeline_handle());
+      l_Handle.allows_picking(allows_picking());
       l_Handle.set_draw_pipeline_handle(get_draw_pipeline_handle());
       l_Handle.set_depth_pipeline_handle(get_depth_pipeline_handle());
       l_Handle.set_initialized(is_initialized());
@@ -794,6 +889,8 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       p_Node["transparent"] = is_transparent();
+      p_Node["pick_pipeline_handle"] = get_pick_pipeline_handle();
+      p_Node["allows_picking"] = allows_picking();
       p_Node["draw_pipeline_handle"] = get_draw_pipeline_handle();
       p_Node["depth_pipeline_handle"] = get_depth_pipeline_handle();
       p_Node["initialized"] = is_initialized();
@@ -824,6 +921,13 @@ namespace Low {
       if (p_Node["transparent"]) {
         l_Handle.set_transparent(p_Node["transparent"].as<bool>());
       }
+      if (p_Node["pick_pipeline_handle"]) {
+        l_Handle.set_pick_pipeline_handle(
+            p_Node["pick_pipeline_handle"].as<uint64_t>());
+      }
+      if (p_Node["allows_picking"]) {
+        l_Handle.allows_picking(p_Node["allows_picking"].as<bool>());
+      }
       if (p_Node["draw_pipeline_handle"]) {
         l_Handle.set_draw_pipeline_handle(
             p_Node["draw_pipeline_handle"].as<uint64_t>());
@@ -836,6 +940,8 @@ namespace Low {
       }
       if (p_Node["initialized"]) {
         l_Handle.set_initialized(p_Node["initialized"].as<bool>());
+      }
+      if (p_Node["pick_pipeline_config"]) {
       }
       if (p_Node["draw_pipeline_config"]) {
       }
@@ -937,6 +1043,62 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_transparent
 
       broadcast_observable(N(transparent));
+    }
+
+    uint64_t MaterialType::get_pick_pipeline_handle() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pick_pipeline_handle
+      // LOW_CODEGEN::END::CUSTOM:GETTER_pick_pipeline_handle
+
+      return TYPE_SOA(MaterialType, pick_pipeline_handle, uint64_t);
+    }
+    void MaterialType::set_pick_pipeline_handle(uint64_t p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_pick_pipeline_handle
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_pick_pipeline_handle
+
+      // Set new value
+      TYPE_SOA(MaterialType, pick_pipeline_handle, uint64_t) =
+          p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pick_pipeline_handle
+      // LOW_CODEGEN::END::CUSTOM:SETTER_pick_pipeline_handle
+
+      broadcast_observable(N(pick_pipeline_handle));
+    }
+
+    bool MaterialType::allows_picking() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_allows_picking
+      // LOW_CODEGEN::END::CUSTOM:GETTER_allows_picking
+
+      return TYPE_SOA(MaterialType, allows_picking, bool);
+    }
+    void MaterialType::toggle_allows_picking()
+    {
+      allows_picking(!allows_picking());
+    }
+
+    void MaterialType::allows_picking(bool p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_allows_picking
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_allows_picking
+
+      // Set new value
+      TYPE_SOA(MaterialType, allows_picking, bool) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_allows_picking
+      // LOW_CODEGEN::END::CUSTOM:SETTER_allows_picking
+
+      broadcast_observable(N(allows_picking));
     }
 
     uint64_t MaterialType::get_draw_pipeline_handle() const
@@ -1043,6 +1205,18 @@ namespace Low {
     }
 
     Low::Renderer::GraphicsPipelineConfig &
+    MaterialType::get_pick_pipeline_config() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pick_pipeline_config
+      // LOW_CODEGEN::END::CUSTOM:GETTER_pick_pipeline_config
+
+      return TYPE_SOA(MaterialType, pick_pipeline_config,
+                      Low::Renderer::GraphicsPipelineConfig);
+    }
+
+    Low::Renderer::GraphicsPipelineConfig &
     MaterialType::get_draw_pipeline_config() const
     {
       _LOW_ASSERT(is_alive());
@@ -1137,22 +1311,35 @@ namespace Low {
       l_Handle.set_family(p_Family);
 
       if (p_Family == MaterialTypeFamily::SOLID) {
-        l_Handle.get_draw_pipeline_config()
-            .colorAttachmentFormats.push_back(
-                ImageFormat::RGBA16_SFLOAT);
-        l_Handle.get_draw_pipeline_config()
-            .colorAttachmentFormats.push_back(
-                ImageFormat::RGBA16_SFLOAT);
-        l_Handle.get_draw_pipeline_config()
-            .colorAttachmentFormats.push_back(
-                ImageFormat::RGBA16_SFLOAT);
-        l_Handle.get_draw_pipeline_config()
-            .colorAttachmentFormats.push_back(ImageFormat::R32_UINT);
-        l_Handle.get_draw_pipeline_config().depthFormat =
-            ImageFormat::DEPTH;
+        l_Handle.allows_picking(true);
+        {
+          l_Handle.get_draw_pipeline_config()
+              .colorAttachmentFormats.push_back(
+                  ImageFormat::RGBA16_SFLOAT);
+          l_Handle.get_draw_pipeline_config()
+              .colorAttachmentFormats.push_back(
+                  ImageFormat::RGBA16_SFLOAT);
+          l_Handle.get_draw_pipeline_config()
+              .colorAttachmentFormats.push_back(
+                  ImageFormat::RGBA16_SFLOAT);
+          l_Handle.get_draw_pipeline_config().depthFormat =
+              ImageFormat::DEPTH;
 
-        l_Handle.get_draw_pipeline_config().alphaBlending = false;
+          l_Handle.get_draw_pipeline_config().alphaBlending = false;
+        }
+        {
+          l_Handle.get_pick_pipeline_config().fragmentShaderPath =
+              "picking.frag";
+          l_Handle.get_pick_pipeline_config()
+              .colorAttachmentFormats.push_back(
+                  ImageFormat::R32_UINT);
+          l_Handle.get_pick_pipeline_config().depthFormat =
+              ImageFormat::DEPTH;
+
+          l_Handle.get_pick_pipeline_config().alphaBlending = false;
+        }
       } else if (p_Family == MaterialTypeFamily::UI) {
+        l_Handle.allows_picking(false);
         l_Handle.get_draw_pipeline_config()
             .colorAttachmentFormats.push_back(
                 ImageFormat::RGBA16_SFLOAT);
@@ -1160,14 +1347,31 @@ namespace Low {
         l_Handle.get_draw_pipeline_config().alphaBlending = true;
         l_Handle.get_draw_pipeline_config().depthTest = false;
       } else if (p_Family == MaterialTypeFamily::DEBUGGEOMETRY) {
-        l_Handle.get_draw_pipeline_config()
-            .colorAttachmentFormats.push_back(
-                ImageFormat::RGBA16_SFLOAT);
+        l_Handle.allows_picking(true);
+        {
+          l_Handle.get_draw_pipeline_config()
+              .colorAttachmentFormats.push_back(
+                  ImageFormat::RGBA16_SFLOAT);
 
-        l_Handle.get_draw_pipeline_config().alphaBlending = true;
-        l_Handle.get_draw_pipeline_config().depthTest = true;
-        l_Handle.get_draw_pipeline_config().depthFormat =
-            ImageFormat::DEPTH;
+          l_Handle.get_draw_pipeline_config().alphaBlending = true;
+          l_Handle.get_draw_pipeline_config().depthTest = true;
+          l_Handle.get_draw_pipeline_config().depthFormat =
+              ImageFormat::DEPTH;
+        }
+        {
+          l_Handle.get_pick_pipeline_config().fragmentShaderPath =
+              "picking.frag";
+          l_Handle.get_pick_pipeline_config()
+              .colorAttachmentFormats.push_back(
+                  ImageFormat::R32_UINT);
+          l_Handle.get_pick_pipeline_config().depthFormat =
+              ImageFormat::DEPTH;
+          l_Handle.get_pick_pipeline_config().alphaBlending = false;
+          l_Handle.get_pick_pipeline_config().cullMode =
+              GraphicsPipelineCullMode::NONE;
+          l_Handle.get_pick_pipeline_config().frontFace =
+              GraphicsPipelineFrontFace::COUNTER_CLOCKWISE;
+        }
       }
 
       return l_Handle;
@@ -1351,7 +1555,9 @@ namespace Low {
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_draw_vertex_shader_path
 
+      LOW_LOG_DEBUG << p_Path << LOW_LOG_END;
       get_draw_pipeline_config().vertexShaderPath = p_Path;
+      get_pick_pipeline_config().vertexShaderPath = p_Path;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_draw_vertex_shader_path
     }
 

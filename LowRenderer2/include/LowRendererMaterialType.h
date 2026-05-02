@@ -41,10 +41,13 @@ namespace Low {
       {
       public:
         bool transparent;
+        uint64_t pick_pipeline_handle;
+        bool allows_picking;
         uint64_t draw_pipeline_handle;
         uint64_t depth_pipeline_handle;
         Util::List<MaterialTypeInput> inputs;
         bool initialized;
+        Low::Renderer::GraphicsPipelineConfig pick_pipeline_config;
         Low::Renderer::GraphicsPipelineConfig draw_pipeline_config;
         Low::Renderer::GraphicsPipelineConfig depth_pipeline_config;
         Low::Renderer::MaterialTypeFamily family;
@@ -167,6 +170,13 @@ namespace Low {
       void set_transparent(bool p_Value);
       void toggle_transparent();
 
+      uint64_t get_pick_pipeline_handle() const;
+      void set_pick_pipeline_handle(uint64_t p_Value);
+
+      bool allows_picking() const;
+      void allows_picking(bool p_Value);
+      void toggle_allows_picking();
+
       uint64_t get_draw_pipeline_handle() const;
       void set_draw_pipeline_handle(uint64_t p_Value);
 
@@ -176,6 +186,9 @@ namespace Low {
       bool is_initialized() const;
       void set_initialized(bool p_Value);
       void toggle_initialized();
+
+      Low::Renderer::GraphicsPipelineConfig &
+      get_pick_pipeline_config() const;
 
       Low::Renderer::GraphicsPipelineConfig &
       get_draw_pipeline_config() const;
@@ -231,4 +244,5 @@ namespace Low {
 } // namespace Low
 
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE
+
 // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_HEADER_CODE

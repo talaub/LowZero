@@ -26,15 +26,19 @@ namespace Low {
     struct DebugGeometryUpload
     {
       DebugGeometryUpload(Math::Matrix4x4 p_WorldTransform,
-                          Math::Color p_Color, u32 p_EditorImageIndex)
+                          Math::Color p_Color, u32 p_EditorImageIndex,
+                          u32 p_PickId)
           : world_transform(p_WorldTransform), color(p_Color),
-            editorImageIndex(p_EditorImageIndex)
+            editorImageIndex(p_EditorImageIndex), pickId(p_PickId)
       {
       }
 
       alignas(16) Low::Math::Matrix4x4 world_transform;
       alignas(16) Math::Color color;
-      alignas(16) u32 editorImageIndex;
+      u32 editorImageIndex;
+      u32 pickId;
+      u32 padding0;
+      u32 padding1;
     };
 
     struct UiDrawCommandUpload

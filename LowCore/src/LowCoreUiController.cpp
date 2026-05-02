@@ -12,12 +12,14 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Core {
     namespace UI {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       u16 Controller::ms_TypeId = 0;
@@ -60,6 +62,7 @@ namespace Low {
         ms_LivingInstances.push_back(l_Handle);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         LOW_LOG_DEBUG << "Create UI controller: '" << p_Name << "'"
                       << LOW_LOG_END;
         // LOW_CODEGEN::END::CUSTOM:MAKE
@@ -73,6 +76,7 @@ namespace Low {
 
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
           // LOW_CODEGEN::END::CUSTOM:DESTROY
         }
 
@@ -103,6 +107,7 @@ namespace Low {
             N(LowCore), N(Controller));
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity = Low::Util::Config::get_capacity(N(LowCore),
@@ -326,6 +331,7 @@ namespace Low {
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
         // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
       }
 
@@ -418,6 +424,7 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
         // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
         for (auto it = ms_LivingInstances.begin();
@@ -434,6 +441,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         LOW_ASSERT_WARN(false, "Not implemented");
         return 0;
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -459,6 +467,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -475,6 +484,7 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         return Util::Handle::DEAD;
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
       }
@@ -516,6 +526,7 @@ namespace Low {
                               Low::Util::Name p_Observable)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
         // LOW_CODEGEN::END::CUSTOM:NOTIFY
       }
 
@@ -532,6 +543,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_value
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_value
 
         return TYPE_SOA(Controller, value, ControllerValue);
@@ -541,12 +553,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_value
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_value
 
         // Set new value
         TYPE_SOA(Controller, value, ControllerValue) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_value
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_value
 
         broadcast_observable(N(value));
@@ -557,6 +571,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_type
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_type
 
         return TYPE_SOA(Controller, type, ControllerType);
@@ -566,12 +581,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_type
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_type
 
         // Set new value
         TYPE_SOA(Controller, type, ControllerType) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_type
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_type
 
         broadcast_observable(N(type));
@@ -582,6 +599,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
         return TYPE_SOA(Controller, name, Low::Util::Name);
@@ -591,12 +609,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(Controller, name, Low::Util::Name) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
         broadcast_observable(N(name));
@@ -606,6 +626,7 @@ namespace Low {
       Controller::make_code(Low::Util::Name p_Name)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_code
+
         Controller l_Controller = make(p_Name);
         l_Controller.set_type(ControllerType::Code);
 
@@ -620,6 +641,7 @@ namespace Low {
                               Low::Core::Scripting::Class p_Class)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_script
+
         Controller l_Controller = make(p_Name);
         l_Controller.set_type(ControllerType::Script);
 
@@ -632,6 +654,7 @@ namespace Low {
       Low::Core::UI::ControllerInstance Controller::spawn_instance()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_spawn_instance
+
         ControllerInstance l_Instance =
             ControllerInstance::make(get_name());
         l_Instance.set_controller(get_id());
@@ -651,6 +674,7 @@ namespace Low {
           Low::Core::Scripting::Class p_ScriptClass)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_find_by_scriptclass
+
         for (u32 i = 0; i < living_count(); ++i) {
           Controller i_Controller = living_instances()[i];
 
@@ -667,6 +691,7 @@ namespace Low {
       bool Controller::is_script_controller() const
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_is_script_controller
+
         return get_type() == ControllerType::Script;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_is_script_controller
       }
@@ -674,6 +699,7 @@ namespace Low {
       void Controller::update_instances()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_instances
+
         LOW_NOT_IMPLEMENTED_WARN;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_update_instances
       }
@@ -747,6 +773,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace UI

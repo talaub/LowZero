@@ -4,6 +4,8 @@
 
 #include "LowMath.h"
 
+#include "LowCoreEntity.h"
+
 #include "LowRendererRenderView.h"
 #include "LowRendererMesh.h"
 #include "LowRendererEditorImage.h"
@@ -59,10 +61,9 @@ namespace Low {
                         bool p_DepthTest, bool p_Wireframe);
 
       // Billboards
-      LOW_CORE_API void
-      render_spherical_billboard(Math::Vector3 p_Position,
-                                 float p_Size,
-                                 Renderer::EditorImage p_EditorImage);
+      LOW_CORE_API void render_spherical_billboard(
+          Math::Vector3 p_Position, float p_Size,
+          Renderer::EditorImage p_EditorImage, Entity p_Entity);
 
       Renderer::Mesh get_plane();
     } // namespace DebugGeometry

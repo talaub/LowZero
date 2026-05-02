@@ -546,6 +546,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_controller_instance
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_controller_instance
 
         return TYPE_SOA(WidgetInstance, controller_instance,
@@ -557,6 +558,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_controller_instance
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_controller_instance
 
         // Set new value
@@ -564,6 +566,7 @@ namespace Low {
                  Low::Core::UI::ControllerInstance) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_controller_instance
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_controller_instance
 
         broadcast_observable(N(controller_instance));

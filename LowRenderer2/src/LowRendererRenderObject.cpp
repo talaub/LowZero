@@ -831,6 +831,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_last_uploaded_mesh_gpu_id
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_last_uploaded_mesh_gpu_id
 
       return TYPE_SOA(RenderObject, last_uploaded_mesh_gpu_id,
@@ -841,6 +842,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_last_uploaded_mesh_gpu_id
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_last_uploaded_mesh_gpu_id
 
       // Set new value
@@ -848,6 +850,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_last_uploaded_mesh_gpu_id
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_last_uploaded_mesh_gpu_id
 
       broadcast_observable(N(last_uploaded_mesh_gpu_id));
@@ -1072,6 +1075,7 @@ namespace Low {
       if (!is_dirty()) {
         TYPE_SOA(RenderObject, dirty, bool) = true;
         // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+
         ms_Dirty.insert(get_id());
         // LOW_CODEGEN::END::CUSTOM:MARK_dirty
       }

@@ -104,6 +104,7 @@ namespace Low {
 
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
           if (get_render_object().is_alive()) {
             get_render_object().destroy();
           }

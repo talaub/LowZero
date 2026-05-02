@@ -191,12 +191,6 @@ namespace Low {
       if (Util::Handle::is_registered_type(p_Handle.get_type())) {
         Util::RTTI::TypeInfo &l_Info =
             Util::Handle::get_type_info(p_Handle.get_type());
-
-        LOW_LOG_DEBUG << "Setting type: '" << l_Info.name
-                      << "' IsAlive: " << l_Info.is_alive(p_Handle)
-                      << LOW_LOG_END;
-      } else {
-        LOW_LOG_DEBUG << "Setting unknown type" << LOW_LOG_END;
       }
 
       get_details_widget()->clear();

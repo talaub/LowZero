@@ -1206,6 +1206,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gpu
+
       if (p_Value.is_alive()) {
         p_Value.set_material_handle(get_id());
       }
@@ -1278,6 +1279,7 @@ namespace Low {
     void Material::mark_dirty()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+
       if (get_gpu().is_alive()) {
         get_gpu().mark_dirty();
       }
@@ -1369,6 +1371,7 @@ namespace Low {
     void Material::update_gpu()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_gpu
+
       _LOW_ASSERT(get_gpu().is_alive());
 
 #define SET_GPU_PROPERTY_ITER(type)                                  \

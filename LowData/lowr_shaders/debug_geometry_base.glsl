@@ -7,6 +7,7 @@ struct DebugGeometryRenderObject {
     mat4 worldMatrix;
     vec4 color;
     uint editorImageIndex;
+    uint pickId;
 };
 
 layout(std140, set = 2, binding = 5) readonly buffer DebugGeometryRenderObjectWrapper

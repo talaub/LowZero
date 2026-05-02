@@ -12,6 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowCoreUiElement.h"
 #include "LowCoreUiController.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
@@ -20,6 +21,7 @@ namespace Low {
   namespace Core {
     namespace UI {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       u16 ControllerInstance::ms_TypeId = 0;
@@ -63,6 +65,7 @@ namespace Low {
         ms_LivingInstances.push_back(l_Handle);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -74,6 +77,7 @@ namespace Low {
 
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
           // LOW_CODEGEN::END::CUSTOM:DESTROY
         }
 
@@ -104,6 +108,7 @@ namespace Low {
             N(LowCore), N(ControllerInstance));
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity = Low::Util::Config::get_capacity(
@@ -261,6 +266,7 @@ namespace Low {
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
         // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
       }
 
@@ -358,6 +364,7 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
         // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
         for (auto it = ms_LivingInstances.begin();
@@ -375,6 +382,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         LOW_ASSERT_WARN(false, "Not implemented");
         return 0;
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -401,6 +409,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -418,6 +427,7 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         return Util::Handle::DEAD;
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
       }
@@ -460,6 +470,7 @@ namespace Low {
                                       Low::Util::Name p_Observable)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
         // LOW_CODEGEN::END::CUSTOM:NOTIFY
       }
 
@@ -476,6 +487,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_value
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_value
 
         return TYPE_SOA(ControllerInstance, value,
@@ -487,6 +499,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_value
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_value
 
         // Set new value
@@ -494,6 +507,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_value
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_value
 
         broadcast_observable(N(value));
@@ -504,6 +518,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_controller
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_controller
 
         return TYPE_SOA(ControllerInstance, controller, uint64_t);
@@ -513,12 +528,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_controller
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_controller
 
         // Set new value
         TYPE_SOA(ControllerInstance, controller, uint64_t) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_controller
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_controller
 
         broadcast_observable(N(controller));
@@ -529,6 +546,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
         return TYPE_SOA(ControllerInstance, name, Low::Util::Name);
@@ -538,12 +556,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(ControllerInstance, name, Low::Util::Name) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
         broadcast_observable(N(name));
@@ -553,6 +573,7 @@ namespace Low {
           Low::Core::UI::Element p_Element)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_handle_click
+
         Controller l_Controller = get_controller();
         if (l_Controller.is_script_controller()) {
           Scripting::ClassInstance l_ClassInstance =
@@ -635,6 +656,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace UI

@@ -73,6 +73,7 @@ namespace Low {
 
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
           vkDestroyPipeline(Global::get_device(), get(), nullptr);
           // LOW_CODEGEN::END::CUSTOM:DESTROY
         }
@@ -472,6 +473,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_internal
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_internal
 
         return TYPE_SOA(Pipeline, internal, VkPipeline);
@@ -481,12 +483,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_internal
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_internal
 
         // Set new value
         TYPE_SOA(Pipeline, internal, VkPipeline) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_internal
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_internal
 
         broadcast_observable(N(internal));

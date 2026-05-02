@@ -12,6 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowUtilAssetManager.h"
 #include "LowUtilString.h"
 #include "LowCoreUiDisplay.h"
@@ -21,6 +22,7 @@ namespace Low {
   namespace Core {
     namespace UI {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       u16 WidgetAsset::ms_TypeId = 0;
@@ -70,6 +72,7 @@ namespace Low {
         ms_LivingInstances.push_back(l_Handle);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         l_Handle.set_state(LoadState::Unloaded);
         l_Handle.set_local_element_id_counter(1);
         // LOW_CODEGEN::END::CUSTOM:MAKE
@@ -83,6 +86,7 @@ namespace Low {
 
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
           // LOW_CODEGEN::END::CUSTOM:DESTROY
         }
 
@@ -113,6 +117,7 @@ namespace Low {
             N(LowCore), N(WidgetAsset));
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity = Low::Util::Config::get_capacity(N(LowCore),
@@ -575,6 +580,7 @@ namespace Low {
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
         // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
         {
           Util::AssetManager::TypeRegistratorBuilder l_Builder(
               N(UiWidget), IDENTIFIER);
@@ -704,6 +710,7 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
         // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
         for (auto it = ms_LivingInstances.begin();
@@ -720,6 +727,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         LOW_ASSERT_WARN(false, "Not implemented");
         return 0;
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -745,6 +753,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         p_Node["name"] = get_name();
         Util::Serial::Node &l_ContentNode =
             p_Node["content"]["elements"];
@@ -783,6 +792,7 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         return Low::Util::Handle::DEAD;
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
       }
@@ -824,6 +834,7 @@ namespace Low {
                                Low::Util::Name p_Observable)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
         // LOW_CODEGEN::END::CUSTOM:NOTIFY
       }
 
@@ -838,6 +849,7 @@ namespace Low {
       void WidgetAsset::post_load(Low::Util::Serial::Node &p_Node)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:POST_LOAD
+
         set_state(LoadState::Loaded);
 
         if (p_Node["local_element_id_counter"]) {
@@ -882,6 +894,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_state
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_state
 
         return TYPE_SOA(WidgetAsset, state, Low::Core::UI::LoadState);
@@ -891,6 +904,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_state
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_state
 
         // Set new value
@@ -898,6 +912,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_state
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_state
 
         broadcast_observable(N(state));
@@ -909,6 +924,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_content
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_content
 
         return TYPE_SOA(
@@ -921,6 +937,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_content
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_content
 
         // Set new value
@@ -929,6 +946,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_content
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_content
 
         broadcast_observable(N(content));
@@ -939,6 +957,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_path
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_path
 
         return TYPE_SOA(WidgetAsset, path, Low::Util::String);
@@ -954,12 +973,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_path
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_path
 
         // Set new value
         TYPE_SOA(WidgetAsset, path, Low::Util::String) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_path
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_path
 
         broadcast_observable(N(path));
@@ -970,6 +991,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_controller
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_controller
 
         return TYPE_SOA(WidgetAsset, controller,
@@ -981,6 +1003,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_controller
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_controller
 
         // Set new value
@@ -988,6 +1011,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_controller
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_controller
 
         broadcast_observable(N(controller));
@@ -998,6 +1022,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_has_custom_controller
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_has_custom_controller
 
         return TYPE_SOA(WidgetAsset, has_custom_controller, bool);
@@ -1012,12 +1037,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_has_custom_controller
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_has_custom_controller
 
         // Set new value
         TYPE_SOA(WidgetAsset, has_custom_controller, bool) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_has_custom_controller
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_has_custom_controller
 
         broadcast_observable(N(has_custom_controller));
@@ -1028,6 +1055,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_local_element_id_counter
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_local_element_id_counter
 
         return TYPE_SOA(WidgetAsset, local_element_id_counter,
@@ -1038,6 +1066,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_local_element_id_counter
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_local_element_id_counter
 
         // Set new value
@@ -1045,6 +1074,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_local_element_id_counter
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_local_element_id_counter
 
         broadcast_observable(N(local_element_id_counter));
@@ -1055,6 +1085,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_custom_controller_id
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_custom_controller_id
 
         return TYPE_SOA(WidgetAsset, custom_controller_id, uint64_t);
@@ -1064,6 +1095,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_custom_controller_id
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_custom_controller_id
 
         // Set new value
@@ -1071,6 +1103,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_custom_controller_id
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_custom_controller_id
 
         broadcast_observable(N(custom_controller_id));
@@ -1081,6 +1114,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
         return TYPE_SOA(WidgetAsset, name, Low::Util::Name);
@@ -1090,12 +1124,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(WidgetAsset, name, Low::Util::Name) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
         broadcast_observable(N(name));
@@ -1104,6 +1140,7 @@ namespace Low {
       uint64_t WidgetAsset::get_next_local_id()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_next_local_id
+
         u64 l_Id = 0;
         do {
           l_Id = get_local_element_id_counter();
@@ -1119,6 +1156,7 @@ namespace Low {
       void WidgetAsset::parse_content(Low::Util::Serial::Node &p_Node)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_parse_content
+
         Util::Serial::Node &l_ElementsNode = p_Node["elements"];
         if (l_ElementsNode) {
           for (u32 i = 0; i < l_ElementsNode.size(); ++i) {
@@ -1136,6 +1174,7 @@ namespace Low {
           Low::Core::UI::ElementDescriptor &p_Descriptor)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_parse_element
+
         p_Descriptor.name = p_Node["name"].as<Util::Name>();
         p_Descriptor.local_id = p_Node["local_id"].as<Util::U64Id>();
 
@@ -1168,6 +1207,7 @@ namespace Low {
       WidgetAsset::spawn_instance(Low::Renderer::UiCanvas p_Canvas)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_spawn_instance
+
         WidgetInstance l_Instance = WidgetInstance::make(get_name());
 
         if (get_controller().is_alive()) {
@@ -1203,6 +1243,7 @@ namespace Low {
           Low::Core::UI::Element p_Parent)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_spawn_element
+
         Element l_Element =
             Element::make(p_Descriptor.name, p_Canvas);
         l_Element.set_local_id(p_Descriptor.local_id);
@@ -1235,6 +1276,7 @@ namespace Low {
           Low::Core::UI::ElementDescriptor &p_Descriptor)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_fill_element_descriptor
+
         Component::Display l_Display = p_Element.get_display();
         p_Descriptor.name = p_Element.get_name();
         p_Descriptor.local_id = p_Element.get_local_id();
@@ -1273,6 +1315,7 @@ namespace Low {
           Low::Core::UI::WidgetInstance p_Instance)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_fill_content_from_instance
+
         get_content().clear();
 
         Component::Display l_RootDisplay =
@@ -1295,6 +1338,7 @@ namespace Low {
           Low::Util::Serial::Node &p_Node) const
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_serialize_element_descriptor
+
         p_Node["name"] = p_Descriptor.name;
         p_Node["local_id"] = Util::U64Id{p_Descriptor.local_id};
         Util::Serial::Node &i_ComponentsNode = p_Node["components"];
@@ -1391,6 +1435,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace UI

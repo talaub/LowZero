@@ -33,6 +33,7 @@ namespace Low {
       bool wireframe;
 
       EditorImage editorImage;
+      u32 pickId;
     };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
@@ -307,6 +308,7 @@ namespace Low {
       static u32 create_page();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+
     public:
       static Util::Set<RenderView> ms_ScheduledForDeletion;
       static bool ms_FullDestroy;
@@ -321,4 +323,5 @@ namespace Low {
 } // namespace Low
 
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE
+
 // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_HEADER_CODE

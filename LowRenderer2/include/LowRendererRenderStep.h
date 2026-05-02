@@ -18,6 +18,7 @@
 #define RENDERSTEP_DEBUG_GEOMETRY_NAME N(debug_geometry)
 #define RENDERSTEP_OBJECT_ID_COPY N(object_id_copy)
 #define RENDERSTEP_BLUR N(blur)
+#define RENDERSTEP_PICKINGMAP_DRAW N(pickingmap_draw)
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -233,4 +234,5 @@ namespace Low {
 } // namespace Low
 
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE
+
 // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_HEADER_CODE

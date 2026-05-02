@@ -1,6 +1,7 @@
 #include "LowRendererVulkanPipelineManager.h"
 
 #include "LowUtilFileIO.h"
+#include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 
 #include "LowUtil.h"

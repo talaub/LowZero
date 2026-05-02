@@ -12,6 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowCoreScriptClass.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
@@ -19,6 +20,7 @@ namespace Low {
   namespace Core {
     namespace Scripting {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       u16 Module::ms_TypeId = 0;
@@ -64,6 +66,7 @@ namespace Low {
         ms_LivingInstances.push_back(l_Handle);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         l_Handle.set_as_module(nullptr);
         l_Handle.set_reload_index(0);
         // LOW_CODEGEN::END::CUSTOM:MAKE
@@ -77,6 +80,7 @@ namespace Low {
 
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
           // LOW_CODEGEN::END::CUSTOM:DESTROY
         }
 
@@ -107,6 +111,7 @@ namespace Low {
                                                           N(Module));
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity =
@@ -339,6 +344,7 @@ namespace Low {
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
         // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
       }
 
@@ -430,6 +436,7 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
         // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
         for (auto it = ms_LivingInstances.begin();
@@ -446,6 +453,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         LOW_ASSERT_WARN(false, "Not implemented");
         return 0;
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -469,6 +477,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -485,6 +494,7 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         return Low::Util::Handle::DEAD;
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
       }
@@ -525,6 +535,7 @@ namespace Low {
                           Low::Util::Name p_Observable)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
         // LOW_CODEGEN::END::CUSTOM:NOTIFY
       }
 
@@ -541,6 +552,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_scripts
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_scripts
 
         return TYPE_SOA(Module, scripts, Low::Util::List<uint64_t>);
@@ -551,6 +563,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_as_module
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_as_module
 
         return TYPE_SOA(Module, as_module, char *);
@@ -560,12 +573,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_as_module
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_as_module
 
         // Set new value
         TYPE_SOA(Module, as_module, char *) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_as_module
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_as_module
 
         broadcast_observable(N(as_module));
@@ -576,6 +591,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_classes
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_classes
 
         return TYPE_SOA(Module, classes, Low::Util::List<uint64_t>);
@@ -586,6 +602,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_reload_index
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_reload_index
 
         return TYPE_SOA(Module, reload_index, uint32_t);
@@ -595,12 +612,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_reload_index
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_reload_index
 
         // Set new value
         TYPE_SOA(Module, reload_index, uint32_t) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_reload_index
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_reload_index
 
         broadcast_observable(N(reload_index));
@@ -611,6 +630,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ticking_functions
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_ticking_functions
 
         return TYPE_SOA(Module, ticking_functions,
@@ -622,6 +642,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
         return TYPE_SOA(Module, name, Low::Util::Name);
@@ -631,12 +652,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(Module, name, Low::Util::Name) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
         broadcast_observable(N(name));
@@ -645,6 +668,7 @@ namespace Low {
       uint64_t Module::find_class_by_name(Low::Util::Name p_Name)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_find_class_by_name
+
         for (u64 i_ClassId : get_classes()) {
           ScriptClass i_Class = i_ClassId;
           if (i_Class.get_name() == p_Name) {
@@ -725,6 +749,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Scripting

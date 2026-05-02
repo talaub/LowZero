@@ -12,6 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowRendererVulkan.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
@@ -19,6 +20,7 @@ namespace Low {
   namespace Renderer {
     namespace Vulkan {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       u16 PipelineLayout::ms_TypeId = 0;
@@ -60,6 +62,7 @@ namespace Low {
         ms_LivingInstances.push_back(l_Handle);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -71,6 +74,7 @@ namespace Low {
 
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
           VkPipelineLayout l_Layout = get();
           vkDestroyPipelineLayout(Global::get_device(), l_Layout,
                                   nullptr);
@@ -104,6 +108,7 @@ namespace Low {
             N(LowRenderer2), N(PipelineLayout));
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity = Low::Util::Config::get_capacity(
@@ -209,6 +214,7 @@ namespace Low {
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
         // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
       }
 
@@ -305,6 +311,7 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
         // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
         for (auto it = ms_LivingInstances.begin();
@@ -325,6 +332,7 @@ namespace Low {
         l_Handle.set(get());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
         return l_Handle;
@@ -353,6 +361,7 @@ namespace Low {
         p_Node["name"] = get_name().c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -377,6 +386,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
         return l_Handle;
@@ -419,6 +429,7 @@ namespace Low {
                                   Low::Util::Name p_Observable)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
         // LOW_CODEGEN::END::CUSTOM:NOTIFY
       }
 
@@ -435,6 +446,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_internal
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_internal
 
         return TYPE_SOA(PipelineLayout, internal, VkPipelineLayout);
@@ -444,6 +456,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_internal
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_internal
 
         // Set new value
@@ -451,6 +464,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_internal
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_internal
 
         broadcast_observable(N(internal));
@@ -461,6 +475,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
         return TYPE_SOA(PipelineLayout, name, Low::Util::Name);
@@ -470,12 +485,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(PipelineLayout, name, Low::Util::Name) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
         broadcast_observable(N(name));
@@ -550,6 +567,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Vulkan
