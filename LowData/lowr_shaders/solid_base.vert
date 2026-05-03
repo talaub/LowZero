@@ -8,6 +8,9 @@ void main()
   vec4 l_WorldPosition = RENDER_OBJECT.worldMatrix * vec4(VERTEX.position, 1.0);
 	gl_Position = g_ViewInfo.viewProjectionMatrix * l_WorldPosition;
 
+#ifdef PICKING
+  o_PickId = uint(RENDER_OBJECT.objectId);
+#else
   o_InstanceId = 1;
   o_TextureCoordinates = VERTEX.textureCoordinates;
   mat3 normalMatrix = transpose(inverse(mat3(RENDER_OBJECT.worldMatrix)));
@@ -22,4 +25,5 @@ void main()
   vec3 N = o_SurfaceNormal;
   mat3 TBN = mat3(T, B, N);
   o_TBN = TBN;
+#endif
 }

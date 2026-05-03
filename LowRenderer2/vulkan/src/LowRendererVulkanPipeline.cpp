@@ -13,6 +13,7 @@
 #include <fstream>
 #include <vulkan/vulkan.h>
 #include "LowRendererVulkanBase.h"
+#include "LowUtilHashing.h"
 #include "LowUtilLogger.h"
 
 namespace Low {
@@ -57,7 +58,10 @@ namespace Low {
             LOW_ASSERT(l_Source.is_alive(),
                        "Shader variant has no compiled path and a "
                        "dead source handle");
-            l_Path = l_Source.get_path() + ".spv";
+            l_Path = l_Source.get_path() + "." +
+                     Util::hash_to_string(p_Variant.get_key_hash()) +
+                     ".spv";
+            p_Variant.set_compiled_path(l_Path);
           }
 
           if (is_absolute_path(l_Path)) {

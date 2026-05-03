@@ -106,7 +106,15 @@ namespace Low {
           Util::String l_Notice = "Compiling shader " + p_SourcePath;
 
           LOW_LOG_DEBUG << l_Notice << LOW_LOG_END;
-          Util::execute_command(l_Command);
+          Util::String l_Output;
+          int l_Result =
+              Util::execute_command(l_Command, true, &l_Output);
+          if (l_Result != 0 || !l_Output.empty()) {
+            LOW_LOG_ERROR
+                << "Shader compilation failed: " << p_SourcePath
+                << "\n"
+                << l_Output << LOW_LOG_END;
+          }
 #endif
 
           return true;
@@ -134,6 +142,8 @@ namespace Low {
           }
 
 #if LOW_RENDERER_COMPILE_SHADERS
+          Util::String l_DefineString = "";
+
           Util::String l_IncludeCommand =
               "-I " + Util::get_project().engineDataPath +
               "\\lowr_shaders\\lib";
@@ -141,20 +151,33 @@ namespace Low {
               "glslc " + l_IncludeCommand + " " + p_SourcePath;
 
           for (ShaderDefine &i_Define : p_Variant.get_defines()) {
-            l_Command += " -D ";
+            l_Command += " -D";
             l_Command += i_Define.name.c_str();
+
+            l_DefineString += i_Define.name.c_str();
 
             if (!i_Define.value.empty()) {
               l_Command += "=";
               l_Command += i_Define.value;
+              l_DefineString += "=";
+              l_DefineString += i_Define.value;
             }
+            l_DefineString += " ";
           }
           l_Command += " -o" + p_OutPath;
 
           Util::String l_Notice = "Compiling shader " + p_SourcePath;
 
           LOW_LOG_DEBUG << l_Notice << LOW_LOG_END;
-          Util::execute_command(l_Command);
+          Util::String l_Output;
+          int l_Result =
+              Util::execute_command(l_Command, true, &l_Output);
+          if (l_Result != 0 || !l_Output.empty()) {
+            LOW_LOG_ERROR
+                << "Shader compilation failed: " << p_SourcePath
+                << "\n"
+                << l_Output << LOW_LOG_END;
+          }
 #endif
 
           l_State.sourceModified = l_SourceModified;

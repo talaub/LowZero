@@ -1739,7 +1739,7 @@ namespace Low {
       get_draw_pipeline_config().vertexShader =
           ShaderVariant::get_empty_from_path(p_Path);
 
-      Util::List<ShaderDefine> l_Defines = {{{N(picking), "1"}}};
+      Util::List<ShaderDefine> l_Defines = {{{N(PICKING), "1"}}};
       get_pick_pipeline_config().vertexShader =
           ShaderVariant::make_or_get_from_path(p_Path, "main",
                                                l_Defines);

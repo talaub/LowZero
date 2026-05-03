@@ -261,23 +261,58 @@ namespace Low {
       g_MainWindowInitiallyHidden = p_Hidden;
     }
 
-    int execute_command(const String &p_Command, bool p_HideWindow)
+    int execute_command(const String &p_Command, bool p_HideWindow,
+                        String *p_Output)
     {
 #ifdef _WIN32
       STARTUPINFOA l_StartupInfo = {};
       l_StartupInfo.cb = sizeof(l_StartupInfo);
+
+      HANDLE l_ReadPipe = nullptr;
+      HANDLE l_WritePipe = nullptr;
+
+      if (p_Output) {
+        SECURITY_ATTRIBUTES l_Sa = {};
+        l_Sa.nLength = sizeof(l_Sa);
+        l_Sa.bInheritHandle = TRUE;
+        CreatePipe(&l_ReadPipe, &l_WritePipe, &l_Sa, 0);
+        SetHandleInformation(l_ReadPipe, HANDLE_FLAG_INHERIT, 0);
+
+        l_StartupInfo.dwFlags |= STARTF_USESTDHANDLES;
+        l_StartupInfo.hStdOutput = l_WritePipe;
+        l_StartupInfo.hStdError = l_WritePipe;
+        l_StartupInfo.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+      }
+
       if (p_HideWindow) {
-        l_StartupInfo.dwFlags = STARTF_USESHOWWINDOW;
+        l_StartupInfo.dwFlags |= STARTF_USESHOWWINDOW;
         l_StartupInfo.wShowWindow = SW_HIDE;
       }
 
       PROCESS_INFORMATION l_ProcessInfo = {};
       String l_Command = p_Command;
       if (!CreateProcessA(nullptr, l_Command.data(), nullptr, nullptr,
-                          FALSE,
+                          p_Output ? TRUE : FALSE,
                           p_HideWindow ? CREATE_NO_WINDOW : 0, nullptr,
                           nullptr, &l_StartupInfo, &l_ProcessInfo)) {
+        if (l_ReadPipe)
+          CloseHandle(l_ReadPipe);
+        if (l_WritePipe)
+          CloseHandle(l_WritePipe);
         return -1;
+      }
+
+      if (p_Output) {
+        CloseHandle(l_WritePipe);
+        char l_Buf[4096];
+        DWORD l_BytesRead;
+        while (ReadFile(l_ReadPipe, l_Buf, sizeof(l_Buf) - 1,
+                        &l_BytesRead, nullptr) &&
+               l_BytesRead > 0) {
+          l_Buf[l_BytesRead] = '\0';
+          *p_Output += l_Buf;
+        }
+        CloseHandle(l_ReadPipe);
       }
 
       WaitForSingleObject(l_ProcessInfo.hProcess, INFINITE);
@@ -289,6 +324,16 @@ namespace Low {
       return static_cast<int>(l_ExitCode);
 #else
       (void)p_HideWindow;
+      if (p_Output) {
+        FILE *l_Pipe = popen(p_Command.c_str(), "r");
+        if (!l_Pipe)
+          return -1;
+        char l_Buf[4096];
+        while (fgets(l_Buf, sizeof(l_Buf), l_Pipe)) {
+          *p_Output += l_Buf;
+        }
+        return pclose(l_Pipe);
+      }
       return system(p_Command.c_str());
 #endif
     }

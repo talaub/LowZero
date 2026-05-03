@@ -1,6 +1,6 @@
 #version 450
 
-layout(location = 0) out vec2 o_TextureCoordinates;
+#include "vertex_outputs.glsl"
 
 #include "debug_geometry_base.glsl"
 
@@ -10,6 +10,9 @@ void main()
     vec4 l_WorldPosition = RENDER_OBJECT.worldMatrix * vec4(VERTEX.position, 1.0);
     gl_Position = g_ViewInfo.viewProjectionMatrix * l_WorldPosition;
 
+#ifdef PICKING
+    o_PickId = RENDER_OBJECT.pickId;
+#else
     o_TextureCoordinates = VERTEX.textureCoordinates;
+#endif
 }
-

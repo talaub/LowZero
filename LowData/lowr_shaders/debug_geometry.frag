@@ -1,6 +1,7 @@
 #version 450
 
-layout(location = 0) in vec2 in_TextureCoordinates;
+#include "fragment_inputs.glsl"
+
 layout(location = 0) out vec4 o_Color;
 
 #include "debug_geometry_base.glsl"
