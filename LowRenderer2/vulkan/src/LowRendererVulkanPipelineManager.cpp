@@ -6,6 +6,8 @@
 
 #include "LowUtil.h"
 
+#include "LowRendererShaderSource.h"
+
 #ifndef LOW_RENDERER_COMPILE_SHADERS
 #define LOW_RENDERER_COMPILE_SHADERS 0
 #endif
@@ -23,11 +25,25 @@ namespace Low {
 
         Util::Map<Util::String, u64> g_SourceTimes;
 
+        struct VariantCompileState
+        {
+          u64 sourceModified = 0;
+          u64 compilePass = 0;
+        };
+
+        Util::Map<u64, VariantCompileState> g_VariantCompileStates;
+        u64 g_CompilePass = 1;
+
+        static void begin_compile_pass()
+        {
+          ++g_CompilePass;
+        }
+
         static bool has_pipeline(Util::List<Pipeline> &p_Pipelines,
                                  Pipeline p_Pipeline)
         {
-          for (auto it = p_Pipelines.begin();
-               it != p_Pipelines.end(); ++it) {
+          for (auto it = p_Pipelines.begin(); it != p_Pipelines.end();
+               ++it) {
             if (it->get_id() == p_Pipeline.get_id()) {
               return true;
             }
@@ -36,8 +52,9 @@ namespace Low {
           return false;
         }
 
-        static void register_pipeline_source(
-            Util::String p_SourcePath, Pipeline p_Pipeline)
+        static void
+        register_pipeline_source(Util::String p_SourcePath,
+                                 Pipeline p_Pipeline)
         {
           if (!has_pipeline(g_Sources[p_SourcePath], p_Pipeline)) {
             g_Sources[p_SourcePath].push_back(p_Pipeline);
@@ -50,8 +67,9 @@ namespace Low {
           }
         }
 
-        static void register_dependent_pipeline(
-            ShaderVariant p_Variant, Pipeline p_Pipeline)
+        static void
+        register_dependent_pipeline(ShaderVariant p_Variant,
+                                    Pipeline p_Pipeline)
         {
           if (!p_Variant.is_alive()) {
             return;
@@ -70,23 +88,76 @@ namespace Low {
           l_DependentPipelines.push_back(p_Pipeline.get_id());
         }
 
-        static bool compile_shader(Util::String p_SourcePath,
-                                   Util::String p_OutPath)
+        // Temporary copy of the compileshaders function to support
+        // legacy pipelines
+        // TODO: Merge both implementations of compile_shader
+        static bool compile_shader(const Util::String p_SourcePath,
+                                   const Util::String p_OutPath)
         {
 #if LOW_RENDERER_COMPILE_SHADERS
           Util::String l_IncludeCommand =
               "-I " + Util::get_project().engineDataPath +
               "\\lowr_shaders\\lib";
-          Util::String l_Command = "glslc " + l_IncludeCommand + " " +
-                                   p_SourcePath + " -o " + p_OutPath;
+          Util::String l_Command =
+              "glslc " + l_IncludeCommand + " " + p_SourcePath;
 
-          // LOW_LOG_DEBUG << l_Command << LOW_LOG_END;
+          l_Command += " -o" + p_OutPath;
 
           Util::String l_Notice = "Compiling shader " + p_SourcePath;
 
           LOW_LOG_DEBUG << l_Notice << LOW_LOG_END;
           Util::execute_command(l_Command);
 #endif
+
+          return true;
+        }
+
+        static bool compile_shader(ShaderVariant p_Variant,
+                                   const Util::String p_SourcePath,
+                                   const Util::String p_OutPath)
+        {
+          const u64 l_SourceModified =
+              Util::FileIO::modified_sync(p_SourcePath.c_str());
+
+          VariantCompileState &l_State =
+              g_VariantCompileStates[p_Variant.get_id()];
+
+          if (l_State.compilePass == g_CompilePass) {
+            return true;
+          }
+
+          l_State.compilePass = g_CompilePass;
+
+          if (l_State.sourceModified == l_SourceModified &&
+              Util::FileIO::file_exists_sync(p_OutPath.c_str())) {
+            return true;
+          }
+
+#if LOW_RENDERER_COMPILE_SHADERS
+          Util::String l_IncludeCommand =
+              "-I " + Util::get_project().engineDataPath +
+              "\\lowr_shaders\\lib";
+          Util::String l_Command =
+              "glslc " + l_IncludeCommand + " " + p_SourcePath;
+
+          for (ShaderDefine &i_Define : p_Variant.get_defines()) {
+            l_Command += " -D ";
+            l_Command += i_Define.name.c_str();
+
+            if (!i_Define.value.empty()) {
+              l_Command += "=";
+              l_Command += i_Define.value;
+            }
+          }
+          l_Command += " -o" + p_OutPath;
+
+          Util::String l_Notice = "Compiling shader " + p_SourcePath;
+
+          LOW_LOG_DEBUG << l_Notice << LOW_LOG_END;
+          Util::execute_command(l_Command);
+#endif
+
+          l_State.sourceModified = l_SourceModified;
 
           return true;
         }
@@ -102,10 +173,20 @@ namespace Low {
                             nullptr);
 
           if (p_CompileShaders) {
-            compile_shader(l_Builder.vertexShaderPath,
-                           l_Builder.vertexSpirvPath);
-            compile_shader(l_Builder.fragmentShaderPath,
-                           l_Builder.fragmentSpirvPath);
+            if (l_Builder.vertexShader.is_alive() &&
+                l_Builder.fragmentShader.is_alive()) {
+              compile_shader(l_Builder.vertexShader,
+                             l_Builder.vertexShaderPath,
+                             l_Builder.vertexSpirvPath);
+              compile_shader(l_Builder.fragmentShader,
+                             l_Builder.fragmentShaderPath,
+                             l_Builder.fragmentSpirvPath);
+            } else {
+              compile_shader(l_Builder.vertexShaderPath,
+                             l_Builder.vertexSpirvPath);
+              compile_shader(l_Builder.fragmentShaderPath,
+                             l_Builder.fragmentSpirvPath);
+            }
           }
 
           // Update shaders in builder
@@ -163,6 +244,7 @@ namespace Low {
           register_dependent_pipeline(p_Builder.fragmentShader,
                                       p_Pipeline);
 
+          begin_compile_pass();
           compile_graphics_pipeline(p_Pipeline);
 
           return true;
@@ -177,12 +259,15 @@ namespace Low {
           register_pipeline_source(p_Builder.computeShaderPath,
                                    p_Pipeline);
 
+          begin_compile_pass();
           compile_compute_pipeline(p_Pipeline);
           return true;
         }
 
         bool do_tick(float p_Delta)
         {
+          begin_compile_pass();
+
           for (auto it = g_SourceTimes.begin();
                it != g_SourceTimes.end(); ++it) {
             Util::String i_SourcePath = it->first;

@@ -759,9 +759,14 @@ types:
         type: Low::Util::List<uint64_t>
       defines:
         type: Low::Util::List<Low::Renderer::ShaderDefine>
+        private_setter: true
+      key_hash:
+        type: uint64_t
+        private_setter: true
     functions:
       make:
         static: true
+        private: true
         return_type: ShaderVariant
         return_handle: true
         parameters:
@@ -770,9 +775,60 @@ types:
           - name: source
             type: ShaderSource
             handle: true
+      set_define:
+        return_type: void
+        private: true
+        parameters:
+          - name: name
+            type: Low::Util::Name
+          - name: value
+            type: Low::Util::String
+            constant: true
+            const: true
+      get_empty_from_path:
+        static: true
+        return_type: ShaderVariant
+        return_handle: true
+        parameters:
+          - name: path
+            type: Low::Util::String
+      make_from_path:
+        static: true
+        return_type: ShaderVariant
+        return_handle: true
+        private: true
+        parameters:
+          - name: path
+            type: Low::Util::String
+          - name: name
+            type: Low::Util::Name
+      make_or_get:
+        static: true
+        return_type: Low::Renderer::ShaderVariant
+        return_handle: true
+        parameters:
+          - name: source
+            type: Low::Renderer::ShaderSource
+            handle: true
+          - name: entryPoint
+            type: Low::Util::String
+          - name: defines
+            type: Low::Util::List<ShaderDefine>
+      make_or_get_from_path:
+        static: true
+        return_type: Low::Renderer::ShaderVariant
+        return_handle: true
+        parameters:
+          - name: path
+            type: Low::Util::String
+          - name: entryPoint
+            type: Low::Util::String
+          - name: defines
+            type: Low::Util::List<ShaderDefine>
   ShaderSource:
     no_auto_serialize: true
     no_auto_deserialize: true
+    private_make: true
     properties:
       path:
         type: Low::Util::String
@@ -780,3 +836,15 @@ types:
         type: uint64_t
       variants:
         type: Low::Util::List<Low::Renderer::ShaderVariant>
+    functions:
+      make:
+        static: true
+        return_type: Low::Renderer::ShaderSource
+        return_handle: true
+        parameters:
+          - name: path
+            type: Low::Util::String
+            constant: true
+      get_empty_variant:
+        return_type: Low::Renderer::ShaderVariant
+        return_handle: true

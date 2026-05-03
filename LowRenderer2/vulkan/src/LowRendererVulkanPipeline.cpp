@@ -1,5 +1,6 @@
 #include "LowRendererVulkanPipeline.h"
 
+#include "LowRendererShaderVariant.h"
 #include "LowRendererVkPipelineLayout.h"
 #include "LowRendererVulkanInit.h"
 #include "LowRendererVulkanBase.h"
@@ -12,6 +13,7 @@
 #include <fstream>
 #include <vulkan/vulkan.h>
 #include "LowRendererVulkanBase.h"
+#include "LowUtilLogger.h"
 
 namespace Low {
   namespace Renderer {
@@ -23,8 +25,8 @@ namespace Low {
                  p_Path.find("/") == 0 || p_Path.find("\\") == 0;
         }
 
-        static Util::String resolve_shader_source_path(
-            ShaderVariant p_Variant)
+        static Util::String
+        resolve_shader_source_path(ShaderVariant p_Variant)
         {
           LOW_ASSERT(p_Variant.is_alive(),
                      "Cannot resolve dead shader variant source");
@@ -42,17 +44,19 @@ namespace Low {
                  "/lowr_shaders/" + l_Path;
         }
 
-        static Util::String resolve_shader_spirv_path(
-            ShaderVariant p_Variant)
+        static Util::String
+        resolve_shader_spirv_path(ShaderVariant p_Variant)
         {
-          LOW_ASSERT(p_Variant.is_alive(),
-                     "Cannot resolve dead shader variant SPIR-V path");
+          LOW_ASSERT(
+              p_Variant.is_alive(),
+              "Cannot resolve dead shader variant SPIR-V path");
 
           Util::String l_Path = p_Variant.get_compiled_path();
           if (l_Path.empty()) {
             ShaderSource l_Source = p_Variant.get_source_handle();
             LOW_ASSERT(l_Source.is_alive(),
-                       "Shader variant has no compiled path and a dead source handle");
+                       "Shader variant has no compiled path and a "
+                       "dead source handle");
             l_Path = l_Source.get_path() + ".spv";
           }
 
@@ -60,8 +64,8 @@ namespace Low {
             return l_Path;
           }
 
-          return Util::get_project().engineDataPath +
-                 "/lowr_spirv/" + l_Path;
+          return Util::get_project().engineDataPath + "/lowr_spirv/" +
+                 l_Path;
         }
 
         PipelineLayout
@@ -73,9 +77,9 @@ namespace Low {
           VkPipelineLayout l_VkLayout;
 
           LOWR_VK_CHECK(vkCreatePipelineLayout(Global::get_device(),
-                                                &p_CreateInfo, nullptr,
-                                                &l_VkLayout),
-                         "Failed to create pipeline layout.");
+                                               &p_CreateInfo, nullptr,
+                                               &l_VkLayout),
+                        "Failed to create pipeline layout.");
 
           l_Layout.set(l_VkLayout);
           return l_Layout;
@@ -360,19 +364,9 @@ namespace Low {
             Util::String p_VertexShader,
             Util::String p_FragmentShader, bool p_Project)
         {
-          vertexShader = Util::Handle::DEAD;
-          fragmentShader = Util::Handle::DEAD;
-
-          vertexShaderPath = Util::get_project().engineDataPath +
-                             "/lowr_shaders/" + p_VertexShader;
-          fragmentShaderPath = Util::get_project().engineDataPath +
-                               "/lowr_shaders/" + p_FragmentShader;
-
-          vertexSpirvPath = Util::get_project().engineDataPath +
-                            "/lowr_spirv/" + p_VertexShader + ".spv";
-          fragmentSpirvPath = Util::get_project().engineDataPath +
-                              "/lowr_spirv/" + p_FragmentShader +
-                              ".spv";
+          set_shaders(
+              ShaderVariant::get_empty_from_path(p_VertexShader),
+              ShaderVariant::get_empty_from_path(p_FragmentShader));
         }
 
         void GraphicsPipelineBuilder::set_shaders(
@@ -382,7 +376,8 @@ namespace Low {
           vertexShader = p_VertexShader;
           fragmentShader = p_FragmentShader;
 
-          vertexShaderPath = resolve_shader_source_path(p_VertexShader);
+          vertexShaderPath =
+              resolve_shader_source_path(p_VertexShader);
           fragmentShaderPath =
               resolve_shader_source_path(p_FragmentShader);
 

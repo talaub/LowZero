@@ -33,6 +33,7 @@ namespace Low {
         Low::Util::String compiled_path;
         Low::Util::List<uint64_t> dependent_pipelines;
         Low::Util::List<Low::Renderer::ShaderDefine> defines;
+        uint64_t key_hash;
         Low::Util::Name name;
 
         static size_t get_size()
@@ -164,14 +165,22 @@ namespace Low {
 
       Low::Util::List<Low::Renderer::ShaderDefine> &
       get_defines() const;
-      void set_defines(
-          Low::Util::List<Low::Renderer::ShaderDefine> &p_Value);
+
+      uint64_t get_key_hash() const;
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      static ShaderVariant make(Util::Name p_Name,
-                                ShaderSource p_Source);
+      static ShaderVariant
+      get_empty_from_path(Low::Util::String p_Path);
+      static Low::Renderer::ShaderVariant
+      make_or_get(Low::Renderer::ShaderSource p_Source,
+                  Low::Util::String p_EntryPoint,
+                  Low::Util::List<ShaderDefine> &p_Defines);
+      static Low::Renderer::ShaderVariant
+      make_or_get_from_path(Low::Util::String p_Path,
+                            Low::Util::String p_EntryPoint,
+                            Low::Util::List<ShaderDefine> &p_Defines);
       static bool get_page_for_index(const u32 p_Index,
                                      u32 &p_PageIndex,
                                      u32 &p_SlotIndex);
@@ -182,6 +191,17 @@ namespace Low {
       static u32 create_instance(u32 &p_PageIndex, u32 &p_SlotIndex);
       static u32 create_page();
       void set_source_handle(uint64_t p_Value);
+      void set_defines(
+          Low::Util::List<Low::Renderer::ShaderDefine> &p_Value);
+      void set_key_hash(uint64_t p_Value);
+      static ShaderVariant make(Util::Name p_Name,
+                                ShaderSource p_Source);
+
+      void set_define(Low::Util::Name p_Name,
+                      const Low::Util::String p_Value);
+
+      static ShaderVariant make_from_path(Low::Util::String p_Path,
+                                          Low::Util::Name p_Name);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE

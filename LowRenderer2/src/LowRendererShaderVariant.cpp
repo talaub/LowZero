@@ -18,6 +18,76 @@
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    static Util::String
+    normalize_define_value(const ShaderDefine &p_Define)
+    {
+      if (p_Define.value.empty()) {
+        return "1";
+      }
+
+      return p_Define.value;
+    }
+
+    static Util::String
+    normalize_build_variant_key(Util::String p_EntryPoint,
+                                Util::List<ShaderDefine> p_Defines)
+    {
+      std::sort(p_Defines.begin(), p_Defines.end(),
+                [](const ShaderDefine &p_Left,
+                   const ShaderDefine &p_Right) {
+                  const int l_NameCompare = std::strcmp(
+                      p_Left.name.c_str(), p_Right.name.c_str());
+
+                  if (l_NameCompare != 0) {
+                    return l_NameCompare < 0;
+                  }
+
+                  return normalize_define_value(p_Left) <
+                         normalize_define_value(p_Right);
+                });
+
+      Util::String l_Key = "shader_variant:v1;";
+      l_Key += "entry:";
+      l_Key += std::to_string(p_EntryPoint.size()).c_str();
+      l_Key += ":";
+      l_Key += p_EntryPoint;
+      l_Key += ";";
+
+      const char *l_LastName = nullptr;
+      Util::String l_LastValue;
+
+      for (const ShaderDefine &i_Define : p_Defines) {
+        const char *i_Name = i_Define.name.c_str();
+        const Util::String i_Value = normalize_define_value(i_Define);
+
+        if (l_LastName && std::strcmp(l_LastName, i_Name) == 0) {
+          LOW_ASSERT(
+              l_LastValue == i_Value,
+              "Conflicting duplicate shader define in variant");
+          continue;
+        }
+
+        l_Key += "define:";
+        l_Key += std::to_string(std::strlen(i_Name)).c_str();
+        l_Key += ":";
+        l_Key += i_Name;
+        l_Key += "=";
+        l_Key += std::to_string(i_Value.size()).c_str();
+        l_Key += ":";
+        l_Key += i_Value;
+        l_Key += ";";
+
+        l_LastName = i_Name;
+        l_LastValue = i_Value;
+      }
+
+      return l_Key;
+    }
+
+    static u64 hash_string(const Util::String &p_String)
+    {
+      return Util::fnv1a_64(p_String.c_str(), p_String.size());
+    }
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     u16 ShaderVariant::ms_TypeId = 0;
@@ -62,6 +132,7 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+      l_Handle.set_compiled_path("");
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -73,6 +144,21 @@ namespace Low {
 
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        ShaderSource l_Source = get_source_handle();
+        LOW_ASSERT_WARN(l_Source.is_alive(),
+                        "Destroying shader variant of already "
+                        "destroyed shader source.");
+        // Remove this variant out of variant list of source
+        if (l_Source.is_alive()) {
+          for (auto it = l_Source.get_variants().begin();
+               it != l_Source.get_variants().end();) {
+            if (it->get_id() == get_id()) {
+              it = l_Source.get_variants().erase(it);
+            } else {
+              it++;
+            }
+          }
+        }
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 
@@ -282,11 +368,7 @@ namespace Low {
               Low::Util::List<Low::Renderer::ShaderDefine>);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ShaderVariant l_Handle = p_Handle.get_id();
-          l_Handle.set_defines(*(
-              Low::Util::List<Low::Renderer::ShaderDefine> *)p_Data);
-        };
+                                const void *p_Data) -> void {};
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           ShaderVariant l_Handle = p_Handle.get_id();
@@ -295,6 +377,32 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: defines
+      }
+      {
+        // Property: key_hash
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(key_hash);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(ShaderVariant::Data, key_hash);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          ShaderVariant l_Handle = p_Handle.get_id();
+          l_Handle.get_key_hash();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ShaderVariant,
+                                            key_hash, uint64_t);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          ShaderVariant l_Handle = p_Handle.get_id();
+          *((uint64_t *)p_Data) = l_Handle.get_key_hash();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: key_hash
       }
       {
         // Property: name
@@ -348,6 +456,140 @@ namespace Low {
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: make
+      }
+      {
+        // Function: set_define
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(set_define);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Name);
+          l_ParameterInfo.type = Low::Util::RTTI::PropertyType::NAME;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Value);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::STRING;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: set_define
+      }
+      {
+        // Function: get_empty_from_path
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(get_empty_from_path);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = ShaderVariant::type_id();
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Path);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::STRING;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: get_empty_from_path
+      }
+      {
+        // Function: make_from_path
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(make_from_path);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = ShaderVariant::type_id();
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Path);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::STRING;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Name);
+          l_ParameterInfo.type = Low::Util::RTTI::PropertyType::NAME;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: make_from_path
+      }
+      {
+        // Function: make_or_get
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(make_or_get);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType =
+            Low::Renderer::ShaderVariant::type_id();
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Source);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::HANDLE;
+          l_ParameterInfo.handleType =
+              Low::Renderer::ShaderSource::type_id();
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_EntryPoint);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::STRING;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Defines);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: make_or_get
+      }
+      {
+        // Function: make_or_get_from_path
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(make_or_get_from_path);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType =
+            Low::Renderer::ShaderVariant::type_id();
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Path);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::STRING;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_EntryPoint);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::STRING;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Defines);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: make_or_get_from_path
       }
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
@@ -466,6 +708,7 @@ namespace Low {
       l_Handle.set_compiled_path(get_compiled_path());
       l_Handle.set_dependent_pipelines(get_dependent_pipelines());
       l_Handle.set_defines(get_defines());
+      l_Handle.set_key_hash(get_key_hash());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -709,6 +952,31 @@ namespace Low {
       broadcast_observable(N(defines));
     }
 
+    uint64_t ShaderVariant::get_key_hash() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_key_hash
+      // LOW_CODEGEN::END::CUSTOM:GETTER_key_hash
+
+      return TYPE_SOA(ShaderVariant, key_hash, uint64_t);
+    }
+    void ShaderVariant::set_key_hash(uint64_t p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_key_hash
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_key_hash
+
+      // Set new value
+      TYPE_SOA(ShaderVariant, key_hash, uint64_t) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_key_hash
+      // LOW_CODEGEN::END::CUSTOM:SETTER_key_hash
+
+      broadcast_observable(N(key_hash));
+    }
+
     Low::Util::Name ShaderVariant::get_name() const
     {
       _LOW_ASSERT(is_alive());
@@ -741,8 +1009,79 @@ namespace Low {
       ShaderVariant l_ShaderVariant = make(p_Name);
       l_ShaderVariant.set_source_handle(p_Source.get_id());
 
+      p_Source.get_variants().push_back(l_ShaderVariant);
+
       return l_ShaderVariant;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
+    }
+
+    void ShaderVariant::set_define(Low::Util::Name p_Name,
+                                   const Low::Util::String p_Value)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_define
+      for (auto it = get_defines().begin(); it != get_defines().end();
+           ++it) {
+        if (it->name == p_Name) {
+          it->value = p_Value;
+          return;
+        }
+      }
+
+      get_defines().emplace_back(p_Name, p_Value);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_define
+    }
+
+    ShaderVariant
+    ShaderVariant::get_empty_from_path(Low::Util::String p_Path)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_empty_from_path
+      ShaderSource l_Source = ShaderSource::make(p_Path);
+      return l_Source.get_empty_variant();
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_empty_from_path
+    }
+
+    ShaderVariant
+    ShaderVariant::make_from_path(Low::Util::String p_Path,
+                                  Low::Util::Name p_Name)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_from_path
+      ShaderSource l_Source = ShaderSource::make(p_Path);
+      return make(p_Name, l_Source);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_from_path
+    }
+
+    Low::Renderer::ShaderVariant ShaderVariant::make_or_get(
+        Low::Renderer::ShaderSource p_Source,
+        Low::Util::String p_EntryPoint,
+        Low::Util::List<ShaderDefine> &p_Defines)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_or_get
+      const Util::String l_Key =
+          normalize_build_variant_key(p_EntryPoint, p_Defines);
+      const u64 l_KeyHash = hash_string(l_Key);
+
+      for (ShaderVariant i_Variant : p_Source.get_variants()) {
+        if (i_Variant.get_key_hash() == l_KeyHash) {
+          return i_Variant;
+        }
+      }
+
+      ShaderVariant l_Variant = make(N(Variant), p_Source);
+      l_Variant.set_defines(p_Defines);
+      l_Variant.set_key_hash(l_KeyHash);
+
+      return l_Variant;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_or_get
+    }
+
+    Low::Renderer::ShaderVariant ShaderVariant::make_or_get_from_path(
+        Low::Util::String p_Path, Low::Util::String p_EntryPoint,
+        Low::Util::List<ShaderDefine> &p_Defines)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_or_get_from_path
+      return make_or_get(ShaderSource::make(p_Path), p_EntryPoint,
+                         p_Defines);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_or_get_from_path
     }
 
     uint32_t ShaderVariant::create_instance(u32 &p_PageIndex,

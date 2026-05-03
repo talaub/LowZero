@@ -1,0 +1,22 @@
+#!/bin/sh
+
+FOUND=0
+
+while IFS= read -r file; do
+  case "$file" in
+    *LowUtilLogger.h) continue ;;
+    LowScripts/hooks/*) continue ;;
+  esac
+
+  if git show ":$file" 2>/dev/null | grep -q "LOW_LOG_TRACE"; then
+    echo "  $file"
+    FOUND=1
+  fi
+done < <(git diff --cached --name-only --diff-filter=d)
+
+if [ "$FOUND" -eq 1 ]; then
+  echo ""
+  echo "Commit rejected: LOW_LOG_TRACE found in the files above."
+  echo "This macro is for local print-debugging only. Remove it before committing."
+  exit 1
+fi

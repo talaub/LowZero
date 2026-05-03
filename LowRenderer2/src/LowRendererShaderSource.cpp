@@ -58,6 +58,8 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+      Util::List<ShaderDefine> l_Defines;
+      ShaderVariant::make_or_get(l_Handle, "main", l_Defines);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -259,6 +261,34 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: name
+      }
+      {
+        // Function: make
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(make);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType =
+            Low::Renderer::ShaderSource::type_id();
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Path);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::STRING;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: make
+      }
+      {
+        // Function: get_empty_variant
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(get_empty_variant);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType =
+            Low::Renderer::ShaderVariant::type_id();
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: get_empty_variant
       }
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
@@ -577,6 +607,32 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
+    }
+
+    Low::Renderer::ShaderSource
+    ShaderSource::make(Low::Util::String p_Path)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+      const Util::String l_Path = Util::PathHelper::normalize(p_Path);
+      Util::Name l_PathName =
+          LOW_NAME(Util::PathHelper::normalize(l_Path).c_str());
+      ShaderSource l_Source = find_by_name(l_PathName);
+      if (!l_Source.is_alive()) {
+        l_Source = make(l_PathName);
+        l_Source.set_path(l_Path);
+        l_Source.set_last_modified(0);
+      }
+
+      return l_Source;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
+    }
+
+    Low::Renderer::ShaderVariant ShaderSource::get_empty_variant()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_empty_variant
+      Util::List<ShaderDefine> l_Defines;
+      return ShaderVariant::make_or_get(get_id(), "main", l_Defines);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_empty_variant
     }
 
     uint32_t ShaderSource::create_instance(u32 &p_PageIndex,

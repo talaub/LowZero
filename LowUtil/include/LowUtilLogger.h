@@ -27,6 +27,9 @@
 #define LOW_LOG_FATAL                                                \
   Low::Util::Log::begin_log(Low::Util::Log::LogLevel::FATAL,         \
                             LOW_MODULE_NAME)
+#define LOW_LOG_TRACE                                                \
+  Low::Util::Log::begin_log(Low::Util::Log::LogLevel::TRACE,         \
+                            LOW_MODULE_NAME)
 
 #define LOW_LOG_ERR                                                  \
   Low::Util::Log::begin_log(Low::Util::Log::LogLevel::ERR,           \
@@ -55,7 +58,8 @@ namespace Low {
           ERROR,
           ERR,
           PROFILE,
-          FATAL
+          FATAL,
+          TRACE
         };
       }
 

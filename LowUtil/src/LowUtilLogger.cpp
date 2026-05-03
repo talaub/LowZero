@@ -130,6 +130,8 @@ namespace Low {
           printf("\x1B[31mFATAL \033[0m\t");
         } else if (p_LogLevel == LogLevel::PROFILE) {
           printf("\x1B[35mPRFLR\033[0m\t");
+        } else if (p_LogLevel == LogLevel::TRACE) {
+          printf("\x1B[94mTRACE\033[0m\t");
         }
 #else
         if (p_LogLevel == LogLevel::DEBUG) {
@@ -144,6 +146,8 @@ namespace Low {
           printf("FATAL \t");
         } else if (p_LogLevel == LogLevel::PROFILE) {
           printf("PRFLR\t");
+        } else if (p_LogLevel == LogLevel::TRACE) {
+          printf("TRACE\t");
         }
 #endif
       }
@@ -196,6 +200,9 @@ namespace Low {
 
       static void log_to_file(LogEntry p_Entry)
       {
+        if (p_Entry.level == LogLevel::TRACE) {
+          return;
+        }
         FileIO::File l_LogFile = FileIO::open(
             g_LogFilePath.c_str(), FileIO::FileMode::APPEND);
 
@@ -223,6 +230,8 @@ namespace Low {
           l_Content += "FATAL \t";
         } else if (p_Entry.level == LogLevel::PROFILE) {
           l_Content += "PRFLR\t";
+        } else if (p_Entry.level == LogLevel::TRACE) {
+          l_Content += "TRACE\t";
         }
 
         char l_ModBuffer[13];

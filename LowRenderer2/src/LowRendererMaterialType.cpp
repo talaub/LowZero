@@ -20,42 +20,6 @@
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-    static ShaderSource
-    get_or_create_shader_source(Low::Util::String p_Path)
-    {
-      ShaderSource l_Source =
-          ShaderSource::find_by_name(Util::Name::from_string(p_Path));
-
-      if (!l_Source.is_alive()) {
-        l_Source =
-            ShaderSource::make(Util::Name::from_string(p_Path));
-        l_Source.set_path(p_Path);
-      }
-
-      return l_Source;
-    }
-
-    static ShaderVariant
-    get_or_create_shader_variant(Low::Util::String p_Path)
-    {
-      const Low::Util::String l_VariantName = p_Path + ":main";
-
-      ShaderVariant l_Variant = ShaderVariant::find_by_name(
-          Util::Name::from_string(l_VariantName));
-
-      if (!l_Variant.is_alive()) {
-        ShaderSource l_Source = get_or_create_shader_source(p_Path);
-
-        l_Variant = ShaderVariant::make(
-            Util::Name::from_string(l_VariantName), l_Source);
-        l_Variant.set_entry_point("main");
-        l_Variant.set_compiled_path(p_Path + ".spv");
-
-        l_Source.get_variants().push_back(l_Variant);
-      }
-
-      return l_Variant;
-    }
 
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
@@ -1544,7 +1508,7 @@ namespace Low {
         }
         {
           l_Handle.get_pick_pipeline_config().fragmentShader =
-              get_or_create_shader_variant("picking.frag");
+              ShaderVariant::get_empty_from_path("picking.frag");
           l_Handle.get_pick_pipeline_config()
               .colorAttachmentFormats.push_back(
                   ImageFormat::R32_UINT);
@@ -1577,7 +1541,7 @@ namespace Low {
         }
         {
           l_Handle.get_pick_pipeline_config().fragmentShader =
-              get_or_create_shader_variant("picking.frag");
+              ShaderVariant::get_empty_from_path("picking.frag");
           l_Handle.get_pick_pipeline_config()
               .colorAttachmentFormats.push_back(
                   ImageFormat::R32_UINT);
@@ -1772,10 +1736,13 @@ namespace Low {
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_draw_vertex_shader_path
 
-      LOW_LOG_DEBUG << p_Path << LOW_LOG_END;
-      ShaderVariant l_Variant = get_or_create_shader_variant(p_Path);
-      get_draw_pipeline_config().vertexShader = l_Variant;
-      get_pick_pipeline_config().vertexShader = l_Variant;
+      get_draw_pipeline_config().vertexShader =
+          ShaderVariant::get_empty_from_path(p_Path);
+
+      Util::List<ShaderDefine> l_Defines = {{{N(picking), "1"}}};
+      get_pick_pipeline_config().vertexShader =
+          ShaderVariant::make_or_get_from_path(p_Path, "main",
+                                               l_Defines);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_draw_vertex_shader_path
     }
 
@@ -1785,7 +1752,7 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_draw_fragment_shader_path
 
       get_draw_pipeline_config().fragmentShader =
-          get_or_create_shader_variant(p_Path);
+          ShaderVariant::get_empty_from_path(p_Path);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_draw_fragment_shader_path
     }
 
@@ -1795,7 +1762,7 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_depth_vertex_shader_path
 
       get_depth_pipeline_config().vertexShader =
-          get_or_create_shader_variant(p_Path);
+          ShaderVariant::get_empty_from_path(p_Path);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_depth_vertex_shader_path
     }
 
@@ -1805,7 +1772,7 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_depth_fragment_shader_path
 
       get_depth_pipeline_config().fragmentShader =
-          get_or_create_shader_variant(p_Path);
+          ShaderVariant::get_empty_from_path(p_Path);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_depth_fragment_shader_path
     }
 

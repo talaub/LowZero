@@ -48,8 +48,11 @@ namespace Low {
         return ms_TypeId;
       }
 
+    private:
       static ShaderSource make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
+
+    public:
       explicit ShaderSource(const ShaderSource &p_Copy)
           : Low::Util::Handle(p_Copy.m_Id)
       {
@@ -152,6 +155,9 @@ namespace Low {
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
+      static Low::Renderer::ShaderSource
+      make(Low::Util::String p_Path);
+      Low::Renderer::ShaderVariant get_empty_variant();
       static bool get_page_for_index(const u32 p_Index,
                                      u32 &p_PageIndex,
                                      u32 &p_SlotIndex);

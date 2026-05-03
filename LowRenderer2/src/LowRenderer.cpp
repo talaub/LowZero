@@ -174,8 +174,8 @@ namespace Low {
 
     static void cleanup_types()
     {
-      ShaderSource::cleanup();
       ShaderVariant::cleanup();
+      ShaderSource::cleanup();
       SS2DDrawCommand::cleanup();
       SS2DCanvas::cleanup();
       AdaptiveRenderObject::cleanup();
