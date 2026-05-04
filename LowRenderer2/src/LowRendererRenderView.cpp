@@ -108,6 +108,15 @@ namespace Low {
           l_Handle, RenderView, debug_geometry,
           Low::Util::List<Low::Renderer::DebugGeometryDraw>))
           Low::Util::List<Low::Renderer::DebugGeometryDraw>();
+      new (ACCESSOR_TYPE_SOA_PTR(
+          l_Handle, RenderView, highlight_draws_solid,
+          Low::Util::List<Low::Renderer::HighlightDrawSolid>))
+          Low::Util::List<Low::Renderer::HighlightDrawSolid>();
+      new (ACCESSOR_TYPE_SOA_PTR(
+          l_Handle, RenderView, highlight_draws_debug_geometry,
+          Low::Util::List<Low::Renderer::HighlightDrawDebugGeometry>))
+          Low::Util::List<
+              Low::Renderer::HighlightDrawDebugGeometry>();
       ACCESSOR_TYPE_SOA(l_Handle, RenderView, camera_dirty, bool) =
           false;
       ACCESSOR_TYPE_SOA(l_Handle, RenderView, dimensions_dirty,
@@ -1034,6 +1043,64 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: debug_geometry
+      }
+      {
+        // Property: highlight_draws_solid
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(highlight_draws_solid);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderView::Data, highlight_draws_solid);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.get_highlight_draws_solid();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, RenderView, highlight_draws_solid,
+              Low::Util::List<Low::Renderer::HighlightDrawSolid>);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          *((Low::Util::List<Low::Renderer::HighlightDrawSolid> *)
+                p_Data) = l_Handle.get_highlight_draws_solid();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: highlight_draws_solid
+      }
+      {
+        // Property: highlight_draws_debug_geometry
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(highlight_draws_debug_geometry);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(
+            RenderView::Data, highlight_draws_debug_geometry);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.get_highlight_draws_debug_geometry();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, RenderView, highlight_draws_debug_geometry,
+              Low::Util::List<
+                  Low::Renderer::HighlightDrawDebugGeometry>);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          *((Low::Util::List<
+              Low::Renderer::HighlightDrawDebugGeometry> *)p_Data) =
+              l_Handle.get_highlight_draws_debug_geometry();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: highlight_draws_debug_geometry
       }
       {
         // Property: camera_dirty
@@ -2316,6 +2383,32 @@ namespace Low {
       return TYPE_SOA(
           RenderView, debug_geometry,
           Low::Util::List<Low::Renderer::DebugGeometryDraw>);
+    }
+
+    Low::Util::List<Low::Renderer::HighlightDrawSolid> &
+    RenderView::get_highlight_draws_solid() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_highlight_draws_solid
+      // LOW_CODEGEN::END::CUSTOM:GETTER_highlight_draws_solid
+
+      return TYPE_SOA(
+          RenderView, highlight_draws_solid,
+          Low::Util::List<Low::Renderer::HighlightDrawSolid>);
+    }
+
+    Low::Util::List<Low::Renderer::HighlightDrawDebugGeometry> &
+    RenderView::get_highlight_draws_debug_geometry() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_highlight_draws_debug_geometry
+      // LOW_CODEGEN::END::CUSTOM:GETTER_highlight_draws_debug_geometry
+
+      return TYPE_SOA(
+          RenderView, highlight_draws_debug_geometry,
+          Low::Util::List<Low::Renderer::HighlightDrawDebugGeometry>);
     }
 
     bool RenderView::is_camera_dirty() const

@@ -1,6 +1,7 @@
 #include "LowEditorEditingWidget.h"
 
 #include "LowCoreMeshRenderer.h"
+#include "LowCoreTaskScheduler.h"
 #include "LowEditor.h"
 #include "LowEditorMainWindow.h"
 #include "LowEditorCommonOperations.h"
@@ -10,6 +11,8 @@
 #include "LowMath.h"
 #include "LowRendererEditorImage.h"
 #include "LowRendererPointLight.h"
+#include "LowRendererRenderObject.h"
+#include "LowRendererRenderView.h"
 #include "LowUtilHandle.h"
 #include "LowUtilLogger.h"
 #include "imgui.h"
@@ -601,6 +604,31 @@ namespace Low {
       render_rigidbody_debug_geometry(p_Delta, p_RenderViewWidget);
       render_navmeshagent_debug_geometry(p_Delta, p_RenderViewWidget);
       render_pointlight_debug_geometry(p_Delta, p_RenderViewWidget);
+
+      {
+        Core::Entity l_SelectedEntity = get_selected_entity();
+        if (l_SelectedEntity.is_alive()) {
+          Core::Component::MeshRenderer l_SelectedMeshRenderer =
+              l_SelectedEntity.get_component(
+                  Core::Component::MeshRenderer::type_id());
+          if (l_SelectedMeshRenderer.is_alive()) {
+            Renderer::RenderObject l_RenderObject =
+                l_SelectedMeshRenderer.get_render_object();
+            if (l_RenderObject.is_alive()) {
+              for (Renderer::DrawCommand i_DrawCommand :
+                   l_RenderObject.get_draw_commands()) {
+                Renderer::HighlightDrawSolid i_HighlightDraw;
+                i_HighlightDraw.drawCommand = i_DrawCommand;
+                i_HighlightDraw.highlightType =
+                    Renderer::HighlightType::Selected;
+                Renderer::get_editor_renderview()
+                    .get_highlight_draws_solid()
+                    .push_back(i_HighlightDraw);
+              }
+            }
+          }
+        }
+      }
 
       render_billboards(p_Delta, p_RenderViewWidget);
 

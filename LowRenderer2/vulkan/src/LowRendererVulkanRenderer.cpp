@@ -85,6 +85,8 @@ namespace Low {
 
         Pipeline lightingPipeline;
 
+        PipelineLayout solidHighlightPipelineLayout;
+
         Pipeline ss2d;
         PipelineLayout ss2dLayout;
       } g_Pipelines;
@@ -314,32 +316,65 @@ namespace Low {
         Util::String l_VertexShaderPath = "solid_base.vert";
         Util::String l_FragmentShaderPath = "solid_base.frag";
 
-        VkPipelineLayoutCreateInfo l_PipelineLayoutInfo =
-            PipelineUtil::layout_create_info();
+        {
+          VkPipelineLayoutCreateInfo l_PipelineLayoutInfo =
+              PipelineUtil::layout_create_info();
 
-        Util::List<VkDescriptorSetLayout> l_Layouts;
-        l_Layouts.resize(3);
-        l_Layouts[0] = Global::get_global_descriptor_set_layout();
-        l_Layouts[1] = Global::get_texture_descriptor_set_layout();
-        l_Layouts[2] = Global::get_view_info_descriptor_set_layout();
+          Util::List<VkDescriptorSetLayout> l_Layouts;
+          l_Layouts.resize(3);
+          l_Layouts[0] = Global::get_global_descriptor_set_layout();
+          l_Layouts[1] = Global::get_texture_descriptor_set_layout();
+          l_Layouts[2] =
+              Global::get_view_info_descriptor_set_layout();
 
-        l_PipelineLayoutInfo.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        l_PipelineLayoutInfo.pNext = nullptr;
-        l_PipelineLayoutInfo.pSetLayouts = l_Layouts.data();
-        l_PipelineLayoutInfo.setLayoutCount = l_Layouts.size();
+          l_PipelineLayoutInfo.sType =
+              VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+          l_PipelineLayoutInfo.pNext = nullptr;
+          l_PipelineLayoutInfo.pSetLayouts = l_Layouts.data();
+          l_PipelineLayoutInfo.setLayoutCount = l_Layouts.size();
 
-        VkPushConstantRange l_PushConstant{};
-        l_PushConstant.offset = 0;
-        l_PushConstant.size = sizeof(RenderEntryPushConstant);
-        l_PushConstant.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+          VkPushConstantRange l_PushConstant{};
+          l_PushConstant.offset = 0;
+          l_PushConstant.size = sizeof(RenderEntryPushConstant);
+          l_PushConstant.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
 
-        l_PipelineLayoutInfo.pPushConstantRanges = &l_PushConstant;
-        l_PipelineLayoutInfo.pushConstantRangeCount = 1;
+          l_PipelineLayoutInfo.pPushConstantRanges = &l_PushConstant;
+          l_PipelineLayoutInfo.pushConstantRangeCount = 1;
 
-        g_Pipelines.solidBasePipelineLayout =
-            PipelineUtil::create_layout(N(solid_base),
-                                        l_PipelineLayoutInfo);
+          g_Pipelines.solidBasePipelineLayout =
+              PipelineUtil::create_layout(N(solid_base),
+                                          l_PipelineLayoutInfo);
+        }
+        {
+          VkPipelineLayoutCreateInfo l_PipelineLayoutInfo =
+              PipelineUtil::layout_create_info();
+
+          Util::List<VkDescriptorSetLayout> l_Layouts;
+          l_Layouts.resize(3);
+          l_Layouts[0] = Global::get_global_descriptor_set_layout();
+          l_Layouts[1] = Global::get_texture_descriptor_set_layout();
+          l_Layouts[2] =
+              Global::get_view_info_descriptor_set_layout();
+
+          l_PipelineLayoutInfo.sType =
+              VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+          l_PipelineLayoutInfo.pNext = nullptr;
+          l_PipelineLayoutInfo.pSetLayouts = l_Layouts.data();
+          l_PipelineLayoutInfo.setLayoutCount = l_Layouts.size();
+
+          VkPushConstantRange l_PushConstant{};
+          l_PushConstant.offset = 0;
+          l_PushConstant.size =
+              sizeof(RenderEntryHighlightPushConstant);
+          l_PushConstant.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+
+          l_PipelineLayoutInfo.pPushConstantRanges = &l_PushConstant;
+          l_PipelineLayoutInfo.pushConstantRangeCount = 1;
+
+          g_Pipelines.solidHighlightPipelineLayout =
+              PipelineUtil::create_layout(N(solid_highlight),
+                                          l_PipelineLayoutInfo);
+        }
 
         // Create pipeline
         PipelineUtil::GraphicsPipelineBuilder l_Builder;
@@ -614,6 +649,8 @@ namespace Low {
           }
 
           i_RenderView.get_debug_geometry().clear();
+          i_RenderView.get_highlight_draws_solid().clear();
+          i_RenderView.get_highlight_draws_debug_geometry().clear();
         }
 
         return true;
@@ -2176,6 +2213,8 @@ namespace Low {
                 i_MaterialType.get_draw_pipeline_handle();
             Pipeline i_PickPipeline =
                 i_MaterialType.get_pick_pipeline_handle();
+            Pipeline i_HighlightPipeline =
+                i_MaterialType.get_highlight_pipeline_handle();
 
             // TODO: Choose different layout based on family
 
@@ -2191,6 +2230,14 @@ namespace Low {
                     create_pipeline_from_config(
                         i_MaterialType.get_pick_pipeline_config(),
                         g_Pipelines.solidBasePipelineLayout));
+              }
+            }
+            if (i_MaterialType.allows_highlighting()) {
+              if (!i_HighlightPipeline.is_alive()) {
+                i_MaterialType.set_highlight_pipeline_handle(
+                    create_pipeline_from_config(
+                        i_MaterialType.get_pick_pipeline_config(),
+                        g_Pipelines.solidHighlightPipelineLayout));
               }
             }
           }

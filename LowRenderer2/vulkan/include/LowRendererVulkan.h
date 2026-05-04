@@ -37,6 +37,11 @@ namespace Low {
       {
         u32 renderObjectSlot;
       };
+      struct RenderEntryHighlightPushConstant
+      {
+        u32 renderObjectSlot;
+        u32 highlightType;
+      };
 
       struct AllocatedBuffer
       {

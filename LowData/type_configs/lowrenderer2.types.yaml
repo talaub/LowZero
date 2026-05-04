@@ -204,6 +204,12 @@ types:
       debug_geometry:
         type: Low::Util::List<Low::Renderer::DebugGeometryDraw>
         no_setter: true
+      highlight_draws_solid:
+        type: Low::Util::List<Low::Renderer::HighlightDrawSolid>
+        no_setter: true
+      highlight_draws_debug_geometry:
+        type: Low::Util::List<Low::Renderer::HighlightDrawDebugGeometry>
+        no_setter: true
     functions:
       add_step:
         return_type: void

@@ -1739,10 +1739,18 @@ namespace Low {
       get_draw_pipeline_config().vertexShader =
           ShaderVariant::get_empty_from_path(p_Path);
 
-      Util::List<ShaderDefine> l_Defines = {{{N(PICKING), "1"}}};
-      get_pick_pipeline_config().vertexShader =
-          ShaderVariant::make_or_get_from_path(p_Path, "main",
-                                               l_Defines);
+      {
+        Util::List<ShaderDefine> l_Defines = {{{N(PICKING), "1"}}};
+        get_pick_pipeline_config().vertexShader =
+            ShaderVariant::make_or_get_from_path(p_Path, "main",
+                                                 l_Defines);
+      }
+      {
+        Util::List<ShaderDefine> l_Defines = {{{N(HIGHLIGHT), "1"}}};
+        get_highlight_pipeline_config().vertexShader =
+            ShaderVariant::make_or_get_from_path(p_Path, "main",
+                                                 l_Defines);
+      }
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_draw_vertex_shader_path
     }
 
@@ -1753,6 +1761,13 @@ namespace Low {
 
       get_draw_pipeline_config().fragmentShader =
           ShaderVariant::get_empty_from_path(p_Path);
+
+      {
+        Util::List<ShaderDefine> l_Defines = {{{N(HIGHLIGHT), "1"}}};
+        get_highlight_pipeline_config().fragmentShader =
+            ShaderVariant::make_or_get_from_path(p_Path, "main",
+                                                 l_Defines);
+      }
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_draw_fragment_shader_path
     }
 

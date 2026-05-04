@@ -250,10 +250,12 @@ namespace Low {
                 "renderer.material.DefaultMaterialUiText"));
       }
       {
-        g_DefaultMaterialUiOutline = Material::make_gpu_ready_with_uid(
-            N(DefaultMaterialUiOutline), g_MaterialTypes.uiOutline,
-            Util::make_fixed_unique_id(
-                "renderer.material.DefaultMaterialUiOutline"));
+        g_DefaultMaterialUiOutline =
+            Material::make_gpu_ready_with_uid(
+                N(DefaultMaterialUiOutline),
+                g_MaterialTypes.uiOutline,
+                Util::make_fixed_unique_id(
+                    "renderer.material.DefaultMaterialUiOutline"));
       }
       return true;
     }
@@ -765,6 +767,8 @@ namespace Low {
       g_EditorRenderView = g_GameRenderView;
 
       g_EditorRenderView.add_step_by_name(RENDERSTEP_PICKINGMAP_DRAW);
+      g_EditorRenderView.add_step_by_name(
+          RENDERSTEP_HIGHLIGHTMAP_DRAW);
       // g_EditorRenderView = RenderView::make(N(Editor));
 
       Util::Window::get_main_window().eventCallbacks.push_back(

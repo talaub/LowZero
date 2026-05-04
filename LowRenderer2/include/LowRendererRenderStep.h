@@ -19,6 +19,7 @@
 #define RENDERSTEP_OBJECT_ID_COPY N(object_id_copy)
 #define RENDERSTEP_BLUR N(blur)
 #define RENDERSTEP_PICKINGMAP_DRAW N(pickingmap_draw)
+#define RENDERSTEP_HIGHLIGHTMAP_DRAW N(highlightmap_draw)
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {

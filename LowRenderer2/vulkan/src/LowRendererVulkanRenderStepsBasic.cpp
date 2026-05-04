@@ -54,6 +54,239 @@ namespace Low {
         }
       }
 
+      static bool draw_highlightmap_solid(VkCommandBuffer p_Cmd,
+                                          RenderView p_RenderView,
+                                          RenderStep p_RenderStep,
+                                          float p_Delta,
+                                          ViewInfo p_ViewInfo)
+      {
+
+        MaterialType l_CurrentMaterialType = Low::Util::Handle::DEAD;
+
+        for (const HighlightDrawSolid &i_Draw :
+             p_RenderView.get_highlight_draws_solid()) {
+          if (!i_Draw.drawCommand.is_alive()) {
+            continue;
+          }
+          if (!i_Draw.drawCommand.get_render_object().is_alive()) {
+            continue;
+          }
+
+          if (i_Draw.drawCommand.get_render_object()
+                  .get_mesh()
+                  .get_state() != MeshState::LOADED) {
+            continue;
+          }
+
+          GpuSubmesh i_GpuSubmesh = i_Draw.drawCommand.get_submesh();
+
+          LOW_ASSERT(i_GpuSubmesh.is_alive(),
+                     "Submesh of mesh entry not alive anymore. "
+                     "This should not happen if the corresponding "
+                     "RenderObject is still alive.");
+          LOW_ASSERT(i_GpuSubmesh.get_state() == MeshState::LOADED,
+                     "Submesh is not loaded to GPU. Cannot render.");
+
+          Material i_Material = i_Draw.drawCommand.get_material();
+          if (!i_Material.is_alive()) {
+            i_Material =
+                i_Draw.drawCommand.get_render_object().get_material();
+          }
+
+          LOW_ASSERT(i_Material.is_alive(),
+                     "Material of draw command is not alive "
+                     "anymore. This should not happen.");
+
+          if (i_Material.get_material_type() !=
+              l_CurrentMaterialType) {
+            l_CurrentMaterialType = i_Material.get_material_type();
+
+            Pipeline i_Pipeline =
+                l_CurrentMaterialType.get_highlight_pipeline_handle();
+
+            vkCmdBindPipeline(p_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                              i_Pipeline.get());
+
+            VkDescriptorSet l_Set =
+                Global::get_global_descriptor_set();
+
+            vkCmdBindDescriptorSets(p_Cmd,
+                                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                    i_Pipeline.get_layout().get(), 0,
+                                    1, &l_Set, 0, nullptr);
+
+            {
+              VkDescriptorSet l_TextureSet =
+                  Global::get_current_texture_descriptor_set();
+              vkCmdBindDescriptorSets(
+                  p_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                  i_Pipeline.get_layout().get(), 1, 1, &l_TextureSet,
+                  0, nullptr);
+            }
+
+            VkDescriptorSet l_DescriptorSet =
+                p_ViewInfo.get_view_data_descriptor_set();
+
+            vkCmdBindDescriptorSets(p_Cmd,
+                                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                    i_Pipeline.get_layout().get(), 2,
+                                    1, &l_DescriptorSet, 0, nullptr);
+          }
+
+          Pipeline i_Pipeline =
+              l_CurrentMaterialType.get_highlight_pipeline_handle();
+
+          RenderEntryHighlightPushConstant i_PushConstants;
+          i_PushConstants.renderObjectSlot =
+              i_Draw.drawCommand.get_slot();
+          i_PushConstants.highlightType = (u32)i_Draw.highlightType;
+
+          vkCmdPushConstants(p_Cmd, i_Pipeline.get_layout().get(),
+                             VK_SHADER_STAGE_ALL_GRAPHICS, 0,
+                             sizeof(RenderEntryHighlightPushConstant),
+                             &i_PushConstants);
+
+          vkCmdDrawIndexed(p_Cmd, i_GpuSubmesh.get_index_count(), 1,
+                           i_GpuSubmesh.get_index_start(),
+                           i_GpuSubmesh.get_vertex_start(), 0);
+        }
+
+        return true;
+      }
+
+      static bool initialize_highlightmap_draw_renderstep()
+      {
+
+        RenderStep l_RenderStep =
+            RenderStep::make(RENDERSTEP_HIGHLIGHTMAP_DRAW);
+
+        l_RenderStep.set_execute_callback([&](RenderStep p_RenderStep,
+                                              float p_Delta,
+                                              RenderView p_RenderView)
+                                              -> bool {
+          VkCommandBuffer l_Cmd =
+              Global::get_current_command_buffer();
+
+          VK_RENDERDOC_SECTION_BEGIN("Highlightmap draw",
+                                     SINGLE_ARG({0.1f, 0.8f, 0.3f}));
+
+          ViewInfo l_ViewInfo = p_RenderView.get_view_info_handle();
+
+          VkClearValue l_ClearColorValue = {};
+          l_ClearColorValue.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+
+          VkClearValue l_ClearObjectValue = {};
+          l_ClearObjectValue.color.uint32[0] = LOW_UINT32_MAX;
+
+          VkClearValue l_ClearColorValueDepth = {};
+          l_ClearColorValueDepth.depthStencil.depth =
+              1.0f; // Depth clear value (1.0f is the farthest)
+          l_ClearColorValueDepth.depthStencil.stencil =
+              0; // Stencil clear value
+
+          Image l_DepthImage = p_RenderView.get_gbuffer_depth()
+                                   .get_gpu()
+                                   .get_data_handle();
+          Image l_HighlightMapImage = p_RenderView.get_highlight_map()
+                                          .get_gpu()
+                                          .get_data_handle();
+
+          {
+            VkViewport l_Viewport = {};
+            l_Viewport.x = 0;
+            l_Viewport.y = 0;
+            l_Viewport.width =
+                static_cast<float>(p_RenderView.get_dimensions().x);
+            l_Viewport.height =
+                static_cast<float>(p_RenderView.get_dimensions().y);
+            l_Viewport.minDepth = 0.f;
+            l_Viewport.maxDepth = 1.f;
+
+            vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
+
+            VkRect2D l_Scissor = {};
+            l_Scissor.offset.x = 0;
+            l_Scissor.offset.y = 0;
+            l_Scissor.extent.width = p_RenderView.get_dimensions().x;
+            l_Scissor.extent.height = p_RenderView.get_dimensions().y;
+
+            vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
+          }
+
+          {
+            // Transfer the gbuffer images
+            ImageUtil::cmd_transition(
+                l_Cmd,
+                p_RenderView.get_highlight_map()
+                    .get_gpu()
+                    .get_data_handle(),
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            ImageUtil::cmd_transition(
+                l_Cmd,
+                p_RenderView.get_gbuffer_depth()
+                    .get_gpu()
+                    .get_data_handle(),
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+          }
+
+          Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
+          l_ColorAttachments.resize(1);
+          l_ColorAttachments[0] = InitUtil::attachment_info(
+              l_HighlightMapImage.get_allocated_image().imageView,
+              &l_ClearObjectValue, VK_IMAGE_LAYOUT_GENERAL);
+
+          VkRenderingAttachmentInfo l_DepthAttachment =
+              InitUtil::attachment_info(
+                  l_DepthImage.get_allocated_image().imageView,
+                  &l_ClearColorValueDepth,
+                  VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+
+          VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
+              {p_RenderView.get_dimensions().x,
+               p_RenderView.get_dimensions().y},
+              l_ColorAttachments.data(), l_ColorAttachments.size(),
+              &l_DepthAttachment);
+
+          vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
+
+          vkCmdBindIndexBuffer(
+              l_Cmd, Global::get_mesh_index_buffer().m_Buffer.buffer,
+              0, VK_INDEX_TYPE_UINT32);
+
+          LOW_ASSERT_ERROR_RETURN_FALSE(
+              draw_highlightmap_solid(l_Cmd, p_RenderView, p_RenderStep,
+                                   p_Delta, l_ViewInfo),
+              "Faled to draw solids to highlight.");
+
+          vkCmdEndRendering(l_Cmd);
+
+          {
+            ImageUtil::cmd_transition(
+                l_Cmd,
+                p_RenderView.get_highlight_map()
+                    .get_gpu()
+                    .get_data_handle(),
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            ImageUtil::cmd_transition(
+                l_Cmd,
+                p_RenderView.get_gbuffer_depth()
+                    .get_gpu()
+                    .get_data_handle(),
+                VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+          }
+
+          VK_RENDERDOC_SECTION_END();
+
+          return true;
+        });
+
+        return true;
+      }
+
       static bool draw_pickmap_debuggeometry(VkCommandBuffer p_Cmd,
                                              RenderView p_RenderView,
                                              RenderStep p_RenderStep,
@@ -235,7 +468,7 @@ namespace Low {
           }
 
           Pipeline i_Pipeline =
-              l_CurrentMaterialType.get_draw_pipeline_handle();
+              l_CurrentMaterialType.get_pick_pipeline_handle();
 
           RenderEntryPushConstant i_PushConstants;
           i_PushConstants.renderObjectSlot = it->get_slot();
@@ -2334,6 +2567,9 @@ namespace Low {
         LOWR_VK_ASSERT_RETURN(
             initialize_pickingmap_draw_renderstep(),
             "Failed to initialize picking map draw renderstep");
+        LOWR_VK_ASSERT_RETURN(
+            initialize_highlightmap_draw_renderstep(),
+            "Failed to initialize highlight map draw renderstep");
         return true;
       }
 

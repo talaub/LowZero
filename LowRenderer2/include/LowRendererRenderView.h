@@ -2,6 +2,7 @@
 
 #include "LowRenderer2Api.h"
 
+#include "LowRendererDrawCommand.h"
 #include "LowUtilHandle.h"
 #include "LowUtilName.h"
 #include "LowUtilContainers.h"
@@ -34,6 +35,26 @@ namespace Low {
 
       EditorImage editorImage;
       u32 pickId;
+    };
+
+    enum class HighlightType
+    {
+      Selected,
+      Hovered
+    };
+
+    struct HighlightDrawDebugGeometry
+    {
+      HighlightType highlightType;
+      GpuSubmesh submesh;
+      Math::Matrix4x4 transform;
+      EditorImage editorImage;
+    };
+
+    struct HighlightDrawSolid
+    {
+      HighlightType highlightType;
+      DrawCommand drawCommand;
     };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
@@ -69,6 +90,10 @@ namespace Low {
         Low::Util::List<Low::Renderer::UiCanvas> ui_canvases;
         Low::Util::List<Low::Renderer::DebugGeometryDraw>
             debug_geometry;
+        Low::Util::List<Low::Renderer::HighlightDrawSolid>
+            highlight_draws_solid;
+        Low::Util::List<Low::Renderer::HighlightDrawDebugGeometry>
+            highlight_draws_debug_geometry;
         bool camera_dirty;
         bool dimensions_dirty;
         Low::Util::Name name;
@@ -273,6 +298,12 @@ namespace Low {
 
       Low::Util::List<Low::Renderer::DebugGeometryDraw> &
       get_debug_geometry() const;
+
+      Low::Util::List<Low::Renderer::HighlightDrawSolid> &
+      get_highlight_draws_solid() const;
+
+      Low::Util::List<Low::Renderer::HighlightDrawDebugGeometry> &
+      get_highlight_draws_debug_geometry() const;
 
       bool is_camera_dirty() const;
       void set_camera_dirty(bool p_Value);
