@@ -444,6 +444,39 @@ namespace Low {
         // End function: make
       }
       {
+        // Function: make_with_unique_id
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(make_with_unique_id);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = Material::type_id();
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Name);
+          l_ParameterInfo.type = Low::Util::RTTI::PropertyType::NAME;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_MaterialType);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::HANDLE;
+          l_ParameterInfo.handleType =
+              Low::Renderer::MaterialType::type_id();
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_UniqueId);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::UINT64;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: make_with_unique_id
+      }
+      {
         // Function: make_gpu_ready
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make_gpu_ready);
@@ -467,6 +500,39 @@ namespace Low {
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: make_gpu_ready
+      }
+      {
+        // Function: make_gpu_ready_with_uid
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(make_gpu_ready_with_uid);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = Material::type_id();
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Name);
+          l_ParameterInfo.type = Low::Util::RTTI::PropertyType::NAME;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_MaterialType);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::HANDLE;
+          l_ParameterInfo.handleType =
+              Low::Renderer::MaterialType::type_id();
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_UniqueId);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::UINT64;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: make_gpu_ready_with_uid
       }
       {
         // Function: update_gpu
@@ -1319,11 +1385,21 @@ namespace Low {
                    Low::Renderer::MaterialType p_MaterialType)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+      return make_with_unique_id(p_Name, p_MaterialType, 0ull);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
+    }
+
+    Material Material::make_with_unique_id(
+        Low::Util::Name p_Name,
+        Low::Renderer::MaterialType p_MaterialType,
+        uint64_t p_UniqueId)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_with_unique_id
 
       LOW_ASSERT(p_MaterialType.is_alive(),
                  "Cannot create material from dead type");
 
-      Material l_Material = make(p_Name);
+      Material l_Material = make(p_Name, p_UniqueId);
       l_Material.set_material_type(p_MaterialType);
 
       {
@@ -1342,7 +1418,8 @@ namespace Low {
       }
 
       return l_Material;
-      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
+
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_with_unique_id
     }
 
     Material Material::make_gpu_ready(
@@ -1350,8 +1427,19 @@ namespace Low {
         Low::Renderer::MaterialType p_MaterialType)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_gpu_ready
+      return make_gpu_ready_with_uid(p_Name, p_MaterialType, 0ull);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_gpu_ready
+    }
 
-      Material l_Material = make(p_Name, p_MaterialType);
+    Material Material::make_gpu_ready_with_uid(
+        Low::Util::Name p_Name,
+        Low::Renderer::MaterialType p_MaterialType,
+        uint64_t p_UniqueId)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_gpu_ready_with_uid
+
+      Material l_Material =
+          make_with_unique_id(p_Name, p_MaterialType, p_UniqueId);
 
       LOW_ASSERT(GpuMaterial::living_count() <
                      GpuMaterial::get_capacity(),
@@ -1365,7 +1453,7 @@ namespace Low {
       l_Material.set_state(MaterialState::UPLOADINGTOGPU);
 
       return l_Material;
-      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_gpu_ready
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_gpu_ready_with_uid
     }
 
     void Material::update_gpu()

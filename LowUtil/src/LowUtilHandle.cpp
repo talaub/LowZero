@@ -9,6 +9,8 @@
 #include "LowUtilYaml.h"
 
 #include <atomic>
+#include <chrono>
+#include <random>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -253,9 +255,15 @@ namespace Low {
                .get_return(l_HandleForName))
               ->m_Index;
       l_Combinator.data.type = p_Handle.get_type();
+      static std::mt19937 s_Rng(
+          (u32)std::chrono::high_resolution_clock::now()
+              .time_since_epoch()
+              .count());
+      static std::uniform_int_distribution<u16> s_Dist(
+          0, LOW_UINT16_MAX);
+
       do {
-        l_Combinator.data.randomComponent =
-            (rand() % static_cast<int>(LOW_UINT16_MAX + 1));
+        l_Combinator.data.randomComponent = s_Dist(s_Rng);
       } while (g_UniqueIdRegistry.find(l_Combinator.id) !=
                g_UniqueIdRegistry.end());
 

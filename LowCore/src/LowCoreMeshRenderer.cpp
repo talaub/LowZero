@@ -672,30 +672,37 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_material
 
-        // Set new value
-        TYPE_SOA(MeshRenderer, material, Low::Renderer::Material) =
-            p_Value;
-        {
-          Low::Core::Entity l_Entity = get_entity();
-          if (l_Entity.has_component(
-                  Low::Core::Component::PrefabInstance::type_id())) {
-            Low::Core::Component::PrefabInstance l_Instance =
-                l_Entity.get_component(
-                    Low::Core::Component::PrefabInstance::type_id());
-            Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
-            if (l_Prefab.is_alive()) {
-              l_Instance.override(
-                  ms_TypeId, N(material),
-                  !l_Prefab.compare_property(*this, N(material)));
+        if (get_material() != p_Value) {
+          // Set dirty flags
+          mark_dirty();
+
+          // Set new value
+          TYPE_SOA(MeshRenderer, material, Low::Renderer::Material) =
+              p_Value;
+          {
+            Low::Core::Entity l_Entity = get_entity();
+            if (l_Entity.has_component(
+                    Low::Core::Component::PrefabInstance::
+                        type_id())) {
+              Low::Core::Component::PrefabInstance l_Instance =
+                  l_Entity.get_component(
+                      Low::Core::Component::PrefabInstance::
+                          type_id());
+              Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
+              if (l_Prefab.is_alive()) {
+                l_Instance.override(
+                    ms_TypeId, N(material),
+                    !l_Prefab.compare_property(*this, N(material)));
+              }
             }
           }
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material
+
+          // LOW_CODEGEN::END::CUSTOM:SETTER_material
+
+          broadcast_observable(N(material));
         }
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material
-
-        // LOW_CODEGEN::END::CUSTOM:SETTER_material
-
-        broadcast_observable(N(material));
       }
 
       Low::Renderer::RenderObject

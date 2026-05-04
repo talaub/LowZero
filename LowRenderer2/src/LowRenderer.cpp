@@ -217,16 +217,19 @@ namespace Low {
     static bool initialize_default_materials()
     {
       {
-        g_DefaultMaterial = Material::make_gpu_ready(
-            N(Default), g_MaterialTypes.solidBase);
+        g_DefaultMaterial = Material::make_gpu_ready_with_uid(
+            N(Default), g_MaterialTypes.solidBase,
+            Util::make_fixed_unique_id("renderer.material.Default"));
 
         g_DefaultMaterial.set_property_vector3(
             N(base_color), Math::ColorRGB(0.8f, 0.8f, 0.8f));
       }
 
       {
-        g_DefaultMaterialTexture = Material::make_gpu_ready(
-            N(DefaultTexture), g_MaterialTypes.solidBase);
+        g_DefaultMaterialTexture = Material::make_gpu_ready_with_uid(
+            N(DefaultTexture), g_MaterialTypes.solidBase,
+            Util::make_fixed_unique_id(
+                "renderer.material.DefaultTexture"));
 
         g_DefaultMaterialTexture.set_property_vector3(
             N(base_color), Math::ColorRGB(0.8f, 0.8f, 0.8f));
@@ -235,16 +238,22 @@ namespace Low {
       }
 
       {
-        g_DefaultMaterialUi = Material::make_gpu_ready(
-            N(DefaultMaterialUi), g_MaterialTypes.uiBase);
+        g_DefaultMaterialUi = Material::make_gpu_ready_with_uid(
+            N(DefaultMaterialUi), g_MaterialTypes.uiBase,
+            Util::make_fixed_unique_id(
+                "renderer.material.DefaultMaterialUi"));
       }
       {
-        g_DefaultMaterialUiText = Material::make_gpu_ready(
-            N(DefaultMaterialUiText), g_MaterialTypes.uiText);
+        g_DefaultMaterialUiText = Material::make_gpu_ready_with_uid(
+            N(DefaultMaterialUiText), g_MaterialTypes.uiText,
+            Util::make_fixed_unique_id(
+                "renderer.material.DefaultMaterialUiText"));
       }
       {
-        g_DefaultMaterialUiOutline = Material::make_gpu_ready(
-            N(DefaultMaterialUiOutline), g_MaterialTypes.uiOutline);
+        g_DefaultMaterialUiOutline = Material::make_gpu_ready_with_uid(
+            N(DefaultMaterialUiOutline), g_MaterialTypes.uiOutline,
+            Util::make_fixed_unique_id(
+                "renderer.material.DefaultMaterialUiOutline"));
       }
       return true;
     }

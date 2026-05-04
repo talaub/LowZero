@@ -15,6 +15,7 @@ namespace Low {
     LOW_EXPORT Util::String hash_to_string(u64 p_Hash);
 
     LOW_EXPORT u64 generate_unique_id();
+    LOW_EXPORT u64 make_fixed_unique_id(const char *p_Name);
 
     struct U64Id
     {

@@ -66,7 +66,14 @@ namespace Low {
       l_Value ^= l_Random + 0x9e3779b97f4a7c15ull + (l_Value << 6) +
                  (l_Value >> 2);
 
+      l_Value &= ~(1ull << 63);
+
       return l_Value;
+    }
+
+    u64 make_fixed_unique_id(const char *p_Name)
+    {
+      return fnv1a_64(p_Name) | (1ull << 63);
     }
 
   } // namespace Util

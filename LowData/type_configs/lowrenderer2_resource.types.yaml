@@ -503,6 +503,18 @@ types:
           - name: materialType
             type: Low::Renderer::MaterialType
             handle: true
+      make_with_unique_id:
+        return_type: Material
+        return_handle: true
+        static: true
+        parameters:
+          - name: name
+            type: Low::Util::Name
+          - name: materialType
+            type: Low::Renderer::MaterialType
+            handle: true
+          - name: uniqueId
+            type: uint64_t
       make_gpu_ready:
         return_type: Material
         return_handle: true
@@ -513,6 +525,18 @@ types:
           - name: materialType
             type: Low::Renderer::MaterialType
             handle: true
+      make_gpu_ready_with_uid:
+        return_type: Material
+        return_handle: true
+        static: true
+        parameters:
+          - name: name
+            type: Low::Util::Name
+          - name: materialType
+            type: Low::Renderer::MaterialType
+            handle: true
+          - name: uniqueId
+            type: uint64_t
       update_gpu:
         return_type: void
       set_property_vector4:

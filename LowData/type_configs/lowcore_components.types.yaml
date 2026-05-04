@@ -130,6 +130,7 @@ types:
         skip_serialization: true
         skip_deserialization: true
         expose_scripting: true
+        dirty_flag: dirty
       render_object:
         editor_editable: false
         type: Low::Renderer::RenderObject
