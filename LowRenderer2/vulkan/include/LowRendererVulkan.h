@@ -122,6 +122,11 @@ namespace Low {
 
         Util::List<VkSampler> lod_nearest_repeat_black;
         Util::List<VkSampler> lod_linear_repeat_black;
+
+        VkSampler no_lod_linear_repeat_black;
+        VkSampler no_lod_linear_clamp_black;
+        VkSampler lod_linear_repeat_black_single;
+        VkSampler lod_linear_clamp_black_single;
       };
 
       struct TextureUpdate
@@ -204,6 +209,9 @@ namespace Low {
         void renderdoc_section_begin(Util::String p_SectionLabel,
                                      Math::ColorRGB p_Color);
         void renderdoc_section_end();
+
+        AllocatedBuffer get_sampler_map_buffer();
+        void write_sampler_map(u32 p_Slot, u32 p_SamplerIndex);
 
         bool blur_image_1(Texture p_ImageToBlur, Texture p_TempImage,
                           Texture p_OutImage,

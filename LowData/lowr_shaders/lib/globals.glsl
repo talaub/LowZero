@@ -4,10 +4,11 @@
 layout(set = 1, binding = 0) uniform texture2D  g_Texture2Ds[512];
 layout(set = 1, binding = 1) uniform utexture2D g_UTexture2Ds[64];
 layout(set = 1, binding = 2) uniform itexture2D g_ITexture2Ds[32];
-layout(set = 1, binding = 3) uniform sampler    g_Samplers[1];
+layout(set = 1, binding = 3) uniform sampler    g_Samplers[5];
 layout(set = 1, binding = 4) uniform sampler2D  g_EditorImages[128];
+layout(set = 1, binding = 5) readonly buffer SamplerMapBuffer { uint g_SamplerMap[]; };
 
-#define TEX2D(idx) sampler2D(g_Texture2Ds[idx], g_Samplers[0])
+#define TEX2D(idx) sampler2D(g_Texture2Ds[idx], g_Samplers[g_SamplerMap[idx]])
 
 struct Material {
   vec4 val0;

@@ -86,7 +86,7 @@ namespace Low {
           // Break on error or warning
           if (messageSeverity >=
               VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-             DEBUG_BREAK();
+             //DEBUG_BREAK();
           }
 
           return VK_FALSE;
@@ -127,6 +127,7 @@ namespace Low {
         AllocatedBuffer g_SS2DDrawcCommandBuffer;
 
         AllocatedBuffer g_MaterialDataBuffer;
+        AllocatedBuffer g_SamplerMapBuffer;
 
         VmaAllocator g_Allocator;
 
@@ -1209,6 +1210,17 @@ namespace Low {
           vkDestroyInstance(g_Instance, nullptr);
 
           return true;
+        }
+
+        AllocatedBuffer get_sampler_map_buffer()
+        {
+          return g_SamplerMapBuffer;
+        }
+
+        void write_sampler_map(u32 p_Slot, u32 p_SamplerIndex)
+        {
+          u32 *l_Map = (u32 *)g_SamplerMapBuffer.info.pMappedData;
+          l_Map[p_Slot] = p_SamplerIndex;
         }
 
         bool blur_image_1(Texture p_ImageToBlur, Texture p_TempImage,

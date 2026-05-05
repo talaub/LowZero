@@ -319,6 +319,8 @@ types:
       imgui_texture_id:
         type: ImTextureID
         no_ref: true
+      sampler_index:
+        type: uint32_t
       full_mip_count:
         type: uint8_t
       loaded_mips:

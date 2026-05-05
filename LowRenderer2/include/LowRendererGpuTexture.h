@@ -21,6 +21,15 @@ namespace Low {
       Uint,
       Int
     };
+
+    enum class SamplerType : u32
+    {
+      NearestRepeat = 0,
+      LinearRepeatNoMip = 1,
+      LinearClampNoMip = 2,
+      LinearRepeatMip = 3,
+      LinearClampMip = 4,
+    };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     struct LOW_RENDERER2_API GpuTexture : public Low::Util::Handle
@@ -34,6 +43,7 @@ namespace Low {
         uint64_t data_handle;
         uint64_t texture_handle;
         ImTextureID imgui_texture_id;
+        uint32_t sampler_index;
         uint8_t full_mip_count;
         Low::Util::List<uint8_t> loaded_mips;
         Low::Util::Name name;
@@ -162,6 +172,9 @@ namespace Low {
 
       ImTextureID get_imgui_texture_id() const;
       void set_imgui_texture_id(ImTextureID p_Value);
+
+      uint32_t get_sampler_index() const;
+      void set_sampler_index(uint32_t p_Value);
 
       uint8_t get_full_mip_count() const;
       void set_full_mip_count(uint8_t p_Value);

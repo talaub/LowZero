@@ -16,6 +16,7 @@
 #include "LowRendererVkImage.h"
 #include "LowRendererVulkanImage.h"
 #include "LowRendererVkTextureSlots.h"
+#include "LowRendererVulkan.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -308,6 +309,35 @@ namespace Low {
         // End property: imgui_texture_id
       }
       {
+        // Property: sampler_index
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(sampler_index);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(GpuTexture::Data, sampler_index);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          GpuTexture l_Handle = p_Handle.get_id();
+          l_Handle.get_sampler_index();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GpuTexture,
+                                            sampler_index, uint32_t);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          GpuTexture l_Handle = p_Handle.get_id();
+          l_Handle.set_sampler_index(*(uint32_t *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          GpuTexture l_Handle = p_Handle.get_id();
+          *((uint32_t *)p_Data) = l_Handle.get_sampler_index();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: sampler_index
+      }
+      {
         // Property: full_mip_count
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(full_mip_count);
@@ -534,6 +564,7 @@ namespace Low {
       l_Handle.set_data_handle(get_data_handle());
       l_Handle.set_texture_handle(get_texture_handle());
       l_Handle.set_imgui_texture_id(get_imgui_texture_id());
+      l_Handle.set_sampler_index(get_sampler_index());
       l_Handle.set_full_mip_count(get_full_mip_count());
       l_Handle.set_loaded_mips(loaded_mips());
 
@@ -565,6 +596,7 @@ namespace Low {
       p_Node["bindless_index"] = get_bindless_index();
       p_Node["data_handle"] = get_data_handle();
       p_Node["texture_handle"] = get_texture_handle();
+      p_Node["sampler_index"] = get_sampler_index();
       p_Node["full_mip_count"] = get_full_mip_count();
       p_Node["name"] = get_name().c_str();
 
@@ -601,6 +633,10 @@ namespace Low {
             p_Node["texture_handle"].as<uint64_t>());
       }
       if (p_Node["imgui_texture_id"]) {
+      }
+      if (p_Node["sampler_index"]) {
+        l_Handle.set_sampler_index(
+            p_Node["sampler_index"].as<uint32_t>());
       }
       if (p_Node["full_mip_count"]) {
         l_Handle.set_full_mip_count(
@@ -814,6 +850,37 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_imgui_texture_id
 
       broadcast_observable(N(imgui_texture_id));
+    }
+
+    uint32_t GpuTexture::get_sampler_index() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_sampler_index
+      // LOW_CODEGEN::END::CUSTOM:GETTER_sampler_index
+
+      return TYPE_SOA(GpuTexture, sampler_index, uint32_t);
+    }
+    void GpuTexture::set_sampler_index(uint32_t p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_sampler_index
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_sampler_index
+
+      // Set new value
+      TYPE_SOA(GpuTexture, sampler_index, uint32_t) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_sampler_index
+      if (get_format_category() == TextureFormatCategory::Float) {
+        u32 l_Slot = get_bindless_index();
+        if (l_Slot != LOW_UINT32_MAX) {
+          Vulkan::Global::write_sampler_map(l_Slot, p_Value);
+        }
+      }
+      // LOW_CODEGEN::END::CUSTOM:SETTER_sampler_index
+
+      broadcast_observable(N(sampler_index));
     }
 
     uint8_t GpuTexture::get_full_mip_count() const
