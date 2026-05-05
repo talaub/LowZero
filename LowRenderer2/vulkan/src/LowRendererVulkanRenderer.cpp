@@ -1141,8 +1141,8 @@ namespace Low {
 
         {
           if (!p_RenderView.get_highlight_map().is_alive()) {
-            p_RenderView.set_highlight_map(
-                Texture::make_gpu_ready(N(Highlight), TextureFormatCategory::Uint));
+            p_RenderView.set_highlight_map(Texture::make_gpu_ready(
+                N(Highlight), TextureFormatCategory::Uint));
           }
 
           Image l_Image = p_RenderView.get_highlight_map()
@@ -2246,7 +2246,8 @@ namespace Low {
               if (!i_HighlightPipeline.is_alive()) {
                 i_MaterialType.set_highlight_pipeline_handle(
                     create_pipeline_from_config(
-                        i_MaterialType.get_pick_pipeline_config(),
+                        i_MaterialType
+                            .get_highlight_pipeline_config(),
                         g_Pipelines.solidHighlightPipelineLayout));
               }
             }
@@ -2302,12 +2303,20 @@ namespace Low {
 
             l_AddedEntry = true;
 
-            l_Writer.write_image(
-                0, i_Image.get_allocated_image().imageView,
-                l_Samplers.no_lod_nearest_repeat_black,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                i_Update.textureIndex);
+            {
+              TextureFormatCategory l_Category =
+                  i_Update.gpuTexture.get_format_category();
+              u32 l_Binding =
+                  (l_Category == TextureFormatCategory::Float)  ? 0
+                  : (l_Category == TextureFormatCategory::Uint) ? 1
+                                                                : 2;
+              l_Writer.write_image(
+                  l_Binding, i_Image.get_allocated_image().imageView,
+                  VK_NULL_HANDLE,
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                  VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+                  i_Update.textureIndex);
+            }
           }
 
           if (l_AddedEntry) {
@@ -2344,7 +2353,7 @@ namespace Low {
             l_AddedEntry = true;
 
             l_Writer.write_image(
-                1, i_Image.get_allocated_image().imageView,
+                4, i_Image.get_allocated_image().imageView,
                 l_Samplers.no_lod_nearest_repeat_black,
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,

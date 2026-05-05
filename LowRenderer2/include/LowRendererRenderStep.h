@@ -20,6 +20,7 @@
 #define RENDERSTEP_BLUR N(blur)
 #define RENDERSTEP_PICKINGMAP_DRAW N(pickingmap_draw)
 #define RENDERSTEP_HIGHLIGHTMAP_DRAW N(highlightmap_draw)
+#define RENDERSTEP_HIGHLIGHT_EDGE_DRAW N(highlight_edge_draw)
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {

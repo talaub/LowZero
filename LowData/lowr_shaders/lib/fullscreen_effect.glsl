@@ -7,7 +7,7 @@ vec3 get_world_position(vec2 p_PixelPosition)
     vec2 ndc = uv * 2.0 - 1.0;
     ndc.y = -ndc.y; // Vulkan NDC Y-flip
 
-    float depth = texture(g_Texture2Ds[g_ViewInfo.gbufferIndices.z], uv).r;
+    float depth = texture(VIEW_GBUFFER_DEPTH, uv).r;
     float clipZ = depth * 2.0 - 1.0;
     vec4 clipPos = vec4(ndc, clipZ, 1.0);
 
@@ -27,7 +27,7 @@ vec3 get_view_position(vec2 p_PixelPosition)
     vec2 ndc = uv * 2.0 - 1.0;
     ndc.y = -ndc.y; // Vulkan NDC Y-flip
 
-    float depth = texture(g_Texture2Ds[g_ViewInfo.gbufferIndices.z], uv).r;
+    float depth = texture(VIEW_GBUFFER_DEPTH, uv).r;
     float clipZ = depth * 2.0 - 1.0;
     vec4 clipPos = vec4(ndc, clipZ, 1.0);
 

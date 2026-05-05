@@ -84,6 +84,8 @@ namespace Low {
                            VkImageLayout p_Layout,
                            VkDescriptorType p_Type,
                            int p_ArrayElement = 0);
+          bool write_sampler(int p_Binding, VkSampler p_Sampler,
+                             int p_ArrayElement = 0);
           bool write_buffer(int p_Binding, VkBuffer p_Buffer,
                             size_t p_Size, size_t p_Offset,
                             VkDescriptorType p_Type);

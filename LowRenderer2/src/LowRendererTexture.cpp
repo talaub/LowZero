@@ -891,7 +891,7 @@ namespace Low {
                  "GpuTexture capacity blown, we cannot set up a new "
                  "gpu ready texture.");
 
-      l_Texture.set_gpu(GpuTexture::make(p_Name));
+      l_Texture.set_gpu(GpuTexture::make(p_Name, p_FormatCategory));
 
       l_Texture.set_state(TextureState::LOADED);
 

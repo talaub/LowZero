@@ -86,7 +86,7 @@ namespace Low {
           // Break on error or warning
           if (messageSeverity >=
               VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-            // DEBUG_BREAK();
+             DEBUG_BREAK();
           }
 
           return VK_FALSE;
@@ -240,6 +240,11 @@ namespace Low {
         PipelineLayout get_lighting_pipeline_layout()
         {
           return g_LightingPipelineLayout;
+        }
+
+        PipelineLayout get_blur_pipeline_layout()
+        {
+          return g_BlurPipelineLayout;
         }
 
         VkDescriptorSetLayout get_gbuffer_descriptor_set_layout()
@@ -421,10 +426,21 @@ namespace Low {
           {
             DescriptorUtil::DescriptorLayoutBuilder l_Builder;
             l_Builder.add_binding(
-                0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                GpuTexture::get_capacity());
+                0, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+                TextureSlots::get_capacity(
+                    TextureFormatCategory::Float)); // texture2D
             l_Builder.add_binding(
-                1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+                TextureSlots::get_capacity(
+                    TextureFormatCategory::Uint)); // utexture2D
+            l_Builder.add_binding(
+                2, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+                TextureSlots::get_capacity(
+                    TextureFormatCategory::Int)); // itexture2D
+            l_Builder.add_binding(
+                3, VK_DESCRIPTOR_TYPE_SAMPLER, 1); // shared sampler array
+            l_Builder.add_binding(
+                4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 EditorImageGpu::get_capacity());
             g_TextureDescriptorSetLayout = l_Builder.build(
                 Global::get_device(), VK_SHADER_STAGE_ALL_GRAPHICS);
@@ -873,6 +889,12 @@ namespace Low {
                   Global::get_global_descriptor_allocator().allocate(
                       Global::get_device(),
                       g_TextureDescriptorSetLayout);
+
+              DescriptorUtil::DescriptorWriter l_Writer;
+              l_Writer.write_sampler(
+                  3, g_Samplers.no_lod_nearest_repeat_black, 0);
+              l_Writer.update_set(Global::get_device(),
+                                  g_Frames[i].textureDescriptorSet);
             }
           }
 
@@ -973,19 +995,21 @@ namespace Low {
           LOWR_VK_ASSERT(samplers_init(),
                          "Could not initialize global samplers");
 
+          TextureSlots::initialize();
+
           Util::List<DescriptorUtil::PoolSizeRatio> l_Sizes = {
               {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 30},
               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 50},
               {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100},
-              {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100}};
+              {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100},
+              {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 700},
+              {VK_DESCRIPTOR_TYPE_SAMPLER, 2}};
 
           g_GlobalDescriptorAllocatorGrowable.init(g_Device, 10,
                                                    l_Sizes);
 
           LOWR_VK_ASSERT(initialize_global_descriptors(),
                          "Could not initialize global descriptors");
-
-          TextureSlots::initialize();
 
           LOWR_VK_ASSERT(frames_init(),
                          "Could not initialize frames");

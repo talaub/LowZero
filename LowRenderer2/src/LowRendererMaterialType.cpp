@@ -1517,6 +1517,16 @@ namespace Low {
 
           l_Handle.get_pick_pipeline_config().alphaBlending = false;
         }
+        {
+          l_Handle.get_highlight_pipeline_config()
+              .colorAttachmentFormats.push_back(
+                  ImageFormat::R32_UINT);
+          l_Handle.get_highlight_pipeline_config().depthFormat =
+              ImageFormat::DEPTH;
+
+          l_Handle.get_highlight_pipeline_config().alphaBlending =
+              false;
+        }
       } else if (p_Family == MaterialTypeFamily::UI) {
         l_Handle.allows_picking(false);
         l_Handle.allows_highlighting(false);

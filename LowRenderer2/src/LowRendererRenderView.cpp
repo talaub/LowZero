@@ -2603,7 +2603,6 @@ namespace Low {
       l_RenderView.add_step_by_name(RENDERSTEP_DEBUG_GEOMETRY_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_UI_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_OBJECT_ID_COPY);
-      l_RenderView.add_step_by_name(RENDERSTEP_BLUR);
 
       return l_RenderView;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_default

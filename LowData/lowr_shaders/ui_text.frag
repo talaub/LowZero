@@ -18,7 +18,7 @@ void main()
     vec2 l_uv = mix(min_uv, max_uv, in_TextureCoordinates);
 
     // Sample MSDF using bindless index; needs nonuniformEXT
-    vec3 l_msdf = texture(g_Texture2Ds[nonuniformEXT(UI_DRAW_COMMAND.textureIndex)], l_uv).rgb;
+    vec3 l_msdf = texture(TEX2D(nonuniformEXT(UI_DRAW_COMMAND.textureIndex)), l_uv).rgb;
 
     // Decode MSDF (median of RGB channels)
     float l_m = median3(l_msdf);

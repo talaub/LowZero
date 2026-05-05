@@ -287,6 +287,164 @@ namespace Low {
         return true;
       }
 
+      struct HighlightEdgeStepData
+      {
+        Pipeline pipeline;
+      };
+
+      static bool initialize_highlight_edge_draw_renderstep()
+      {
+        RenderStep l_RenderStep =
+            RenderStep::make(RENDERSTEP_HIGHLIGHT_EDGE_DRAW);
+
+        l_RenderStep.set_prepare_callback(
+            [](RenderStep p_RenderStep,
+               RenderView p_RenderView) -> bool {
+              HighlightEdgeStepData *l_Data =
+                  new HighlightEdgeStepData;
+
+              l_Data->pipeline =
+                  PipelineUtil::GraphicsPipelineBuilder::
+                      prepare_fullscreen_effect(
+                          Global::get_blur_pipeline_layout(),
+                          "highlight_edge.frag",
+                          VK_FORMAT_R16G16B16A16_SFLOAT)
+                          .register_pipeline();
+
+              p_RenderView
+                  .get_step_data()[p_RenderStep.get_index()] =
+                  l_Data;
+              return true;
+            });
+
+        l_RenderStep.set_teardown_callback(
+            [](RenderStep p_RenderStep,
+               RenderView p_RenderView) -> bool {
+              // FIX: Delete data
+              return true;
+            });
+
+        l_RenderStep.set_execute_callback(
+            [](RenderStep p_RenderStep, float p_Delta,
+               RenderView p_RenderView) -> bool {
+              VkCommandBuffer l_Cmd =
+                  Global::get_current_command_buffer();
+
+              VK_RENDERDOC_SECTION_BEGIN(
+                  "Highlight edge",
+                  SINGLE_ARG({1.0f, 0.8f, 0.0f}));
+
+              HighlightEdgeStepData *l_Data =
+                  (HighlightEdgeStepData *)p_RenderView
+                      .get_step_data()[p_RenderStep.get_index()];
+
+              ImageUtil::cmd_transition(
+                  l_Cmd,
+                  p_RenderView.get_lit_image()
+                      .get_gpu()
+                      .get_data_handle(),
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+              Image l_LitImage = p_RenderView.get_lit_image()
+                                     .get_gpu()
+                                     .get_data_handle();
+
+              Util::List<VkRenderingAttachmentInfo>
+                  l_ColorAttachments;
+              l_ColorAttachments.resize(1);
+              l_ColorAttachments[0] = InitUtil::attachment_info(
+                  l_LitImage.get_allocated_image().imageView,
+                  nullptr, VK_IMAGE_LAYOUT_GENERAL);
+
+              VkRenderingInfo l_RenderInfo =
+                  InitUtil::rendering_info(
+                      {p_RenderView.get_dimensions().x,
+                       p_RenderView.get_dimensions().y},
+                      l_ColorAttachments.data(),
+                      l_ColorAttachments.size(), nullptr);
+              vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
+
+              vkCmdBindPipeline(
+                  l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                  l_Data->pipeline.get());
+
+              {
+                VkDescriptorSet l_Set =
+                    Global::get_global_descriptor_set();
+                vkCmdBindDescriptorSets(
+                    l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    Global::get_blur_pipeline_layout().get(), 0,
+                    1, &l_Set, 0, nullptr);
+              }
+              {
+                VkDescriptorSet l_TextureSet =
+                    Global::get_current_texture_descriptor_set();
+                vkCmdBindDescriptorSets(
+                    l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    Global::get_blur_pipeline_layout().get(), 1,
+                    1, &l_TextureSet, 0, nullptr);
+              }
+
+              VkViewport l_Viewport = {};
+              l_Viewport.x = 0;
+              l_Viewport.y = 0;
+              l_Viewport.width = static_cast<float>(
+                  p_RenderView.get_dimensions().x);
+              l_Viewport.height = static_cast<float>(
+                  p_RenderView.get_dimensions().y);
+              l_Viewport.minDepth = 0.f;
+              l_Viewport.maxDepth = 1.f;
+              vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
+
+              VkRect2D l_Scissor = {};
+              l_Scissor.offset.x = 0;
+              l_Scissor.offset.y = 0;
+              l_Scissor.extent.width =
+                  p_RenderView.get_dimensions().x;
+              l_Scissor.extent.height =
+                  p_RenderView.get_dimensions().y;
+              vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
+
+              struct
+              {
+                Math::Vector2 texelSize;
+                u32 highlightMapIndex;
+              } l_PushConstants;
+
+              l_PushConstants.texelSize = {
+                  1.0f / p_RenderView.get_dimensions().x,
+                  1.0f / p_RenderView.get_dimensions().y};
+              l_PushConstants.highlightMapIndex =
+                  p_RenderView.get_highlight_map()
+                      .get_gpu()
+                      .get_bindless_index();
+
+              vkCmdPushConstants(
+                  l_Cmd,
+                  Global::get_blur_pipeline_layout().get(),
+                  VK_SHADER_STAGE_FRAGMENT_BIT, 0,
+                  sizeof(l_PushConstants), &l_PushConstants);
+
+              vkCmdDraw(l_Cmd, 3, 1, 0, 0);
+
+              vkCmdEndRendering(l_Cmd);
+
+              ImageUtil::cmd_transition(
+                  l_Cmd,
+                  p_RenderView.get_lit_image()
+                      .get_gpu()
+                      .get_data_handle(),
+                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+              VK_RENDERDOC_SECTION_END();
+              return true;
+            });
+
+        return true;
+      }
+
       static bool draw_pickmap_debuggeometry(VkCommandBuffer p_Cmd,
                                              RenderView p_RenderView,
                                              RenderStep p_RenderStep,
@@ -2570,6 +2728,9 @@ namespace Low {
         LOWR_VK_ASSERT_RETURN(
             initialize_highlightmap_draw_renderstep(),
             "Failed to initialize highlight map draw renderstep");
+        LOWR_VK_ASSERT_RETURN(
+            initialize_highlight_edge_draw_renderstep(),
+            "Failed to initialize highlight edge draw renderstep");
         return true;
       }
 

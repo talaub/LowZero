@@ -16,8 +16,8 @@ void main()
 #endif
 
     o_Albedo = vec4(l_Material.val0.rgb, 1.0);
-    if (l_TextureId< 512){
-      o_Albedo = vec4(texture(g_Texture2Ds[l_TextureId], in_TextureCoordinates).xyz, 1.0);
+    if (l_TextureId < 512){
+      o_Albedo = vec4(texture(TEX2D(l_TextureId), in_TextureCoordinates).xyz, 1.0);
     }
 
 

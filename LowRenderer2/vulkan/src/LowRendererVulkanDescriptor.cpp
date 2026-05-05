@@ -265,6 +265,32 @@ namespace Low {
           return true;
         }
 
+        bool DescriptorWriter::write_sampler(int p_Binding,
+                                             VkSampler p_Sampler,
+                                             int p_ArrayElement)
+        {
+          {
+            VkDescriptorImageInfo l_LocalInfo{};
+            l_LocalInfo.sampler = p_Sampler;
+            l_LocalInfo.imageView = VK_NULL_HANDLE;
+            l_LocalInfo.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            m_ImageInfos.push_back(l_LocalInfo);
+          }
+          VkDescriptorImageInfo &l_Info = m_ImageInfos.back();
+
+          VkWriteDescriptorSet l_Write{};
+          l_Write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+          l_Write.dstBinding = p_Binding;
+          l_Write.dstSet = VK_NULL_HANDLE;
+          l_Write.descriptorCount = 1;
+          l_Write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+          l_Write.pImageInfo = &l_Info;
+          l_Write.dstArrayElement = p_ArrayElement;
+          m_Writes.push_back(l_Write);
+
+          return true;
+        }
+
         bool DescriptorWriter::write_image(int p_Binding,
                                            Image p_Image,
                                            VkSampler p_Sampler,

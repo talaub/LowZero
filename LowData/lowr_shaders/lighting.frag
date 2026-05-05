@@ -92,7 +92,7 @@ void main() {
     // UVs and depth
     vec2 uv = gl_FragCoord.xy * g_ViewInfo.dimensions.zw;
 
-    float depth = texture(g_Texture2Ds[g_ViewInfo.gbufferIndices.z], uv).r;
+    float depth = texture(VIEW_GBUFFER_DEPTH, uv).r;
 
     #if 0
     depth = 1.0 - depth;
@@ -102,15 +102,15 @@ void main() {
     vec3 fragPosView = texture(VIEW_GBUFFER_VIEWPOSITION, uv).xyz;
 
     // Fetch the albedo (diffuse color) from the albedo texture
-    vec3 albedo = texture(g_Texture2Ds[g_ViewInfo.gbufferIndices.x], uv).rgb;
-    vec3 normalWorld = normalize(texture(g_Texture2Ds[g_ViewInfo.gbufferIndices.y], uv).rgb * 2.0 - 1.0);
+    vec3 albedo = texture(VIEW_GBUFFER_ALBEDO, uv).rgb;
+    vec3 normalWorld = normalize(texture(VIEW_GBUFFER_NORMAL, uv).rgb * 2.0 - 1.0);
     vec3 normalView = normalize(mat3(g_ViewInfo.viewMatrix) * normalWorld);
 
     // Compute lighting
     vec3 lighting = compute_lighting(fragPosView, normalView);
 
     // Sample SSAO texture
-    float ao = texture(g_Texture2Ds[g_ViewInfo.textureIndices.x], uv).r;
+    float ao = texture(TEX2D(g_ViewInfo.textureIndices.x), uv).r;
 
     vec3 diffuse = lighting * albedo;
     vec3 ambient = vec3(0.03) * albedo;

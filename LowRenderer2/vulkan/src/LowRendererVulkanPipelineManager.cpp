@@ -173,6 +173,7 @@ namespace Low {
           int l_Result =
               Util::execute_command(l_Command, true, &l_Output);
           if (l_Result != 0 || !l_Output.empty()) {
+            LOW_LOG_ERROR << "Command: " << l_Command << LOW_LOG_END;
             LOW_LOG_ERROR
                 << "Shader compilation failed: " << p_SourcePath
                 << "\n"

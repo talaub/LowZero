@@ -69,6 +69,41 @@ namespace Low {
       bool center_vertically = true; // otherwise anchored to top
     };
 
+    static void highlight_renderobject(
+        Renderer::RenderObject p_RenderObject,
+        const Renderer::HighlightType p_HighlightType)
+    {
+      if (!p_RenderObject.is_alive()) {
+        return;
+      }
+      for (Renderer::DrawCommand i_DrawCommand :
+           p_RenderObject.get_draw_commands()) {
+        Renderer::HighlightDrawSolid i_HighlightDraw;
+        i_HighlightDraw.drawCommand = i_DrawCommand;
+        i_HighlightDraw.highlightType = p_HighlightType;
+        Renderer::get_editor_renderview()
+            .get_highlight_draws_solid()
+            .push_back(i_HighlightDraw);
+      }
+    }
+
+    static void
+    highlight_entity(Core::Entity p_Entity,
+                     const Renderer::HighlightType p_HighlightType)
+    {
+      if (!p_Entity.is_alive()) {
+        return;
+      }
+      Core::Component::MeshRenderer l_MeshRenderer =
+          p_Entity.get_component(
+              Core::Component::MeshRenderer::type_id());
+      if (l_MeshRenderer.is_alive()) {
+        highlight_renderobject(l_MeshRenderer.get_render_object(),
+                               p_HighlightType);
+        return;
+      }
+    }
+
     static void draw_frosted_toolbar_bg(
         ImDrawList *p_Draw, ImTextureID p_BlurTex,
         const ImVec2 &p_BarMin, const ImVec2 &p_BarMax,
@@ -607,27 +642,8 @@ namespace Low {
 
       {
         Core::Entity l_SelectedEntity = get_selected_entity();
-        if (l_SelectedEntity.is_alive()) {
-          Core::Component::MeshRenderer l_SelectedMeshRenderer =
-              l_SelectedEntity.get_component(
-                  Core::Component::MeshRenderer::type_id());
-          if (l_SelectedMeshRenderer.is_alive()) {
-            Renderer::RenderObject l_RenderObject =
-                l_SelectedMeshRenderer.get_render_object();
-            if (l_RenderObject.is_alive()) {
-              for (Renderer::DrawCommand i_DrawCommand :
-                   l_RenderObject.get_draw_commands()) {
-                Renderer::HighlightDrawSolid i_HighlightDraw;
-                i_HighlightDraw.drawCommand = i_DrawCommand;
-                i_HighlightDraw.highlightType =
-                    Renderer::HighlightType::Selected;
-                Renderer::get_editor_renderview()
-                    .get_highlight_draws_solid()
-                    .push_back(i_HighlightDraw);
-              }
-            }
-          }
-        }
+        highlight_entity(l_SelectedEntity,
+                         Renderer::HighlightType::Selected);
       }
 
       render_billboards(p_Delta, p_RenderViewWidget);
@@ -967,8 +983,7 @@ namespace Low {
                   l_Pixel);
         }
 
-        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-
+        {
           Core::Entity l_Entity;
           if (l_EntityIndex != ~0u) {
             l_EntityIndex = LOW_MATH_MIN(
@@ -976,7 +991,15 @@ namespace Low {
             l_Entity = Core::Entity::find_by_index(l_EntityIndex);
           }
 
-          set_selected_entity(l_Entity);
+          if (l_Entity.is_alive()) {
+            highlight_entity(l_Entity,
+                             Renderer::HighlightType::Hovered);
+          }
+
+          if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+
+            set_selected_entity(l_Entity);
+          }
         }
       }
     }

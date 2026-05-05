@@ -14,12 +14,12 @@ const float weights[5] = float[](0.227027, 0.316216, 0.070270, 0.070270, 0.31621
 void main() {
     vec2 texCoords = gl_FragCoord.xy * params.texelSize;
 
-    vec4 result = texture(g_Texture2Ds[params.inputTextureIndex], texCoords) * weights[0];
+    vec4 result = texture(TEX2D(params.inputTextureIndex), texCoords) * weights[0];
 
     // Vertical blur
     for (int i = 1; i < 3; ++i) {
-        result += texture(g_Texture2Ds[params.inputTextureIndex], texCoords + vec2(0.0, params.texelSize.y * i)) * weights[i];
-        result += texture(g_Texture2Ds[params.inputTextureIndex], texCoords - vec2(0.0, params.texelSize.y * i)) * weights[i];
+        result += texture(TEX2D(params.inputTextureIndex), texCoords + vec2(0.0, params.texelSize.y * i)) * weights[i];
+        result += texture(TEX2D(params.inputTextureIndex), texCoords - vec2(0.0, params.texelSize.y * i)) * weights[i];
     }
 
     fragColor = result;

@@ -745,7 +745,8 @@ namespace Low {
                  "Failed to initialize Vulkan renderer");
 
       {
-        g_DefaultTexture = Texture::make_gpu_ready(N(Default), TextureFormatCategory::Float);
+        g_DefaultTexture = Texture::make_gpu_ready(
+            N(Default), TextureFormatCategory::Float);
       }
 
       initialize_primitives();
@@ -769,6 +770,9 @@ namespace Low {
       g_EditorRenderView.add_step_by_name(RENDERSTEP_PICKINGMAP_DRAW);
       g_EditorRenderView.add_step_by_name(
           RENDERSTEP_HIGHLIGHTMAP_DRAW);
+      g_EditorRenderView.add_step_by_name(
+          RENDERSTEP_HIGHLIGHT_EDGE_DRAW);
+      g_EditorRenderView.add_step_by_name(RENDERSTEP_BLUR);
       // g_EditorRenderView = RenderView::make(N(Editor));
 
       Util::Window::get_main_window().eventCallbacks.push_back(

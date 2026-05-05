@@ -179,6 +179,7 @@ namespace Low {
         VkDescriptorSetLayout get_gbuffer_descriptor_set_layout();
 
         PipelineLayout get_lighting_pipeline_layout();
+        PipelineLayout get_blur_pipeline_layout();
 
         Samplers &get_samplers();
 
