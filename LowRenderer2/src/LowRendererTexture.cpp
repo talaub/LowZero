@@ -387,6 +387,14 @@ namespace Low {
           l_ParameterInfo.handleType = 0;
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_FormatCategory);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: make_gpu_ready
       }
@@ -870,8 +878,9 @@ namespace Low {
       broadcast_observable(N(name));
     }
 
-    Low::Renderer::Texture
-    Texture::make_gpu_ready(Low::Util::Name p_Name)
+    Low::Renderer::Texture Texture::make_gpu_ready(
+        Low::Util::Name p_Name,
+        Low::Renderer::TextureFormatCategory p_FormatCategory)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_gpu_ready
 

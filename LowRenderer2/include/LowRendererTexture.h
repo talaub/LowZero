@@ -170,8 +170,9 @@ namespace Low {
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      static Low::Renderer::Texture
-      make_gpu_ready(Low::Util::Name p_Name);
+      static Low::Renderer::Texture make_gpu_ready(
+          Low::Util::Name p_Name,
+          Low::Renderer::TextureFormatCategory p_FormatCategory);
       EditorImage get_editor_image();
       static Texture
       make_from_resource_config(TextureResourceConfig &p_Config);

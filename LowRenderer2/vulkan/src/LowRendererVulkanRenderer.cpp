@@ -3,6 +3,7 @@
 #include "LowMath.h"
 #include "LowRendererEditorImageGpu.h"
 #include "LowRendererGlobals.h"
+#include "LowRendererGpuTexture.h"
 #include "LowRendererSS2DCanvas.h"
 #include "LowRendererSS2DDrawCommand.h"
 #include "LowRendererTextureState.h"
@@ -819,7 +820,8 @@ namespace Low {
 
         {
           if (!p_Canvas.get_out_image().is_alive()) {
-            p_Canvas.set_out_image(Texture::make_gpu_ready(N(Out)));
+            p_Canvas.set_out_image(Texture::make_gpu_ready(
+                N(Out), TextureFormatCategory::Float));
           }
 
           Image l_Image =
@@ -1049,8 +1051,8 @@ namespace Low {
 
         {
           if (!p_RenderView.get_gbuffer_albedo().is_alive()) {
-            p_RenderView.set_gbuffer_albedo(
-                Texture::make_gpu_ready(N(Albedo)));
+            p_RenderView.set_gbuffer_albedo(Texture::make_gpu_ready(
+                N(Albedo), TextureFormatCategory::Float));
           }
 
           Image l_Image = p_RenderView.get_gbuffer_albedo()
@@ -1078,8 +1080,8 @@ namespace Low {
         }
         {
           if (!p_RenderView.get_gbuffer_normals().is_alive()) {
-            p_RenderView.set_gbuffer_normals(
-                Texture::make_gpu_ready(N(Normals)));
+            p_RenderView.set_gbuffer_normals(Texture::make_gpu_ready(
+                N(Normals), TextureFormatCategory::Float));
           }
 
           Image l_Image = p_RenderView.get_gbuffer_normals()
@@ -1109,7 +1111,8 @@ namespace Low {
         {
           if (!p_RenderView.get_gbuffer_viewposition().is_alive()) {
             p_RenderView.set_gbuffer_viewposition(
-                Texture::make_gpu_ready(N(ViewPosition)));
+                Texture::make_gpu_ready(
+                    N(ViewPosition), TextureFormatCategory::Float));
           }
 
           Image l_Image = p_RenderView.get_gbuffer_viewposition()
@@ -1139,7 +1142,7 @@ namespace Low {
         {
           if (!p_RenderView.get_highlight_map().is_alive()) {
             p_RenderView.set_highlight_map(
-                Texture::make_gpu_ready(N(Highlight)));
+                Texture::make_gpu_ready(N(Highlight), TextureFormatCategory::Uint));
           }
 
           Image l_Image = p_RenderView.get_highlight_map()
@@ -1168,8 +1171,8 @@ namespace Low {
 
         {
           if (!p_RenderView.get_object_map().is_alive()) {
-            p_RenderView.set_object_map(
-                Texture::make_gpu_ready(N(ObjectMap)));
+            p_RenderView.set_object_map(Texture::make_gpu_ready(
+                N(ObjectMap), TextureFormatCategory::Uint));
           }
 
           Image l_Image = p_RenderView.get_object_map()
@@ -1212,8 +1215,8 @@ namespace Low {
 
         {
           if (!p_RenderView.get_gbuffer_depth().is_alive()) {
-            p_RenderView.set_gbuffer_depth(
-                Texture::make_gpu_ready(N(Depth)));
+            p_RenderView.set_gbuffer_depth(Texture::make_gpu_ready(
+                N(Depth), TextureFormatCategory::Float));
           }
 
           Image l_Image = p_RenderView.get_gbuffer_depth()
@@ -1246,8 +1249,8 @@ namespace Low {
 
         {
           if (!p_RenderView.get_lit_image().is_alive()) {
-            p_RenderView.set_lit_image(
-                Texture::make_gpu_ready(N(Lit)));
+            p_RenderView.set_lit_image(Texture::make_gpu_ready(
+                N(Lit), TextureFormatCategory::Float));
           }
 
           Image l_Image = p_RenderView.get_lit_image()
@@ -1276,8 +1279,8 @@ namespace Low {
 
         {
           if (!p_RenderView.get_blurred_image().is_alive()) {
-            p_RenderView.set_blurred_image(
-                Texture::make_gpu_ready(N(Blurred)));
+            p_RenderView.set_blurred_image(Texture::make_gpu_ready(
+                N(Blurred), TextureFormatCategory::Float));
           }
 
           Image l_Image = p_RenderView.get_blurred_image()

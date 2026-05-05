@@ -392,6 +392,30 @@ namespace Low {
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: name
       }
+      {
+        // Function: make
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(make);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = GpuTexture::type_id();
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Name);
+          l_ParameterInfo.type = Low::Util::RTTI::PropertyType::NAME;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_FormatCategory);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: make
+      }
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
       // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
@@ -877,6 +901,20 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
+    }
+
+    GpuTexture
+    GpuTexture::make(Low::Util::Name p_Name,
+                     TextureFormatCategory p_FormatCategory)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+      GpuTexture l_Tex = make(p_Name);
+      if (p_FormatCategory != l_Tex.get_format_category()) {
+        l_Tex.set_format_category(p_FormatCategory);
+      }
+
+      return l_Tex;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
     }
 
     uint32_t GpuTexture::create_instance(u32 &p_PageIndex,

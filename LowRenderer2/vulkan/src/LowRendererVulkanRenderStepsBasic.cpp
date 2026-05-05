@@ -1284,7 +1284,7 @@ namespace Low {
 
           {
             g_BaseSsaoStepData.noise =
-                Texture::make_gpu_ready(N(SsaoKernel));
+                Texture::make_gpu_ready(N(SsaoKernel), TextureFormatCategory::Float);
             Vulkan::Image l_Image =
                 Vulkan::Image::make(N(SsaoKernel));
             g_BaseSsaoStepData.noise.get_gpu().set_data_handle(
@@ -1475,9 +1475,9 @@ namespace Low {
               BaseSsaoStepData *l_Data = new BaseSsaoStepData;
               p_RenderView.get_step_data()[p_RenderStep.get_index()] =
                   l_Data;
-              l_Data->texture = Texture::make_gpu_ready(N(SsaoOut));
+              l_Data->texture = Texture::make_gpu_ready(N(SsaoOut), TextureFormatCategory::Float);
               l_Data->tempBlurTexture =
-                  Texture::make_gpu_ready(N(SsaoBlurTemp));
+                  Texture::make_gpu_ready(N(SsaoBlurTemp), TextureFormatCategory::Float);
               p_RenderView.set_ssao_image(l_Data->texture);
               return true;
             });
@@ -2341,7 +2341,7 @@ namespace Low {
               p_RenderView.get_step_data()[p_RenderStep.get_index()] =
                   l_Data;
               l_Data->tempBlurTexture =
-                  Texture::make_gpu_ready(N(BlurTemp));
+                  Texture::make_gpu_ready(N(BlurTemp), TextureFormatCategory::Float);
               return true;
             });
 

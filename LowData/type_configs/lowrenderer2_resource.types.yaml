@@ -252,6 +252,9 @@ types:
         parameters:
           - name: name
             type: Low::Util::Name
+          - name: formatCategory
+            type: Low::Renderer::TextureFormatCategory
+            no_ref: true
       get_editor_image:
         return_type: EditorImage
         return_handle: true
@@ -322,6 +325,18 @@ types:
         type: Low::Util::List<uint8_t>
         getter_name: loaded_mips
         private_setter: true
+    functions:
+      make:
+        static: true
+        return_type: GpuTexture
+        return_handle: true
+        parameters:
+          - name: name
+            type: Low::Util::Name
+          - name: formatCategory
+            type: TextureFormatCategory
+            no_ref: true
+      
 
   Font:
     reference_counted: true

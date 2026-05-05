@@ -745,7 +745,7 @@ namespace Low {
                  "Failed to initialize Vulkan renderer");
 
       {
-        g_DefaultTexture = Texture::make_gpu_ready(N(Default));
+        g_DefaultTexture = Texture::make_gpu_ready(N(Default), TextureFormatCategory::Float);
       }
 
       initialize_primitives();
