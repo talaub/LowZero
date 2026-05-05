@@ -28,6 +28,7 @@
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_vulkan.h"
+#include <cstring>
 #include <vulkan/vulkan_core.h>
 
 namespace Low {
@@ -138,6 +139,8 @@ namespace Low {
         u32 g_TransferQueueFamily;
 
         Samplers g_Samplers;
+
+        constexpr u32 SAMPLER_MAP_COUNT = 5;
 
         DescriptorUtil::DescriptorAllocatorGrowable
             g_GlobalDescriptorAllocatorGrowable;
@@ -439,10 +442,13 @@ namespace Low {
                 TextureSlots::get_capacity(
                     TextureFormatCategory::Int)); // itexture2D
             l_Builder.add_binding(
-                3, VK_DESCRIPTOR_TYPE_SAMPLER, 1); // shared sampler array
+                3, VK_DESCRIPTOR_TYPE_SAMPLER,
+                SAMPLER_MAP_COUNT); // shared sampler array
             l_Builder.add_binding(
                 4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 EditorImageGpu::get_capacity());
+            l_Builder.add_binding(5,
+                                  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
             g_TextureDescriptorSetLayout = l_Builder.build(
                 Global::get_device(), VK_SHADER_STAGE_ALL_GRAPHICS);
           }
@@ -605,6 +611,13 @@ namespace Low {
                   VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
               VMA_MEMORY_USAGE_GPU_ONLY);
+
+          g_SamplerMapBuffer = BufferUtil::create_buffer(
+              sizeof(u32) * GpuTexture::get_capacity(),
+              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+              VMA_MEMORY_USAGE_CPU_TO_GPU);
+          memset(g_SamplerMapBuffer.info.pMappedData, 0,
+                 g_SamplerMapBuffer.info.size);
 
           return true;
         }
@@ -894,6 +907,18 @@ namespace Low {
               DescriptorUtil::DescriptorWriter l_Writer;
               l_Writer.write_sampler(
                   3, g_Samplers.no_lod_nearest_repeat_black, 0);
+              l_Writer.write_sampler(
+                  3, g_Samplers.no_lod_nearest_repeat_black, 1);
+              l_Writer.write_sampler(
+                  3, g_Samplers.no_lod_nearest_repeat_black, 2);
+              l_Writer.write_sampler(
+                  3, g_Samplers.no_lod_nearest_repeat_black, 3);
+              l_Writer.write_sampler(
+                  3, g_Samplers.no_lod_nearest_repeat_black, 4);
+              l_Writer.write_buffer(
+                  5, get_sampler_map_buffer().buffer,
+                  get_sampler_map_buffer().info.size, 0,
+                  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
               l_Writer.update_set(Global::get_device(),
                                   g_Frames[i].textureDescriptorSet);
             }
@@ -1103,6 +1128,7 @@ namespace Low {
           get_ui_drawcommand_buffer().destroy();
           BufferUtil::destroy_buffer(get_material_data_buffer());
           BufferUtil::destroy_buffer(get_ss2d_drawcommand_buffer());
+          BufferUtil::destroy_buffer(get_sampler_map_buffer());
 
           return true;
         }

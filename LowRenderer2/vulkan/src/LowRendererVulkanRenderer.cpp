@@ -629,6 +629,7 @@ namespace Low {
       static bool draw_render_entries(Context &p_Context,
                                       float p_Delta)
       {
+
         for (u32 i = 0u; i < RenderView::living_count(); ++i) {
           RenderView i_RenderView = RenderView::living_instances()[i];
           RenderScene i_RenderScene = i_RenderView.get_render_scene();
@@ -640,6 +641,10 @@ namespace Low {
               !i_ViewInfo.is_initialized()) {
             continue;
           }
+          Util::String i_Title = Util::String("RenderView: ") +
+                                 i_RenderView.get_name().c_str();
+          VK_RENDERDOC_SECTION_BEGIN(i_Title.c_str(),
+                                     SINGLE_ARG({0.9f, 0.2f, 0.4f}));
 
           for (u32 j = 0; j < i_RenderView.get_steps().size(); ++j) {
             RenderStep i_RenderStep = i_RenderView.get_steps()[j];
@@ -653,6 +658,8 @@ namespace Low {
           i_RenderView.get_debug_geometry().clear();
           i_RenderView.get_highlight_draws_solid().clear();
           i_RenderView.get_highlight_draws_debug_geometry().clear();
+
+          VK_RENDERDOC_SECTION_END();
         }
 
         return true;
