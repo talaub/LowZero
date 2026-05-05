@@ -5,6 +5,7 @@
 
 #include "LowRendererVulkanBase.h"
 
+#include "LowRendererVkTextureSlots.h"
 #include "LowRendererVulkanInit.h"
 #include "LowRendererVulkanImage.h"
 #include "LowRendererVulkanPipeline.h"
@@ -984,6 +985,8 @@ namespace Low {
           LOWR_VK_ASSERT(initialize_global_descriptors(),
                          "Could not initialize global descriptors");
 
+          TextureSlots::initialize();
+
           LOWR_VK_ASSERT(frames_init(),
                          "Could not initialize frames");
 
@@ -1081,6 +1084,8 @@ namespace Low {
 
         static bool global_descriptors_cleanup()
         {
+          TextureSlots::cleanup();
+
           vkDestroyDescriptorSetLayout(
               Global::get_device(),
               Global::get_gbuffer_descriptor_set_layout(), nullptr);
@@ -1252,7 +1257,7 @@ namespace Low {
             BlurPushConstants l_PushConstants;
             l_PushConstants.texelSize = l_InverseDimensions;
             l_PushConstants.inputTextureIndex =
-                p_ImageToBlur.get_gpu().get_index();
+                p_ImageToBlur.get_gpu().get_bindless_index();
 
             vkCmdPushConstants(l_Cmd, g_BlurPipelineLayout.get(),
                                VK_SHADER_STAGE_FRAGMENT_BIT, 0,
@@ -1304,7 +1309,7 @@ namespace Low {
             BlurPushConstants l_PushConstants;
             l_PushConstants.texelSize = l_InverseDimensions;
             l_PushConstants.inputTextureIndex =
-                p_TempImage.get_gpu().get_index();
+                p_TempImage.get_gpu().get_bindless_index();
 
             vkCmdPushConstants(l_Cmd, g_BlurPipelineLayout.get(),
                                VK_SHADER_STAGE_FRAGMENT_BIT, 0,
@@ -1402,7 +1407,7 @@ namespace Low {
             DynamicBlurPushConstants l_PushConstants;
             l_PushConstants.texelSize = l_InverseDimensions;
             l_PushConstants.inputTextureIndex =
-                p_ImageToBlur.get_gpu().get_index();
+                p_ImageToBlur.get_gpu().get_bindless_index();
             l_PushConstants.radius = l_Radius;
             l_PushConstants.sigma = l_Sigma;
             l_PushConstants.stepScale = l_StepSize;
@@ -1457,7 +1462,7 @@ namespace Low {
             DynamicBlurPushConstants l_PushConstants;
             l_PushConstants.texelSize = l_InverseDimensions;
             l_PushConstants.inputTextureIndex =
-                p_TempImage.get_gpu().get_index();
+                p_TempImage.get_gpu().get_bindless_index();
             l_PushConstants.radius = l_Radius;
             l_PushConstants.sigma = l_Sigma;
             l_PushConstants.stepScale = l_StepSize;

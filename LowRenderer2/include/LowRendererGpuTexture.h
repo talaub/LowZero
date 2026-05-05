@@ -15,7 +15,12 @@
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-
+    enum class TextureFormatCategory
+    {
+      Float,
+      Uint,
+      Int
+    };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     struct LOW_RENDERER2_API GpuTexture : public Low::Util::Handle
@@ -24,6 +29,8 @@ namespace Low {
       struct Data
       {
       public:
+        uint32_t bindless_index;
+        TextureFormatCategory format_category;
         uint64_t data_handle;
         uint64_t texture_handle;
         ImTextureID imgui_texture_id;
@@ -140,6 +147,12 @@ namespace Low {
         GpuTexture l_GpuTexture = p_Handle.get_id();
         l_GpuTexture.destroy();
       }
+
+      uint32_t get_bindless_index() const;
+      void set_bindless_index(uint32_t p_Value);
+
+      TextureFormatCategory get_format_category() const;
+      void set_format_category(TextureFormatCategory p_Value);
 
       uint64_t get_data_handle() const;
       void set_data_handle(uint64_t p_Value);

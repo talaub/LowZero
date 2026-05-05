@@ -364,12 +364,13 @@ namespace Low {
           i_Upload.color = i_DrawCommand.get_color();
 
           i_Upload.textureIndex =
-              get_default_texture().get_gpu().get_index();
+              get_default_texture().get_gpu().get_bindless_index();
           if (i_DrawCommand.get_texture().is_alive() &&
               i_DrawCommand.get_texture().get_state() ==
                   TextureState::LOADED) {
-            i_Upload.textureIndex =
-                i_DrawCommand.get_texture().get_gpu().get_index();
+            i_Upload.textureIndex = i_DrawCommand.get_texture()
+                                        .get_gpu()
+                                        .get_bindless_index();
           } else if (i_DrawCommand.get_texture().is_alive() &&
                      i_DrawCommand.get_texture().get_state() !=
                          TextureState::LOADED) {
@@ -453,6 +454,8 @@ namespace Low {
               UiDrawCommand i_DrawCommand = UiDrawCommand::make(
                   i_RenderObject, i_Canvas, i_GpuSubmesh);
 
+              i_DrawCommand.set_texture(i_RenderObject.get_texture());
+
               if (!i_DrawCommand.get_material().is_alive()) {
                 i_DrawCommand.set_material(
                     i_RenderObject.get_material());
@@ -530,12 +533,13 @@ namespace Low {
             i_Upload.color = i_DrawCommand.get_color();
 
             i_Upload.textureIndex =
-                get_default_texture().get_gpu().get_index();
+                get_default_texture().get_gpu().get_bindless_index();
             if (i_DrawCommand.get_texture().is_alive() &&
                 i_DrawCommand.get_texture().get_state() ==
                     TextureState::LOADED) {
-              i_Upload.textureIndex =
-                  i_DrawCommand.get_texture().get_gpu().get_index();
+              i_Upload.textureIndex = i_DrawCommand.get_texture()
+                                          .get_gpu()
+                                          .get_bindless_index();
             } else if (i_DrawCommand.get_texture().is_alive() &&
                        i_DrawCommand.get_texture().get_state() !=
                            TextureState::LOADED) {

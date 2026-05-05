@@ -626,7 +626,9 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_texture
-
+          if (get_texture().is_alive() && get_texture() != p_Value) {
+            get_texture().dereference(get_id());
+          }
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_texture
 
           if (get_texture() != p_Value) {
@@ -638,7 +640,9 @@ namespace Low {
                 p_Value;
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_texture
-
+            if (p_Value.is_alive()) {
+              p_Value.reference(get_id());
+            }
             // LOW_CODEGEN::END::CUSTOM:SETTER_texture
 
             broadcast_observable(N(texture));

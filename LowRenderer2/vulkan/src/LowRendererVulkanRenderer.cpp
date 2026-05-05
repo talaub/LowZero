@@ -24,6 +24,7 @@
 #include "LowRendererVkTexExport.h"
 #include "LowRendererEditorImage.h"
 #include "LowRendererVkPipelineLayout.h"
+#include "LowRendererVkTextureSlots.h"
 
 #include "LowRenderer.h"
 
@@ -1419,15 +1420,19 @@ namespace Low {
           l_FrameData.gbufferIndices.w =
               p_RenderView.get_gbuffer_viewposition()
                   .get_gpu()
-                  .get_index();
+                  .get_bindless_index();
           l_FrameData.gbufferIndices.z =
-              p_RenderView.get_gbuffer_depth().get_gpu().get_index();
+              p_RenderView.get_gbuffer_depth()
+                  .get_gpu()
+                  .get_bindless_index();
           l_FrameData.gbufferIndices.x =
-              p_RenderView.get_gbuffer_albedo().get_gpu().get_index();
+              p_RenderView.get_gbuffer_albedo()
+                  .get_gpu()
+                  .get_bindless_index();
           l_FrameData.gbufferIndices.y =
               p_RenderView.get_gbuffer_normals()
                   .get_gpu()
-                  .get_index();
+                  .get_bindless_index();
 
           l_FrameData.lightClusters.x =
               p_ViewInfo.get_light_clusters().x;
@@ -1443,7 +1448,9 @@ namespace Low {
               p_RenderView.get_ssao_image().get_state() ==
                   TextureState::LOADED) {
             l_FrameData.textureIndices.x =
-                p_RenderView.get_ssao_image().get_gpu().get_index();
+                p_RenderView.get_ssao_image()
+                    .get_gpu()
+                    .get_bindless_index();
           }
 
           p_ViewInfo.write_current_staging_buffer(
@@ -1806,7 +1813,7 @@ namespace Low {
           for (u32 i = 0; i < Global::get_frame_overlap(); ++i) {
             TextureUpdate i_Update;
             i_Update.gpuTexture = i_GpuTexture;
-            i_Update.textureIndex = i_GpuTexture.get_index();
+            i_Update.textureIndex = i_GpuTexture.get_bindless_index();
             Global::get_texture_update_queue(i).push(i_Update);
           }
         }

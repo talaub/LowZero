@@ -2,7 +2,6 @@
 
 #include "LowRenderer2Api.h"
 
-#include "LowRendererDrawCommand.h"
 #include "LowUtilHandle.h"
 #include "LowUtilName.h"
 #include "LowUtilContainers.h"
@@ -15,6 +14,7 @@
 #include "LowRendererRenderStep.h"
 #include "LowRendererGpuSubmesh.h"
 #include "LowRendererMaterialType.h"
+#include "LowRendererDrawCommand.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {

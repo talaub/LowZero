@@ -304,6 +304,11 @@ types:
   GpuTexture:
     dynamic_increase: false
     properties:
+      bindless_index:
+        type: uint32_t
+      format_category:
+        type: TextureFormatCategory
+        no_ref: true
       data_handle:
         type: uint64_t
       texture_handle:

@@ -654,9 +654,6 @@ namespace Low {
 
         if (l_References > 0 &&
             get_state() == TextureState::UNLOADED) {
-          if (get_name() == N(emperor_icon)) {
-            LOW_LOG_DEBUG << "LOADING TEX" << LOW_LOG_END;
-          }
           ResourceManager::load_texture(get_id());
         }
         // LOW_CODEGEN::END::CUSTOM:NEW_REFERENCE

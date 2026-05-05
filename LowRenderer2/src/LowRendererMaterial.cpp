@@ -1613,7 +1613,7 @@ namespace Low {
 
         if (p_Value.is_alive() &&
             p_Value.get_state() == TextureState::LOADED) {
-          l_Index = p_Value.get_gpu().get_index();
+          l_Index = p_Value.get_gpu().get_bindless_index();
         } else if (p_Value.is_alive()) {
           PendingTextureBinding l_Binding;
           l_Binding.propertyName = p_Name;
