@@ -156,14 +156,20 @@ namespace Low {
     static Util::String
     run_status_command(const Util::String &p_Command)
     {
+#ifdef _WIN32
+      Util::String l_Result;
+      const int l_Status = Util::execute_command(p_Command, true,
+                                                 &l_Result);
+      if (l_Status != 0) {
+        return "";
+      }
+
+      return l_Result;
+#else
       std::array<char, 256> l_Buffer;
       Util::String l_Result;
 
-#ifdef _WIN32
-      FILE *l_Pipe = _popen(p_Command.c_str(), "r");
-#else
       FILE *l_Pipe = popen(p_Command.c_str(), "r");
-#endif
       if (!l_Pipe) {
         return "";
       }
@@ -173,13 +179,10 @@ namespace Low {
         l_Result += l_Buffer.data();
       }
 
-#ifdef _WIN32
-      _pclose(l_Pipe);
-#else
       pclose(l_Pipe);
-#endif
 
       return l_Result;
+#endif
     }
 
     static Util::String refresh_project_git_status()
@@ -193,7 +196,7 @@ namespace Low {
           Util::StringBuilder()
               .append("git -C ")
               .append(quote_command_argument(l_ProjectRoot))
-              .append(" status --short --branch 2>nul")
+              .append(" status --short --branch")
               .get();
       const Util::String l_Output = run_status_command(l_Command);
       if (l_Output.empty()) {
