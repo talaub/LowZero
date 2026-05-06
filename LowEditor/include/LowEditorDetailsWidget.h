@@ -15,6 +15,8 @@ namespace Low {
       void add_section(HandlePropertiesSection p_Section);
       void clear();
 
+      Util::Handle m_DisplayedHandle;
+
     private:
       Util::List<HandlePropertiesSection> m_Sections;
       bool m_BreakRunning = false;

@@ -44,8 +44,7 @@ namespace Low {
     static bool render_view(Core::UI::View p_View)
     {
       if (ImGui::Selectable(p_View.get_name().c_str(),
-                            p_View.get_id() ==
-                                get_selected_handle().get_id())) {
+                            is_selected(p_View))) {
         set_selected_handle(p_View);
         HandlePropertiesSection l_Section(p_View, true);
         l_Section.render_footer = &render_view_details_footer;
@@ -58,8 +57,7 @@ namespace Low {
     static bool render_element(Core::UI::Element p_Element)
     {
       if (ImGui::Selectable(p_Element.get_name().c_str(),
-                            p_Element.get_id() ==
-                                get_selected_handle().get_id())) {
+                            is_selected(p_Element))) {
         set_selected_handle(p_Element);
         HandlePropertiesSection l_Section(p_Element, true);
         l_Section.render_footer = nullptr;

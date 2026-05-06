@@ -158,8 +158,8 @@ namespace Low {
     {
 #ifdef _WIN32
       Util::String l_Result;
-      const int l_Status = Util::execute_command(p_Command, true,
-                                                 &l_Result);
+      const int l_Status =
+          Util::execute_command(p_Command, true, &l_Result);
       if (l_Status != 0) {
         return "";
       }
@@ -872,14 +872,20 @@ namespace Low {
         l_Context += ICON_CI_SYMBOL_CLASS " No scene";
       }
 
-      Util::Handle l_SelectedHandle = get_selected_handle();
-      if (l_SelectedHandle.get_id() == 0 ||
-          !Util::Handle::is_registered_type(
-              l_SelectedHandle.get_type())) {
+      LOW_SELECTION(l_SelectedHandles);
+      if (l_SelectedHandles.empty()) {
         l_Context += "    ";
         l_Context += ICON_CI_CIRCLE_SLASH " Nothing selected";
         return l_Context;
       }
+
+      if (l_SelectedHandles.size() > 1) {
+        l_Context += "    ";
+        l_Context += ICON_CI_VARIABLE_GROUP " Multiple selected";
+        return l_Context;
+      }
+
+      Util::Handle l_SelectedHandle = l_SelectedHandles[0];
 
       Util::RTTI::TypeInfo &l_TypeInfo =
           Util::Handle::get_type_info(l_SelectedHandle.get_type());
@@ -1123,9 +1129,11 @@ namespace Low {
     static void handle_shortcuts(float p_Delta)
     {
       if (ImGui::GetIO().KeyCtrl) {
+        /*
         if (ImGui::IsKeyPressed(ImGuiKey_D)) {
           duplicate({get_selected_handle()});
         }
+        */
         if (ImGui::IsKeyPressed(ImGuiKey_S)) {
           schedule_save_scene(Core::Scene::get_loaded_scene());
         }

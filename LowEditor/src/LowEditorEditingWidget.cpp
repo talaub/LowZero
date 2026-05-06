@@ -476,94 +476,113 @@ namespace Low {
     static void render_rigidbody_debug_geometry(
         float p_Delta, RenderViewWidget &p_RenderViewWidget)
     {
-      if (!get_selected_entity().is_alive()) {
-        return;
-      }
+      LOW_SELECTION(l_SelectedHandles);
 
-      if (!get_selected_entity().has_component(
-              Core::Component::Rigidbody::type_id())) {
-        return;
-      }
+      for (Util::Handle i_Handle : l_SelectedHandles) {
+        Core::Entity i_Entity = i_Handle.get_id();
 
-      Core::Component::Transform l_Transform =
-          get_selected_entity().get_transform();
-      Core::Component::Rigidbody l_Rigidbody =
-          get_selected_entity().get_component(
-              Core::Component::Rigidbody::type_id());
+        if (!i_Entity.is_alive()) {
+          continue;
+        }
 
-      Math::Color l_DrawColor(0.0f, 1.0f, 0.0f, 1.0f);
+        if (!i_Entity.has_component(
+                Core::Component::Rigidbody::type_id())) {
+          continue;
+        }
 
-      if (l_Rigidbody.get_shape().type == Math::ShapeType::BOX) {
-        Math::Box l_Box = l_Rigidbody.get_shape().box;
-        l_Box.position =
-            l_Rigidbody.get_rigid_dynamic().get_position();
-        l_Box.rotation =
-            l_Rigidbody.get_rigid_dynamic().get_rotation();
+        Core::Component::Transform l_Transform =
+            i_Entity.get_transform();
+        Core::Component::Rigidbody l_Rigidbody =
+            i_Entity.get_component(
+                Core::Component::Rigidbody::type_id());
 
-        Core::DebugGeometry::render_box(l_Box, l_DrawColor, false,
-                                        true);
+        Math::Color l_DrawColor(0.0f, 1.0f, 0.0f, 1.0f);
+
+        if (l_Rigidbody.get_shape().type == Math::ShapeType::BOX) {
+          Math::Box l_Box = l_Rigidbody.get_shape().box;
+          l_Box.position =
+              l_Rigidbody.get_rigid_dynamic().get_position();
+          l_Box.rotation =
+              l_Rigidbody.get_rigid_dynamic().get_rotation();
+
+          Core::DebugGeometry::render_box(l_Box, l_DrawColor, false,
+                                          true);
+        }
       }
     }
 
     static void render_pointlight_debug_geometry(
         float p_Delta, RenderViewWidget &p_RenderViewWidget)
     {
-      if (!get_selected_entity().is_alive()) {
-        return;
+      LOW_SELECTION(l_SelectedHandles);
+
+      for (Util::Handle i_Handle : l_SelectedHandles) {
+        Core::Entity i_Entity = i_Handle.get_id();
+
+        if (!i_Entity.is_alive()) {
+          continue;
+        }
+
+        if (!i_Entity.has_component(
+                Core::Component::PointLight::type_id())) {
+          continue;
+        }
+
+        Core::Component::Transform l_Transform =
+            i_Entity.get_transform();
+        Core::Component::PointLight l_PointLight =
+            i_Entity.get_component(
+                Core::Component::PointLight::type_id());
+
+        Math::Color l_DrawColor(0.0f, 1.0f, 0.0f, 1.0f);
+
+        Math::Sphere l_Sphere;
+        l_Sphere.position = l_Transform.get_world_position();
+        l_Sphere.radius = l_PointLight.get_range();
+
+        Core::DebugGeometry::render_sphere(
+            l_Sphere, Math::Color(1.0f, 1.0f, 0.0f, 1.0f), false,
+            true);
       }
-
-      if (!get_selected_entity().has_component(
-              Core::Component::PointLight::type_id())) {
-        return;
-      }
-
-      Core::Component::Transform l_Transform =
-          get_selected_entity().get_transform();
-      Core::Component::PointLight l_PointLight =
-          get_selected_entity().get_component(
-              Core::Component::PointLight::type_id());
-
-      Math::Color l_DrawColor(0.0f, 1.0f, 0.0f, 1.0f);
-
-      Math::Sphere l_Sphere;
-      l_Sphere.position = l_Transform.get_world_position();
-      l_Sphere.radius = l_PointLight.get_range();
-
-      Core::DebugGeometry::render_sphere(
-          l_Sphere, Math::Color(1.0f, 1.0f, 0.0f, 1.0f), false, true);
     }
 
     static void render_navmeshagent_debug_geometry(
         float p_Delta, RenderViewWidget &p_RenderViewWidget)
     {
-      if (!get_selected_entity().is_alive()) {
-        return;
+      LOW_SELECTION(l_SelectedHandles);
+
+      for (Util::Handle i_Handle : l_SelectedHandles) {
+        Core::Entity i_Entity = i_Handle.get_id();
+
+        if (!i_Entity.is_alive()) {
+          continue;
+        }
+
+        if (!i_Entity.has_component(
+                Core::Component::NavmeshAgent::type_id())) {
+          continue;
+        }
+
+        Core::Component::Transform l_Transform =
+            i_Entity.get_transform();
+        Core::Component::NavmeshAgent l_NavmeshAgent =
+            i_Entity.get_component(
+                Core::Component::NavmeshAgent::type_id());
+
+        Math::Color l_DrawColor(0.0f, 1.0f, 0.0f, 1.0f);
+
+        Math::Cylinder l_Cylinder;
+        l_Cylinder.height = l_NavmeshAgent.get_height();
+        l_Cylinder.radius = l_NavmeshAgent.get_radius();
+        l_Cylinder.position = l_Transform.get_world_position();
+        l_Cylinder.position += l_NavmeshAgent.get_offset();
+        l_Cylinder.position.y += l_Cylinder.height / 2.0f;
+        l_Cylinder.rotation = Math::QuaternionUtil::get_identity();
+
+        Core::DebugGeometry::render_cylinder(
+            l_Cylinder, Math::Color(1.0f, 0.0f, 1.0f, 1.0f), false,
+            true);
       }
-
-      if (!get_selected_entity().has_component(
-              Core::Component::NavmeshAgent::type_id())) {
-        return;
-      }
-
-      Core::Component::Transform l_Transform =
-          get_selected_entity().get_transform();
-      Core::Component::NavmeshAgent l_NavmeshAgent =
-          get_selected_entity().get_component(
-              Core::Component::NavmeshAgent::type_id());
-
-      Math::Color l_DrawColor(0.0f, 1.0f, 0.0f, 1.0f);
-
-      Math::Cylinder l_Cylinder;
-      l_Cylinder.height = l_NavmeshAgent.get_height();
-      l_Cylinder.radius = l_NavmeshAgent.get_radius();
-      l_Cylinder.position = l_Transform.get_world_position();
-      l_Cylinder.position += l_NavmeshAgent.get_offset();
-      l_Cylinder.position.y += l_Cylinder.height / 2.0f;
-      l_Cylinder.rotation = Math::QuaternionUtil::get_identity();
-
-      Core::DebugGeometry::render_cylinder(
-          l_Cylinder, Math::Color(1.0f, 0.0f, 1.0f, 1.0f), false,
-          true);
     }
 
     void render_gizmos(float p_Delta,
@@ -640,8 +659,10 @@ namespace Low {
       render_navmeshagent_debug_geometry(p_Delta, p_RenderViewWidget);
       render_pointlight_debug_geometry(p_Delta, p_RenderViewWidget);
 
-      {
-        Core::Entity l_SelectedEntity = get_selected_entity();
+      LOW_SELECTION(l_SelectedHandles);
+
+      for (Util::Handle i_Handle : l_SelectedHandles) {
+        Core::Entity l_SelectedEntity = i_Handle;
         highlight_entity(l_SelectedEntity,
                          Renderer::HighlightType::Selected);
       }
@@ -685,125 +706,131 @@ namespace Low {
                           l_RenderView.get_camera_direction(),
                       LOW_VECTOR3_UP);
 
-      Core::Entity l_Entity = get_selected_entity();
+      if (l_SelectedHandles.size() == 1) {
+        Core::Entity l_Entity = l_SelectedHandles[0].get_id();
 
-      if (l_Entity.is_alive()) {
-        Core::Component::Transform l_Transform =
-            l_Entity.get_transform();
+        if (l_Entity.is_alive()) {
+          Core::Component::Transform l_Transform =
+              l_Entity.get_transform();
 
-        Math::Matrix4x4 l_TransformMatrix =
-            l_Transform.get_world_matrix();
-        // glm::translate(glm::mat4(1.0f),
-        // l_Transform.get_world_position()) *
-        // glm::toMat4(l_Transform.get_world_rotation()) *
-        // glm::scale(glm::mat4(1.0f), l_Transform.get_world_scale());
+          Math::Matrix4x4 l_TransformMatrix =
+              l_Transform.get_world_matrix();
+          // glm::translate(glm::mat4(1.0f),
+          // l_Transform.get_world_position()) *
+          // glm::toMat4(l_Transform.get_world_rotation()) *
+          // glm::scale(glm::mat4(1.0f),
+          // l_Transform.get_world_scale());
 
-        Math::Vector3 l_Snap(0.0f);
+          Math::Vector3 l_Snap(0.0f);
 
-        if (l_Operation == ImGuizmo::TRANSLATE) {
-          bool l_ShouldSnap = get_user_setting(N(snap_translation));
-          if (l_ShouldSnap) {
-            l_Snap = get_user_setting(N(snap_translation_amount));
+          if (l_Operation == ImGuizmo::TRANSLATE) {
+            bool l_ShouldSnap = get_user_setting(N(snap_translation));
+            if (l_ShouldSnap) {
+              l_Snap = get_user_setting(N(snap_translation_amount));
+            }
           }
-        }
-        if (l_Operation == ImGuizmo::ROTATE) {
-          bool l_ShouldSnap = get_user_setting(N(snap_rotation));
-          if (l_ShouldSnap) {
-            l_Snap = get_user_setting(N(snap_rotation_amount));
+          if (l_Operation == ImGuizmo::ROTATE) {
+            bool l_ShouldSnap = get_user_setting(N(snap_rotation));
+            if (l_ShouldSnap) {
+              l_Snap = get_user_setting(N(snap_rotation_amount));
+            }
           }
-        }
-        if (l_Operation == ImGuizmo::SCALE) {
-          bool l_ShouldSnap = get_user_setting(N(snap_scale));
-          if (l_ShouldSnap) {
-            l_Snap = get_user_setting(N(snap_scale_amount));
-          }
-        }
-
-        if (ImGuizmo::Manipulate(
-                (float *)&l_ViewMatrix, (float *)&l_ProjectionMatrix,
-                l_Operation, ImGuizmo::LOCAL,
-                (float *)&l_TransformMatrix, NULL, &l_Snap.x)) {
-
-          bool l_IsFirst = false;
-          if (!get_gizmos_dragged()) {
-            l_IsFirst = true;
+          if (l_Operation == ImGuizmo::SCALE) {
+            bool l_ShouldSnap = get_user_setting(N(snap_scale));
+            if (l_ShouldSnap) {
+              l_Snap = get_user_setting(N(snap_scale_amount));
+            }
           }
 
-          Core::Component::Transform l_Parent =
-              l_Transform.get_parent();
-          if (l_Parent.is_alive()) {
-            l_TransformMatrix =
-                glm::inverse(l_Parent.get_world_matrix()) *
-                l_TransformMatrix;
-          }
+          if (ImGuizmo::Manipulate((float *)&l_ViewMatrix,
+                                   (float *)&l_ProjectionMatrix,
+                                   l_Operation, ImGuizmo::LOCAL,
+                                   (float *)&l_TransformMatrix, NULL,
+                                   &l_Snap.x)) {
 
-          glm::vec3 scale;
-          glm::quat rotation;
-          glm::vec3 translation;
-          glm::vec3 skew;
-          glm::vec4 perspective;
-          glm::decompose(l_TransformMatrix, scale, rotation,
-                         translation, skew, perspective);
+            bool l_IsFirst = false;
+            if (!get_gizmos_dragged()) {
+              l_IsFirst = true;
+            }
 
-          Util::StoredHandle l_Before;
-          Util::StoredHandle l_After;
+            Core::Component::Transform l_Parent =
+                l_Transform.get_parent();
+            if (l_Parent.is_alive()) {
+              l_TransformMatrix =
+                  glm::inverse(l_Parent.get_world_matrix()) *
+                  l_TransformMatrix;
+            }
 
-          Util::DiffUtil::store_handle(l_Before, l_Transform);
+            glm::vec3 scale;
+            glm::quat rotation;
+            glm::vec3 translation;
+            glm::vec3 skew;
+            glm::vec4 perspective;
+            glm::decompose(l_TransformMatrix, scale, rotation,
+                           translation, skew, perspective);
 
-          l_Transform.position(translation);
-          l_Transform.rotation(rotation);
-          l_Transform.scale(scale);
+            Util::StoredHandle l_Before;
+            Util::StoredHandle l_After;
 
-          Util::DiffUtil::store_handle(l_After, l_Transform);
+            Util::DiffUtil::store_handle(l_Before, l_Transform);
 
-          Transaction l_Transaction =
-              Transaction::from_diff(l_Transform, l_Before, l_After);
+            l_Transform.position(translation);
+            l_Transform.rotation(rotation);
+            l_Transform.scale(scale);
 
-          if (!l_Transaction.empty()) {
-            set_gizmos_dragged(true);
-          }
+            Util::DiffUtil::store_handle(l_After, l_Transform);
 
-          if (!l_IsFirst && !l_Transaction.empty()) {
-            Transaction l_OldTransaction =
-                get_global_changelist().peek();
+            Transaction l_Transaction = Transaction::from_diff(
+                l_Transform, l_Before, l_After);
 
-            for (uint32_t i = 0;
-                 i < l_Transaction.get_operations().size(); ++i) {
-              CommonOperations::PropertyEditOperation *i_Operation =
-                  (CommonOperations::PropertyEditOperation *)
-                      l_Transaction.get_operations()[i];
-              for (uint32_t j = 0;
-                   j < l_OldTransaction.get_operations().size();
-                   ++j) {
-                CommonOperations::PropertyEditOperation
-                    *i_OldOperation =
-                        (CommonOperations::PropertyEditOperation *)
-                            l_OldTransaction.get_operations()[j];
+            if (!l_Transaction.empty()) {
+              set_gizmos_dragged(true);
+            }
 
-                if (i_OldOperation->m_Handle ==
-                        i_Operation->m_Handle &&
-                    i_OldOperation->m_PropertyName ==
-                        i_Operation->m_PropertyName) {
-                  i_Operation->m_OldValue =
-                      i_OldOperation->m_OldValue;
+            if (!l_IsFirst && !l_Transaction.empty()) {
+              Transaction l_OldTransaction =
+                  get_global_changelist().peek();
+
+              for (uint32_t i = 0;
+                   i < l_Transaction.get_operations().size(); ++i) {
+                CommonOperations::PropertyEditOperation *i_Operation =
+                    (CommonOperations::PropertyEditOperation *)
+                        l_Transaction.get_operations()[i];
+                for (uint32_t j = 0;
+                     j < l_OldTransaction.get_operations().size();
+                     ++j) {
+                  CommonOperations::PropertyEditOperation
+                      *i_OldOperation =
+                          (CommonOperations::PropertyEditOperation *)
+                              l_OldTransaction.get_operations()[j];
+
+                  if (i_OldOperation->m_Handle ==
+                          i_Operation->m_Handle &&
+                      i_OldOperation->m_PropertyName ==
+                          i_Operation->m_PropertyName) {
+                    i_Operation->m_OldValue =
+                        i_OldOperation->m_OldValue;
+                  }
                 }
               }
+              Transaction l_Old = get_global_changelist().pop();
+              l_Old.cleanup();
             }
-            Transaction l_Old = get_global_changelist().pop();
-            l_Old.cleanup();
-          }
-          get_global_changelist().add_entry(l_Transaction);
+            get_global_changelist().add_entry(l_Transaction);
 
-        } else {
-          if (!ImGui::IsAnyItemActive()) {
-            set_gizmos_dragged(false);
+          } else {
+            if (!ImGui::IsAnyItemActive()) {
+              set_gizmos_dragged(false);
+            }
           }
         }
       }
 
-      Core::Region l_Region = get_selected_handle().get_id();
-      if (l_Region.is_alive()) {
-        render_region_gizmos(p_Delta, p_RenderViewWidget, l_Region);
+      for (Util::Handle i_Handle : l_SelectedHandles) {
+        Core::Region i_Region = i_Handle.get_id();
+        if (i_Region.is_alive()) {
+          render_region_gizmos(p_Delta, p_RenderViewWidget, i_Region);
+        }
       }
     }
 

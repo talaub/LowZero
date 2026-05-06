@@ -53,6 +53,7 @@ namespace Low {
     void DetailsWidget::clear()
     {
       m_Sections.clear();
+      m_DisplayedHandle = Util::Handle::DEAD;
       m_BreakRunning = true;
     }
   } // namespace Editor

@@ -56,8 +56,7 @@ namespace Low {
         i_Label += " ";
         i_Label += it->get_name().c_str();
         if (ImGui::Selectable(i_Label.c_str(),
-                              it->get_id() ==
-                                  get_selected_handle().get_id())) {
+                              is_selected(it->get_id()))) {
           set_selected_handle(*it);
           HandlePropertiesSection l_Section(*it, true);
           l_Section.render_footer = &render_region_details_footer;

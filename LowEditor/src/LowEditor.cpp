@@ -61,6 +61,8 @@ namespace Low {
         g_AssetTypeEditorImage;
     ;
 
+    Util::List<Util::Handle> g_SelectedHandles;
+
     Math::Color get_color_for_asset_type(const AssetType p_AssetType)
     {
       auto l_Pos = g_AssetTypeColor.find(p_AssetType);
@@ -176,27 +178,61 @@ namespace Low {
       return g_TypeMetadata;
     }
 
+    bool is_selected(Util::Handle p_Handle)
+    {
+      for (Util::Handle i_Handle : g_SelectedHandles) {
+        if (i_Handle.get_id() == p_Handle.get_id()) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    const Util::List<Util::Handle> &get_selected_handles()
+    {
+      return g_SelectedHandles;
+    }
+
+    bool is_entity_selected(Core::Entity p_Entity)
+    {
+      return is_selected(p_Entity.get_id());
+    }
+
     void register_editor_job(Util::String p_Title,
                              std::function<void()> p_Func)
     {
       g_EditorJobQueue.emplace(p_Title, p_Func);
     }
 
-    Util::Handle g_SelectedHandle;
-
-    void set_selected_handle(Util::Handle p_Handle)
+    static void update_details_widget()
     {
-      g_SelectedHandle = p_Handle;
+      if (g_SelectedHandles.empty()) {
+        get_details_widget()->clear();
+        return;
+      }
+      if (g_SelectedHandles.size() > 1) {
+        get_details_widget()->clear();
+        return;
+      }
 
-      if (Util::Handle::is_registered_type(p_Handle.get_type())) {
+      Util::Handle l_Handle = g_SelectedHandles[0];
+
+      if (l_Handle == get_details_widget()->m_DisplayedHandle) {
+        return;
+      }
+      get_details_widget()->clear();
+      get_details_widget()->m_DisplayedHandle = l_Handle;
+
+      if (Util::Handle::is_registered_type(l_Handle.get_type())) {
         Util::RTTI::TypeInfo &l_Info =
-            Util::Handle::get_type_info(p_Handle.get_type());
+            Util::Handle::get_type_info(l_Handle.get_type());
       }
 
       get_details_widget()->clear();
 
       {
-        Core::UI::Element l_Element = p_Handle.get_id();
+        Core::UI::Element l_Element = l_Handle.get_id();
         if (l_Element.is_alive()) {
           for (auto it = l_Element.get_components().begin();
                it != l_Element.get_components().end(); ++it) {
@@ -205,8 +241,7 @@ namespace Low {
         }
       }
 
-      Core::Entity l_Entity = p_Handle.get_id();
-      // TODO: Highlight selection
+      Core::Entity l_Entity = l_Handle.get_id();
 
       if (l_Entity.is_alive()) {
         {
@@ -226,19 +261,35 @@ namespace Low {
       }
     }
 
-    Core::Entity get_selected_entity()
+    void deselect_everything()
     {
-      return g_SelectedHandle.get_id();
+      g_SelectedHandles.clear();
+      update_details_widget();
+    }
+
+    void set_selected_handle(Util::Handle p_Handle)
+    {
+      deselect_everything();
+
+      if (!p_Handle.is_registered_type()) {
+        return;
+      }
+      Util::RTTI::TypeInfo &l_TypeInfo =
+          Util::Handle::get_type_info(p_Handle.get_type());
+      if (l_TypeInfo.is_alive(p_Handle)) {
+        g_SelectedHandles.push_back(p_Handle);
+      }
+
+      update_details_widget();
     }
 
     void set_selected_entity(Core::Entity p_Entity)
     {
+      if (!p_Entity.is_alive()) {
+        deselect_everything();
+        return;
+      }
       set_selected_handle(p_Entity);
-    }
-
-    Util::Handle get_selected_handle()
-    {
-      return g_SelectedHandle;
     }
 
     void load_user_settings()
@@ -657,8 +708,7 @@ namespace Low {
         if (i_TypeNode["scripting_namespace"]) {
           if (i_TypeNode["scripting_namespace"].is_scalar()) {
             i_Metadata.scriptingNamespace =
-                i_TypeNode["scripting_namespace"]
-                    .as<Util::String>();
+                i_TypeNode["scripting_namespace"].as<Util::String>();
           } else {
             bool l_First = true;
             for (auto [_, i_ScriptingNamespaceNode] :
@@ -676,8 +726,8 @@ namespace Low {
         i_Metadata.fullScriptingTypeString = i_Metadata.scriptingName;
         if (!i_Metadata.scriptingNamespace.empty()) {
           i_Metadata.fullScriptingTypeString =
-              i_Metadata.scriptingNamespace + "::" +
-              i_Metadata.scriptingName;
+              i_Metadata.scriptingNamespace +
+              "::" + i_Metadata.scriptingName;
         }
 
         i_Metadata.scriptingExpose = false;
@@ -1015,7 +1065,7 @@ namespace Low {
     static Core::Entity duplicate_entity(Core::Entity p_Entity)
     {
       Util::Serial::Node l_Node;
-      get_selected_entity().serialize(l_Node);
+      p_Entity.serialize(l_Node);
       l_Node.remove("unique_id");
       Util::String l_NameString = l_Node["name"].as<Util::String>();
       l_NameString += " Clone";
@@ -1026,8 +1076,7 @@ namespace Low {
         i_ComponentNode["properties"].remove("unique_id");
       }
 
-      return Core::Entity::deserialize(
-                 l_Node, get_selected_entity().get_region())
+      return Core::Entity::deserialize(l_Node, p_Entity.get_region())
           .get_id();
     }
 

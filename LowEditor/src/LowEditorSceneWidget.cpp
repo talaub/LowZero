@@ -54,8 +54,7 @@ namespace Low {
       bool l_Break = false;
 
       if (ImGui::Selectable(p_Entity.get_name().c_str(),
-                            p_Entity.get_id() ==
-                                get_selected_entity().get_id())) {
+                            is_entity_selected(p_Entity))) {
         set_selected_entity(p_Entity);
       }
       if (ImGui::BeginPopupContextItem(

@@ -11,6 +11,10 @@
 #include "LowUtilEnums.h"
 #include "LowUtilFileSystem.h"
 
+#define LOW_SELECTION(x)                                             \
+  const Low::Util::List<Low::Util::Handle> &x =                      \
+      Low::Editor::get_selected_handles();
+
 namespace Low {
   namespace Editor {
     struct DetailsWidget;
@@ -39,9 +43,11 @@ namespace Low {
       Util::FileSystem::WatchHandle flodeDirectory;
     };
 
+    LOW_EDITOR_API Util::List<Util::Handle> const &
+    get_selected_handles();
+    bool LOW_EDITOR_API is_entity_selected(Core::Entity p_Entity);
+    bool LOW_EDITOR_API is_selected(Util::Handle p_Handle);
     void LOW_EDITOR_API set_selected_entity(Core::Entity p_Entity);
-    Core::Entity LOW_EDITOR_API get_selected_entity();
-    Util::Handle LOW_EDITOR_API get_selected_handle();
     void LOW_EDITOR_API set_selected_handle(Util::Handle p_Handle);
 
     void LOW_EDITOR_API set_focused_widget(Widget *p_Widget);
