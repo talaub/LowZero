@@ -45,16 +45,20 @@ static u32 LowCore_Region_living_count()
   return Low::Core::Region::living_count();
 }
 // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:REGION:HELPERS
+
 // LOW_CODEGEN::END::CUSTOM:LOWCORE:REGION:HELPERS
 
-static void expose_LowCore_Region(asIScriptEngine *p_Engine)
+static void register_LowCore_Region(asIScriptEngine *p_Engine)
 {
   int r = 0;
   r = p_Engine->RegisterObjectType(
       "Region", sizeof(Low::Core::Region),
       asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
   LOW_ASSERT(r >= 0, "Failed to expose Low::Core::Region type.");
-
+}
+static void expose_LowCore_Region(asIScriptEngine *p_Engine)
+{
+  int r = 0;
   r = p_Engine->RegisterObjectBehaviour(
       "Region", asBEHAVE_CONSTRUCT, "void f()",
       asFUNCTION(LowCore_Region_default_construct),
@@ -117,6 +121,7 @@ static void expose_LowCore_Region(asIScriptEngine *p_Engine)
   r = p_Engine->SetDefaultNamespace("");
   LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
   // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:REGION:EXPOSE
+
   // LOW_CODEGEN::END::CUSTOM:LOWCORE:REGION:EXPOSE
 }
 
@@ -151,17 +156,50 @@ static u32 LowCore_Entity_living_count()
 {
   return Low::Core::Entity::living_count();
 }
+static uint64_t
+LowCore_Entity_func_get_component(Low::Core::Entity p_This,
+                                  uint16_t p_TypeId)
+{
+  return p_This.get_component(p_TypeId);
+}
+static void
+LowCore_Entity_func_add_component(Low::Core::Entity p_This,
+                                  Low::Util::Handle p_Component)
+{
+  p_This.add_component(p_Component);
+}
+static void
+LowCore_Entity_func_remove_component(Low::Core::Entity p_This,
+                                     uint16_t p_ComponentType)
+{
+  p_This.remove_component(p_ComponentType);
+}
+static bool
+LowCore_Entity_func_has_component(Low::Core::Entity p_This,
+                                  uint16_t p_ComponentType)
+{
+  return p_This.has_component(p_ComponentType);
+}
+static Low::Core::Component::Transform
+LowCore_Entity_func_get_transform(Low::Core::Entity p_This)
+{
+  return p_This.get_transform();
+}
 // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:ENTITY:HELPERS
+
 // LOW_CODEGEN::END::CUSTOM:LOWCORE:ENTITY:HELPERS
 
-static void expose_LowCore_Entity(asIScriptEngine *p_Engine)
+static void register_LowCore_Entity(asIScriptEngine *p_Engine)
 {
   int r = 0;
   r = p_Engine->RegisterObjectType(
       "Entity", sizeof(Low::Core::Entity),
       asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
   LOW_ASSERT(r >= 0, "Failed to expose Low::Core::Entity type.");
-
+}
+static void expose_LowCore_Entity(asIScriptEngine *p_Engine)
+{
+  int r = 0;
   r = p_Engine->RegisterObjectBehaviour(
       "Entity", asBEHAVE_CONSTRUCT, "void f()",
       asFUNCTION(LowCore_Entity_default_construct),
@@ -218,6 +256,36 @@ static void expose_LowCore_Entity(asIScriptEngine *p_Engine)
       asMETHOD(Low::Core::Entity, set_name), asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for name of "
                      "Low::Core::Entity.");
+  r = p_Engine->RegisterObjectMethod(
+      "Entity", "u64 get_component(u16) ",
+      asFUNCTION(LowCore_Entity_func_get_component),
+      asCALL_CDECL_OBJFIRST);
+  LOW_ASSERT(r >= 0, "Failed to expose function get_component of "
+                     "Low::Core::Entity.");
+  r = p_Engine->RegisterObjectMethod(
+      "Entity", "void add_component(Handle) ",
+      asFUNCTION(LowCore_Entity_func_add_component),
+      asCALL_CDECL_OBJFIRST);
+  LOW_ASSERT(r >= 0, "Failed to expose function add_component of "
+                     "Low::Core::Entity.");
+  r = p_Engine->RegisterObjectMethod(
+      "Entity", "void remove_component(u16) ",
+      asFUNCTION(LowCore_Entity_func_remove_component),
+      asCALL_CDECL_OBJFIRST);
+  LOW_ASSERT(r >= 0, "Failed to expose function remove_component of "
+                     "Low::Core::Entity.");
+  r = p_Engine->RegisterObjectMethod(
+      "Entity", "bool has_component(u16) ",
+      asFUNCTION(LowCore_Entity_func_has_component),
+      asCALL_CDECL_OBJFIRST);
+  LOW_ASSERT(r >= 0, "Failed to expose function has_component of "
+                     "Low::Core::Entity.");
+  r = p_Engine->RegisterObjectMethod(
+      "Entity", "Transform get_transform() ",
+      asFUNCTION(LowCore_Entity_func_get_transform),
+      asCALL_CDECL_OBJFIRST);
+  LOW_ASSERT(r >= 0, "Failed to expose function get_transform of "
+                     "Low::Core::Entity.");
 
   r = p_Engine->SetDefaultNamespace("Entity");
   LOW_ASSERT(r >= 0,
@@ -235,6 +303,7 @@ static void expose_LowCore_Entity(asIScriptEngine *p_Engine)
   r = p_Engine->SetDefaultNamespace("");
   LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
   // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:ENTITY:EXPOSE
+
   // LOW_CODEGEN::END::CUSTOM:LOWCORE:ENTITY:EXPOSE
 }
 
@@ -261,9 +330,10 @@ static u32 LowCore_Transform_living_count()
   return Low::Core::Component::Transform::living_count();
 }
 // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:TRANSFORM:HELPERS
+
 // LOW_CODEGEN::END::CUSTOM:LOWCORE:TRANSFORM:HELPERS
 
-static void expose_LowCore_Transform(asIScriptEngine *p_Engine)
+static void register_LowCore_Transform(asIScriptEngine *p_Engine)
 {
   int r = 0;
   r = p_Engine->RegisterObjectType(
@@ -272,7 +342,10 @@ static void expose_LowCore_Transform(asIScriptEngine *p_Engine)
   LOW_ASSERT(
       r >= 0,
       "Failed to expose Low::Core::Component::Transform type.");
-
+}
+static void expose_LowCore_Transform(asIScriptEngine *p_Engine)
+{
+  int r = 0;
   r = p_Engine->RegisterObjectBehaviour(
       "Transform", asBEHAVE_CONSTRUCT, "void f()",
       asFUNCTION(LowCore_Transform_default_construct),
@@ -408,6 +481,7 @@ static void expose_LowCore_Transform(asIScriptEngine *p_Engine)
   r = p_Engine->SetDefaultNamespace("");
   LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
   // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:TRANSFORM:EXPOSE
+
   // LOW_CODEGEN::END::CUSTOM:LOWCORE:TRANSFORM:EXPOSE
 }
 
@@ -434,9 +508,10 @@ static u32 LowCore_Camera_living_count()
   return Low::Core::Component::Camera::living_count();
 }
 // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:CAMERA:HELPERS
+
 // LOW_CODEGEN::END::CUSTOM:LOWCORE:CAMERA:HELPERS
 
-static void expose_LowCore_Camera(asIScriptEngine *p_Engine)
+static void register_LowCore_Camera(asIScriptEngine *p_Engine)
 {
   int r = 0;
   r = p_Engine->RegisterObjectType(
@@ -444,7 +519,10 @@ static void expose_LowCore_Camera(asIScriptEngine *p_Engine)
       asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
   LOW_ASSERT(r >= 0,
              "Failed to expose Low::Core::Component::Camera type.");
-
+}
+static void expose_LowCore_Camera(asIScriptEngine *p_Engine)
+{
+  int r = 0;
   r = p_Engine->RegisterObjectBehaviour(
       "Camera", asBEHAVE_CONSTRUCT, "void f()",
       asFUNCTION(LowCore_Camera_default_construct),
@@ -520,6 +598,7 @@ static void expose_LowCore_Camera(asIScriptEngine *p_Engine)
   r = p_Engine->SetDefaultNamespace("");
   LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
   // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:CAMERA:EXPOSE
+
   // LOW_CODEGEN::END::CUSTOM:LOWCORE:CAMERA:EXPOSE
 }
 
@@ -556,9 +635,10 @@ static u32 LowCore_Module_living_count()
   return Low::Core::Scripting::Module::living_count();
 }
 // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:MODULE:HELPERS
+
 // LOW_CODEGEN::END::CUSTOM:LOWCORE:MODULE:HELPERS
 
-static void expose_LowCore_Module(asIScriptEngine *p_Engine)
+static void register_LowCore_Module(asIScriptEngine *p_Engine)
 {
   int r = 0;
   r = p_Engine->RegisterObjectType(
@@ -566,7 +646,10 @@ static void expose_LowCore_Module(asIScriptEngine *p_Engine)
       asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
   LOW_ASSERT(r >= 0,
              "Failed to expose Low::Core::Scripting::Module type.");
-
+}
+static void expose_LowCore_Module(asIScriptEngine *p_Engine)
+{
+  int r = 0;
   r = p_Engine->RegisterObjectBehaviour(
       "Module", asBEHAVE_CONSTRUCT, "void f()",
       asFUNCTION(LowCore_Module_default_construct),
@@ -632,6 +715,7 @@ static void expose_LowCore_Module(asIScriptEngine *p_Engine)
   r = p_Engine->SetDefaultNamespace("");
   LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
   // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:MODULE:EXPOSE
+
   // LOW_CODEGEN::END::CUSTOM:LOWCORE:MODULE:EXPOSE
 }
 
@@ -668,9 +752,10 @@ static u32 LowCore_Asset_living_count()
   return Low::Core::Scripting::Asset::living_count();
 }
 // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:ASSET:HELPERS
+
 // LOW_CODEGEN::END::CUSTOM:LOWCORE:ASSET:HELPERS
 
-static void expose_LowCore_Asset(asIScriptEngine *p_Engine)
+static void register_LowCore_Asset(asIScriptEngine *p_Engine)
 {
   int r = 0;
   r = p_Engine->RegisterObjectType(
@@ -678,7 +763,10 @@ static void expose_LowCore_Asset(asIScriptEngine *p_Engine)
       asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
   LOW_ASSERT(r >= 0,
              "Failed to expose Low::Core::Scripting::Asset type.");
-
+}
+static void expose_LowCore_Asset(asIScriptEngine *p_Engine)
+{
+  int r = 0;
   r = p_Engine->RegisterObjectBehaviour(
       "Asset", asBEHAVE_CONSTRUCT, "void f()",
       asFUNCTION(LowCore_Asset_default_construct),
@@ -743,6 +831,7 @@ static void expose_LowCore_Asset(asIScriptEngine *p_Engine)
   r = p_Engine->SetDefaultNamespace("");
   LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
   // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:ASSET:EXPOSE
+
   // LOW_CODEGEN::END::CUSTOM:LOWCORE:ASSET:EXPOSE
 }
 
@@ -779,9 +868,10 @@ static u32 LowCore_WidgetAsset_living_count()
   return Low::Core::UI::WidgetAsset::living_count();
 }
 // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:WIDGETASSET:HELPERS
+
 // LOW_CODEGEN::END::CUSTOM:LOWCORE:WIDGETASSET:HELPERS
 
-static void expose_LowCore_WidgetAsset(asIScriptEngine *p_Engine)
+static void register_LowCore_WidgetAsset(asIScriptEngine *p_Engine)
 {
   int r = 0;
   r = p_Engine->RegisterObjectType(
@@ -789,7 +879,10 @@ static void expose_LowCore_WidgetAsset(asIScriptEngine *p_Engine)
       asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
   LOW_ASSERT(r >= 0,
              "Failed to expose Low::Core::UI::WidgetAsset type.");
-
+}
+static void expose_LowCore_WidgetAsset(asIScriptEngine *p_Engine)
+{
+  int r = 0;
   r = p_Engine->RegisterObjectBehaviour(
       "WidgetAsset", asBEHAVE_CONSTRUCT, "void f()",
       asFUNCTION(LowCore_WidgetAsset_default_construct),
@@ -856,6 +949,7 @@ static void expose_LowCore_WidgetAsset(asIScriptEngine *p_Engine)
   r = p_Engine->SetDefaultNamespace("");
   LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
   // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:WIDGETASSET:EXPOSE
+
   // LOW_CODEGEN::END::CUSTOM:LOWCORE:WIDGETASSET:EXPOSE
 }
 
@@ -892,9 +986,10 @@ static u32 LowCore_WidgetInstance_living_count()
   return Low::Core::UI::WidgetInstance::living_count();
 }
 // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:WIDGETINSTANCE:HELPERS
+
 // LOW_CODEGEN::END::CUSTOM:LOWCORE:WIDGETINSTANCE:HELPERS
 
-static void expose_LowCore_WidgetInstance(asIScriptEngine *p_Engine)
+static void register_LowCore_WidgetInstance(asIScriptEngine *p_Engine)
 {
   int r = 0;
   r = p_Engine->RegisterObjectType(
@@ -902,7 +997,10 @@ static void expose_LowCore_WidgetInstance(asIScriptEngine *p_Engine)
       asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
   LOW_ASSERT(r >= 0,
              "Failed to expose Low::Core::UI::WidgetInstance type.");
-
+}
+static void expose_LowCore_WidgetInstance(asIScriptEngine *p_Engine)
+{
+  int r = 0;
   r = p_Engine->RegisterObjectBehaviour(
       "WidgetInstance", asBEHAVE_CONSTRUCT, "void f()",
       asFUNCTION(LowCore_WidgetInstance_default_construct),
@@ -969,6 +1067,7 @@ static void expose_LowCore_WidgetInstance(asIScriptEngine *p_Engine)
   r = p_Engine->SetDefaultNamespace("");
   LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
   // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:WIDGETINSTANCE:EXPOSE
+
   // LOW_CODEGEN::END::CUSTOM:LOWCORE:WIDGETINSTANCE:EXPOSE
 }
 
@@ -1003,17 +1102,33 @@ static u32 LowCore_View_living_count()
 {
   return Low::Core::UI::View::living_count();
 }
+static Low::Core::UI::View
+LowCore_View_func_spawn_instance(Low::Core::UI::View p_This,
+                                 Low::Util::Name p_Name)
+{
+  return p_This.spawn_instance(p_Name);
+}
+static Low::Core::UI::Element
+LowCore_View_func_find_element_by_name(Low::Core::UI::View p_This,
+                                       Low::Util::Name p_Name)
+{
+  return p_This.find_element_by_name(p_Name);
+}
 // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:VIEW:HELPERS
+
 // LOW_CODEGEN::END::CUSTOM:LOWCORE:VIEW:HELPERS
 
-static void expose_LowCore_View(asIScriptEngine *p_Engine)
+static void register_LowCore_View(asIScriptEngine *p_Engine)
 {
   int r = 0;
   r = p_Engine->RegisterObjectType(
       "View", sizeof(Low::Core::UI::View),
       asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
   LOW_ASSERT(r >= 0, "Failed to expose Low::Core::UI::View type.");
-
+}
+static void expose_LowCore_View(asIScriptEngine *p_Engine)
+{
+  int r = 0;
   r = p_Engine->RegisterObjectBehaviour(
       "View", asBEHAVE_CONSTRUCT, "void f()",
       asFUNCTION(LowCore_View_default_construct),
@@ -1115,6 +1230,18 @@ static void expose_LowCore_View(asIScriptEngine *p_Engine)
       asMETHOD(Low::Core::UI::View, set_name), asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for name of "
                      "Low::Core::UI::View.");
+  r = p_Engine->RegisterObjectMethod(
+      "View", "View spawn_instance(Name) ",
+      asFUNCTION(LowCore_View_func_spawn_instance),
+      asCALL_CDECL_OBJFIRST);
+  LOW_ASSERT(r >= 0, "Failed to expose function spawn_instance of "
+                     "Low::Core::UI::View.");
+  r = p_Engine->RegisterObjectMethod(
+      "View", "UI::Element find_element_by_name(Name) ",
+      asFUNCTION(LowCore_View_func_find_element_by_name),
+      asCALL_CDECL_OBJFIRST);
+  LOW_ASSERT(r >= 0, "Failed to expose function find_element_by_name "
+                     "of Low::Core::UI::View.");
 
   r = p_Engine->SetDefaultNamespace("View");
   LOW_ASSERT(r >= 0,
@@ -1132,6 +1259,7 @@ static void expose_LowCore_View(asIScriptEngine *p_Engine)
   r = p_Engine->SetDefaultNamespace("");
   LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
   // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:VIEW:EXPOSE
+
   // LOW_CODEGEN::END::CUSTOM:LOWCORE:VIEW:EXPOSE
 }
 
@@ -1161,10 +1289,40 @@ static u32 LowCore_Element_living_count()
 {
   return Low::Core::UI::Element::living_count();
 }
+static uint64_t
+LowCore_Element_func_get_component(Low::Core::UI::Element p_This,
+                                   uint16_t p_TypeId)
+{
+  return p_This.get_component(p_TypeId);
+}
+static void
+LowCore_Element_func_add_component(Low::Core::UI::Element p_This,
+                                   Low::Util::Handle p_Component)
+{
+  p_This.add_component(p_Component);
+}
+static void
+LowCore_Element_func_remove_component(Low::Core::UI::Element p_This,
+                                      uint16_t p_ComponentType)
+{
+  p_This.remove_component(p_ComponentType);
+}
+static bool
+LowCore_Element_func_has_component(Low::Core::UI::Element p_This,
+                                   uint16_t p_ComponentType)
+{
+  return p_This.has_component(p_ComponentType);
+}
+static Low::Core::UI::Component::Display
+LowCore_Element_func_get_display(Low::Core::UI::Element p_This)
+{
+  return p_This.get_display();
+}
 // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:ELEMENT:HELPERS
+
 // LOW_CODEGEN::END::CUSTOM:LOWCORE:ELEMENT:HELPERS
 
-static void expose_LowCore_Element(asIScriptEngine *p_Engine)
+static void register_LowCore_Element(asIScriptEngine *p_Engine)
 {
   int r = 0;
   r = p_Engine->SetDefaultNamespace("UI");
@@ -1175,7 +1333,18 @@ static void expose_LowCore_Element(asIScriptEngine *p_Engine)
       "Element", sizeof(Low::Core::UI::Element),
       asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
   LOW_ASSERT(r >= 0, "Failed to expose Low::Core::UI::Element type.");
-
+  r = p_Engine->SetDefaultNamespace("");
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to reset namespace after Low::Core::UI::Element.");
+}
+static void expose_LowCore_Element(asIScriptEngine *p_Engine)
+{
+  int r = 0;
+  r = p_Engine->SetDefaultNamespace("UI");
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to set namespace for type Low::Core::UI::Element.");
   r = p_Engine->RegisterObjectBehaviour(
       "Element", asBEHAVE_CONSTRUCT, "void f()",
       asFUNCTION(LowCore_Element_default_construct),
@@ -1258,6 +1427,36 @@ static void expose_LowCore_Element(asIScriptEngine *p_Engine)
       asMETHOD(Low::Core::UI::Element, set_name), asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for name of "
                      "Low::Core::UI::Element.");
+  r = p_Engine->RegisterObjectMethod(
+      "Element", "u64 get_component(u16) ",
+      asFUNCTION(LowCore_Element_func_get_component),
+      asCALL_CDECL_OBJFIRST);
+  LOW_ASSERT(r >= 0, "Failed to expose function get_component of "
+                     "Low::Core::UI::Element.");
+  r = p_Engine->RegisterObjectMethod(
+      "Element", "void add_component(Handle) ",
+      asFUNCTION(LowCore_Element_func_add_component),
+      asCALL_CDECL_OBJFIRST);
+  LOW_ASSERT(r >= 0, "Failed to expose function add_component of "
+                     "Low::Core::UI::Element.");
+  r = p_Engine->RegisterObjectMethod(
+      "Element", "void remove_component(u16) ",
+      asFUNCTION(LowCore_Element_func_remove_component),
+      asCALL_CDECL_OBJFIRST);
+  LOW_ASSERT(r >= 0, "Failed to expose function remove_component of "
+                     "Low::Core::UI::Element.");
+  r = p_Engine->RegisterObjectMethod(
+      "Element", "bool has_component(u16) ",
+      asFUNCTION(LowCore_Element_func_has_component),
+      asCALL_CDECL_OBJFIRST);
+  LOW_ASSERT(r >= 0, "Failed to expose function has_component of "
+                     "Low::Core::UI::Element.");
+  r = p_Engine->RegisterObjectMethod(
+      "Element", "Display get_display() ",
+      asFUNCTION(LowCore_Element_func_get_display),
+      asCALL_CDECL_OBJFIRST);
+  LOW_ASSERT(r >= 0, "Failed to expose function get_display of "
+                     "Low::Core::UI::Element.");
 
   r = p_Engine->SetDefaultNamespace("");
   LOW_ASSERT(
@@ -1273,6 +1472,7 @@ static void expose_LowCore_Element(asIScriptEngine *p_Engine)
   r = p_Engine->SetDefaultNamespace("");
   LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
   // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:ELEMENT:EXPOSE
+
   LOW_LOG_DEBUG << "Registered ELEMENT" << LOW_LOG_END;
   // LOW_CODEGEN::END::CUSTOM:LOWCORE:ELEMENT:EXPOSE
 }
@@ -1300,9 +1500,10 @@ static u32 LowCore_Display_living_count()
   return Low::Core::UI::Component::Display::living_count();
 }
 // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:DISPLAY:HELPERS
+
 // LOW_CODEGEN::END::CUSTOM:LOWCORE:DISPLAY:HELPERS
 
-static void expose_LowCore_Display(asIScriptEngine *p_Engine)
+static void register_LowCore_Display(asIScriptEngine *p_Engine)
 {
   int r = 0;
   r = p_Engine->RegisterObjectType(
@@ -1311,7 +1512,10 @@ static void expose_LowCore_Display(asIScriptEngine *p_Engine)
   LOW_ASSERT(
       r >= 0,
       "Failed to expose Low::Core::UI::Component::Display type.");
-
+}
+static void expose_LowCore_Display(asIScriptEngine *p_Engine)
+{
+  int r = 0;
   r = p_Engine->RegisterObjectBehaviour(
       "Display", asBEHAVE_CONSTRUCT, "void f()",
       asFUNCTION(LowCore_Display_default_construct),
@@ -1480,6 +1684,7 @@ static void expose_LowCore_Display(asIScriptEngine *p_Engine)
   r = p_Engine->SetDefaultNamespace("");
   LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
   // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:DISPLAY:EXPOSE
+
   // LOW_CODEGEN::END::CUSTOM:LOWCORE:DISPLAY:EXPOSE
 }
 
@@ -1518,9 +1723,10 @@ LowCore_Text_set_text(Low::Core::UI::Component::Text p_This,
   p_This.set_text(Low::Util::String(p_Value.c_str()));
 }
 // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:TEXT:HELPERS
+
 // LOW_CODEGEN::END::CUSTOM:LOWCORE:TEXT:HELPERS
 
-static void expose_LowCore_Text(asIScriptEngine *p_Engine)
+static void register_LowCore_Text(asIScriptEngine *p_Engine)
 {
   int r = 0;
   r = p_Engine->RegisterObjectType(
@@ -1528,7 +1734,10 @@ static void expose_LowCore_Text(asIScriptEngine *p_Engine)
       asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
   LOW_ASSERT(r >= 0,
              "Failed to expose Low::Core::UI::Component::Text type.");
-
+}
+static void expose_LowCore_Text(asIScriptEngine *p_Engine)
+{
+  int r = 0;
   r = p_Engine->RegisterObjectBehaviour(
       "Text", asBEHAVE_CONSTRUCT, "void f()",
       asFUNCTION(LowCore_Text_default_construct),
@@ -1619,9 +1828,27 @@ static void expose_LowCore_Text(asIScriptEngine *p_Engine)
   r = p_Engine->SetDefaultNamespace("");
   LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
   // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:TEXT:EXPOSE
+
   // LOW_CODEGEN::END::CUSTOM:LOWCORE:TEXT:EXPOSE
 }
 
+namespace Low::Core {
+  void register_types(asIScriptEngine *p_Engine)
+  {
+    register_LowCore_Region(p_Engine);
+    register_LowCore_Entity(p_Engine);
+    register_LowCore_Transform(p_Engine);
+    register_LowCore_Camera(p_Engine);
+    register_LowCore_Module(p_Engine);
+    register_LowCore_Asset(p_Engine);
+    register_LowCore_WidgetAsset(p_Engine);
+    register_LowCore_WidgetInstance(p_Engine);
+    register_LowCore_View(p_Engine);
+    register_LowCore_Element(p_Engine);
+    register_LowCore_Display(p_Engine);
+    register_LowCore_Text(p_Engine);
+  }
+} // namespace Low::Core
 namespace Low::Core {
   void expose_types(asIScriptEngine *p_Engine)
   {

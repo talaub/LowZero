@@ -17,6 +17,7 @@
 namespace Low {
   namespace Core {
     void expose_types(asIScriptEngine *p_Engine);
+    void register_types(asIScriptEngine *p_Engine);
     namespace Scripting {
       static asIScriptEngine *g_Engine = nullptr;
       static asIScriptContext *g_TickContext = nullptr;
@@ -338,6 +339,7 @@ namespace Low {
                    "Failed to set AngelScript message callback");
 
         expose(g_Engine);
+        register_types(g_Engine);
         expose_types(g_Engine);
         register_interfaces(g_Engine);
 
