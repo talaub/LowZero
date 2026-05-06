@@ -1076,6 +1076,179 @@ namespace Low {
         return ImGui::CollapsingHeader(label, flags);
       }
 
+      static bool collapsible_header_internal(
+          const char *p_Label, const char *p_Icon,
+          Math::Color p_AccentColor, const char *p_ActionIcon,
+          bool *p_ActionClicked, bool p_DefaultOpen)
+      {
+        ImGuiWindow *window = ImGui::GetCurrentWindow();
+        if (window->SkipItems) {
+          if (p_ActionClicked) {
+            *p_ActionClicked = false;
+          }
+          return false;
+        }
+
+        if (p_ActionClicked) {
+          *p_ActionClicked = false;
+        }
+
+        Theme &l_Theme = theme_get_current();
+        ImGuiContext &g = *ImGui::GetCurrentContext();
+        ImGuiStyle &style = g.Style;
+
+        const ImGuiID id = window->GetID(p_Label);
+        ImGuiStorage *l_Storage = ImGui::GetStateStorage();
+        bool *l_Open = l_Storage->GetBoolRef(id, p_DefaultOpen);
+        const char *l_LabelEnd = ImGui::FindRenderedTextEnd(p_Label);
+
+        const float l_Height = ImGui::GetFrameHeight();
+        const float l_Width = ImGui::GetContentRegionAvail().x;
+        const ImVec2 l_Pos = ImGui::GetCursorScreenPos();
+        const ImRect l_Bounds(
+            l_Pos, ImVec2(l_Pos.x + l_Width, l_Pos.y + l_Height));
+
+        ImGui::ItemSize(l_Bounds, style.FramePadding.y);
+        if (!ImGui::ItemAdd(l_Bounds, id)) {
+          return *l_Open;
+        }
+
+        const char *l_Chevron =
+            *l_Open ? ICON_LC_CHEVRON_DOWN : ICON_LC_CHEVRON_RIGHT;
+        const ImVec2 l_ChevronSize = ImGui::CalcTextSize(l_Chevron);
+        const ImVec2 l_ChevronPos(
+            l_Bounds.Max.x - l_ChevronSize.x - 8.0f,
+            l_Bounds.Min.y +
+                (l_Bounds.GetHeight() - ImGui::GetTextLineHeight()) *
+                    0.5f);
+
+        const bool l_HasAction =
+            p_ActionIcon != nullptr && p_ActionIcon[0] != '\0';
+        const float l_ActionSize = l_Height - 6.0f;
+        ImRect l_ActionBounds;
+        if (l_HasAction) {
+          l_ActionBounds = ImRect(
+              ImVec2(l_ChevronPos.x - l_ActionSize - 8.0f,
+                     l_Bounds.Min.y + 3.0f),
+              ImVec2(l_ChevronPos.x - 8.0f,
+                     l_Bounds.Max.y - 3.0f));
+        }
+
+        ImRect l_HeaderBounds = l_Bounds;
+        l_HeaderBounds.Max.x =
+            l_HasAction ? l_ActionBounds.Min.x - 4.0f
+                        : l_ChevronPos.x - 4.0f;
+
+        bool l_Hovered = false;
+        bool l_Held = false;
+        const bool l_Pressed = ImGui::ButtonBehavior(
+            l_HeaderBounds, id, &l_Hovered, &l_Held);
+        if (l_Pressed) {
+          *l_Open = !*l_Open;
+        }
+
+        bool l_ActionHovered = false;
+        bool l_ActionHeld = false;
+        bool l_ActionPressed = false;
+        if (l_HasAction) {
+          l_ActionHovered = ImGui::IsMouseHoveringRect(
+              l_ActionBounds.Min, l_ActionBounds.Max, true);
+          l_ActionHeld =
+              l_ActionHovered &&
+              ImGui::IsMouseDown(ImGuiMouseButton_Left);
+          l_ActionPressed =
+              l_ActionHovered &&
+              ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+          if (l_ActionPressed && p_ActionClicked) {
+            *p_ActionClicked = true;
+          }
+        }
+
+        const ImU32 l_BackgroundColor =
+            l_Held      ? color_to_imcolor(l_Theme.headerActive)
+            : l_Hovered ? color_to_imcolor(l_Theme.headerHover)
+                        : color_to_imcolor(l_Theme.header);
+        const ImU32 l_BorderColor = color_to_imcolor(l_Theme.border);
+        const ImU32 l_TextColor = color_to_imcolor(l_Theme.text);
+        const ImU32 l_SubtextColor =
+            color_to_imcolor(l_Theme.subtext);
+        const ImU32 l_AccentColor = color_to_imcolor(p_AccentColor);
+
+        const float l_Rounding = 3.0f;
+        window->DrawList->AddRectFilled(l_Bounds.Min, l_Bounds.Max,
+                                        l_BackgroundColor,
+                                        l_Rounding);
+        window->DrawList->AddRect(l_Bounds.Min, l_Bounds.Max,
+                                  l_BorderColor, l_Rounding, 0, 1.0f);
+        window->DrawList->AddRectFilled(
+            l_Bounds.Min,
+            ImVec2(l_Bounds.Min.x + 3.0f, l_Bounds.Max.y),
+            l_AccentColor, l_Rounding, ImDrawFlags_RoundCornersLeft);
+
+        float l_TextX = l_Bounds.Min.x + 9.0f;
+        const float l_TextY =
+            l_Bounds.Min.y +
+            (l_Bounds.GetHeight() - ImGui::GetTextLineHeight()) *
+                0.5f;
+
+        if (p_Icon != nullptr && p_Icon[0] != '\0') {
+          window->DrawList->AddText(ImVec2(l_TextX, l_TextY),
+                                    l_SubtextColor, p_Icon);
+          l_TextX += ImGui::CalcTextSize(p_Icon).x + 6.0f;
+        }
+
+        window->DrawList->AddText(ImVec2(l_TextX, l_TextY),
+                                  l_TextColor, p_Label, l_LabelEnd);
+
+        if (l_HasAction) {
+          const ImVec2 l_ActionIconSize =
+              ImGui::CalcTextSize(p_ActionIcon);
+          ImU32 l_ActionIconColor = l_SubtextColor;
+          if (l_ActionHovered) {
+            l_ActionIconColor = l_SubtextColor;
+          }
+          if (l_ActionHeld) {
+            l_ActionIconColor =
+                ImGui::GetColorU32(color_to_imvec4(l_Theme.text));
+          }
+          window->DrawList->AddText(
+              ImVec2(l_ActionBounds.Min.x +
+                         (l_ActionBounds.GetWidth() -
+                          l_ActionIconSize.x) *
+                             0.5f,
+                     l_ActionBounds.Min.y +
+                         (l_ActionBounds.GetHeight() -
+                          l_ActionIconSize.y) *
+                             0.5f),
+              l_ActionIconColor, p_ActionIcon);
+        }
+
+        window->DrawList->AddText(l_ChevronPos, l_SubtextColor,
+                                  l_Chevron);
+
+        return *l_Open;
+      }
+
+      bool CollapsibleHeader(const char *p_Label, const char *p_Icon,
+                             Math::Color p_AccentColor,
+                             bool p_DefaultOpen)
+      {
+        return collapsible_header_internal(
+            p_Label, p_Icon, p_AccentColor, nullptr, nullptr,
+            p_DefaultOpen);
+      }
+
+      bool CollapsibleHeader(const char *p_Label, const char *p_Icon,
+                             Math::Color p_AccentColor,
+                             const char *p_ActionIcon,
+                             bool *p_ActionClicked,
+                             bool p_DefaultOpen)
+      {
+        return collapsible_header_internal(
+            p_Label, p_Icon, p_AccentColor, p_ActionIcon,
+            p_ActionClicked, p_DefaultOpen);
+      }
+
       bool InputText(Util::String p_Label, char *p_Text, int p_Length,
                      ImGuiInputTextFlags p_Flags, float p_Scale)
       {
@@ -1153,13 +1326,13 @@ namespace Low {
         snprintf(l_TextBuffer, sizeof(l_TextBuffer), "%s",
                  p_Name.is_valid() ? p_Name.c_str() : "");
 
-        if (!InputText(p_Label, l_TextBuffer, l_BufferLength,
-                       p_Flags, p_Scale)) {
+        if (!InputText(p_Label, l_TextBuffer, l_BufferLength, p_Flags,
+                       p_Scale)) {
           return false;
         }
 
-        p_Name =
-            l_TextBuffer[0] == '\0' ? LOW_NAME("") : LOW_NAME(l_TextBuffer);
+        p_Name = l_TextBuffer[0] == '\0' ? LOW_NAME("")
+                                         : LOW_NAME(l_TextBuffer);
         return true;
       }
 

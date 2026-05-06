@@ -11,6 +11,7 @@
 #include "LowCorePrefabInstance.h"
 
 #include "LowEditor.h"
+#include "LowEditorThemes.h"
 #include "LowEditorPropertyEditors.h"
 #include "LowEditorMainWindow.h"
 #include "LowEditorGui.h"
@@ -19,6 +20,7 @@
 #include "LowEditorCommonOperations.h"
 #include "LowEditorAssetOperations.h"
 #include "LowEditorTypeEditor.h"
+#include "LowEditorIcons.h"
 
 #include "LowUtilString.h"
 #include "LowUtilDiffUtil.h"
@@ -173,25 +175,64 @@ namespace Low {
       }
       l_HeaderTitle += m_Metadata.name.c_str();
 
-      if (Gui::CollapsingHeader(
-              l_HeaderTitle.c_str(),
-              m_DefaultOpen ? ImGuiTreeNodeFlags_DefaultOpen : 0)) {
+      Util::String l_Icon = LOW_EDITOR_ICON_ELEMENT;
+      if (m_Metadata.editor.hasIcon) {
+        l_Icon = m_Metadata.editor.icon;
+      }
+
+      const bool l_Component = m_Metadata.typeInfo.component;
+
+      bool l_Open = false;
+      bool l_SkipFooter = false;
+
+      if (l_Component) {
+        bool l_MenuClicked = false;
+        l_Open = Gui::CollapsibleHeader(t, l_Icon.c_str(),
+                                        theme_get_current().debug,
+                                        ICON_LC_COG, &l_MenuClicked);
+
+        Util::String l_PopupName = title + "ContextPopup";
+
+        if (l_MenuClicked) {
+          ImGui::OpenPopup(l_PopupName.c_str());
+        }
+
+        if (ImGui::BeginPopup(l_PopupName.c_str())) {
+          if (ImGui::MenuItem("Remove")) {
+            Core::Entity l_Entity = Util::Handle::DEAD;
+            m_Metadata.typeInfo.properties["entity"].get(m_Handle,
+                                                         &l_Entity);
+
+            if (l_Entity.is_alive()) {
+              l_Entity.remove_component(m_Metadata.typeInfo.typeId);
+              l_SkipFooter = true;
+            }
+          }
+          ImGui::EndPopup();
+        }
+
+      } else {
+        l_Open = Gui::CollapsibleHeader(t, l_Icon.c_str(),
+                                        theme_get_current().debug,
+                                        m_DefaultOpen);
+      }
+      if (l_Open) {
 
         Util::StoredHandle l_StoredHandle;
-        Util::DiffUtil::store_handle(l_StoredHandle, m_Handle);
 
-        bool l_SkipFooter = false;
-
-        ImGui::PushID(m_Handle.get_id());
-        if (m_Handle.get_type() == Core::Entity::type_id()) {
-          l_SkipFooter = l_SkipFooter || render_entity(p_Delta);
-        } else {
-          l_SkipFooter = l_SkipFooter || render_default(p_Delta);
+        if (!l_SkipFooter) {
+          Util::DiffUtil::store_handle(l_StoredHandle, m_Handle);
+          ImGui::PushID(m_Handle.get_id());
+          if (m_Handle.get_type() == Core::Entity::type_id()) {
+            l_SkipFooter = l_SkipFooter || render_entity(p_Delta);
+          } else {
+            l_SkipFooter = l_SkipFooter || render_default(p_Delta);
+          }
+          if (!l_SkipFooter && render_footer != nullptr) {
+            render_footer(m_Handle, m_Metadata.typeInfo);
+          }
+          ImGui::PopID();
         }
-        if (!l_SkipFooter && render_footer != nullptr) {
-          render_footer(m_Handle, m_Metadata.typeInfo);
-        }
-        ImGui::PopID();
 
         if (!l_SkipFooter) {
           Util::StoredHandle l_AfterChange;

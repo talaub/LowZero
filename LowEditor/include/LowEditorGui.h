@@ -87,6 +87,15 @@ namespace Low {
           const char *label_end = NULL);
       bool LOW_EDITOR_API CollapsingHeader(
           const char *label, ImGuiTreeNodeFlags flags = 0);
+      bool LOW_EDITOR_API CollapsibleHeader(
+          const char *p_Label, const char *p_Icon = nullptr,
+          Math::Color p_AccentColor = Math::Color(1.0f, 1.0f, 1.0f,
+                                                  1.0f),
+          bool p_DefaultOpen = true);
+      bool LOW_EDITOR_API CollapsibleHeader(
+          const char *p_Label, const char *p_Icon,
+          Math::Color p_AccentColor, const char *p_ActionIcon,
+          bool *p_ActionClicked, bool p_DefaultOpen = true);
 
       bool LOW_EDITOR_API InputText(Util::String p_Label,
                                     char *p_Text, int p_Length,

@@ -96,16 +96,6 @@ namespace Low {
                 });
     }
 
-    static void render_section_header(const char *p_Icon,
-                                      const char *p_Label)
-    {
-      Theme &l_Theme = theme_get_current();
-      ImGui::PushStyleColor(ImGuiCol_Text,
-                            color_to_imvec4(l_Theme.subtext));
-      ImGui::Text("%s %s", p_Icon, p_Label);
-      ImGui::PopStyleColor();
-    }
-
     static void render_metric(const char *p_Label, const char *p_Value,
                               const Math::Color &p_Color)
     {
@@ -280,64 +270,67 @@ namespace Low {
       build_scope_stats(l_Frame, l_Stats);
 
       ImGui::Spacing();
-      render_section_header(ICON_LC_LIST_TREE, "Scopes");
-      ImGui::PushStyleColor(ImGuiCol_TableHeaderBg,
-                            color_to_imvec4(l_Theme.header));
-      ImGui::PushStyleColor(ImGuiCol_TableRowBg,
-                            color_to_imvec4(l_Theme.base));
-      ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt,
-                            color_to_imvec4(l_Theme.input));
-      ImGui::BeginChild("ProfilerScopeList", ImVec2(0.0f, 165.0f),
-                        true);
-      if (ImGui::BeginTable("ProfilerScopes", 5,
-                            ImGuiTableFlags_RowBg |
-                                ImGuiTableFlags_BordersInnerV |
-                                ImGuiTableFlags_SizingStretchProp)) {
-        ImGui::TableSetupColumn(
-            "Group", ImGuiTableColumnFlags_WidthFixed, 72.0f);
-        ImGui::TableSetupColumn("Scope");
-        ImGui::TableSetupColumn(
-            "Total ms", ImGuiTableColumnFlags_WidthFixed, 70.0f);
-        ImGui::TableSetupColumn(
-            "Max ms", ImGuiTableColumnFlags_WidthFixed, 62.0f);
-        ImGui::TableSetupColumn(
-            "Calls", ImGuiTableColumnFlags_WidthFixed, 42.0f);
-        ImGui::TableHeadersRow();
+      if (Gui::CollapsibleHeader("Scopes", ICON_LC_LIST_TREE,
+                                 l_Theme.profile)) {
+        ImGui::PushStyleColor(ImGuiCol_TableHeaderBg,
+                              color_to_imvec4(l_Theme.header));
+        ImGui::PushStyleColor(ImGuiCol_TableRowBg,
+                              color_to_imvec4(l_Theme.base));
+        ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt,
+                              color_to_imvec4(l_Theme.input));
+        ImGui::BeginChild("ProfilerScopeList",
+                          ImVec2(0.0f, 165.0f), true);
+        if (ImGui::BeginTable("ProfilerScopes", 5,
+                              ImGuiTableFlags_RowBg |
+                                  ImGuiTableFlags_BordersInnerV |
+                                  ImGuiTableFlags_SizingStretchProp)) {
+          ImGui::TableSetupColumn(
+              "Group", ImGuiTableColumnFlags_WidthFixed, 72.0f);
+          ImGui::TableSetupColumn("Scope");
+          ImGui::TableSetupColumn(
+              "Total ms", ImGuiTableColumnFlags_WidthFixed, 70.0f);
+          ImGui::TableSetupColumn(
+              "Max ms", ImGuiTableColumnFlags_WidthFixed, 62.0f);
+          ImGui::TableSetupColumn(
+              "Calls", ImGuiTableColumnFlags_WidthFixed, 42.0f);
+          ImGui::TableHeadersRow();
 
-        const uint32_t l_MaxRows =
-            std::min<uint32_t>(16u,
-                               static_cast<uint32_t>(l_Stats.size()));
-        for (uint32_t i = 0; i < l_MaxRows; ++i) {
-          ImGui::TableNextRow();
-          ImGui::TableSetColumnIndex(0);
-          ImGui::TextUnformatted(l_Stats[i].group.c_str());
-          ImGui::TableSetColumnIndex(1);
-          ImGui::TextUnformatted(l_Stats[i].name.c_str());
-          ImGui::TableSetColumnIndex(2);
-          ImGui::Text("%.3f", l_Stats[i].totalMs);
-          ImGui::TableSetColumnIndex(3);
-          ImGui::Text("%.3f", l_Stats[i].maxMs);
-          ImGui::TableSetColumnIndex(4);
-          ImGui::Text("%u", l_Stats[i].calls);
+          const uint32_t l_MaxRows = std::min<uint32_t>(
+              16u, static_cast<uint32_t>(l_Stats.size()));
+          for (uint32_t i = 0; i < l_MaxRows; ++i) {
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::TextUnformatted(l_Stats[i].group.c_str());
+            ImGui::TableSetColumnIndex(1);
+            ImGui::TextUnformatted(l_Stats[i].name.c_str());
+            ImGui::TableSetColumnIndex(2);
+            ImGui::Text("%.3f", l_Stats[i].totalMs);
+            ImGui::TableSetColumnIndex(3);
+            ImGui::Text("%.3f", l_Stats[i].maxMs);
+            ImGui::TableSetColumnIndex(4);
+            ImGui::Text("%u", l_Stats[i].calls);
+          }
+
+          ImGui::EndTable();
         }
-
-        ImGui::EndTable();
+        ImGui::EndChild();
+        ImGui::PopStyleColor(3);
       }
-      ImGui::EndChild();
-      ImGui::PopStyleColor(3);
 
       ImGui::Spacing();
-      render_section_header(ICON_LC_PANEL_TOP, "Timeline");
-      if (!l_Frames.empty()) {
-        render_timeline(l_Frame);
-      } else {
-        ImGui::BeginChild("ProfilerTimelineEmpty",
-                          ImVec2(0.0f, 120.0f), true);
-        ImGui::PushStyleColor(ImGuiCol_Text,
-                              color_to_imvec4(l_Theme.subtext));
-        ImGui::TextUnformatted("Waiting for captured frames");
-        ImGui::PopStyleColor();
-        ImGui::EndChild();
+      if (Gui::CollapsibleHeader("Timeline", ICON_LC_PANEL_TOP,
+                                 l_Theme.info)) {
+        if (!l_Frames.empty()) {
+          render_timeline(l_Frame);
+        } else {
+          ImGui::BeginChild("ProfilerTimelineEmpty",
+                            ImVec2(0.0f, 120.0f), true);
+          ImGui::PushStyleColor(ImGuiCol_Text,
+                                color_to_imvec4(l_Theme.subtext));
+          ImGui::TextUnformatted("Waiting for captured frames");
+          ImGui::PopStyleColor();
+          ImGui::EndChild();
+        }
       }
 
       ImGui::End();
