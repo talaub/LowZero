@@ -12,6 +12,12 @@ namespace Low {
         g_GlobalValues[p_Name] = p_Value;
       }
 
+      bool has(Name p_Name)
+      {
+        return g_GlobalValues.find(p_Name) !=
+               g_GlobalValues.end();
+      }
+
       Variant get(Name p_Name)
       {
         LOW_ASSERT(g_GlobalValues.find(p_Name) !=

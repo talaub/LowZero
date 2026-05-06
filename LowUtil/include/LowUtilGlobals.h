@@ -10,6 +10,7 @@ namespace Low {
   namespace Util {
     namespace Globals {
       LOW_EXPORT void set(Name p_Name, Variant p_Value);
+      LOW_EXPORT bool has(Name p_Name);
       LOW_EXPORT Variant get(Name p_Name);
     } // namespace Globals
   }   // namespace Util
