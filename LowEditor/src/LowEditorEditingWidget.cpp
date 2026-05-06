@@ -706,55 +706,121 @@ namespace Low {
                           l_RenderView.get_camera_direction(),
                       LOW_VECTOR3_UP);
 
-      if (l_SelectedHandles.size() == 1) {
-        Core::Entity l_Entity = l_SelectedHandles[0].get_id();
+      Util::List<Core::Component::Transform> l_SelectedTransforms;
+      for (Util::Handle i_Handle : l_SelectedHandles) {
+        Core::Entity i_Entity = i_Handle.get_id();
+        if (!i_Entity.is_alive()) {
+          continue;
+        }
 
-        if (l_Entity.is_alive()) {
-          Core::Component::Transform l_Transform =
-              l_Entity.get_transform();
+        Core::Component::Transform i_Transform =
+            i_Entity.get_transform();
+        if (i_Transform.is_alive()) {
+          l_SelectedTransforms.push_back(i_Transform);
+        }
+      }
 
-          Math::Matrix4x4 l_TransformMatrix =
-              l_Transform.get_world_matrix();
-          // glm::translate(glm::mat4(1.0f),
-          // l_Transform.get_world_position()) *
-          // glm::toMat4(l_Transform.get_world_rotation()) *
-          // glm::scale(glm::mat4(1.0f),
-          // l_Transform.get_world_scale());
-
-          Math::Vector3 l_Snap(0.0f);
-
-          if (l_Operation == ImGuizmo::TRANSLATE) {
-            bool l_ShouldSnap = get_user_setting(N(snap_translation));
-            if (l_ShouldSnap) {
-              l_Snap = get_user_setting(N(snap_translation_amount));
-            }
-          }
-          if (l_Operation == ImGuizmo::ROTATE) {
-            bool l_ShouldSnap = get_user_setting(N(snap_rotation));
-            if (l_ShouldSnap) {
-              l_Snap = get_user_setting(N(snap_rotation_amount));
-            }
-          }
-          if (l_Operation == ImGuizmo::SCALE) {
-            bool l_ShouldSnap = get_user_setting(N(snap_scale));
-            if (l_ShouldSnap) {
-              l_Snap = get_user_setting(N(snap_scale_amount));
+      Util::List<Core::Component::Transform> l_RootSelectedTransforms;
+      for (Core::Component::Transform i_Transform :
+           l_SelectedTransforms) {
+        bool l_HasSelectedParent = false;
+        Core::Component::Transform i_Parent =
+            i_Transform.get_parent();
+        while (i_Parent.is_alive()) {
+          for (Core::Component::Transform i_SelectedTransform :
+               l_SelectedTransforms) {
+            if (i_Parent == i_SelectedTransform) {
+              l_HasSelectedParent = true;
+              break;
             }
           }
 
-          if (ImGuizmo::Manipulate((float *)&l_ViewMatrix,
-                                   (float *)&l_ProjectionMatrix,
-                                   l_Operation, ImGuizmo::LOCAL,
-                                   (float *)&l_TransformMatrix, NULL,
-                                   &l_Snap.x)) {
+          if (l_HasSelectedParent) {
+            break;
+          }
 
-            bool l_IsFirst = false;
-            if (!get_gizmos_dragged()) {
-              l_IsFirst = true;
-            }
+          i_Parent = i_Parent.get_parent();
+        }
+
+        if (!l_HasSelectedParent) {
+          l_RootSelectedTransforms.push_back(i_Transform);
+        }
+      }
+
+      if (!l_SelectedTransforms.empty()) {
+        Math::Vector3 l_Snap(0.0f);
+
+        if (l_Operation == ImGuizmo::TRANSLATE) {
+          bool l_ShouldSnap = get_user_setting(N(snap_translation));
+          if (l_ShouldSnap) {
+            l_Snap = get_user_setting(N(snap_translation_amount));
+          }
+        }
+        if (l_Operation == ImGuizmo::ROTATE) {
+          bool l_ShouldSnap = get_user_setting(N(snap_rotation));
+          if (l_ShouldSnap) {
+            l_Snap = get_user_setting(N(snap_rotation_amount));
+          }
+        }
+        if (l_Operation == ImGuizmo::SCALE) {
+          bool l_ShouldSnap = get_user_setting(N(snap_scale));
+          if (l_ShouldSnap) {
+            l_Snap = get_user_setting(N(snap_scale_amount));
+          }
+        }
+
+        Math::Matrix4x4 l_GizmoMatrix(1.0f);
+        if (l_SelectedTransforms.size() == 1) {
+          l_GizmoMatrix =
+              l_SelectedTransforms[0].get_world_matrix();
+        } else {
+          Math::Vector3 l_Min =
+              l_SelectedTransforms[0].get_world_position();
+          Math::Vector3 l_Max = l_Min;
+
+          for (uint32_t i = 1; i < l_SelectedTransforms.size(); ++i) {
+            Math::Vector3 i_Position =
+                l_SelectedTransforms[i].get_world_position();
+            l_Min = glm::min(l_Min, i_Position);
+            l_Max = glm::max(l_Max, i_Position);
+          }
+
+          Math::Vector3 l_Pivot = (l_Min + l_Max) * 0.5f;
+          l_GizmoMatrix =
+              glm::translate(Math::Matrix4x4(1.0f), l_Pivot);
+        }
+
+        Math::Matrix4x4 l_OriginalGizmoMatrix = l_GizmoMatrix;
+
+        if (ImGuizmo::Manipulate((float *)&l_ViewMatrix,
+                                 (float *)&l_ProjectionMatrix,
+                                 l_Operation, ImGuizmo::LOCAL,
+                                 (float *)&l_GizmoMatrix, NULL,
+                                 &l_Snap.x)) {
+
+          bool l_IsFirst = false;
+          if (!get_gizmos_dragged()) {
+            l_IsFirst = true;
+          }
+
+          Math::Matrix4x4 l_GizmoDelta =
+              l_GizmoMatrix * glm::inverse(l_OriginalGizmoMatrix);
+
+          Transaction l_Transaction(
+              l_SelectedTransforms.size() == 1
+                  ? "Transform entity"
+                  : "Transform selected entities");
+
+          for (uint32_t i = 0; i < l_RootSelectedTransforms.size();
+               ++i) {
+            Core::Component::Transform i_Transform =
+                l_RootSelectedTransforms[i];
+
+            Math::Matrix4x4 l_TransformMatrix =
+                l_GizmoDelta * i_Transform.get_world_matrix();
 
             Core::Component::Transform l_Parent =
-                l_Transform.get_parent();
+                i_Transform.get_parent();
             if (l_Parent.is_alive()) {
               l_TransformMatrix =
                   glm::inverse(l_Parent.get_world_matrix()) *
@@ -772,56 +838,63 @@ namespace Low {
             Util::StoredHandle l_Before;
             Util::StoredHandle l_After;
 
-            Util::DiffUtil::store_handle(l_Before, l_Transform);
+            Util::DiffUtil::store_handle(l_Before, i_Transform);
 
-            l_Transform.position(translation);
-            l_Transform.rotation(rotation);
-            l_Transform.scale(scale);
+            i_Transform.position(translation);
+            i_Transform.rotation(rotation);
+            i_Transform.scale(scale);
 
-            Util::DiffUtil::store_handle(l_After, l_Transform);
+            Util::DiffUtil::store_handle(l_After, i_Transform);
 
-            Transaction l_Transaction = Transaction::from_diff(
-                l_Transform, l_Before, l_After);
+            Transaction l_TransformTransaction =
+                Transaction::from_diff(i_Transform, l_Before,
+                                       l_After);
 
-            if (!l_Transaction.empty()) {
-              set_gizmos_dragged(true);
+            for (uint32_t j = 0;
+                 j < l_TransformTransaction.get_operations().size();
+                 ++j) {
+              l_Transaction.add_operation(
+                  l_TransformTransaction.get_operations()[j]);
             }
+          }
 
-            if (!l_IsFirst && !l_Transaction.empty()) {
-              Transaction l_OldTransaction =
-                  get_global_changelist().peek();
+          if (!l_Transaction.empty()) {
+            set_gizmos_dragged(true);
+          }
 
-              for (uint32_t i = 0;
-                   i < l_Transaction.get_operations().size(); ++i) {
-                CommonOperations::PropertyEditOperation *i_Operation =
-                    (CommonOperations::PropertyEditOperation *)
-                        l_Transaction.get_operations()[i];
-                for (uint32_t j = 0;
-                     j < l_OldTransaction.get_operations().size();
-                     ++j) {
-                  CommonOperations::PropertyEditOperation
-                      *i_OldOperation =
-                          (CommonOperations::PropertyEditOperation *)
-                              l_OldTransaction.get_operations()[j];
+          if (!l_IsFirst && !l_Transaction.empty()) {
+            Transaction l_OldTransaction =
+                get_global_changelist().peek();
 
-                  if (i_OldOperation->m_Handle ==
-                          i_Operation->m_Handle &&
-                      i_OldOperation->m_PropertyName ==
-                          i_Operation->m_PropertyName) {
-                    i_Operation->m_OldValue =
-                        i_OldOperation->m_OldValue;
-                  }
+            for (uint32_t i = 0;
+                 i < l_Transaction.get_operations().size(); ++i) {
+              CommonOperations::PropertyEditOperation *i_Operation =
+                  (CommonOperations::PropertyEditOperation *)
+                      l_Transaction.get_operations()[i];
+              for (uint32_t j = 0;
+                   j < l_OldTransaction.get_operations().size(); ++j) {
+                CommonOperations::PropertyEditOperation
+                    *i_OldOperation =
+                        (CommonOperations::PropertyEditOperation *)
+                            l_OldTransaction.get_operations()[j];
+
+                if (i_OldOperation->m_Handle ==
+                        i_Operation->m_Handle &&
+                    i_OldOperation->m_PropertyName ==
+                        i_Operation->m_PropertyName) {
+                  i_Operation->m_OldValue =
+                      i_OldOperation->m_OldValue;
                 }
               }
-              Transaction l_Old = get_global_changelist().pop();
-              l_Old.cleanup();
             }
-            get_global_changelist().add_entry(l_Transaction);
+            Transaction l_Old = get_global_changelist().pop();
+            l_Old.cleanup();
+          }
+          get_global_changelist().add_entry(l_Transaction);
 
-          } else {
-            if (!ImGui::IsAnyItemActive()) {
-              set_gizmos_dragged(false);
-            }
+        } else {
+          if (!ImGui::IsAnyItemActive()) {
+            set_gizmos_dragged(false);
           }
         }
       }
@@ -1025,7 +1098,11 @@ namespace Low {
 
           if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
 
-            set_selected_entity(l_Entity);
+            if (io.KeyCtrl) {
+              add_entity_selection(l_Entity);
+            } else {
+              set_selected_entity(l_Entity);
+            }
           }
         }
       }

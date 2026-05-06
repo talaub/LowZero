@@ -52,6 +52,11 @@ namespace Low {
 
     void LOW_EDITOR_API set_focused_widget(Widget *p_Widget);
 
+    void LOW_EDITOR_API add_selection(Util::Handle p_Handle,
+                                      const bool p_AllowMix = false);
+    void LOW_EDITOR_API add_entity_selection(
+        Core::Entity p_Handle, const bool p_AllowMix = false);
+
     void LOW_EDITOR_API initialize();
     void LOW_EDITOR_API cleanup();
     void LOW_EDITOR_API tick(float p_Delta,

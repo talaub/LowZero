@@ -261,6 +261,53 @@ namespace Low {
       }
     }
 
+    void add_selection(Util::Handle p_Handle, const bool p_AllowMix)
+    {
+      if (g_SelectedHandles.empty()) {
+        set_selected_handle(p_Handle);
+        return;
+      }
+      if (!p_Handle.is_registered_type()) {
+        return;
+      }
+
+      Util::RTTI::TypeInfo &l_TypeInfo =
+          Util::Handle::get_type_info(p_Handle.get_type());
+      if (!l_TypeInfo.is_alive(p_Handle)) {
+        return;
+      }
+
+      if (p_AllowMix) {
+        g_SelectedHandles.push_back(p_Handle);
+        update_details_widget();
+        return;
+      }
+
+      bool l_Same = true;
+      for (Util::Handle i_Handle : g_SelectedHandles) {
+        if (i_Handle.get_type() != p_Handle.get_type()) {
+          l_Same = false;
+          break;
+        }
+      }
+
+      if (!l_Same) {
+        set_selected_handle(p_Handle);
+        return;
+      }
+
+      g_SelectedHandles.push_back(p_Handle);
+      update_details_widget();
+    }
+
+    void add_entity_selection(Core::Entity p_Entity,
+                              const bool p_AllowMix)
+    {
+      if (p_Entity.is_alive()) {
+        add_selection(p_Entity, p_AllowMix);
+      }
+    }
+
     void deselect_everything()
     {
       g_SelectedHandles.clear();

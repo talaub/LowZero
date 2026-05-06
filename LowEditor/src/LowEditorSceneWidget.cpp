@@ -53,9 +53,15 @@ namespace Low {
     {
       bool l_Break = false;
 
+      ImGuiIO &io = ImGui::GetIO();
+
       if (ImGui::Selectable(p_Entity.get_name().c_str(),
                             is_entity_selected(p_Entity))) {
-        set_selected_entity(p_Entity);
+        if (io.KeyCtrl) {
+          add_entity_selection(p_Entity);
+        } else {
+          set_selected_entity(p_Entity);
+        }
       }
       if (ImGui::BeginPopupContextItem(
               LOW_TO_STRING(p_Entity.get_id()).c_str())) {
