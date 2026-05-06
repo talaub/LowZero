@@ -4,6 +4,7 @@
 
 #include "LowEditorWidget.h"
 #include "LowEditorFonts.h"
+#include "LowUtilName.h"
 
 #include <imgui.h>
 
@@ -89,6 +90,11 @@ namespace Low {
 
       bool LOW_EDITOR_API InputText(Util::String p_Label,
                                     char *p_Text, int p_Length,
+                                    ImGuiInputTextFlags p_Flags = 0,
+                                    float p_Scale = 1.0f);
+      bool LOW_EDITOR_API NameInput(Util::String p_Label,
+                                    Util::Name &p_Name,
+                                    int p_Length = 256,
                                     ImGuiInputTextFlags p_Flags = 0,
                                     float p_Scale = 1.0f);
 

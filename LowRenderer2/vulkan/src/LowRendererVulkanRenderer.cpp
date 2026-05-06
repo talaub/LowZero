@@ -1463,6 +1463,16 @@ namespace Low {
                     .get_bindless_index();
           }
 
+          l_FrameData.textureIndices.y = 0;
+          if (p_RenderView.get_cavities_image().is_alive() &&
+              p_RenderView.get_cavities_image().get_state() ==
+                  TextureState::LOADED) {
+            l_FrameData.textureIndices.y =
+                p_RenderView.get_cavities_image()
+                    .get_gpu()
+                    .get_bindless_index();
+          }
+
           p_ViewInfo.write_current_staging_buffer(
               &l_FrameData, l_FrameUploadSpace, l_StagingOffset);
 

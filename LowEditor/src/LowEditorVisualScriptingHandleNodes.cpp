@@ -31,7 +31,50 @@ namespace Low {
             const Node *l_Node = p_Graph.find_node(p_NodeId);
             LOW_ASSERT(l_Type && l_Node,
                        "Handle property node is missing type metadata");
-            return l_Type->find_property_base_by_name(l_Node->member_name);
+            if (!l_Type || !l_Node) {
+              return PropertyMetadataBase{};
+            }
+
+            for (const PropertyMetadata &i_Property :
+                 l_Type->properties) {
+              if (i_Property.name == l_Node->member_name) {
+                return i_Property;
+              }
+            }
+
+            for (const VirtualPropertyMetadata &i_Property :
+                 l_Type->virtualProperties) {
+              if (i_Property.name == l_Node->member_name) {
+                return i_Property;
+              }
+            }
+
+            auto l_RttiPropertyIt =
+                l_Type->typeInfo.properties.find(l_Node->member_name);
+            if (l_RttiPropertyIt != l_Type->typeInfo.properties.end()) {
+              PropertyMetadataBase l_Metadata;
+              l_Metadata.name = l_Node->member_name;
+              l_Metadata.friendlyName =
+                  prettify_name(l_Node->member_name);
+              l_Metadata.editor = false;
+              l_Metadata.multiline = false;
+              l_Metadata.enumType = false;
+              l_Metadata.scriptingExpose = true;
+              l_Metadata.hideFlode = false;
+              l_Metadata.hideGetterFlode = false;
+              l_Metadata.hideSetterFlode = false;
+              l_Metadata.getterName = "get_";
+              l_Metadata.getterName += l_Metadata.name.c_str();
+              l_Metadata.setterName = "set_";
+              l_Metadata.setterName += l_Metadata.name.c_str();
+              l_Metadata.propInfoBase = l_RttiPropertyIt->second;
+              return l_Metadata;
+            }
+
+            LOW_ASSERT(
+                false,
+                "Handle property node could not resolve selected property");
+            return PropertyMetadataBase{};
           }
 
           static const FunctionMetadata *get_selected_function(
@@ -54,9 +97,18 @@ namespace Low {
             return nullptr;
           }
 
+          static const Util::String &get_script_type_string(
+              const TypeMetadata &p_Type)
+          {
+            if (!p_Type.fullScriptingTypeString.empty()) {
+              return p_Type.fullScriptingTypeString;
+            }
+            return p_Type.fullTypeString;
+          }
+
           static Pin make_pin_metadata_from_rtti(
               Util::String p_DisplayName, u32 p_Type,
-              u16 p_HandleType = 0)
+              Util::TypeIdentifier p_HandleType = {})
           {
             switch (p_Type) {
             case Util::RTTI::PropertyType::BOOL:
@@ -108,11 +160,22 @@ namespace Low {
               return l_Pin;
             }
             case Util::RTTI::PropertyType::HANDLE:
-              return make_handle_pin_metadata(
-                  p_DisplayName, Util::Handle::identifier(p_HandleType));
+              return make_handle_pin_metadata(p_DisplayName,
+                                              p_HandleType);
             default:
               return make_dynamic_pin_metadata(p_DisplayName);
             }
+          }
+
+          static Pin make_pin_metadata_from_rtti(
+              Util::String p_DisplayName, u32 p_Type,
+              u16 p_HandleType)
+          {
+            return make_pin_metadata_from_rtti(
+                p_DisplayName, p_Type,
+                p_HandleType
+                    ? Util::Handle::identifier(p_HandleType)
+                    : Util::TypeIdentifier());
           }
 
           struct TypeIdNodeClass : public NodeClass
@@ -176,7 +239,7 @@ namespace Low {
                 return;
               }
               p_CompileContext.main_code.append(
-                  l_Type->fullTypeString.c_str());
+                  get_script_type_string(*l_Type).c_str());
               p_CompileContext.main_code.append("::TYPE_ID");
             }
           };
@@ -244,7 +307,7 @@ namespace Low {
                 return;
               }
               p_CompileContext.main_code.append(
-                  l_Type->fullTypeString.c_str());
+                  get_script_type_string(*l_Type).c_str());
               p_CompileContext.main_code.append("::living_count()");
             }
           };
@@ -322,7 +385,7 @@ namespace Low {
               }
 
               p_CompileContext.main_code.append(
-                  l_Type->fullTypeString.c_str());
+                  get_script_type_string(*l_Type).c_str());
               p_CompileContext.main_code.append("::living_instances()[");
               compile_input_pin(p_Graph, p_NodeId, l_IndexPin->pin,
                                 p_CompileContext);
@@ -403,7 +466,7 @@ namespace Low {
               }
 
               p_CompileContext.main_code.append(
-                  l_Type->fullTypeString.c_str());
+                  get_script_type_string(*l_Type).c_str());
               p_CompileContext.main_code.append("::find_by_name(");
               compile_input_pin(p_Graph, p_NodeId, l_NamePin->pin,
                                 p_CompileContext);
@@ -787,7 +850,7 @@ namespace Low {
 
               if (l_Function->isStatic) {
                 p_CompileContext.main_code.append(
-                    l_Type->fullTypeString.c_str());
+                    get_script_type_string(*l_Type).c_str());
                 p_CompileContext.main_code.append("::");
               } else {
                 const Pin *l_InstancePin = p_Graph.find_input_pin_checked(
@@ -952,17 +1015,17 @@ namespace Low {
                   .append(" = 0; ")
                   .append(l_IndexVariableName.get())
                   .append(" < ")
-                  .append(l_Type->fullTypeString.c_str())
+                  .append(get_script_type_string(*l_Type).c_str())
                   .append("::living_count(); ++")
                   .append(l_IndexVariableName.get())
                   .append(") {")
                   .endl();
               p_CompileContext.main_code
-                  .append(l_Type->fullTypeString.c_str())
+                  .append(get_script_type_string(*l_Type).c_str())
                   .append(" ")
                   .append(l_InstanceVariableName.get())
                   .append(" = ")
-                  .append(l_Type->fullTypeString.c_str())
+                  .append(get_script_type_string(*l_Type).c_str())
                   .append("::living_instances()[")
                   .append(l_IndexVariableName.get())
                   .append("];")

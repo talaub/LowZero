@@ -5,6 +5,7 @@
 #include "LowEditorFonts.h"
 #include "LowEditorGui.h"
 #include "LowEditorIcons.h"
+#include "LowUtilHashing.h"
 #include "LowUtilLogger.h"
 #include "LowUtilString.h"
 
@@ -277,7 +278,7 @@ namespace Low {
               p_CompileContext.main_code.append(
                   "Low::Util::Name::from_string(\"");
               p_CompileContext.main_code.append(escape_script_string(
-                  p_PinMetadata.default_value.as_string()));
+                  p_PinMetadata.default_value.as_name().c_str()));
               p_CompileContext.main_code.append("\")");
             } else {
               p_CompileContext.main_code.append("\"");
@@ -1775,11 +1776,19 @@ namespace Low {
               l_Metadata.member_name =
                   i_NodeNode["member_name"].as<Util::Name>();
             }
-
             NodeGraphMutationResult<Low::Editor::Node>
                 l_AddNodeResult =
                     add_node(l_Node, l_Metadata, nullptr);
             if (!l_AddNodeResult.succeeded()) {
+              LOW_LOG_ERROR
+                  << "[VisualScript::deserialize] Failed to add node "
+                  << "id=" << Util::hash_to_string(l_Node.id.value)
+                  << " class="
+                  << Util::String(l_NodeClassName.c_str())
+                  << " validation="
+                  << node_graph_validation_result_to_string(
+                         l_AddNodeResult.validation_result)
+                  << LOW_LOG_END;
               continue;
             }
 
@@ -1788,39 +1797,46 @@ namespace Low {
                                        i_NodeNode["node_data"]);
             }
 
-            l_NodeClass->setup_default_pins(*this, l_Node.id,
-                                            nullptr);
+            if (i_NodeNode["pins"] && i_NodeNode["pins"].size() > 0) {
+              for (auto [_, i_PinNode] : i_NodeNode["pins"]) {
+                Low::Editor::Pin l_Pin;
+                l_Pin.id =
+                    PinId{(u64)i_PinNode["id"].as<Util::U64Id>()};
+                l_Pin.node = l_Node.id;
+                l_Pin.direction =
+                    i_PinNode["direction"].as<Util::String>() ==
+                            "Input"
+                        ? PinDirection::Input
+                        : PinDirection::Output;
 
-            Util::List<Low::Editor::Pin *> l_NodePins =
-                graph.get_node_pins(l_Node.id);
-            const u32 l_SerializedPinCount =
-                (u32)i_NodeNode["pins"].size();
-            LOW_ASSERT(l_NodePins.size() == l_SerializedPinCount,
-                       "Node pin count mismatch during VisualScript "
-                       "graph deserialization");
+                Pin l_PinMetadata;
+                deserialize_pin_metadata(i_PinNode, l_PinMetadata);
 
-            Util::List<PinId> l_OldPinIds;
-            for (Low::Editor::Pin *i_Pin : l_NodePins) {
-              l_OldPinIds.push_back(i_Pin->id);
-            }
-            for (PinId i_OldPinId : l_OldPinIds) {
-              pin_metadata.erase(i_OldPinId);
-            }
+                NodeGraphMutationResult<Low::Editor::Pin>
+                    l_AddPinResult =
+                        add_pin(l_Pin, l_PinMetadata, nullptr);
+                LOW_ASSERT(l_AddPinResult.succeeded(),
+                           "Could not add serialized pin during "
+                           "VisualScript "
+                           "graph deserialization");
+                if (!l_AddPinResult.succeeded()) {
+                  LOW_LOG_ERROR
+                      << "[VisualScript::deserialize] Failed to add "
+                         "pin "
+                      << "id=" << Util::hash_to_string(l_Pin.id.value)
+                      << " node="
+                      << Util::hash_to_string(l_Node.id.value)
+                      << " validation="
+                      << node_graph_validation_result_to_string(
+                             l_AddPinResult.validation_result)
+                      << LOW_LOG_END;
+                }
 
-            const u32 l_PinCount = LOW_MATH_MIN(
-                (u32)l_NodePins.size(), l_SerializedPinCount);
-            for (u32 i = 0; i < l_PinCount; ++i) {
-              Low::Editor::Pin *l_Pin = l_NodePins[i];
-              Util::Serial::Node &l_PinNode = i_NodeNode["pins"][i];
-              Pin l_PinMetadata;
-              deserialize_pin_metadata(l_PinNode, l_PinMetadata);
-
-              const PinId l_PinId =
-                  PinId{(u64)l_PinNode["id"].as<Util::U64Id>()};
-              l_Pin->id = l_PinId;
-              l_PinMetadata.pin = l_PinId;
-              pin_metadata[l_PinId] = l_PinMetadata;
-              l_MaxId = LOW_MATH_MAX(l_MaxId, l_PinId.value);
+                l_MaxId = LOW_MATH_MAX(l_MaxId, l_Pin.id.value);
+              }
+            } else {
+              l_NodeClass->setup_default_pins(*this, l_Node.id,
+                                              nullptr);
             }
           }
         }
@@ -1834,7 +1850,8 @@ namespace Low {
                 PinId{(u64)i_LinkNode["start_pin"].as<Util::U64Id>()};
             l_Link.end_pin =
                 PinId{(u64)i_LinkNode["end_pin"].as<Util::U64Id>()};
-            graph.add_link(l_Link, nullptr);
+            NodeGraphMutationResult<Low::Editor::Link>
+                l_AddLinkResult = graph.add_link(l_Link, nullptr);
             l_MaxId = LOW_MATH_MAX(l_MaxId, l_Link.id.value);
           }
         }
@@ -2308,65 +2325,8 @@ namespace Low {
               i_Pin->direction == PinDirection::Input &&
               p_Context.graph.get_link_count(i_Pin->id) == 0 &&
               l_PinMetadata->type != PinType::Execution &&
+              l_PinMetadata->type != PinType::Handle &&
               l_PinMetadata->type != PinType::Dynamic) {
-            char l_DefaultValue[128];
-            l_DefaultValue[0] = '\0';
-
-            switch (l_PinMetadata->type) {
-            case PinType::Bool:
-              snprintf(l_DefaultValue, sizeof(l_DefaultValue), "%s",
-                       l_PinMetadata->default_value.as_bool()
-                           ? "true"
-                           : "false");
-              break;
-            case PinType::Number:
-              switch (l_PinMetadata->number_subtype) {
-              case NumberSubtype::Float:
-                snprintf(l_DefaultValue, sizeof(l_DefaultValue),
-                         "%.2f",
-                         l_PinMetadata->default_value.as_float());
-                break;
-              case NumberSubtype::Int32:
-                snprintf(l_DefaultValue, sizeof(l_DefaultValue), "%d",
-                         (i32)l_PinMetadata->default_value);
-                break;
-              case NumberSubtype::UInt32:
-                snprintf(l_DefaultValue, sizeof(l_DefaultValue), "%u",
-                         (u32)l_PinMetadata->default_value);
-                break;
-              case NumberSubtype::UInt64:
-                snprintf(l_DefaultValue, sizeof(l_DefaultValue),
-                         "%llu",
-                         (unsigned long long)
-                             l_PinMetadata->default_value.as_u64());
-                break;
-              }
-              break;
-            case PinType::Handle:
-              snprintf(l_DefaultValue, sizeof(l_DefaultValue), "%llu",
-                       (unsigned long long)
-                           l_PinMetadata->default_value.as_u64());
-              break;
-            case PinType::String:
-              if (l_PinMetadata->string_subtype ==
-                  StringSubtype::Name) {
-                snprintf(
-                    l_DefaultValue, sizeof(l_DefaultValue), "%s",
-                    l_PinMetadata->default_value.as_name().c_str());
-              } else {
-                snprintf(
-                    l_DefaultValue, sizeof(l_DefaultValue), "%s",
-                    l_PinMetadata->default_value.as_string().c_str());
-              }
-              break;
-            default:
-              snprintf(l_DefaultValue, sizeof(l_DefaultValue), "%s",
-                       pin_type_to_string(l_PinMetadata->type));
-              break;
-            }
-
-            const ImVec2 l_ValueSize = calc_scaled_text_size(
-                l_DefaultFont, l_DefaultFontSize, l_DefaultValue);
             const float l_WidgetStartX =
                 l_Compact
                     ? p_ScreenMin.x + 28.0f * l_Zoom
@@ -2412,6 +2372,24 @@ namespace Low {
               }
               ImGui::PopItemWidth();
               l_RenderedWidget = true;
+            } else if (l_PinMetadata->type == PinType::String &&
+                       l_PinMetadata->string_subtype ==
+                           StringSubtype::Name) {
+              Util::Name l_Value =
+                  l_PinMetadata->default_value.as_name();
+
+              ImGui::SetCursorScreenPos(
+                  ImVec2(l_ValueMin.x, l_PinAnchor.y - 13.0f));
+              ImGui::PushItemWidth(l_ValueMax.x - l_ValueMin.x);
+              if (Gui::NameInput("defaultvalue", l_Value, 256)) {
+                l_PinMetadata->default_value = Util::Variant(l_Value);
+              }
+              if (p_Context.state &&
+                  (ImGui::IsItemHovered() || ImGui::IsItemActive())) {
+                p_Context.state->interacting_with_widget = true;
+              }
+              ImGui::PopItemWidth();
+              l_RenderedWidget = true;
             } else if (l_PinMetadata->type == PinType::Bool) {
               bool l_Value = l_PinMetadata->default_value.as_bool();
               ImGui::SetCursorScreenPos(
@@ -2445,23 +2423,6 @@ namespace Low {
               }
               ImGui::PopItemWidth();
               l_RenderedWidget = true;
-            }
-
-            if (!l_RenderedWidget) {
-              p_Context.draw_list->AddRectFilled(
-                  l_ValueMin, l_ValueMax, l_ValueBackgroundColor,
-                  5.0f * l_Zoom);
-              p_Context.draw_list->AddRect(l_ValueMin, l_ValueMax,
-                                           IM_COL32(71, 67, 104, 255),
-                                           5.0f * l_Zoom);
-
-              const ImVec2 l_ValueTextPos =
-                  ImVec2(l_ValueMin.x + 8.0f * l_Zoom,
-                         l_PinAnchor.y - l_ValueSize.y * 0.5f);
-              add_scaled_text(p_Context.draw_list, l_DefaultFont,
-                              l_DefaultFontSize, l_ValueTextPos,
-                              IM_COL32(214, 216, 229, 255),
-                              l_DefaultValue);
             }
             ImGui::PopID();
           }
@@ -2928,7 +2889,7 @@ namespace Low {
               Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f));
         case PinType::String:
           if (p_Pin.string_subtype == StringSubtype::Name) {
-            return Util::Variant(Util::Name((u32)0));
+            return Util::Variant(LOW_NAME(""));
           }
           return Util::Variant(Util::String(""));
         case PinType::Dynamic:

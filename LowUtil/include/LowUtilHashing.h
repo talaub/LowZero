@@ -49,7 +49,8 @@ namespace Low {
         static Node encode(const U64Id &v)
         {
           Node n;
-          String hashed = hash_to_string(v.val);
+          String hashed = "u64:";
+          hashed += hash_to_string(v.val);
           n = hashed;
           return n;
         }
@@ -58,6 +59,11 @@ namespace Low {
           if (auto sc = std::get_if<Node::Scalar>(&n.data)) {
             if (std::holds_alternative<String>(sc->value)) {
               String hashed = std::get<String>(sc->value);
+              if (hashed.size() >= 4 && hashed[0] == 'u' &&
+                  hashed[1] == '6' && hashed[2] == '4' &&
+                  hashed[3] == ':') {
+                hashed = hashed.substr(4);
+              }
               out.val = string_to_hash(hashed);
               return true;
             }

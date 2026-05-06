@@ -448,6 +448,7 @@ function process_file(p_Path, p_FileName, p_Project = false) {
       i_Type.properties["name"] = {
         type: "Low::Util::Name",
         expose_scripting: true,
+        scripting_expose: true,
         skip_duplication: true,
         description:
           "Name of the instance. Should in most cases be unique but not always necessary.",

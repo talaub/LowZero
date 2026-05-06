@@ -93,6 +93,9 @@ namespace Low {
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderView, ssao_image,
                                  Low::Renderer::Texture))
           Low::Renderer::Texture();
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderView, cavities_image,
+                                 Low::Renderer::Texture))
+          Low::Renderer::Texture();
       new (ACCESSOR_TYPE_SOA_PTR(
           l_Handle, RenderView, steps,
           Low::Util::List<Low::Renderer::RenderStep>))
@@ -187,6 +190,9 @@ namespace Low {
         }
         if (get_ssao_image().is_alive()) {
           get_ssao_image().destroy();
+        }
+        if (get_cavities_image().is_alive()) {
+          get_cavities_image().destroy();
         }
         Vulkan::ViewInfo l_ViewInfo = get_view_info_handle();
         if (l_ViewInfo.is_alive()) {
@@ -930,6 +936,39 @@ namespace Low {
         // End property: ssao_image
       }
       {
+        // Property: cavities_image
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(cavities_image);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderView::Data, cavities_image);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType =
+            Low::Renderer::Texture::IDENTIFIER;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.get_cavities_image();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
+                                            cavities_image,
+                                            Low::Renderer::Texture);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.set_cavities_image(
+              *(Low::Renderer::Texture *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          *((Low::Renderer::Texture *)p_Data) =
+              l_Handle.get_cavities_image();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: cavities_image
+      }
+      {
         // Property: steps
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(steps);
@@ -1444,6 +1483,9 @@ namespace Low {
       }
       if (get_ssao_image().is_alive()) {
         l_Handle.set_ssao_image(get_ssao_image());
+      }
+      if (get_cavities_image().is_alive()) {
+        l_Handle.set_cavities_image(get_cavities_image());
       }
       l_Handle.set_step_data(get_step_data());
       l_Handle.set_camera_dirty(is_camera_dirty());
@@ -2313,6 +2355,34 @@ namespace Low {
       broadcast_observable(N(ssao_image));
     }
 
+    Low::Renderer::Texture RenderView::get_cavities_image() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_cavities_image
+      // LOW_CODEGEN::END::CUSTOM:GETTER_cavities_image
+
+      return TYPE_SOA(RenderView, cavities_image,
+                      Low::Renderer::Texture);
+    }
+    void
+    RenderView::set_cavities_image(Low::Renderer::Texture p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_cavities_image
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_cavities_image
+
+      // Set new value
+      TYPE_SOA(RenderView, cavities_image, Low::Renderer::Texture) =
+          p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_cavities_image
+      // LOW_CODEGEN::END::CUSTOM:SETTER_cavities_image
+
+      broadcast_observable(N(cavities_image));
+    }
+
     Low::Util::List<Low::Renderer::RenderStep> &
     RenderView::get_steps() const
     {
@@ -2599,6 +2669,7 @@ namespace Low {
       l_RenderView.add_step_by_name(RENDERSTEP_SOLID_MATERIAL_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_LIGHTCULLING_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_SSAO_NAME);
+      l_RenderView.add_step_by_name(RENDERSTEP_CAVITIES_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_LIGHTING_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_DEBUG_GEOMETRY_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_UI_NAME);

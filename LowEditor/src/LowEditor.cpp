@@ -388,12 +388,37 @@ namespace Low {
           l_Metadata.name = N(name);
           l_Metadata.friendlyName = prettify_name(l_Metadata.name);
           l_Metadata.editor = false;
+          l_Metadata.scriptingExpose = true;
+          l_Metadata.hideFlode = false;
+          l_Metadata.hideGetterFlode = false;
+          l_Metadata.hideSetterFlode = false;
           l_Metadata.enumType = false;
           l_Metadata.getterName = "get_name";
           l_Metadata.setterName = "set_name";
           if (p_Node["name_editable"]) {
             l_Metadata.editor = true;
           }
+          l_Metadata.propInfo =
+              p_Metadata.typeInfo.properties[l_Metadata.name];
+          l_Metadata.propInfoBase = l_Metadata.propInfo;
+
+          p_Metadata.properties.push_back(l_Metadata);
+        }
+        if (p_Metadata.typeInfo.component &&
+            !p_Node[l_PropertiesName]["entity"] &&
+            p_Metadata.typeInfo.properties.find(N(entity)) !=
+                p_Metadata.typeInfo.properties.end()) {
+          PropertyMetadata l_Metadata;
+          l_Metadata.name = N(entity);
+          l_Metadata.friendlyName = prettify_name(l_Metadata.name);
+          l_Metadata.editor = false;
+          l_Metadata.scriptingExpose = true;
+          l_Metadata.hideFlode = false;
+          l_Metadata.hideGetterFlode = false;
+          l_Metadata.hideSetterFlode = false;
+          l_Metadata.enumType = false;
+          l_Metadata.getterName = "get_entity";
+          l_Metadata.setterName = "set_entity";
           l_Metadata.propInfo =
               p_Metadata.typeInfo.properties[l_Metadata.name];
           l_Metadata.propInfoBase = l_Metadata.propInfo;
@@ -620,6 +645,39 @@ namespace Low {
             i_Metadata.fullTypeString += "::";
           }
           i_Metadata.fullTypeString += i_Metadata.name.c_str();
+        }
+
+        i_Metadata.scriptingName = i_Metadata.name.c_str();
+        if (i_TypeNode["scripting_name"]) {
+          i_Metadata.scriptingName =
+              i_TypeNode["scripting_name"].as<Util::String>();
+        }
+
+        i_Metadata.scriptingNamespace = "";
+        if (i_TypeNode["scripting_namespace"]) {
+          if (i_TypeNode["scripting_namespace"].is_scalar()) {
+            i_Metadata.scriptingNamespace =
+                i_TypeNode["scripting_namespace"]
+                    .as<Util::String>();
+          } else {
+            bool l_First = true;
+            for (auto [_, i_ScriptingNamespaceNode] :
+                 i_TypeNode["scripting_namespace"]) {
+              if (!l_First) {
+                i_Metadata.scriptingNamespace += "::";
+              }
+              i_Metadata.scriptingNamespace +=
+                  i_ScriptingNamespaceNode.as<Util::String>();
+              l_First = false;
+            }
+          }
+        }
+
+        i_Metadata.fullScriptingTypeString = i_Metadata.scriptingName;
+        if (!i_Metadata.scriptingNamespace.empty()) {
+          i_Metadata.fullScriptingTypeString =
+              i_Metadata.scriptingNamespace + "::" +
+              i_Metadata.scriptingName;
         }
 
         i_Metadata.scriptingExpose = false;

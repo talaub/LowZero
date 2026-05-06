@@ -1142,6 +1142,27 @@ namespace Low {
         return l_Changed;
       }
 
+      bool NameInput(Util::String p_Label, Util::Name &p_Name,
+                     int p_Length, ImGuiInputTextFlags p_Flags,
+                     float p_Scale)
+      {
+        char l_TextBuffer[256];
+        const int l_BufferLength =
+            LOW_MATH_MIN((int)sizeof(l_TextBuffer), p_Length);
+
+        snprintf(l_TextBuffer, sizeof(l_TextBuffer), "%s",
+                 p_Name.is_valid() ? p_Name.c_str() : "");
+
+        if (!InputText(p_Label, l_TextBuffer, l_BufferLength,
+                       p_Flags, p_Scale)) {
+          return false;
+        }
+
+        p_Name =
+            l_TextBuffer[0] == '\0' ? LOW_NAME("") : LOW_NAME(l_TextBuffer);
+        return true;
+      }
+
       namespace TB {
 
         static void PushToolbarStyle()

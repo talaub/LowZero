@@ -64,19 +64,21 @@ namespace Low {
           p_Node["value"] = p_Variant.as_string();
         } else if (p_Variant.m_Type == VariantType::Handle) {
           Handle l_Handle = p_Variant.m_Uint64;
-          RTTI::TypeInfo &l_TypeInfo =
-              Handle::get_type_info(l_Handle.get_type());
-          LOW_ASSERT(l_TypeInfo.properties.find(N(unique_id)) !=
-                         l_TypeInfo.properties.end(),
-                     "Can only serialize handle variant where the "
-                     "handle has a "
-                     "unique_id");
+          if (l_Handle.is_registered_type()) {
+            RTTI::TypeInfo &l_TypeInfo =
+                Handle::get_type_info(l_Handle.get_type());
+            LOW_ASSERT(l_TypeInfo.properties.find(N(unique_id)) !=
+                           l_TypeInfo.properties.end(),
+                       "Can only serialize handle variant where the "
+                       "handle has a "
+                       "unique_id");
 
-          p_Node["type"] = "Handle";
-          UniqueId l_UniqueId;
-          l_TypeInfo.properties[N(unique_id)].get(l_Handle,
-                                                  &l_UniqueId);
-          p_Node["value"] = l_UniqueId;
+            p_Node["type"] = "Handle";
+            UniqueId l_UniqueId;
+            l_TypeInfo.properties[N(unique_id)].get(l_Handle,
+                                                    &l_UniqueId);
+            p_Node["value"] = l_UniqueId;
+          }
         } else {
           LOW_ASSERT(false, "Cannot serialize variant of this type");
         }

@@ -283,6 +283,17 @@ template <> struct Converter<Math::UVector2, void>
 static void encode_scalar(const Yaml::Node &v, Node &out)
 {
   using YAML::BadConversion;
+  const String l_Scalar = v.Scalar().c_str();
+
+  // Preserve zero-padded scalars as strings so identifiers like
+  // 0000000000000012 do not get interpreted as octal numbers by YAML.
+  if (l_Scalar.size() > 1 && l_Scalar[0] == '0' &&
+      l_Scalar.find('.') == String::npos &&
+      l_Scalar.find('e') == String::npos &&
+      l_Scalar.find('E') == String::npos) {
+    out = l_Scalar;
+    return;
+  }
 
   // 1) Try bool
   try {
@@ -317,7 +328,7 @@ static void encode_scalar(const Yaml::Node &v, Node &out)
   }
 
   // 5) Fallback: string
-  out = String(v.Scalar().c_str());
+  out = l_Scalar;
 }
 
 template <> struct Converter<Yaml::Node, void>

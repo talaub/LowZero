@@ -192,6 +192,9 @@ types:
       ssao_image:
         type: Low::Renderer::Texture
         handle: true
+      cavities_image:
+        type: Low::Renderer::Texture
+        handle: true
       steps:
         type: Low::Util::List<Low::Renderer::RenderStep>
         no_setter: true
@@ -368,7 +371,6 @@ types:
           - name: path
             type: Low::Util::String
             no_ref: true
-
 
   RenderStep:
     dynamic_increase: false
@@ -601,7 +603,7 @@ types:
       draw_commands:
         type: Low::Util::List<UiDrawCommand>
         no_setter: true
-      
+
   TextureExport:
     properties:
       path:

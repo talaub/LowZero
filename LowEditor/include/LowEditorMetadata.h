@@ -77,6 +77,9 @@ namespace Low {
       Util::List<Util::String> namespaces;
       Util::String namespaceString;
       Util::String fullTypeString;
+      Util::String scriptingName;
+      Util::String scriptingNamespace;
+      Util::String fullScriptingTypeString;
       uint16_t typeId;
       Util::RTTI::TypeInfo typeInfo;
       Util::List<PropertyMetadata> properties;

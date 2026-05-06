@@ -1963,13 +1963,313 @@ namespace Low {
         return true;
       }
 
+      struct
+      {
+        Pipeline pipeline;
+        PipelineLayout pipelineLayout;
+        bool initialized = false;
+      } g_CavitiesStepData;
+
+      struct CavitiesStepData
+      {
+        Texture texture;
+      };
+
+      struct CavitiesPushConstants
+      {
+        float radius;
+        float ridgeStrength;
+        float valleyStrength;
+      };
+
       bool initialize_cavities_renderstep()
       {
         RenderStep l_RenderStep =
             RenderStep::make(RENDERSTEP_CAVITIES_NAME);
 
-        l_RenderStep.set_setup_callback(
-            [&](RenderStep p_RenderStep) -> bool { return true; });
+        l_RenderStep.set_setup_callback([](RenderStep p_RenderStep)
+                                            -> bool {
+          {
+            Util::List<VkDescriptorSetLayout> l_DescriptorSetLayouts;
+            l_DescriptorSetLayouts.push_back(
+                Global::get_global_descriptor_set_layout());
+            l_DescriptorSetLayouts.push_back(
+                Global::get_texture_descriptor_set_layout());
+            l_DescriptorSetLayouts.push_back(
+                Global::get_view_info_descriptor_set_layout());
+
+            VkPipelineLayoutCreateInfo l_Layout{};
+            l_Layout.sType =
+                VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+            l_Layout.pNext = nullptr;
+            l_Layout.pSetLayouts = l_DescriptorSetLayouts.data();
+            l_Layout.setLayoutCount = l_DescriptorSetLayouts.size();
+
+            VkPushConstantRange l_PushConstant{};
+            l_PushConstant.offset = 0;
+            l_PushConstant.size = sizeof(CavitiesPushConstants);
+            l_PushConstant.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+            l_Layout.pPushConstantRanges = &l_PushConstant;
+            l_Layout.pushConstantRangeCount = 1;
+
+            g_CavitiesStepData.pipelineLayout =
+                PipelineUtil::create_layout(N(Cavities), l_Layout);
+          }
+
+          {
+            const Util::String l_VertexShaderPath =
+                "fullscreen_triangle.vert";
+            const Util::String l_FragmentShaderPath = "cavities.frag";
+
+            PipelineUtil::GraphicsPipelineBuilder l_Builder;
+            l_Builder.set_shaders(l_VertexShaderPath,
+                                  l_FragmentShaderPath);
+            l_Builder.pipelineLayout =
+                g_CavitiesStepData.pipelineLayout;
+            l_Builder.set_input_topology(
+                VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+            l_Builder.set_polygon_mode(VK_POLYGON_MODE_FILL);
+            l_Builder.set_cull_mode(VK_CULL_MODE_BACK_BIT,
+                                    VK_FRONT_FACE_CLOCKWISE);
+            l_Builder.set_multismapling_none();
+            l_Builder.disable_blending();
+            l_Builder.disable_depth_test();
+
+            l_Builder.colorAttachmentFormats.clear();
+            l_Builder.colorAttachmentFormats.push_back(
+                VK_FORMAT_R8G8_UNORM);
+
+            l_Builder.set_depth_format(VK_FORMAT_UNDEFINED);
+
+            g_CavitiesStepData.pipeline =
+                l_Builder.register_pipeline();
+          }
+
+          g_CavitiesStepData.initialized = true;
+          return true;
+        });
+
+        l_RenderStep.set_prepare_callback(
+            [](RenderStep p_RenderStep,
+               RenderView p_RenderView) -> bool {
+              CavitiesStepData *l_Data = new CavitiesStepData;
+              p_RenderView.get_step_data()[p_RenderStep.get_index()] =
+                  l_Data;
+              l_Data->texture = Texture::make_gpu_ready(
+                  N(CavitiesOut), TextureFormatCategory::Float);
+              p_RenderView.set_cavities_image(l_Data->texture);
+              return true;
+            });
+
+        l_RenderStep.set_teardown_callback(
+            [](RenderStep p_RenderStep,
+               RenderView p_RenderView) -> bool {
+              CavitiesStepData *l_Data =
+                  (CavitiesStepData *)GET_STEP_DATA(p_RenderView,
+                                                    p_RenderStep);
+              if (l_Data) {
+                if (l_Data->texture.is_alive()) {
+                  l_Data->texture.destroy();
+                }
+              }
+              return true;
+            });
+
+        l_RenderStep.set_resolution_update_callback(
+            [](RenderStep p_RenderStep,
+               Math::UVector2 p_NewDimensions,
+               RenderView p_RenderView) -> bool {
+              VkCommandBuffer l_Cmd =
+                  Global::get_current_command_buffer();
+
+              CavitiesStepData *l_Data =
+                  (CavitiesStepData *)GET_STEP_DATA(p_RenderView,
+                                                    p_RenderStep);
+
+              Texture l_Texture = l_Data->texture;
+              LOWR_VK_ASSERT_RETURN(
+                  l_Texture.is_alive(),
+                  "Failed to execute cavities renderstep because "
+                  "cavities output texture was not alive.");
+
+              Vulkan::Image l_Image =
+                  l_Texture.get_gpu().get_data_handle();
+
+              if (l_Image.is_alive()) {
+                ImGui_ImplVulkan_RemoveTexture(
+                    (VkDescriptorSet)l_Texture.get_gpu()
+                        .get_imgui_texture_id());
+
+                ImageUtil::destroy(l_Image);
+                l_Image.destroy();
+              }
+
+              l_Image = Vulkan::Image::make(N(CavitiesOut));
+              l_Texture.get_gpu().set_data_handle(l_Image.get_id());
+
+              VkExtent3D l_Extent;
+              l_Extent.width = p_NewDimensions.x;
+              l_Extent.height = p_NewDimensions.y;
+              l_Extent.depth = 1;
+
+              LOWR_VK_ASSERT_RETURN(
+                  Vulkan::ImageUtil::create(
+                      l_Image, l_Extent, VK_FORMAT_R8G8_UNORM,
+                      VK_IMAGE_USAGE_SAMPLED_BIT |
+                          VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                      false),
+                  "Failed to create cavities output image.");
+
+              ImageUtil::cmd_transition(
+                  l_Cmd, l_Data->texture.get_gpu().get_data_handle(),
+                  VK_IMAGE_LAYOUT_UNDEFINED,
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+              return true;
+            });
+
+        l_RenderStep.set_execute_callback([](RenderStep p_RenderStep,
+                                             float p_Delta,
+                                             RenderView p_RenderView)
+                                              -> bool {
+          VkCommandBuffer l_Cmd =
+              Global::get_current_command_buffer();
+
+          VK_RENDERDOC_SECTION_BEGIN("Cavities",
+                                     SINGLE_ARG({0.5f, 0.8f, 0.2f}));
+
+          ViewInfo l_ViewInfo = p_RenderView.get_view_info_handle();
+
+          CavitiesStepData *l_Data =
+              (CavitiesStepData *)GET_STEP_DATA(p_RenderView,
+                                                p_RenderStep);
+
+          Texture l_Texture = l_Data->texture;
+          LOWR_VK_ASSERT_RETURN(
+              l_Texture.is_alive(),
+              "Failed to execute cavities renderstep because "
+              "cavities output texture was not alive.");
+
+          Math::UVector2 l_Dimensions = p_RenderView.get_dimensions();
+
+          Vulkan::Image l_Image =
+              l_Texture.get_gpu().get_data_handle();
+
+          if (!l_Image.is_alive()) {
+            l_Image = Vulkan::Image::make(N(CavitiesOut));
+            l_Texture.get_gpu().set_data_handle(l_Image.get_id());
+
+            VkExtent3D l_Extent;
+            l_Extent.width = l_Dimensions.x;
+            l_Extent.height = l_Dimensions.y;
+            l_Extent.depth = 1;
+
+            LOWR_VK_ASSERT_RETURN(
+                Vulkan::ImageUtil::create(
+                    l_Image, l_Extent, VK_FORMAT_R8G8_UNORM,
+                    VK_IMAGE_USAGE_SAMPLED_BIT |
+                        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                    false),
+                "Failed to create cavities output image.");
+
+            ImageUtil::cmd_transition(
+                l_Cmd, l_Data->texture.get_gpu().get_data_handle(),
+                VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+          }
+
+          ImageUtil::cmd_transition(
+              l_Cmd, l_Data->texture.get_gpu().get_data_handle(),
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+          VkClearValue l_ClearColorValue = {};
+          l_ClearColorValue.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+
+          Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
+          l_ColorAttachments.resize(1);
+          l_ColorAttachments[0] = InitUtil::attachment_info(
+              l_Image.get_allocated_image().imageView,
+              &l_ClearColorValue,
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+          VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
+              {l_Dimensions.x, l_Dimensions.y},
+              l_ColorAttachments.data(), l_ColorAttachments.size(),
+              nullptr);
+          vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
+
+          vkCmdBindPipeline(l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            g_CavitiesStepData.pipeline.get());
+
+          {
+            VkDescriptorSet l_Set =
+                Global::get_global_descriptor_set();
+            vkCmdBindDescriptorSets(
+                l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                g_CavitiesStepData.pipelineLayout.get(), 0, 1, &l_Set,
+                0, nullptr);
+
+            {
+              VkDescriptorSet l_TextureSet =
+                  Global::get_current_texture_descriptor_set();
+              vkCmdBindDescriptorSets(
+                  l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                  g_CavitiesStepData.pipelineLayout.get(), 1, 1,
+                  &l_TextureSet, 0, nullptr);
+            }
+
+            VkDescriptorSet l_DescriptorSet =
+                l_ViewInfo.get_view_data_descriptor_set();
+            vkCmdBindDescriptorSets(
+                l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                g_CavitiesStepData.pipelineLayout.get(), 2, 1,
+                &l_DescriptorSet, 0, nullptr);
+          }
+
+          CavitiesPushConstants l_PushConstants;
+          l_PushConstants.radius = 2.0f;
+          l_PushConstants.ridgeStrength = 2.5f;
+          l_PushConstants.valleyStrength = 1.5f;
+
+          vkCmdPushConstants(
+              l_Cmd, g_CavitiesStepData.pipelineLayout.get(),
+              VK_SHADER_STAGE_FRAGMENT_BIT, 0,
+              sizeof(CavitiesPushConstants), &l_PushConstants);
+
+          VkViewport l_Viewport = {};
+          l_Viewport.x = 0;
+          l_Viewport.y = 0;
+          l_Viewport.width = static_cast<float>(l_Dimensions.x);
+          l_Viewport.height = static_cast<float>(l_Dimensions.y);
+          l_Viewport.minDepth = 0.f;
+          l_Viewport.maxDepth = 1.f;
+
+          vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
+
+          VkRect2D l_Scissor = {};
+          l_Scissor.offset.x = 0;
+          l_Scissor.offset.y = 0;
+          l_Scissor.extent.width = l_Dimensions.x;
+          l_Scissor.extent.height = l_Dimensions.y;
+
+          vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
+
+          vkCmdDraw(l_Cmd, 3, 1, 0, 0);
+
+          vkCmdEndRendering(l_Cmd);
+
+          ImageUtil::cmd_transition(
+              l_Cmd, l_Data->texture.get_gpu().get_data_handle(),
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+          VK_RENDERDOC_SECTION_END();
+
+          return true;
+        });
+
         return true;
       }
 
