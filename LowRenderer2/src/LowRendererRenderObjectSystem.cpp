@@ -190,6 +190,21 @@ namespace Low {
           const Util::List<DrawCommand> &i_DrawCommands =
               i_RenderObject.get_draw_commands();
 
+          bool i_HasPendingMaterial = false;
+          for (DrawCommand i_DrawCommand : i_DrawCommands) {
+            if (i_RenderObject.get_material().is_alive() &&
+                i_DrawCommand.get_material() !=
+                    i_RenderObject.get_material()) {
+              i_DrawCommand.set_material(i_RenderObject.get_material());
+            }
+
+            Material i_Material = i_DrawCommand.get_material();
+            if (i_Material.is_alive() &&
+                i_Material.get_state() != MaterialState::LOADED) {
+              i_HasPendingMaterial = true;
+            }
+          }
+
           size_t l_StagingOffset = 0;
           const u64 l_FrameUploadSpace =
               Vulkan::Global::get_current_frame_staging_buffer()
@@ -288,6 +303,10 @@ namespace Low {
               1, &i_CopyRegion);
 
           i_RenderObject.set_dirty(false);
+
+          if (i_HasPendingMaterial) {
+            l_RescheduleRenderObjects.push_back(i_RenderObject);
+          }
         }
 
         RenderObject::ms_Dirty.clear();

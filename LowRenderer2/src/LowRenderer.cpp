@@ -820,6 +820,7 @@ namespace Low {
           &l_CopyRegion);
 
       p_Gpu.set_dirty(false);
+      return true;
     }
 
     static void tick_materials(float p_Delta)
