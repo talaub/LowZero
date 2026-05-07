@@ -843,6 +843,26 @@ namespace Low {
             }
           }
 
+          {
+            VkSamplerCreateInfo sampl{};
+            sampl.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+            sampl.magFilter = VK_FILTER_LINEAR;
+            sampl.minFilter = VK_FILTER_LINEAR;
+            sampl.addressModeU =
+                VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+            sampl.addressModeV =
+                VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+            sampl.addressModeW =
+                VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+            sampl.borderColor =
+                VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+            sampl.compareEnable = VK_TRUE;
+            sampl.compareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+            vkCreateSampler(
+                Low::Renderer::Vulkan::Global::get_device(), &sampl,
+                nullptr, &g_Samplers.shadow_comparison);
+          }
+
           return true;
         }
 
@@ -1056,6 +1076,12 @@ namespace Low {
                                   VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
             l_Builder.add_binding(6,
                                   VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            l_Builder.add_binding(7,
+                                  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            l_Builder.add_binding(8,
+                                  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            l_Builder.add_binding(
+                9, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             g_ViewInfoDescriptorSetLayout =
                 l_Builder.build(Global::get_device(),
                                 VK_SHADER_STAGE_ALL_GRAPHICS |
@@ -1190,6 +1216,8 @@ namespace Low {
             }
             get_samplers().lod_nearest_repeat_black.clear();
           }
+          vkDestroySampler(get_device(), get_samplers().shadow_comparison,
+                           nullptr);
           return true;
         }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "LowRendererEditorImageGpu.h"
+#include "LowRendererGlobals.h"
 #include "vulkan/vulkan.h"
 #include "VkBootstrap.h"
 
@@ -31,6 +32,34 @@ namespace Low {
         alignas(16) Math::Vector4 color;
         uint32_t active;
         uint32_t _padding[3];
+      };
+
+      struct ShadowTile
+      {
+        Math::Vector2 atlas_offset;
+        Math::Vector2 atlas_scale;
+      };
+
+      struct alignas(16) DirectionalLightShadowInfo
+      {
+        alignas(16) Math::Matrix4x4 light_space[SHADOW_CSM_CASCADE_COUNT];
+        alignas(16) ShadowTile tiles[SHADOW_CSM_CASCADE_COUNT];
+        alignas(16) Math::Vector4 cascade_splits;
+      };
+
+      struct alignas(16) PointLightShadowInfo
+      {
+        alignas(16) Math::Matrix4x4 light_space[6];
+        alignas(16) ShadowTile tiles[6];
+        uint32_t casts_shadow;
+        uint32_t _padding[3];
+      };
+
+      struct ShadowPassPushConstants
+      {
+        u32 renderObjectSlot;
+        u32 _padding[3];
+        Math::Matrix4x4 lightSpaceMatrix;
       };
 
       struct RenderEntryPushConstant
@@ -127,6 +156,8 @@ namespace Low {
         VkSampler no_lod_linear_clamp_black;
         VkSampler lod_linear_repeat_black_single;
         VkSampler lod_linear_clamp_black_single;
+
+        VkSampler shadow_comparison;
       };
 
       struct TextureUpdate

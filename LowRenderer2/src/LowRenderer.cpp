@@ -275,6 +275,7 @@ namespace Low {
 
         l_MT.set_draw_vertex_shader_path("solid_base.vert");
         l_MT.set_draw_fragment_shader_path("solid_base.frag");
+        l_MT.casts_shadows(true);
 
         g_MaterialTypes.solidBase = l_MT;
       }
@@ -764,6 +765,11 @@ namespace Low {
       g_GameRenderView = RenderView::make_default(N(Game));
       g_GameRenderView.set_render_scene(g_GlobalScene);
 
+      g_GlobalScene.set_directional_light_color(1.0f, 1.0f, 1.0f);
+      g_GlobalScene.set_directional_light_intensity(0.75f);
+      g_GlobalScene.set_directional_light_direction(-0.15f, -1.0f,
+                                                    -1.5f);
+
       // TODO: Create separate editor renderview in editor builds
       g_EditorRenderView = g_GameRenderView;
 
@@ -783,6 +789,7 @@ namespace Low {
     {
       Vulkan::wait_idle();
 
+      RenderView::ms_FullDestroy = true;
       cleanup_types();
       cleanup_enums();
 

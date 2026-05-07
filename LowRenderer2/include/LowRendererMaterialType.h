@@ -43,6 +43,8 @@ namespace Low {
         bool transparent;
         uint64_t pick_pipeline_handle;
         uint64_t highlight_pipeline_handle;
+        uint64_t shadow_pipeline_handle;
+        bool casts_shadows;
         bool allows_picking;
         bool allows_highlighting;
         uint64_t draw_pipeline_handle;
@@ -54,6 +56,7 @@ namespace Low {
         Low::Renderer::GraphicsPipelineConfig pick_pipeline_config;
         Low::Renderer::GraphicsPipelineConfig draw_pipeline_config;
         Low::Renderer::GraphicsPipelineConfig depth_pipeline_config;
+        Low::Renderer::GraphicsPipelineConfig shadow_pipeline_config;
         Low::Renderer::MaterialTypeFamily family;
         Low::Util::Name name;
 
@@ -180,6 +183,13 @@ namespace Low {
       uint64_t get_highlight_pipeline_handle() const;
       void set_highlight_pipeline_handle(uint64_t p_Value);
 
+      uint64_t get_shadow_pipeline_handle() const;
+      void set_shadow_pipeline_handle(uint64_t p_Value);
+
+      bool casts_shadows() const;
+      void casts_shadows(bool p_Value);
+      void toggle_casts_shadows();
+
       bool allows_picking() const;
       void allows_picking(bool p_Value);
       void toggle_allows_picking();
@@ -209,6 +219,9 @@ namespace Low {
 
       Low::Renderer::GraphicsPipelineConfig &
       get_depth_pipeline_config() const;
+
+      Low::Renderer::GraphicsPipelineConfig &
+      get_shadow_pipeline_config() const;
 
       Low::Renderer::MaterialTypeFamily get_family() const;
 

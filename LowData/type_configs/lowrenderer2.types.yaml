@@ -195,6 +195,9 @@ types:
       cavities_image:
         type: Low::Renderer::Texture
         handle: true
+      shadow_atlas:
+        type: Low::Renderer::Texture
+        handle: true
       steps:
         type: Low::Util::List<Low::Renderer::RenderStep>
         no_setter: true
@@ -261,6 +264,12 @@ types:
         type: uint64_t
       highlight_pipeline_handle:
         type: uint64_t
+      shadow_pipeline_handle:
+        type: uint64_t
+      casts_shadows:
+        type: bool
+        getter_name: casts_shadows
+        setter_name: casts_shadows
       allows_picking:
         type: bool
         getter_name: allows_picking
@@ -289,6 +298,9 @@ types:
         type: Low::Renderer::GraphicsPipelineConfig
         no_setter: true
       depth_pipeline_config:
+        type: Low::Renderer::GraphicsPipelineConfig
+        no_setter: true
+      shadow_pipeline_config:
         type: Low::Renderer::GraphicsPipelineConfig
         no_setter: true
       family:

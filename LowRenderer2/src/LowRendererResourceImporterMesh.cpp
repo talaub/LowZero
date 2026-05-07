@@ -236,6 +236,7 @@ namespace Low {
         RenderView l_RenderView = RenderView::make(N(Thumbnail));
         l_RenderView.set_render_scene(l_RenderScene);
         l_RenderView.set_dimensions(Math::UVector2(500, 500));
+        l_RenderView.add_step_by_name(RENDERSTEP_SHADOW_PASS_NAME);
         l_RenderView.add_step_by_name(RENDERSTEP_SOLID_MATERIAL_NAME);
         l_RenderView.add_step_by_name(RENDERSTEP_SSAO_NAME);
         l_RenderView.add_step_by_name(RENDERSTEP_LIGHTCULLING_NAME);

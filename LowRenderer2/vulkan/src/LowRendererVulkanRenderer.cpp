@@ -89,6 +89,8 @@ namespace Low {
 
         PipelineLayout solidHighlightPipelineLayout;
 
+        PipelineLayout shadowPipelineLayout;
+
         Pipeline ss2d;
         PipelineLayout ss2dLayout;
       } g_Pipelines;
@@ -375,6 +377,32 @@ namespace Low {
 
           g_Pipelines.solidHighlightPipelineLayout =
               PipelineUtil::create_layout(N(solid_highlight),
+                                          l_PipelineLayoutInfo);
+        }
+        {
+          VkPipelineLayoutCreateInfo l_PipelineLayoutInfo =
+              PipelineUtil::layout_create_info();
+
+          Util::List<VkDescriptorSetLayout> l_Layouts;
+          l_Layouts.push_back(
+              Global::get_global_descriptor_set_layout());
+
+          l_PipelineLayoutInfo.sType =
+              VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+          l_PipelineLayoutInfo.pNext = nullptr;
+          l_PipelineLayoutInfo.pSetLayouts = l_Layouts.data();
+          l_PipelineLayoutInfo.setLayoutCount = l_Layouts.size();
+
+          VkPushConstantRange l_PushConstant{};
+          l_PushConstant.offset = 0;
+          l_PushConstant.size = sizeof(ShadowPassPushConstants);
+          l_PushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+          l_PipelineLayoutInfo.pPushConstantRanges = &l_PushConstant;
+          l_PipelineLayoutInfo.pushConstantRangeCount = 1;
+
+          g_Pipelines.shadowPipelineLayout =
+              PipelineUtil::create_layout(N(shadow),
                                           l_PipelineLayoutInfo);
         }
 
@@ -1313,6 +1341,49 @@ namespace Low {
           ImageUtil::cmd_transition(
               l_Cmd, l_Image, VK_IMAGE_LAYOUT_UNDEFINED,
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }
+
+        if (!p_RenderView.get_shadow_atlas().is_alive()) {
+          p_RenderView.set_shadow_atlas(Texture::make_gpu_ready(
+              N(ShadowAtlas), TextureFormatCategory::Float));
+
+          Image l_Image = p_RenderView.get_shadow_atlas()
+                              .get_gpu()
+                              .get_data_handle();
+
+          if (!l_Image.is_alive()) {
+            l_Image = Image::make(N(ShadowAtlas));
+            l_Image.set_depth(true);
+            p_RenderView.get_shadow_atlas()
+                .get_gpu()
+                .set_data_handle(l_Image.get_id());
+          }
+
+          VkExtent3D l_AtlasExtent{SHADOW_ATLAS_SIZE, SHADOW_ATLAS_SIZE,
+                                   1};
+
+          ImageUtil::create(
+              l_Image, l_AtlasExtent,
+              Convert::image_format(ImageFormat::DEPTH),
+              VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                  VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                  VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
+                  VK_IMAGE_USAGE_SAMPLED_BIT,
+              false);
+
+          ImageUtil::cmd_transition(
+              l_Cmd, l_Image, VK_IMAGE_LAYOUT_UNDEFINED,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+          DescriptorUtil::DescriptorWriter l_AtlasWriter;
+          l_AtlasWriter.write_image(
+              9, l_Image,
+              Global::get_samplers().shadow_comparison,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+          l_AtlasWriter.update_set(
+              Global::get_device(),
+              p_ViewInfo.get_view_data_descriptor_set());
         }
 
         {
@@ -2266,6 +2337,16 @@ namespace Low {
                         i_MaterialType
                             .get_highlight_pipeline_config(),
                         g_Pipelines.solidHighlightPipelineLayout));
+              }
+            }
+            if (i_MaterialType.casts_shadows()) {
+              Pipeline i_ShadowPipeline =
+                  i_MaterialType.get_shadow_pipeline_handle();
+              if (!i_ShadowPipeline.is_alive()) {
+                i_MaterialType.set_shadow_pipeline_handle(
+                    create_pipeline_from_config(
+                        i_MaterialType.get_shadow_pipeline_config(),
+                        g_Pipelines.shadowPipelineLayout));
               }
             }
           }

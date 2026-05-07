@@ -52,6 +52,8 @@ namespace Low {
 
       ACCESSOR_TYPE_SOA(l_Handle, MaterialType, transparent, bool) =
           false;
+      ACCESSOR_TYPE_SOA(l_Handle, MaterialType, casts_shadows, bool) =
+          false;
       ACCESSOR_TYPE_SOA(l_Handle, MaterialType, allows_picking,
                         bool) = false;
       ACCESSOR_TYPE_SOA(l_Handle, MaterialType, allows_highlighting,
@@ -75,6 +77,10 @@ namespace Low {
           Low::Renderer::GraphicsPipelineConfig();
       new (ACCESSOR_TYPE_SOA_PTR(
           l_Handle, MaterialType, depth_pipeline_config,
+          Low::Renderer::GraphicsPipelineConfig))
+          Low::Renderer::GraphicsPipelineConfig();
+      new (ACCESSOR_TYPE_SOA_PTR(
+          l_Handle, MaterialType, shadow_pipeline_config,
           Low::Renderer::GraphicsPipelineConfig))
           Low::Renderer::GraphicsPipelineConfig();
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, MaterialType, family,
@@ -272,6 +278,66 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: highlight_pipeline_handle
+      }
+      {
+        // Property: shadow_pipeline_handle
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(shadow_pipeline_handle);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(MaterialType::Data, shadow_pipeline_handle);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          MaterialType l_Handle = p_Handle.get_id();
+          l_Handle.get_shadow_pipeline_handle();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MaterialType,
+                                            shadow_pipeline_handle,
+                                            uint64_t);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          MaterialType l_Handle = p_Handle.get_id();
+          l_Handle.set_shadow_pipeline_handle(*(uint64_t *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MaterialType l_Handle = p_Handle.get_id();
+          *((uint64_t *)p_Data) =
+              l_Handle.get_shadow_pipeline_handle();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: shadow_pipeline_handle
+      }
+      {
+        // Property: casts_shadows
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(casts_shadows);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(MaterialType::Data, casts_shadows);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          MaterialType l_Handle = p_Handle.get_id();
+          l_Handle.casts_shadows();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MaterialType,
+                                            casts_shadows, bool);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          MaterialType l_Handle = p_Handle.get_id();
+          l_Handle.casts_shadows(*(bool *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MaterialType l_Handle = p_Handle.get_id();
+          *((bool *)p_Data) = l_Handle.casts_shadows();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: casts_shadows
       }
       {
         // Property: allows_picking
@@ -551,6 +617,34 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: depth_pipeline_config
+      }
+      {
+        // Property: shadow_pipeline_config
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(shadow_pipeline_config);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(MaterialType::Data, shadow_pipeline_config);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          MaterialType l_Handle = p_Handle.get_id();
+          l_Handle.get_shadow_pipeline_config();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, MaterialType, shadow_pipeline_config,
+              Low::Renderer::GraphicsPipelineConfig);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MaterialType l_Handle = p_Handle.get_id();
+          *((Low::Renderer::GraphicsPipelineConfig *)p_Data) =
+              l_Handle.get_shadow_pipeline_config();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: shadow_pipeline_config
       }
       {
         // Property: family
@@ -951,6 +1045,9 @@ namespace Low {
       l_Handle.set_pick_pipeline_handle(get_pick_pipeline_handle());
       l_Handle.set_highlight_pipeline_handle(
           get_highlight_pipeline_handle());
+      l_Handle.set_shadow_pipeline_handle(
+          get_shadow_pipeline_handle());
+      l_Handle.casts_shadows(casts_shadows());
       l_Handle.allows_picking(allows_picking());
       l_Handle.allows_highlighting(allows_highlighting());
       l_Handle.set_draw_pipeline_handle(get_draw_pipeline_handle());
@@ -988,6 +1085,8 @@ namespace Low {
       p_Node["pick_pipeline_handle"] = get_pick_pipeline_handle();
       p_Node["highlight_pipeline_handle"] =
           get_highlight_pipeline_handle();
+      p_Node["shadow_pipeline_handle"] = get_shadow_pipeline_handle();
+      p_Node["casts_shadows"] = casts_shadows();
       p_Node["allows_picking"] = allows_picking();
       p_Node["allows_highlighting"] = allows_highlighting();
       p_Node["draw_pipeline_handle"] = get_draw_pipeline_handle();
@@ -1028,6 +1127,13 @@ namespace Low {
         l_Handle.set_highlight_pipeline_handle(
             p_Node["highlight_pipeline_handle"].as<uint64_t>());
       }
+      if (p_Node["shadow_pipeline_handle"]) {
+        l_Handle.set_shadow_pipeline_handle(
+            p_Node["shadow_pipeline_handle"].as<uint64_t>());
+      }
+      if (p_Node["casts_shadows"]) {
+        l_Handle.casts_shadows(p_Node["casts_shadows"].as<bool>());
+      }
       if (p_Node["allows_picking"]) {
         l_Handle.allows_picking(p_Node["allows_picking"].as<bool>());
       }
@@ -1055,6 +1161,8 @@ namespace Low {
       if (p_Node["draw_pipeline_config"]) {
       }
       if (p_Node["depth_pipeline_config"]) {
+      }
+      if (p_Node["shadow_pipeline_config"]) {
       }
       if (p_Node["family"]) {
         l_Handle.set_family(
@@ -1205,6 +1313,62 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_highlight_pipeline_handle
 
       broadcast_observable(N(highlight_pipeline_handle));
+    }
+
+    uint64_t MaterialType::get_shadow_pipeline_handle() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_shadow_pipeline_handle
+      // LOW_CODEGEN::END::CUSTOM:GETTER_shadow_pipeline_handle
+
+      return TYPE_SOA(MaterialType, shadow_pipeline_handle, uint64_t);
+    }
+    void MaterialType::set_shadow_pipeline_handle(uint64_t p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_shadow_pipeline_handle
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_shadow_pipeline_handle
+
+      // Set new value
+      TYPE_SOA(MaterialType, shadow_pipeline_handle, uint64_t) =
+          p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_shadow_pipeline_handle
+      // LOW_CODEGEN::END::CUSTOM:SETTER_shadow_pipeline_handle
+
+      broadcast_observable(N(shadow_pipeline_handle));
+    }
+
+    bool MaterialType::casts_shadows() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_casts_shadows
+      // LOW_CODEGEN::END::CUSTOM:GETTER_casts_shadows
+
+      return TYPE_SOA(MaterialType, casts_shadows, bool);
+    }
+    void MaterialType::toggle_casts_shadows()
+    {
+      casts_shadows(!casts_shadows());
+    }
+
+    void MaterialType::casts_shadows(bool p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_casts_shadows
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_casts_shadows
+
+      // Set new value
+      TYPE_SOA(MaterialType, casts_shadows, bool) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_casts_shadows
+      // LOW_CODEGEN::END::CUSTOM:SETTER_casts_shadows
+
+      broadcast_observable(N(casts_shadows));
     }
 
     bool MaterialType::allows_picking() const
@@ -1420,6 +1584,18 @@ namespace Low {
                       Low::Renderer::GraphicsPipelineConfig);
     }
 
+    Low::Renderer::GraphicsPipelineConfig &
+    MaterialType::get_shadow_pipeline_config() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_shadow_pipeline_config
+      // LOW_CODEGEN::END::CUSTOM:GETTER_shadow_pipeline_config
+
+      return TYPE_SOA(MaterialType, shadow_pipeline_config,
+                      Low::Renderer::GraphicsPipelineConfig);
+    }
+
     Low::Renderer::MaterialTypeFamily MaterialType::get_family() const
     {
       _LOW_ASSERT(is_alive());
@@ -1526,6 +1702,12 @@ namespace Low {
 
           l_Handle.get_highlight_pipeline_config().alphaBlending =
               false;
+        }
+        {
+          l_Handle.get_shadow_pipeline_config().depthFormat =
+              ImageFormat::DEPTH;
+          l_Handle.get_shadow_pipeline_config().depthTest = true;
+          l_Handle.get_shadow_pipeline_config().alphaBlending = false;
         }
       } else if (p_Family == MaterialTypeFamily::UI) {
         l_Handle.allows_picking(false);
@@ -1761,6 +1943,12 @@ namespace Low {
             ShaderVariant::make_or_get_from_path(p_Path, "main",
                                                  l_Defines);
       }
+      {
+        Util::List<ShaderDefine> l_Defines = {{{N(SHADOW), "1"}}};
+        get_shadow_pipeline_config().vertexShader =
+            ShaderVariant::make_or_get_from_path(p_Path, "main",
+                                                 l_Defines);
+      }
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_draw_vertex_shader_path
     }
 
@@ -1775,6 +1963,12 @@ namespace Low {
       {
         Util::List<ShaderDefine> l_Defines = {{{N(HIGHLIGHT), "1"}}};
         get_highlight_pipeline_config().fragmentShader =
+            ShaderVariant::make_or_get_from_path(p_Path, "main",
+                                                 l_Defines);
+      }
+      {
+        Util::List<ShaderDefine> l_Defines = {{{N(SHADOW), "1"}}};
+        get_shadow_pipeline_config().fragmentShader =
             ShaderVariant::make_or_get_from_path(p_Path, "main",
                                                  l_Defines);
       }

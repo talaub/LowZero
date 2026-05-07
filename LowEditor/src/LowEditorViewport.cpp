@@ -3,6 +3,7 @@
 #include "LowRenderer.h"
 #include "LowRendererRenderObject.h"
 #include "LowRendererRenderScene.h"
+#include "LowRendererRenderStep.h"
 #include "LowRendererTextureState.h"
 #include "LowEditorGui.h"
 #include <imgui.h>
@@ -17,6 +18,7 @@ namespace Low {
       m_RenderView.set_render_scene(m_RenderScene);
       m_RenderView.set_dimensions(p_Dimensions);
 
+      m_RenderView.add_step_by_name(RENDERSTEP_SHADOW_PASS_NAME);
       m_RenderView.add_step_by_name(RENDERSTEP_SOLID_MATERIAL_NAME);
       m_RenderView.add_step_by_name(RENDERSTEP_SSAO_NAME);
       m_RenderView.add_step_by_name(RENDERSTEP_LIGHTCULLING_NAME);

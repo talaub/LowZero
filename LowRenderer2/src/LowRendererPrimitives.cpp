@@ -1,5 +1,6 @@
 #include "LowRendererPrimitives.h"
 
+#include "LowUtilHashing.h"
 #include "LowUtilResource.h"
 
 #include "LowRendererResourceManager.h"
@@ -29,11 +30,11 @@ namespace Low {
     }
 
     static Mesh
-    create_mesh(const Util::Name p_Name,
+    create_mesh(const Util::Name p_Name, const u64 p_UniqueId,
                 Util::List<Util::Resource::Vertex> &p_Vertices,
                 Util::List<u32> &p_Indices)
     {
-      Mesh l_Mesh = Mesh::make(p_Name);
+      Mesh l_Mesh = Mesh::make(p_Name, p_UniqueId);
       MeshGeometry l_Geometry = MeshGeometry::make(p_Name);
 
       SubmeshGeometry l_SubmeshGeometry =
@@ -116,7 +117,10 @@ namespace Low {
       l_Indices.push_back(3);
       l_Indices.push_back(0);
 
-      return create_mesh(N(PrimitiveUnitQuad), l_Vertices, l_Indices);
+      return create_mesh(
+          N(PrimitiveUnitQuad),
+          Util::make_fixed_unique_id("renderer.primitive.quad"),
+          l_Vertices, l_Indices);
     }
 
     Mesh create_cube(Math::Vector3 p_HalfExtents)
@@ -240,7 +244,10 @@ namespace Low {
         l_Indices.push_back(baseIndex + 0);
       }
 
-      return create_mesh(N(cube), l_Vertices, l_Indices);
+      return create_mesh(
+          N(cube),
+          Util::make_fixed_unique_id("renderer.primitive.cube"),
+          l_Vertices, l_Indices);
     }
 
     namespace {
@@ -432,7 +439,10 @@ namespace Low {
             l_UnitPoints[i_V], p_Radius));
       }
 
-      return create_mesh(N(IcoSphere), l_Vertices, l_Indices);
+      return create_mesh(
+          N(IcoSphere),
+          Util::make_fixed_unique_id("renderer.primitives.icosphere"),
+          l_Vertices, l_Indices);
     }
   } // namespace Renderer
 } // namespace Low

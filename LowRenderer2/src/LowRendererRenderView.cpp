@@ -96,6 +96,9 @@ namespace Low {
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderView, cavities_image,
                                  Low::Renderer::Texture))
           Low::Renderer::Texture();
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderView, shadow_atlas,
+                                 Low::Renderer::Texture))
+          Low::Renderer::Texture();
       new (ACCESSOR_TYPE_SOA_PTR(
           l_Handle, RenderView, steps,
           Low::Util::List<Low::Renderer::RenderStep>))
@@ -969,6 +972,39 @@ namespace Low {
         // End property: cavities_image
       }
       {
+        // Property: shadow_atlas
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(shadow_atlas);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderView::Data, shadow_atlas);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType =
+            Low::Renderer::Texture::IDENTIFIER;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.get_shadow_atlas();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
+                                            shadow_atlas,
+                                            Low::Renderer::Texture);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.set_shadow_atlas(
+              *(Low::Renderer::Texture *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          *((Low::Renderer::Texture *)p_Data) =
+              l_Handle.get_shadow_atlas();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: shadow_atlas
+      }
+      {
         // Property: steps
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(steps);
@@ -1486,6 +1522,9 @@ namespace Low {
       }
       if (get_cavities_image().is_alive()) {
         l_Handle.set_cavities_image(get_cavities_image());
+      }
+      if (get_shadow_atlas().is_alive()) {
+        l_Handle.set_shadow_atlas(get_shadow_atlas());
       }
       l_Handle.set_step_data(get_step_data());
       l_Handle.set_camera_dirty(is_camera_dirty());
@@ -2383,6 +2422,33 @@ namespace Low {
       broadcast_observable(N(cavities_image));
     }
 
+    Low::Renderer::Texture RenderView::get_shadow_atlas() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_shadow_atlas
+      // LOW_CODEGEN::END::CUSTOM:GETTER_shadow_atlas
+
+      return TYPE_SOA(RenderView, shadow_atlas,
+                      Low::Renderer::Texture);
+    }
+    void RenderView::set_shadow_atlas(Low::Renderer::Texture p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_shadow_atlas
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_shadow_atlas
+
+      // Set new value
+      TYPE_SOA(RenderView, shadow_atlas, Low::Renderer::Texture) =
+          p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_shadow_atlas
+      // LOW_CODEGEN::END::CUSTOM:SETTER_shadow_atlas
+
+      broadcast_observable(N(shadow_atlas));
+    }
+
     Low::Util::List<Low::Renderer::RenderStep> &
     RenderView::get_steps() const
     {
@@ -2666,6 +2732,7 @@ namespace Low {
 
       RenderView l_RenderView = make(p_Name);
 
+      l_RenderView.add_step_by_name(RENDERSTEP_SHADOW_PASS_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_SOLID_MATERIAL_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_LIGHTCULLING_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_SSAO_NAME);
