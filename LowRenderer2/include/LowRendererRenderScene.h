@@ -31,6 +31,7 @@ namespace Low {
         Low::Math::Vector3 directional_light_direction;
         Low::Math::ColorRGB directional_light_color;
         float directional_light_intensity;
+        bool directional_light_dirty;
         Low::Util::Name name;
 
         static size_t get_size()
@@ -169,6 +170,11 @@ namespace Low {
 
       float get_directional_light_intensity() const;
       void set_directional_light_intensity(float p_Value);
+
+      bool is_directional_light_dirty() const;
+      void set_directional_light_dirty(bool p_Value);
+      void toggle_directional_light_dirty();
+      void mark_directional_light_dirty();
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

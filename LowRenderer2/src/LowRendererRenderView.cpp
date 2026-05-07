@@ -2666,8 +2666,6 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_step
 
       get_steps().push_back(p_Step);
-      LOW_ASSERT(p_Step.prepare(get_id()),
-                 "Failed to add renderstep to renderview");
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_add_step
     }
 

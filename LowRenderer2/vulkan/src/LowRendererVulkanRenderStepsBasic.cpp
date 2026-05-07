@@ -2995,13 +2995,6 @@ namespace Low {
         bool initialized = false;
       } g_ShadowStepData;
 
-      struct ShadowPassViewData
-      {
-        AllocatedBuffer directional_shadow_buffer;
-        AllocatedBuffer point_light_shadow_buffer;
-        bool descriptors_written = false;
-      };
-
       static bool initialize_shadow_pass_renderstep()
       {
         RenderStep l_RenderStep =
@@ -3016,18 +3009,18 @@ namespace Low {
         l_RenderStep.set_prepare_callback(
             [](RenderStep p_RenderStep,
                RenderView p_RenderView) -> bool {
-              ShadowPassViewData *l_Data = new ShadowPassViewData;
-              p_RenderView.get_step_data()[p_RenderStep.get_index()] =
-                  l_Data;
-
-              l_Data->directional_shadow_buffer =
+              ViewInfo l_ViewInfo =
+                  p_RenderView.get_view_info_handle();
+              ShadowPassViewData &l_Data =
+                  l_ViewInfo.get_shadow_pass_data();
+              l_Data.directional_shadow_buffer =
                   BufferUtil::create_buffer(
                       sizeof(DirectionalLightShadowInfo),
                       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                           VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                       VMA_MEMORY_USAGE_GPU_ONLY);
 
-              l_Data->point_light_shadow_buffer =
+              l_Data.point_light_shadow_buffer =
                   BufferUtil::create_buffer(
                       sizeof(PointLightShadowInfo) * POINTLIGHT_COUNT,
                       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
@@ -3040,497 +3033,346 @@ namespace Low {
         l_RenderStep.set_teardown_callback(
             [](RenderStep p_RenderStep,
                RenderView p_RenderView) -> bool {
-              ShadowPassViewData *l_Data =
-                  (ShadowPassViewData *)GET_STEP_DATA(p_RenderView,
-                                                      p_RenderStep);
-              if (l_Data) {
-                if (l_Data->directional_shadow_buffer.buffer !=
-                    VK_NULL_HANDLE) {
-                  BufferUtil::destroy_buffer(
-                      l_Data->directional_shadow_buffer);
-                }
-                if (l_Data->point_light_shadow_buffer.buffer !=
-                    VK_NULL_HANDLE) {
-                  BufferUtil::destroy_buffer(
-                      l_Data->point_light_shadow_buffer);
-                }
-                delete l_Data;
-                p_RenderView.get_step_data()[p_RenderStep.get_index()] =
-                    nullptr;
+              ViewInfo l_ViewInfo =
+                  p_RenderView.get_view_info_handle();
+              ShadowPassViewData &l_Data =
+                  l_ViewInfo.get_shadow_pass_data();
+              if (l_Data.directional_shadow_buffer.buffer !=
+                  VK_NULL_HANDLE) {
+                BufferUtil::destroy_buffer(
+                    l_Data.directional_shadow_buffer);
+              }
+              if (l_Data.point_light_shadow_buffer.buffer !=
+                  VK_NULL_HANDLE) {
+                BufferUtil::destroy_buffer(
+                    l_Data.point_light_shadow_buffer);
               }
               return true;
             });
 
-        l_RenderStep.set_execute_callback(
-            [](RenderStep p_RenderStep, float p_Delta,
-               RenderView p_RenderView) -> bool {
-              VkCommandBuffer l_Cmd =
-                  Global::get_current_command_buffer();
-              ViewInfo l_ViewInfo = p_RenderView.get_view_info_handle();
-              RenderScene l_RenderScene =
-                  p_RenderView.get_render_scene();
+        l_RenderStep.set_execute_callback([](RenderStep p_RenderStep,
+                                             float p_Delta,
+                                             RenderView p_RenderView)
+                                              -> bool {
+          VkCommandBuffer l_Cmd =
+              Global::get_current_command_buffer();
+          ViewInfo l_ViewInfo = p_RenderView.get_view_info_handle();
+          RenderScene l_RenderScene = p_RenderView.get_render_scene();
 
-              ShadowPassViewData *l_Data =
-                  (ShadowPassViewData *)GET_STEP_DATA(p_RenderView,
-                                                      p_RenderStep);
+          ShadowPassViewData &l_Data =
+              l_ViewInfo.get_shadow_pass_data();
 
-              if (!l_Data->descriptors_written) {
-                DescriptorUtil::DescriptorWriter l_Writer;
-                l_Writer.write_buffer(
-                    7, l_Data->directional_shadow_buffer.buffer,
-                    sizeof(DirectionalLightShadowInfo), 0,
-                    VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-                l_Writer.write_buffer(
-                    8, l_Data->point_light_shadow_buffer.buffer,
-                    sizeof(PointLightShadowInfo) * POINTLIGHT_COUNT,
-                    0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-                l_Writer.update_set(
-                    Global::get_device(),
-                    l_ViewInfo.get_view_data_descriptor_set());
-                l_Data->descriptors_written = true;
+          if (!l_Data.descriptors_written) {
+            DescriptorUtil::DescriptorWriter l_Writer;
+            l_Writer.write_buffer(
+                7, l_Data.directional_shadow_buffer.buffer,
+                sizeof(DirectionalLightShadowInfo), 0,
+                VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            l_Writer.write_buffer(
+                8, l_Data.point_light_shadow_buffer.buffer,
+                sizeof(PointLightShadowInfo) * POINTLIGHT_COUNT, 0,
+                VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            l_Writer.update_set(
+                Global::get_device(),
+                l_ViewInfo.get_view_data_descriptor_set());
+            l_Data.descriptors_written = true;
+          }
+
+          VK_RENDERDOC_SECTION_BEGIN("Shadow pass",
+                                     SINGLE_ARG({0.2f, 0.2f, 0.8f}));
+
+          PointLightShadowInfo l_PointInfos[POINTLIGHT_COUNT]{};
+
+          u32 l_ShadowLightCount = 0;
+          for (u32 li = 0;
+               li < PointLight::living_count() &&
+               l_ShadowLightCount < MAX_SHADOW_POINTLIGHTS;
+               ++li) {
+            PointLight i_PL = PointLight::living_instances()[li];
+            if (!i_PL.is_alive()) {
+              continue;
+            }
+            if (i_PL.get_render_scene_handle() !=
+                l_RenderScene.get_id()) {
+              continue;
+            }
+
+            const u32 l_PointLightSlot = i_PL.get_slot();
+            if (l_PointLightSlot >= POINTLIGHT_COUNT) {
+              continue;
+            }
+
+            const u32 l_ShadowSlot = l_ShadowLightCount++;
+            PointLightShadowInfo &l_PLInfo =
+                l_PointInfos[l_PointLightSlot];
+            l_PLInfo.casts_shadow = 1;
+
+            const Math::Vector3 l_PLPos = i_PL.get_world_position();
+            const float l_PLRange = i_PL.get_range();
+            const float l_PLNear = 0.1f;
+
+            Math::Matrix4x4 l_PLProj = glm::perspective(
+                glm::radians(90.0f), 1.0f, l_PLNear, l_PLRange);
+
+            const Math::Vector3 l_FaceDirs[6] = {
+                {1, 0, 0},  {-1, 0, 0}, {0, 1, 0},
+                {0, -1, 0}, {0, 0, 1},  {0, 0, -1}};
+            const Math::Vector3 l_FaceUps[6] = {
+                {0, -1, 0}, {0, -1, 0}, {0, 0, 1},
+                {0, 0, -1}, {0, -1, 0}, {0, -1, 0}};
+
+            const float l_AtlasF = (float)SHADOW_ATLAS_SIZE;
+            const float l_PTileF = (float)SHADOW_TILE_SIZE_POINT;
+            const u32 l_TilesPerRow =
+                SHADOW_ATLAS_SIZE / SHADOW_TILE_SIZE_POINT;
+
+            for (int f = 0; f < 6; ++f) {
+              l_PLInfo.light_space[f] =
+                  l_PLProj * glm::lookAt(l_PLPos,
+                                         l_PLPos + l_FaceDirs[f],
+                                         l_FaceUps[f]);
+
+              u32 l_TileIdx = l_ShadowSlot * 6 + f;
+              float l_TileX =
+                  (float)(l_TileIdx % l_TilesPerRow) * l_PTileF;
+              float l_TileY =
+                  (float)SHADOW_TILE_SIZE_CSM +
+                  (float)(l_TileIdx / l_TilesPerRow) * l_PTileF;
+              l_PLInfo.tiles[f].atlas_offset = {l_TileX / l_AtlasF,
+                                                l_TileY / l_AtlasF};
+              l_PLInfo.tiles[f].atlas_scale = {l_PTileF / l_AtlasF,
+                                               l_PTileF / l_AtlasF};
+            }
+          }
+
+          vkCmdUpdateBuffer(
+              l_Cmd, l_Data.point_light_shadow_buffer.buffer, 0,
+              sizeof(PointLightShadowInfo) * POINTLIGHT_COUNT,
+              l_PointInfos);
+
+          VkBufferMemoryBarrier2 l_ShadowBufferBarriers[2]{};
+          l_ShadowBufferBarriers[0].sType =
+              VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
+          l_ShadowBufferBarriers[0].srcStageMask =
+              VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+          l_ShadowBufferBarriers[0].srcAccessMask =
+              VK_ACCESS_2_TRANSFER_WRITE_BIT;
+          l_ShadowBufferBarriers[0].dstStageMask =
+              VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+          l_ShadowBufferBarriers[0].dstAccessMask =
+              VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
+          l_ShadowBufferBarriers[0].buffer =
+              l_Data.directional_shadow_buffer.buffer;
+          l_ShadowBufferBarriers[0].offset = 0;
+          l_ShadowBufferBarriers[0].size =
+              sizeof(DirectionalLightShadowInfo);
+
+          l_ShadowBufferBarriers[1] = l_ShadowBufferBarriers[0];
+          l_ShadowBufferBarriers[1].buffer =
+              l_Data.point_light_shadow_buffer.buffer;
+          l_ShadowBufferBarriers[1].size =
+              sizeof(PointLightShadowInfo) * POINTLIGHT_COUNT;
+
+          VkDependencyInfo l_ShadowBufferDependency{};
+          l_ShadowBufferDependency.sType =
+              VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+          l_ShadowBufferDependency.bufferMemoryBarrierCount = 2;
+          l_ShadowBufferDependency.pBufferMemoryBarriers =
+              l_ShadowBufferBarriers;
+          vkCmdPipelineBarrier2(l_Cmd, &l_ShadowBufferDependency);
+
+          Image l_AtlasImage = p_RenderView.get_shadow_atlas()
+                                   .get_gpu()
+                                   .get_data_handle();
+
+          ImageUtil::cmd_transition(
+              l_Cmd, l_AtlasImage,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+              VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+
+          VkClearValue l_DepthClear{};
+          l_DepthClear.depthStencil.depth = 1.0f;
+          l_DepthClear.depthStencil.stencil = 0;
+
+          VkRenderingAttachmentInfo l_DepthAttachment =
+              InitUtil::attachment_info(
+                  l_AtlasImage.get_allocated_image().imageView,
+                  nullptr, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+
+          VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
+              {SHADOW_ATLAS_SIZE, SHADOW_ATLAS_SIZE}, nullptr, 0,
+              &l_DepthAttachment);
+
+          vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
+
+          vkCmdBindIndexBuffer(
+              l_Cmd, Global::get_mesh_index_buffer().m_Buffer.buffer,
+              0, VK_INDEX_TYPE_UINT32);
+
+          auto draw_scene_depth = [&](const Math::Matrix4x4
+                                          &p_LightSpace,
+                                      u32 p_TileX, u32 p_TileY,
+                                      u32 p_TileW, u32 p_TileH) {
+            VkClearAttachment l_Clear{};
+            l_Clear.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+            l_Clear.clearValue = l_DepthClear;
+
+            VkClearRect l_ClearRect{};
+            l_ClearRect.rect.offset = {(int32_t)p_TileX,
+                                       (int32_t)p_TileY};
+            l_ClearRect.rect.extent = {p_TileW, p_TileH};
+            l_ClearRect.baseArrayLayer = 0;
+            l_ClearRect.layerCount = 1;
+
+            vkCmdClearAttachments(l_Cmd, 1, &l_Clear, 1,
+                                  &l_ClearRect);
+
+            VkViewport l_Viewport{};
+            l_Viewport.x = (float)p_TileX;
+            l_Viewport.y = (float)p_TileY;
+            l_Viewport.width = (float)p_TileW;
+            l_Viewport.height = (float)p_TileH;
+            l_Viewport.minDepth = 0.0f;
+            l_Viewport.maxDepth = 1.0f;
+            vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
+
+            VkRect2D l_Scissor{};
+            l_Scissor.offset = {(int32_t)p_TileX, (int32_t)p_TileY};
+            l_Scissor.extent = {p_TileW, p_TileH};
+            vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
+
+            MaterialType l_CurrentMaterialType =
+                Low::Util::Handle::DEAD;
+
+            for (auto it = p_RenderView.get_render_scene()
+                               .get_draw_commands()
+                               .begin();
+                 it != p_RenderView.get_render_scene()
+                           .get_draw_commands()
+                           .end();
+                 ++it) {
+              if (!it->is_alive() ||
+                  !it->get_render_object().is_alive()) {
+                continue;
+              }
+              if (it->get_render_object().get_mesh().get_state() !=
+                  MeshState::LOADED) {
+                continue;
               }
 
-              VK_RENDERDOC_SECTION_BEGIN("Shadow pass",
-                                         SINGLE_ARG({0.2f, 0.2f, 0.8f}));
-
-              const float l_CamFovY =
-                  glm::radians(p_RenderView.get_camera_fov());
-              const float l_Aspect =
-                  (float)p_RenderView.get_dimensions().x /
-                  (float)p_RenderView.get_dimensions().y;
-              const Math::Vector3 l_CamPos =
-                  p_RenderView.get_camera_position();
-              const Math::Vector3 l_CamDir =
-                  glm::normalize(p_RenderView.get_camera_direction());
-              const Math::Vector3 l_CamRight =
-                  glm::normalize(glm::cross(l_CamDir, LOW_VECTOR3_UP));
-              const Math::Vector3 l_CamUp =
-                  glm::cross(l_CamRight, l_CamDir);
-
-              const float l_NearPlane = 1.0f;
-              const float l_FarPlane = 100.0f;
-              const float l_Lambda = 0.75f;
-
-              float l_CascadeSplits[SHADOW_CSM_CASCADE_COUNT];
-              float l_CascadeBegins[SHADOW_CSM_CASCADE_COUNT];
-              l_CascadeBegins[0] = l_NearPlane;
-              for (int i = 0; i < SHADOW_CSM_CASCADE_COUNT; ++i) {
-                float t = (float)(i + 1) / SHADOW_CSM_CASCADE_COUNT;
-                float l_Uniform =
-                    l_NearPlane + (l_FarPlane - l_NearPlane) * t;
-                float l_Log =
-                    l_NearPlane *
-                    powf(l_FarPlane / l_NearPlane, t);
-                l_CascadeSplits[i] =
-                    l_Lambda * l_Log + (1.0f - l_Lambda) * l_Uniform;
-                if (i + 1 < SHADOW_CSM_CASCADE_COUNT) {
-                  l_CascadeBegins[i + 1] = l_CascadeSplits[i];
-                }
+              Material i_Material = it->get_material();
+              if (!i_Material.is_alive()) {
+                i_Material = it->get_render_object().get_material();
+              }
+              if (!i_Material.is_alive()) {
+                continue;
               }
 
-              const Math::Vector3 l_LightDir =
-                  glm::normalize(l_RenderScene.is_alive()
-                                     ? l_RenderScene
-                                           .get_directional_light_direction()
-                                     : Math::Vector3(0.0f, -1.0f, 0.0f));
-
-              DirectionalLightShadowInfo l_DirInfo{};
-              l_DirInfo.cascade_splits = {l_CascadeSplits[0],
-                                          l_CascadeSplits[1],
-                                          l_CascadeSplits[2],
-                                          l_CascadeSplits[3]};
-
-              for (int i = 0; i < SHADOW_CSM_CASCADE_COUNT; ++i) {
-                float l_Near = l_CascadeBegins[i];
-                float l_Far = l_CascadeSplits[i];
-
-                float l_HalfH = tanf(l_CamFovY * 0.5f);
-                float l_HalfW = l_HalfH * l_Aspect;
-
-                Math::Vector3 l_Corners[8];
-                l_Corners[0] = l_CamPos + l_Near * l_CamDir +
-                               l_Near * l_HalfH * l_CamUp +
-                               l_Near * l_HalfW * l_CamRight;
-                l_Corners[1] = l_CamPos + l_Near * l_CamDir +
-                               l_Near * l_HalfH * l_CamUp -
-                               l_Near * l_HalfW * l_CamRight;
-                l_Corners[2] = l_CamPos + l_Near * l_CamDir -
-                               l_Near * l_HalfH * l_CamUp +
-                               l_Near * l_HalfW * l_CamRight;
-                l_Corners[3] = l_CamPos + l_Near * l_CamDir -
-                               l_Near * l_HalfH * l_CamUp -
-                               l_Near * l_HalfW * l_CamRight;
-                l_Corners[4] = l_CamPos + l_Far * l_CamDir +
-                               l_Far * l_HalfH * l_CamUp +
-                               l_Far * l_HalfW * l_CamRight;
-                l_Corners[5] = l_CamPos + l_Far * l_CamDir +
-                               l_Far * l_HalfH * l_CamUp -
-                               l_Far * l_HalfW * l_CamRight;
-                l_Corners[6] = l_CamPos + l_Far * l_CamDir -
-                               l_Far * l_HalfH * l_CamUp +
-                               l_Far * l_HalfW * l_CamRight;
-                l_Corners[7] = l_CamPos + l_Far * l_CamDir -
-                               l_Far * l_HalfH * l_CamUp -
-                               l_Far * l_HalfW * l_CamRight;
-
-                Math::Vector3 l_Center(0.0f);
-                for (auto &c : l_Corners) {
-                  l_Center += c;
-                }
-                l_Center /= 8.0f;
-
-                Math::Matrix4x4 l_LightView = glm::lookAt(
-                    l_Center - l_LightDir * 150.0f, l_Center,
-                    Math::Vector3(0.0f, 1.0f, 0.0f));
-
-                float l_MinX = 1e30f, l_MaxX = -1e30f;
-                float l_MinY = 1e30f, l_MaxY = -1e30f;
-                float l_MinZ = 1e30f, l_MaxZ = -1e30f;
-                for (auto &c : l_Corners) {
-                  Math::Vector4 l_Ls =
-                      l_LightView * Math::Vector4(c, 1.0f);
-                  l_MinX = glm::min(l_MinX, l_Ls.x);
-                  l_MaxX = glm::max(l_MaxX, l_Ls.x);
-                  l_MinY = glm::min(l_MinY, l_Ls.y);
-                  l_MaxY = glm::max(l_MaxY, l_Ls.y);
-                  l_MinZ = glm::min(l_MinZ, l_Ls.z);
-                  l_MaxZ = glm::max(l_MaxZ, l_Ls.z);
-                }
-                float l_ZPad = 50.0f;
-                l_MinZ -= l_ZPad;
-                l_MaxZ += l_ZPad;
-
-                const float l_LightNear =
-                    glm::max(0.1f, -l_MaxZ);
-                const float l_LightFar =
-                    glm::max(l_LightNear + 1.0f, -l_MinZ);
-
-                Math::Matrix4x4 l_LightProj =
-                    glm::ortho(l_MinX, l_MaxX, l_MinY, l_MaxY,
-                               l_LightNear, l_LightFar);
-                l_LightProj[1][1] *= -1.0f;
-
-                l_DirInfo.light_space[i] = l_LightProj * l_LightView;
-
-                const float l_AtlasF = (float)SHADOW_ATLAS_SIZE;
-                const float l_TileF = (float)SHADOW_TILE_SIZE_CSM;
-                l_DirInfo.tiles[i].atlas_offset = {
-                    (i * l_TileF) / l_AtlasF, 0.0f};
-                l_DirInfo.tiles[i].atlas_scale = {l_TileF / l_AtlasF,
-                                                  l_TileF / l_AtlasF};
+              MaterialType i_MaterialType =
+                  i_Material.get_material_type();
+              if (!i_MaterialType.is_alive() ||
+                  !i_MaterialType.casts_shadows()) {
+                continue;
               }
 
-              vkCmdUpdateBuffer(l_Cmd,
-                                l_Data->directional_shadow_buffer.buffer,
-                                0, sizeof(DirectionalLightShadowInfo),
-                                &l_DirInfo);
-
-              PointLightShadowInfo l_PointInfos[POINTLIGHT_COUNT]{};
-
-              u32 l_ShadowLightCount = 0;
-              for (u32 li = 0;
-                   li < PointLight::living_count() &&
-                   l_ShadowLightCount < MAX_SHADOW_POINTLIGHTS;
-                   ++li) {
-                PointLight i_PL = PointLight::living_instances()[li];
-                if (!i_PL.is_alive()) {
-                  continue;
-                }
-                if (i_PL.get_render_scene_handle() !=
-                    l_RenderScene.get_id()) {
-                  continue;
-                }
-
-                const u32 l_PointLightSlot = i_PL.get_slot();
-                if (l_PointLightSlot >= POINTLIGHT_COUNT) {
-                  continue;
-                }
-
-                const u32 l_ShadowSlot = l_ShadowLightCount++;
-                PointLightShadowInfo &l_PLInfo =
-                    l_PointInfos[l_PointLightSlot];
-                l_PLInfo.casts_shadow = 1;
-
-                const Math::Vector3 l_PLPos =
-                    i_PL.get_world_position();
-                const float l_PLRange = i_PL.get_range();
-                const float l_PLNear = 0.1f;
-
-                Math::Matrix4x4 l_PLProj = glm::perspective(
-                    glm::radians(90.0f), 1.0f, l_PLNear, l_PLRange);
-
-                const Math::Vector3 l_FaceDirs[6] = {
-                    {1, 0, 0}, {-1, 0, 0}, {0, 1, 0},
-                    {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
-                const Math::Vector3 l_FaceUps[6] = {
-                    {0, -1, 0}, {0, -1, 0}, {0, 0, 1},
-                    {0, 0, -1}, {0, -1, 0}, {0, -1, 0}};
-
-                const float l_AtlasF = (float)SHADOW_ATLAS_SIZE;
-                const float l_PTileF = (float)SHADOW_TILE_SIZE_POINT;
-                const u32 l_TilesPerRow =
-                    SHADOW_ATLAS_SIZE / SHADOW_TILE_SIZE_POINT;
-
-                for (int f = 0; f < 6; ++f) {
-                  l_PLInfo.light_space[f] =
-                      l_PLProj *
-                      glm::lookAt(l_PLPos, l_PLPos + l_FaceDirs[f],
-                                  l_FaceUps[f]);
-
-                  u32 l_TileIdx = l_ShadowSlot * 6 + f;
-                  float l_TileX = (float)(l_TileIdx % l_TilesPerRow) *
-                                  l_PTileF;
-                  float l_TileY = (float)SHADOW_TILE_SIZE_CSM +
-                                  (float)(l_TileIdx / l_TilesPerRow) *
-                                      l_PTileF;
-                  l_PLInfo.tiles[f].atlas_offset = {l_TileX / l_AtlasF,
-                                                    l_TileY / l_AtlasF};
-                  l_PLInfo.tiles[f].atlas_scale = {l_PTileF / l_AtlasF,
-                                                   l_PTileF / l_AtlasF};
-                }
+              Pipeline i_ShadowPipeline =
+                  i_MaterialType.get_shadow_pipeline_handle();
+              if (!i_ShadowPipeline.is_alive()) {
+                continue;
               }
 
-              vkCmdUpdateBuffer(
-                  l_Cmd, l_Data->point_light_shadow_buffer.buffer, 0,
-                  sizeof(PointLightShadowInfo) * POINTLIGHT_COUNT,
-                  l_PointInfos);
-
-              VkBufferMemoryBarrier2 l_ShadowBufferBarriers[2]{};
-              l_ShadowBufferBarriers[0].sType =
-                  VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
-              l_ShadowBufferBarriers[0].srcStageMask =
-                  VK_PIPELINE_STAGE_2_TRANSFER_BIT;
-              l_ShadowBufferBarriers[0].srcAccessMask =
-                  VK_ACCESS_2_TRANSFER_WRITE_BIT;
-              l_ShadowBufferBarriers[0].dstStageMask =
-                  VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
-              l_ShadowBufferBarriers[0].dstAccessMask =
-                  VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
-              l_ShadowBufferBarriers[0].buffer =
-                  l_Data->directional_shadow_buffer.buffer;
-              l_ShadowBufferBarriers[0].offset = 0;
-              l_ShadowBufferBarriers[0].size =
-                  sizeof(DirectionalLightShadowInfo);
-
-              l_ShadowBufferBarriers[1] = l_ShadowBufferBarriers[0];
-              l_ShadowBufferBarriers[1].buffer =
-                  l_Data->point_light_shadow_buffer.buffer;
-              l_ShadowBufferBarriers[1].size =
-                  sizeof(PointLightShadowInfo) * POINTLIGHT_COUNT;
-
-              VkDependencyInfo l_ShadowBufferDependency{};
-              l_ShadowBufferDependency.sType =
-                  VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-              l_ShadowBufferDependency.bufferMemoryBarrierCount = 2;
-              l_ShadowBufferDependency.pBufferMemoryBarriers =
-                  l_ShadowBufferBarriers;
-              vkCmdPipelineBarrier2(l_Cmd,
-                                    &l_ShadowBufferDependency);
-
-              Image l_AtlasImage =
-                  p_RenderView.get_shadow_atlas()
-                      .get_gpu()
-                      .get_data_handle();
-
-              ImageUtil::cmd_transition(
-                  l_Cmd, l_AtlasImage,
-                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                  VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-
-              VkClearValue l_DepthClear{};
-              l_DepthClear.depthStencil.depth = 1.0f;
-              l_DepthClear.depthStencil.stencil = 0;
-
-              VkRenderingAttachmentInfo l_DepthAttachment =
-                  InitUtil::attachment_info(
-                      l_AtlasImage.get_allocated_image().imageView,
-                      nullptr,
-                      VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-
-              VkRenderingInfo l_RenderInfo =
-                  InitUtil::rendering_info({SHADOW_ATLAS_SIZE, SHADOW_ATLAS_SIZE},
-                                          nullptr, 0, &l_DepthAttachment);
-
-              vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
-
-              vkCmdBindIndexBuffer(
-                  l_Cmd,
-                  Global::get_mesh_index_buffer().m_Buffer.buffer,
-                  0, VK_INDEX_TYPE_UINT32);
-
-              auto draw_scene_depth =
-                  [&](const Math::Matrix4x4 &p_LightSpace,
-                      u32 p_TileX, u32 p_TileY, u32 p_TileW,
-                      u32 p_TileH) {
-                    VkClearAttachment l_Clear{};
-                    l_Clear.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-                    l_Clear.clearValue = l_DepthClear;
-
-                    VkClearRect l_ClearRect{};
-                    l_ClearRect.rect.offset = {(int32_t)p_TileX,
-                                               (int32_t)p_TileY};
-                    l_ClearRect.rect.extent = {p_TileW, p_TileH};
-                    l_ClearRect.baseArrayLayer = 0;
-                    l_ClearRect.layerCount = 1;
-
-                    vkCmdClearAttachments(l_Cmd, 1, &l_Clear, 1,
-                                          &l_ClearRect);
-
-                    VkViewport l_Viewport{};
-                    l_Viewport.x = (float)p_TileX;
-                    l_Viewport.y = (float)p_TileY;
-                    l_Viewport.width = (float)p_TileW;
-                    l_Viewport.height = (float)p_TileH;
-                    l_Viewport.minDepth = 0.0f;
-                    l_Viewport.maxDepth = 1.0f;
-                    vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
-
-                    VkRect2D l_Scissor{};
-                    l_Scissor.offset = {(int32_t)p_TileX,
-                                        (int32_t)p_TileY};
-                    l_Scissor.extent = {p_TileW, p_TileH};
-                    vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
-
-                    MaterialType l_CurrentMaterialType =
-                        Low::Util::Handle::DEAD;
-
-                    for (auto it =
-                             p_RenderView.get_render_scene()
-                                 .get_draw_commands()
-                                 .begin();
-                         it != p_RenderView.get_render_scene()
-                                   .get_draw_commands()
-                                   .end();
-                         ++it) {
-                      if (!it->is_alive() ||
-                          !it->get_render_object().is_alive()) {
-                        continue;
-                      }
-                      if (it->get_render_object()
-                              .get_mesh()
-                              .get_state() != MeshState::LOADED) {
-                        continue;
-                      }
-
-                      Material i_Material = it->get_material();
-                      if (!i_Material.is_alive()) {
-                        i_Material =
-                            it->get_render_object().get_material();
-                      }
-                      if (!i_Material.is_alive()) {
-                        continue;
-                      }
-
-                      MaterialType i_MaterialType =
-                          i_Material.get_material_type();
-                      if (!i_MaterialType.is_alive() ||
-                          !i_MaterialType.casts_shadows()) {
-                        continue;
-                      }
-
-                      Pipeline i_ShadowPipeline =
-                          i_MaterialType.get_shadow_pipeline_handle();
-                      if (!i_ShadowPipeline.is_alive()) {
-                        continue;
-                      }
-
-                      GpuSubmesh i_GpuSubmesh = it->get_submesh();
-                      if (!i_GpuSubmesh.is_alive()) {
-                        continue;
-                      }
-
-                      if (i_MaterialType != l_CurrentMaterialType) {
-                        l_CurrentMaterialType = i_MaterialType;
-
-                        vkCmdBindPipeline(
-                            l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            i_ShadowPipeline.get());
-
-                        VkDescriptorSet l_GlobalSet =
-                            Global::get_global_descriptor_set();
-                        vkCmdBindDescriptorSets(
-                            l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            i_ShadowPipeline.get_layout().get(), 0, 1,
-                            &l_GlobalSet, 0, nullptr);
-                      }
-
-                      ShadowPassPushConstants l_Push{};
-                      l_Push.renderObjectSlot = it->get_slot();
-                      l_Push.lightSpaceMatrix = p_LightSpace;
-
-                      vkCmdPushConstants(
-                          l_Cmd,
-                          i_ShadowPipeline.get_layout().get(),
-                          VK_SHADER_STAGE_VERTEX_BIT, 0,
-                          sizeof(ShadowPassPushConstants), &l_Push);
-
-                      vkCmdDrawIndexed(
-                          l_Cmd, i_GpuSubmesh.get_index_count(), 1,
-                          i_GpuSubmesh.get_index_start(),
-                          i_GpuSubmesh.get_vertex_start(), 0);
-                    }
-                  };
-
-              for (int i = 0; i < SHADOW_CSM_CASCADE_COUNT; ++i) {
-                u32 l_TileX = i * SHADOW_TILE_SIZE_CSM;
-                draw_scene_depth(l_DirInfo.light_space[i], l_TileX, 0,
-                                 SHADOW_TILE_SIZE_CSM,
-                                 SHADOW_TILE_SIZE_CSM);
+              GpuSubmesh i_GpuSubmesh = it->get_submesh();
+              if (!i_GpuSubmesh.is_alive()) {
+                continue;
               }
 
-              u32 l_PLRenderCount = 0;
-              for (u32 li = 0;
-                   li < PointLight::living_count() &&
-                   l_PLRenderCount < MAX_SHADOW_POINTLIGHTS;
-                   ++li) {
-                PointLight i_PL = PointLight::living_instances()[li];
-                if (!i_PL.is_alive()) {
-                  continue;
-                }
-                if (i_PL.get_render_scene_handle() !=
-                    l_RenderScene.get_id()) {
-                  continue;
-                }
+              if (i_MaterialType != l_CurrentMaterialType) {
+                l_CurrentMaterialType = i_MaterialType;
 
-                const u32 l_PointLightSlot = i_PL.get_slot();
-                if (l_PointLightSlot >= POINTLIGHT_COUNT) {
-                  continue;
-                }
+                vkCmdBindPipeline(l_Cmd,
+                                  VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                  i_ShadowPipeline.get());
 
-                const u32 l_ShadowSlot = l_PLRenderCount++;
-                const u32 l_TilesPerRow =
-                    SHADOW_ATLAS_SIZE / SHADOW_TILE_SIZE_POINT;
-
-                for (int f = 0; f < 6; ++f) {
-                  u32 l_TileIdx = l_ShadowSlot * 6 + f;
-                  u32 l_TileX =
-                      (l_TileIdx % l_TilesPerRow) *
-                      SHADOW_TILE_SIZE_POINT;
-                  u32 l_TileY =
-                      SHADOW_TILE_SIZE_CSM +
-                      (l_TileIdx / l_TilesPerRow) *
-                          SHADOW_TILE_SIZE_POINT;
-
-                  draw_scene_depth(
-                                   l_PointInfos[l_PointLightSlot]
-                                       .light_space[f],
-                                   l_TileX, l_TileY,
-                                   SHADOW_TILE_SIZE_POINT,
-                                   SHADOW_TILE_SIZE_POINT);
-                }
+                VkDescriptorSet l_GlobalSet =
+                    Global::get_global_descriptor_set();
+                vkCmdBindDescriptorSets(
+                    l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    i_ShadowPipeline.get_layout().get(), 0, 1,
+                    &l_GlobalSet, 0, nullptr);
               }
 
-              vkCmdEndRendering(l_Cmd);
+              ShadowPassPushConstants l_Push{};
+              l_Push.renderObjectSlot = it->get_slot();
+              l_Push.lightSpaceMatrix = p_LightSpace;
 
-              ImageUtil::cmd_transition(
-                  l_Cmd, l_AtlasImage,
-                  VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+              vkCmdPushConstants(
+                  l_Cmd, i_ShadowPipeline.get_layout().get(),
+                  VK_SHADER_STAGE_VERTEX_BIT, 0,
+                  sizeof(ShadowPassPushConstants), &l_Push);
 
-              VK_RENDERDOC_SECTION_END();
+              vkCmdDrawIndexed(l_Cmd, i_GpuSubmesh.get_index_count(),
+                               1, i_GpuSubmesh.get_index_start(),
+                               i_GpuSubmesh.get_vertex_start(), 0);
+            }
+          };
 
-              return true;
-            });
+          for (int i = 0; i < SHADOW_CSM_CASCADE_COUNT; ++i) {
+            u32 l_TileX = i * SHADOW_TILE_SIZE_CSM;
+            draw_scene_depth(
+                l_ViewInfo.get_directional_light_shadow_info()
+                    .light_space[i],
+                l_TileX, 0, SHADOW_TILE_SIZE_CSM,
+                SHADOW_TILE_SIZE_CSM);
+          }
+
+          u32 l_PLRenderCount = 0;
+          for (u32 li = 0; li < PointLight::living_count() &&
+                           l_PLRenderCount < MAX_SHADOW_POINTLIGHTS;
+               ++li) {
+            PointLight i_PL = PointLight::living_instances()[li];
+            if (!i_PL.is_alive()) {
+              continue;
+            }
+            if (i_PL.get_render_scene_handle() !=
+                l_RenderScene.get_id()) {
+              continue;
+            }
+
+            const u32 l_PointLightSlot = i_PL.get_slot();
+            if (l_PointLightSlot >= POINTLIGHT_COUNT) {
+              continue;
+            }
+
+            const u32 l_ShadowSlot = l_PLRenderCount++;
+            const u32 l_TilesPerRow =
+                SHADOW_ATLAS_SIZE / SHADOW_TILE_SIZE_POINT;
+
+            for (int f = 0; f < 6; ++f) {
+              u32 l_TileIdx = l_ShadowSlot * 6 + f;
+              u32 l_TileX = (l_TileIdx % l_TilesPerRow) *
+                            SHADOW_TILE_SIZE_POINT;
+              u32 l_TileY =
+                  SHADOW_TILE_SIZE_CSM + (l_TileIdx / l_TilesPerRow) *
+                                             SHADOW_TILE_SIZE_POINT;
+
+              draw_scene_depth(
+                  l_PointInfos[l_PointLightSlot].light_space[f],
+                  l_TileX, l_TileY, SHADOW_TILE_SIZE_POINT,
+                  SHADOW_TILE_SIZE_POINT);
+            }
+          }
+
+          vkCmdEndRendering(l_Cmd);
+
+          ImageUtil::cmd_transition(
+              l_Cmd, l_AtlasImage,
+              VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+          VK_RENDERDOC_SECTION_END();
+
+          return true;
+        });
 
         return true;
       }

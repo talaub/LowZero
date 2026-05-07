@@ -56,6 +56,12 @@ namespace Low {
             ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
         l_Handle.m_Data.m_Type = ViewInfo::ms_TypeId;
 
+        new (ACCESSOR_TYPE_SOA_PTR(
+            l_Handle, ViewInfo, shadow_pass_data, ShadowPassViewData))
+            ShadowPassViewData();
+        new (ACCESSOR_TYPE_SOA_PTR(
+            l_Handle, ViewInfo, directional_light_shadow_info,
+            DirectionalLightShadowInfo)) DirectionalLightShadowInfo();
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, ViewInfo,
                                    view_data_buffer, AllocatedBuffer))
             AllocatedBuffer();
@@ -261,6 +267,72 @@ namespace Low {
         l_TypeInfo.get_living_count = &ViewInfo::living_count;
         l_TypeInfo.component = false;
         l_TypeInfo.uiComponent = false;
+        {
+          // Property: shadow_pass_data
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(shadow_pass_data);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(ViewInfo::Data, shadow_pass_data);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            ViewInfo l_Handle = p_Handle.get_id();
+            l_Handle.get_shadow_pass_data();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ViewInfo,
+                                              shadow_pass_data,
+                                              ShadowPassViewData);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            ViewInfo l_Handle = p_Handle.get_id();
+            l_Handle.set_shadow_pass_data(
+                *(ShadowPassViewData *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            ViewInfo l_Handle = p_Handle.get_id();
+            *((ShadowPassViewData *)p_Data) =
+                l_Handle.get_shadow_pass_data();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: shadow_pass_data
+        }
+        {
+          // Property: directional_light_shadow_info
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(directional_light_shadow_info);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(ViewInfo::Data, directional_light_shadow_info);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            ViewInfo l_Handle = p_Handle.get_id();
+            l_Handle.get_directional_light_shadow_info();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, ViewInfo, directional_light_shadow_info,
+                DirectionalLightShadowInfo);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            ViewInfo l_Handle = p_Handle.get_id();
+            l_Handle.set_directional_light_shadow_info(
+                *(DirectionalLightShadowInfo *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            ViewInfo l_Handle = p_Handle.get_id();
+            *((DirectionalLightShadowInfo *)p_Data) =
+                l_Handle.get_directional_light_shadow_info();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: directional_light_shadow_info
+        }
         {
           // Property: view_data_buffer
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
@@ -925,6 +997,9 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         ViewInfo l_Handle = make(p_Name);
+        l_Handle.set_shadow_pass_data(get_shadow_pass_data());
+        l_Handle.set_directional_light_shadow_info(
+            get_directional_light_shadow_info());
         l_Handle.set_view_data_buffer(get_view_data_buffer());
         l_Handle.set_directional_light_buffer(
             get_directional_light_buffer());
@@ -994,6 +1069,10 @@ namespace Low {
       {
         ViewInfo l_Handle = ViewInfo::make(N(ViewInfo));
 
+        if (p_Node["shadow_pass_data"]) {
+        }
+        if (p_Node["directional_light_shadow_info"]) {
+        }
         if (p_Node["view_data_buffer"]) {
         }
         if (p_Node["directional_light_buffer"]) {
@@ -1083,6 +1162,62 @@ namespace Low {
       {
         ViewInfo l_ViewInfo = p_Observer.get_id();
         l_ViewInfo.notify(p_Observed, p_Observable);
+      }
+
+      ShadowPassViewData &ViewInfo::get_shadow_pass_data() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_shadow_pass_data
+        // LOW_CODEGEN::END::CUSTOM:GETTER_shadow_pass_data
+
+        return TYPE_SOA(ViewInfo, shadow_pass_data,
+                        ShadowPassViewData);
+      }
+      void ViewInfo::set_shadow_pass_data(ShadowPassViewData &p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_shadow_pass_data
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_shadow_pass_data
+
+        // Set new value
+        TYPE_SOA(ViewInfo, shadow_pass_data, ShadowPassViewData) =
+            p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_shadow_pass_data
+        // LOW_CODEGEN::END::CUSTOM:SETTER_shadow_pass_data
+
+        broadcast_observable(N(shadow_pass_data));
+      }
+
+      DirectionalLightShadowInfo &
+      ViewInfo::get_directional_light_shadow_info() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_directional_light_shadow_info
+        // LOW_CODEGEN::END::CUSTOM:GETTER_directional_light_shadow_info
+
+        return TYPE_SOA(ViewInfo, directional_light_shadow_info,
+                        DirectionalLightShadowInfo);
+      }
+      void ViewInfo::set_directional_light_shadow_info(
+          DirectionalLightShadowInfo &p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_directional_light_shadow_info
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_directional_light_shadow_info
+
+        // Set new value
+        TYPE_SOA(ViewInfo, directional_light_shadow_info,
+                 DirectionalLightShadowInfo) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_directional_light_shadow_info
+        // LOW_CODEGEN::END::CUSTOM:SETTER_directional_light_shadow_info
+
+        broadcast_observable(N(directional_light_shadow_info));
       }
 
       AllocatedBuffer ViewInfo::get_view_data_buffer() const

@@ -58,6 +58,8 @@ namespace Low {
           Low::Util::Set<u32>)) Low::Util::Set<u32>();
       ACCESSOR_TYPE_SOA(l_Handle, RenderScene,
                         directional_light_intensity, float) = 0.0f;
+      ACCESSOR_TYPE_SOA(l_Handle, RenderScene,
+                        directional_light_dirty, bool) = false;
       ACCESSOR_TYPE_SOA(l_Handle, RenderScene, name,
                         Low::Util::Name) = Low::Util::Name(0u);
 
@@ -346,6 +348,35 @@ namespace Low {
         // End property: directional_light_intensity
       }
       {
+        // Property: directional_light_dirty
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(directional_light_dirty);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderScene::Data, directional_light_dirty);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderScene l_Handle = p_Handle.get_id();
+          l_Handle.is_directional_light_dirty();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, RenderScene, directional_light_dirty, bool);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderScene l_Handle = p_Handle.get_id();
+          l_Handle.set_directional_light_dirty(*(bool *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderScene l_Handle = p_Handle.get_id();
+          *((bool *)p_Data) = l_Handle.is_directional_light_dirty();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: directional_light_dirty
+      }
+      {
         // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
@@ -513,6 +544,8 @@ namespace Low {
           get_directional_light_color());
       l_Handle.set_directional_light_intensity(
           get_directional_light_intensity());
+      l_Handle.set_directional_light_dirty(
+          is_directional_light_dirty());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
 
@@ -733,15 +766,20 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_directional_light_direction
 
-      // Set new value
-      TYPE_SOA(RenderScene, directional_light_direction,
-               Low::Math::Vector3) = p_Value;
+      if (get_directional_light_direction() != p_Value) {
+        // Set dirty flags
+        mark_directional_light_dirty();
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_directional_light_direction
+        // Set new value
+        TYPE_SOA(RenderScene, directional_light_direction,
+                 Low::Math::Vector3) = p_Value;
 
-      // LOW_CODEGEN::END::CUSTOM:SETTER_directional_light_direction
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_directional_light_direction
 
-      broadcast_observable(N(directional_light_direction));
+        // LOW_CODEGEN::END::CUSTOM:SETTER_directional_light_direction
+
+        broadcast_observable(N(directional_light_direction));
+      }
     }
 
     Low::Math::ColorRGB
@@ -794,15 +832,20 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_directional_light_color
 
-      // Set new value
-      TYPE_SOA(RenderScene, directional_light_color,
-               Low::Math::ColorRGB) = p_Value;
+      if (get_directional_light_color() != p_Value) {
+        // Set dirty flags
+        mark_directional_light_dirty();
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_directional_light_color
+        // Set new value
+        TYPE_SOA(RenderScene, directional_light_color,
+                 Low::Math::ColorRGB) = p_Value;
 
-      // LOW_CODEGEN::END::CUSTOM:SETTER_directional_light_color
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_directional_light_color
 
-      broadcast_observable(N(directional_light_color));
+        // LOW_CODEGEN::END::CUSTOM:SETTER_directional_light_color
+
+        broadcast_observable(N(directional_light_color));
+      }
     }
 
     float RenderScene::get_directional_light_intensity() const
@@ -824,15 +867,59 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_directional_light_intensity
 
+      if (get_directional_light_intensity() != p_Value) {
+        // Set dirty flags
+        mark_directional_light_dirty();
+
+        // Set new value
+        TYPE_SOA(RenderScene, directional_light_intensity, float) =
+            p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_directional_light_intensity
+
+        // LOW_CODEGEN::END::CUSTOM:SETTER_directional_light_intensity
+
+        broadcast_observable(N(directional_light_intensity));
+      }
+    }
+
+    bool RenderScene::is_directional_light_dirty() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_directional_light_dirty
+      // LOW_CODEGEN::END::CUSTOM:GETTER_directional_light_dirty
+
+      return TYPE_SOA(RenderScene, directional_light_dirty, bool);
+    }
+    void RenderScene::toggle_directional_light_dirty()
+    {
+      set_directional_light_dirty(!is_directional_light_dirty());
+    }
+
+    void RenderScene::set_directional_light_dirty(bool p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_directional_light_dirty
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_directional_light_dirty
+
       // Set new value
-      TYPE_SOA(RenderScene, directional_light_intensity, float) =
-          p_Value;
+      TYPE_SOA(RenderScene, directional_light_dirty, bool) = p_Value;
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_directional_light_intensity
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_directional_light_dirty
+      // LOW_CODEGEN::END::CUSTOM:SETTER_directional_light_dirty
 
-      // LOW_CODEGEN::END::CUSTOM:SETTER_directional_light_intensity
+      broadcast_observable(N(directional_light_dirty));
+    }
 
-      broadcast_observable(N(directional_light_intensity));
+    void RenderScene::mark_directional_light_dirty()
+    {
+      if (!is_directional_light_dirty()) {
+        TYPE_SOA(RenderScene, directional_light_dirty, bool) = true;
+        // LOW_CODEGEN:BEGIN:CUSTOM:MARK_directional_light_dirty
+        // LOW_CODEGEN::END::CUSTOM:MARK_directional_light_dirty
+      }
     }
 
     Low::Util::Name RenderScene::get_name() const

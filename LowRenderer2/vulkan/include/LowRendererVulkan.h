@@ -42,7 +42,8 @@ namespace Low {
 
       struct alignas(16) DirectionalLightShadowInfo
       {
-        alignas(16) Math::Matrix4x4 light_space[SHADOW_CSM_CASCADE_COUNT];
+        alignas(16) Math::Matrix4x4
+            light_space[SHADOW_CSM_CASCADE_COUNT];
         alignas(16) ShadowTile tiles[SHADOW_CSM_CASCADE_COUNT];
         alignas(16) Math::Vector4 cascade_splits;
       };
@@ -170,6 +171,13 @@ namespace Low {
       {
         EditorImageGpu gpuEditorImage;
         u32 editorImageIndex;
+      };
+
+      struct ShadowPassViewData
+      {
+        AllocatedBuffer directional_shadow_buffer;
+        AllocatedBuffer point_light_shadow_buffer;
+        bool descriptors_written = false;
       };
 
       namespace Global {

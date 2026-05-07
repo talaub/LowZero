@@ -4,6 +4,7 @@
 #include "LowRendererEditorImageGpu.h"
 #include "LowRendererGlobals.h"
 #include "LowRendererGpuTexture.h"
+#include "LowRendererRenderScene.h"
 #include "LowRendererSS2DCanvas.h"
 #include "LowRendererSS2DDrawCommand.h"
 #include "LowRendererTextureState.h"
@@ -30,6 +31,7 @@
 #include "LowRenderer.h"
 
 #include "LowUtil.h"
+#include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 #include "LowUtilResource.h"
 
@@ -824,6 +826,141 @@ namespace Low {
               &l_CopyRegion);
         }
 
+        {
+
+          const float l_CamFovY =
+              glm::radians(p_RenderView.get_camera_fov());
+          const float l_Aspect =
+              (float)p_RenderView.get_dimensions().x /
+              (float)p_RenderView.get_dimensions().y;
+          const Math::Vector3 l_CamPos =
+              p_RenderView.get_camera_position();
+          const Math::Vector3 l_CamDir =
+              glm::normalize(p_RenderView.get_camera_direction());
+          const Math::Vector3 l_CamRight =
+              glm::normalize(glm::cross(l_CamDir, LOW_VECTOR3_UP));
+          const Math::Vector3 l_CamUp =
+              glm::cross(l_CamRight, l_CamDir);
+
+          const float l_NearPlane = 1.0f;
+          const float l_FarPlane = 100.0f;
+          const float l_Lambda = 0.75f;
+
+          float l_CascadeSplits[SHADOW_CSM_CASCADE_COUNT];
+          float l_CascadeBegins[SHADOW_CSM_CASCADE_COUNT];
+          l_CascadeBegins[0] = l_NearPlane;
+          for (int i = 0; i < SHADOW_CSM_CASCADE_COUNT; ++i) {
+            float t = (float)(i + 1) / SHADOW_CSM_CASCADE_COUNT;
+            float l_Uniform =
+                l_NearPlane + (l_FarPlane - l_NearPlane) * t;
+            float l_Log =
+                l_NearPlane * powf(l_FarPlane / l_NearPlane, t);
+            l_CascadeSplits[i] =
+                l_Lambda * l_Log + (1.0f - l_Lambda) * l_Uniform;
+            if (i + 1 < SHADOW_CSM_CASCADE_COUNT) {
+              l_CascadeBegins[i + 1] = l_CascadeSplits[i];
+            }
+          }
+
+          const Math::Vector3 l_LightDir = glm::normalize(
+              l_RenderScene.is_alive()
+                  ? l_RenderScene.get_directional_light_direction()
+                  : Math::Vector3(0.0f, -1.0f, 0.0f));
+
+          DirectionalLightShadowInfo &l_DirInfo =
+              p_ViewInfo.get_directional_light_shadow_info();
+          l_DirInfo.cascade_splits = {
+              l_CascadeSplits[0], l_CascadeSplits[1],
+              l_CascadeSplits[2], l_CascadeSplits[3]};
+
+          for (int i = 0; i < SHADOW_CSM_CASCADE_COUNT; ++i) {
+            float l_Near = l_CascadeBegins[i];
+            float l_Far = l_CascadeSplits[i];
+
+            float l_HalfH = tanf(l_CamFovY * 0.5f);
+            float l_HalfW = l_HalfH * l_Aspect;
+
+            Math::Vector3 l_Corners[8];
+            l_Corners[0] = l_CamPos + l_Near * l_CamDir +
+                           l_Near * l_HalfH * l_CamUp +
+                           l_Near * l_HalfW * l_CamRight;
+            l_Corners[1] = l_CamPos + l_Near * l_CamDir +
+                           l_Near * l_HalfH * l_CamUp -
+                           l_Near * l_HalfW * l_CamRight;
+            l_Corners[2] = l_CamPos + l_Near * l_CamDir -
+                           l_Near * l_HalfH * l_CamUp +
+                           l_Near * l_HalfW * l_CamRight;
+            l_Corners[3] = l_CamPos + l_Near * l_CamDir -
+                           l_Near * l_HalfH * l_CamUp -
+                           l_Near * l_HalfW * l_CamRight;
+            l_Corners[4] = l_CamPos + l_Far * l_CamDir +
+                           l_Far * l_HalfH * l_CamUp +
+                           l_Far * l_HalfW * l_CamRight;
+            l_Corners[5] = l_CamPos + l_Far * l_CamDir +
+                           l_Far * l_HalfH * l_CamUp -
+                           l_Far * l_HalfW * l_CamRight;
+            l_Corners[6] = l_CamPos + l_Far * l_CamDir -
+                           l_Far * l_HalfH * l_CamUp +
+                           l_Far * l_HalfW * l_CamRight;
+            l_Corners[7] = l_CamPos + l_Far * l_CamDir -
+                           l_Far * l_HalfH * l_CamUp -
+                           l_Far * l_HalfW * l_CamRight;
+
+            Math::Vector3 l_Center(0.0f);
+            for (auto &c : l_Corners) {
+              l_Center += c;
+            }
+            l_Center /= 8.0f;
+
+            Math::Matrix4x4 l_LightView =
+                glm::lookAt(l_Center - l_LightDir * 150.0f, l_Center,
+                            Math::Vector3(0.0f, 1.0f, 0.0f));
+
+            float l_MinX = 1e30f, l_MaxX = -1e30f;
+            float l_MinY = 1e30f, l_MaxY = -1e30f;
+            float l_MinZ = 1e30f, l_MaxZ = -1e30f;
+            for (auto &c : l_Corners) {
+              Math::Vector4 l_Ls =
+                  l_LightView * Math::Vector4(c, 1.0f);
+              l_MinX = glm::min(l_MinX, l_Ls.x);
+              l_MaxX = glm::max(l_MaxX, l_Ls.x);
+              l_MinY = glm::min(l_MinY, l_Ls.y);
+              l_MaxY = glm::max(l_MaxY, l_Ls.y);
+              l_MinZ = glm::min(l_MinZ, l_Ls.z);
+              l_MaxZ = glm::max(l_MaxZ, l_Ls.z);
+            }
+            float l_ZPad = 50.0f;
+            l_MinZ -= l_ZPad;
+            l_MaxZ += l_ZPad;
+
+            const float l_LightNear = glm::max(0.1f, -l_MaxZ);
+            const float l_LightFar =
+                glm::max(l_LightNear + 1.0f, -l_MinZ);
+
+            Math::Matrix4x4 l_LightProj =
+                glm::ortho(l_MinX, l_MaxX, l_MinY, l_MaxY,
+                           l_LightNear, l_LightFar);
+            l_LightProj[1][1] *= -1.0f;
+
+            l_DirInfo.light_space[i] = l_LightProj * l_LightView;
+
+            const float l_AtlasF = (float)SHADOW_ATLAS_SIZE;
+            const float l_TileF = (float)SHADOW_TILE_SIZE_CSM;
+            l_DirInfo.tiles[i].atlas_offset = {
+                (i * l_TileF) / l_AtlasF, 0.0f};
+            l_DirInfo.tiles[i].atlas_scale = {l_TileF / l_AtlasF,
+                                              l_TileF / l_AtlasF};
+          }
+
+          ShadowPassViewData &l_Data =
+              p_ViewInfo.get_shadow_pass_data();
+
+          vkCmdUpdateBuffer(Global::get_current_command_buffer(),
+                            l_Data.directional_shadow_buffer.buffer,
+                            0, sizeof(DirectionalLightShadowInfo),
+                            &l_DirInfo);
+        }
+
         return true;
       }
 
@@ -1354,13 +1491,12 @@ namespace Low {
           if (!l_Image.is_alive()) {
             l_Image = Image::make(N(ShadowAtlas));
             l_Image.set_depth(true);
-            p_RenderView.get_shadow_atlas()
-                .get_gpu()
-                .set_data_handle(l_Image.get_id());
+            p_RenderView.get_shadow_atlas().get_gpu().set_data_handle(
+                l_Image.get_id());
           }
 
-          VkExtent3D l_AtlasExtent{SHADOW_ATLAS_SIZE, SHADOW_ATLAS_SIZE,
-                                   1};
+          VkExtent3D l_AtlasExtent{SHADOW_ATLAS_SIZE,
+                                   SHADOW_ATLAS_SIZE, 1};
 
           ImageUtil::create(
               l_Image, l_AtlasExtent,
@@ -1377,8 +1513,7 @@ namespace Low {
 
           DescriptorUtil::DescriptorWriter l_AtlasWriter;
           l_AtlasWriter.write_image(
-              9, l_Image,
-              Global::get_samplers().shadow_comparison,
+              9, l_Image, Global::get_samplers().shadow_comparison,
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
           l_AtlasWriter.update_set(
@@ -1762,6 +1897,8 @@ namespace Low {
         for (u32 i = 0u; i < RenderView::living_count(); ++i) {
           RenderView i_RenderView = RenderView::living_instances()[i];
 
+          RenderScene i_RenderScene = i_RenderView.get_render_scene();
+
           ViewInfo i_ViewInfo = i_RenderView.get_view_info_handle();
 
           if (!i_ViewInfo.is_alive()) {
@@ -1791,16 +1928,16 @@ namespace Low {
             l_Writer.update_set(
                 Global::get_device(),
                 i_ViewInfo.get_view_data_descriptor_set());
+
+            for (RenderStep i_Step : i_RenderView.get_steps()) {
+              LOW_ASSERT(
+                  i_Step.prepare(i_RenderView),
+                  "Failed to prepare renderstep for renderview.");
+            }
           }
 
           // Reset the current staging buffer
           i_ViewInfo.get_current_staging_buffer().occupied = 0;
-
-          LOWR_VK_ASSERT_RETURN(
-              prepare_render_view_directional_light(
-                  p_Delta, i_RenderView, i_ViewInfo),
-              "Failed to update directional light info for render "
-              "view");
 
           if (i_RenderView.is_dimensions_dirty()) {
             i_RenderView.set_camera_dirty(true);
@@ -1811,6 +1948,15 @@ namespace Low {
             }
 
             i_RenderView.set_dimensions_dirty(false);
+          }
+
+          if (i_RenderView.is_camera_dirty() ||
+              i_RenderScene.is_directional_light_dirty()) {
+            LOWR_VK_ASSERT_RETURN(
+                prepare_render_view_directional_light(
+                    p_Delta, i_RenderView, i_ViewInfo),
+                "Failed to update directional light info for render "
+                "view");
           }
 
           if (i_RenderView.is_camera_dirty()) {
@@ -2372,6 +2518,12 @@ namespace Low {
 
         update_dirty_textures(p_Delta);
         update_dirty_editor_images(p_Delta);
+
+        for (u32 i = 0; i < RenderScene::living_count(); ++i) {
+          RenderScene i_RenderScene =
+              RenderScene::living_instances()[i];
+          i_RenderScene.set_directional_light_dirty(false);
+        }
 
         LOWR_VK_ASSERT_RETURN(handle_texture_exports(p_Delta),
                               "Failed to export textures.");

@@ -34,6 +34,10 @@ types:
         return_type: bool
   ViewInfo:
     properties:
+      shadow_pass_data:
+        type: ShadowPassViewData
+      directional_light_shadow_info:
+        type: DirectionalLightShadowInfo
       view_data_buffer:
         type: AllocatedBuffer
         no_ref: true
@@ -121,4 +125,3 @@ types:
       canvas_data:
         type: VkDescriptorSet
         no_ref: true
-

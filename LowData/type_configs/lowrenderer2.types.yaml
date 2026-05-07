@@ -115,10 +115,13 @@ types:
         type: uint64_t
       directional_light_direction:
         type: Low::Math::Vector3
+        dirty_flag: directional_light_dirty
       directional_light_color:
         type: Low::Math::ColorRGB
+        dirty_flag: directional_light_dirty
       directional_light_intensity:
         type: float
+        dirty_flag: directional_light_dirty
     functions:
       insert_draw_command:
         return_type: bool

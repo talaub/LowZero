@@ -25,6 +25,8 @@ namespace Low {
         struct Data
         {
         public:
+          ShadowPassViewData shadow_pass_data;
+          DirectionalLightShadowInfo directional_light_shadow_info;
           AllocatedBuffer view_data_buffer;
           AllocatedBuffer directional_light_buffer;
           VkDescriptorSet view_data_descriptor_set;
@@ -152,6 +154,14 @@ namespace Low {
           ViewInfo l_ViewInfo = p_Handle.get_id();
           l_ViewInfo.destroy();
         }
+
+        ShadowPassViewData &get_shadow_pass_data() const;
+        void set_shadow_pass_data(ShadowPassViewData &p_Value);
+
+        DirectionalLightShadowInfo &
+        get_directional_light_shadow_info() const;
+        void set_directional_light_shadow_info(
+            DirectionalLightShadowInfo &p_Value);
 
         AllocatedBuffer get_view_data_buffer() const;
         void set_view_data_buffer(AllocatedBuffer p_Value);
