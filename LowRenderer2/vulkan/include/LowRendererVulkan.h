@@ -178,6 +178,9 @@ namespace Low {
         AllocatedBuffer directional_shadow_buffer;
         AllocatedBuffer point_light_shadow_buffer;
         bool descriptors_written = false;
+        Util::Map<u64, u32> point_light_slot_mapping;
+        Util::List<u64> point_light_slots;
+        Util::List<PointLightShadowInfo> point_light_shadow_data;
       };
 
       namespace Global {

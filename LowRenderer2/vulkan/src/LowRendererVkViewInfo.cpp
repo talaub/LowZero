@@ -57,6 +57,12 @@ namespace Low {
         l_Handle.m_Data.m_Type = ViewInfo::ms_TypeId;
 
         new (ACCESSOR_TYPE_SOA_PTR(
+            l_Handle, ViewInfo, dirty_point_lights,
+            Util::Set<PointLight>)) Util::Set<PointLight>();
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, ViewInfo,
+                                   freed_point_light_slots,
+                                   Util::Set<u32>)) Util::Set<u32>();
+        new (ACCESSOR_TYPE_SOA_PTR(
             l_Handle, ViewInfo, shadow_pass_data, ShadowPassViewData))
             ShadowPassViewData();
         new (ACCESSOR_TYPE_SOA_PTR(
@@ -168,6 +174,15 @@ namespace Low {
           }
         }
 
+        l_Handle.get_shadow_pass_data().point_light_slots.resize(
+            MAX_SHADOW_POINTLIGHTS);
+        l_Handle.get_shadow_pass_data()
+            .point_light_shadow_data.resize(MAX_SHADOW_POINTLIGHTS);
+        for (int i = 0; i < MAX_SHADOW_POINTLIGHTS; ++i) {
+          l_Handle.get_shadow_pass_data().point_light_slots[i] =
+              Util::Handle::DEAD;
+        }
+
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -267,6 +282,64 @@ namespace Low {
         l_TypeInfo.get_living_count = &ViewInfo::living_count;
         l_TypeInfo.component = false;
         l_TypeInfo.uiComponent = false;
+        {
+          // Property: dirty_point_lights
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(dirty_point_lights);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(ViewInfo::Data, dirty_point_lights);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            ViewInfo l_Handle = p_Handle.get_id();
+            l_Handle.get_dirty_point_lights();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ViewInfo,
+                                              dirty_point_lights,
+                                              Util::Set<PointLight>);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            ViewInfo l_Handle = p_Handle.get_id();
+            *((Util::Set<PointLight> *)p_Data) =
+                l_Handle.get_dirty_point_lights();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: dirty_point_lights
+        }
+        {
+          // Property: freed_point_light_slots
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(freed_point_light_slots);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(ViewInfo::Data, freed_point_light_slots);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            ViewInfo l_Handle = p_Handle.get_id();
+            l_Handle.get_freed_point_light_slots();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ViewInfo,
+                                              freed_point_light_slots,
+                                              Util::Set<u32>);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            ViewInfo l_Handle = p_Handle.get_id();
+            *((Util::Set<u32> *)p_Data) =
+                l_Handle.get_freed_point_light_slots();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: freed_point_light_slots
+        }
         {
           // Property: shadow_pass_data
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
@@ -1069,6 +1142,10 @@ namespace Low {
       {
         ViewInfo l_Handle = ViewInfo::make(N(ViewInfo));
 
+        if (p_Node["dirty_point_lights"]) {
+        }
+        if (p_Node["freed_point_light_slots"]) {
+        }
         if (p_Node["shadow_pass_data"]) {
         }
         if (p_Node["directional_light_shadow_info"]) {
@@ -1162,6 +1239,28 @@ namespace Low {
       {
         ViewInfo l_ViewInfo = p_Observer.get_id();
         l_ViewInfo.notify(p_Observed, p_Observable);
+      }
+
+      Util::Set<PointLight> &ViewInfo::get_dirty_point_lights() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dirty_point_lights
+        // LOW_CODEGEN::END::CUSTOM:GETTER_dirty_point_lights
+
+        return TYPE_SOA(ViewInfo, dirty_point_lights,
+                        Util::Set<PointLight>);
+      }
+
+      Util::Set<u32> &ViewInfo::get_freed_point_light_slots() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_freed_point_light_slots
+        // LOW_CODEGEN::END::CUSTOM:GETTER_freed_point_light_slots
+
+        return TYPE_SOA(ViewInfo, freed_point_light_slots,
+                        Util::Set<u32>);
       }
 
       ShadowPassViewData &ViewInfo::get_shadow_pass_data() const

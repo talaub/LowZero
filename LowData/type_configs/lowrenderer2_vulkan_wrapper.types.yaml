@@ -34,6 +34,12 @@ types:
         return_type: bool
   ViewInfo:
     properties:
+      dirty_point_lights:
+        type: Util::Set<PointLight>
+        no_setter: true
+      freed_point_light_slots:
+        type: Util::Set<u32>
+        no_setter: true
       shadow_pass_data:
         type: ShadowPassViewData
       directional_light_shadow_info:

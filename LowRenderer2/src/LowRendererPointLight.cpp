@@ -14,6 +14,8 @@
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 
 #include "LowRendererRenderScene.h"
+#include "LowRendererRenderView.h"
+#include "LowRendererVkViewInfo.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -81,7 +83,22 @@ namespace Low {
         if (l_RenderScene.is_alive()) {
           l_RenderScene.get_pointlight_deleted_slots().insert(
               get_slot());
+
+          for (u32 i = 0; i < RenderView::living_count(); ++i) {
+            RenderView i_RenderView =
+                RenderView::living_instances()[i];
+
+            if (i_RenderView.get_render_scene() == l_RenderScene) {
+              // TODO: This file should not contain vulkan specific
+              // code
+              Vulkan::ViewInfo i_ViewInfo =
+                  i_RenderView.get_view_info_handle();
+              i_ViewInfo.get_freed_point_light_slots().insert(
+                  get_slot());
+            }
+          }
         }
+
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 

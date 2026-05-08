@@ -10,6 +10,7 @@
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 
 #include "LowRendererVulkan.h"
+#include "LowRendererPointLight.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -25,6 +26,8 @@ namespace Low {
         struct Data
         {
         public:
+          Util::Set<PointLight> dirty_point_lights;
+          Util::Set<u32> freed_point_light_slots;
           ShadowPassViewData shadow_pass_data;
           DirectionalLightShadowInfo directional_light_shadow_info;
           AllocatedBuffer view_data_buffer;
@@ -154,6 +157,10 @@ namespace Low {
           ViewInfo l_ViewInfo = p_Handle.get_id();
           l_ViewInfo.destroy();
         }
+
+        Util::Set<PointLight> &get_dirty_point_lights() const;
+
+        Util::Set<u32> &get_freed_point_light_slots() const;
 
         ShadowPassViewData &get_shadow_pass_data() const;
         void set_shadow_pass_data(ShadowPassViewData &p_Value);

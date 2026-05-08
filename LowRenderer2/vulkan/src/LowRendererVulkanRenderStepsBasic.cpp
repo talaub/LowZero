@@ -3081,75 +3081,6 @@ namespace Low {
           VK_RENDERDOC_SECTION_BEGIN("Shadow pass",
                                      SINGLE_ARG({0.2f, 0.2f, 0.8f}));
 
-          PointLightShadowInfo l_PointInfos[POINTLIGHT_COUNT]{};
-
-          u32 l_ShadowLightCount = 0;
-          for (u32 li = 0;
-               li < PointLight::living_count() &&
-               l_ShadowLightCount < MAX_SHADOW_POINTLIGHTS;
-               ++li) {
-            PointLight i_PL = PointLight::living_instances()[li];
-            if (!i_PL.is_alive()) {
-              continue;
-            }
-            if (i_PL.get_render_scene_handle() !=
-                l_RenderScene.get_id()) {
-              continue;
-            }
-
-            const u32 l_PointLightSlot = i_PL.get_slot();
-            if (l_PointLightSlot >= POINTLIGHT_COUNT) {
-              continue;
-            }
-
-            const u32 l_ShadowSlot = l_ShadowLightCount++;
-            PointLightShadowInfo &l_PLInfo =
-                l_PointInfos[l_PointLightSlot];
-            l_PLInfo.casts_shadow = 1;
-
-            const Math::Vector3 l_PLPos = i_PL.get_world_position();
-            const float l_PLRange = i_PL.get_range();
-            const float l_PLNear = 0.1f;
-
-            Math::Matrix4x4 l_PLProj = glm::perspective(
-                glm::radians(90.0f), 1.0f, l_PLNear, l_PLRange);
-
-            const Math::Vector3 l_FaceDirs[6] = {
-                {1, 0, 0},  {-1, 0, 0}, {0, 1, 0},
-                {0, -1, 0}, {0, 0, 1},  {0, 0, -1}};
-            const Math::Vector3 l_FaceUps[6] = {
-                {0, -1, 0}, {0, -1, 0}, {0, 0, 1},
-                {0, 0, -1}, {0, -1, 0}, {0, -1, 0}};
-
-            const float l_AtlasF = (float)SHADOW_ATLAS_SIZE;
-            const float l_PTileF = (float)SHADOW_TILE_SIZE_POINT;
-            const u32 l_TilesPerRow =
-                SHADOW_ATLAS_SIZE / SHADOW_TILE_SIZE_POINT;
-
-            for (int f = 0; f < 6; ++f) {
-              l_PLInfo.light_space[f] =
-                  l_PLProj * glm::lookAt(l_PLPos,
-                                         l_PLPos + l_FaceDirs[f],
-                                         l_FaceUps[f]);
-
-              u32 l_TileIdx = l_ShadowSlot * 6 + f;
-              float l_TileX =
-                  (float)(l_TileIdx % l_TilesPerRow) * l_PTileF;
-              float l_TileY =
-                  (float)SHADOW_TILE_SIZE_CSM +
-                  (float)(l_TileIdx / l_TilesPerRow) * l_PTileF;
-              l_PLInfo.tiles[f].atlas_offset = {l_TileX / l_AtlasF,
-                                                l_TileY / l_AtlasF};
-              l_PLInfo.tiles[f].atlas_scale = {l_PTileF / l_AtlasF,
-                                               l_PTileF / l_AtlasF};
-            }
-          }
-
-          vkCmdUpdateBuffer(
-              l_Cmd, l_Data.point_light_shadow_buffer.buffer, 0,
-              sizeof(PointLightShadowInfo) * POINTLIGHT_COUNT,
-              l_PointInfos);
-
           VkBufferMemoryBarrier2 l_ShadowBufferBarriers[2]{};
           l_ShadowBufferBarriers[0].sType =
               VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
@@ -3325,7 +3256,8 @@ namespace Low {
                 SHADOW_TILE_SIZE_CSM);
           }
 
-          u32 l_PLRenderCount = 0;
+          int l_PLRenderCount = 0;
+
           for (u32 li = 0; li < PointLight::living_count() &&
                            l_PLRenderCount < MAX_SHADOW_POINTLIGHTS;
                ++li) {
@@ -3343,7 +3275,21 @@ namespace Low {
               continue;
             }
 
-            const u32 l_ShadowSlot = l_PLRenderCount++;
+            auto l_Pos =
+                l_Data.point_light_slot_mapping.find(i_PL.get_id());
+
+            if (l_Pos == l_Data.point_light_slot_mapping.end()) {
+              continue;
+            }
+
+            const u32 l_ShadowSlot = l_Pos->second;
+
+            if (l_ShadowSlot >= MAX_SHADOW_POINTLIGHTS) {
+              continue;
+            }
+
+            l_PLRenderCount++;
+
             const u32 l_TilesPerRow =
                 SHADOW_ATLAS_SIZE / SHADOW_TILE_SIZE_POINT;
 
@@ -3356,7 +3302,8 @@ namespace Low {
                                              SHADOW_TILE_SIZE_POINT;
 
               draw_scene_depth(
-                  l_PointInfos[l_PointLightSlot].light_space[f],
+                  l_Data.point_light_shadow_data[l_ShadowSlot]
+                      .light_space[f],
                   l_TileX, l_TileY, SHADOW_TILE_SIZE_POINT,
                   SHADOW_TILE_SIZE_POINT);
             }

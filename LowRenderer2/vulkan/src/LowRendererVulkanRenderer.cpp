@@ -1021,6 +1021,192 @@ namespace Low {
         return true;
       }
 
+      static bool prepare_render_view_point_lights(
+          float p_Delta, RenderView p_RenderView, ViewInfo p_ViewInfo)
+      {
+        ShadowPassViewData &l_Data =
+            p_ViewInfo.get_shadow_pass_data();
+
+        bool l_TestedFull = false;
+
+        // TODO: We should at some point reschedule point lights that
+        // didn't get a slot just so they get a shadow slot if one is
+        // free
+
+        const Math::Vector3 l_FaceDirs[6] = {{1, 0, 0}, {-1, 0, 0},
+                                             {0, 1, 0}, {0, -1, 0},
+                                             {0, 0, 1}, {0, 0, -1}};
+        const Math::Vector3 l_FaceUps[6] = {{0, -1, 0}, {0, -1, 0},
+                                            {0, 0, 1},  {0, 0, -1},
+                                            {0, -1, 0}, {0, -1, 0}};
+
+        const float l_AtlasF = (float)SHADOW_ATLAS_SIZE;
+        const float l_PTileF = (float)SHADOW_TILE_SIZE_POINT;
+        const u32 l_TilesPerRow =
+            SHADOW_ATLAS_SIZE / SHADOW_TILE_SIZE_POINT;
+
+        PointLightShadowInfo l_EmptyInfo;
+
+        for (u32 i_Slot : p_ViewInfo.get_freed_point_light_slots()) {
+
+          size_t i_StagingOffset = 0;
+          const u64 i_FrameUploadSpace =
+              Vulkan::Global::get_current_frame_staging_buffer()
+                  .request_space(sizeof(PointLightShadowInfo),
+                                 &i_StagingOffset);
+
+          if (i_FrameUploadSpace < sizeof(PointLightShadowInfo)) {
+            // We don't have enough space on the staging buffer to
+            // upload this pointlight
+            return false;
+          }
+
+          LOW_ASSERT(
+              Vulkan::Global::get_current_frame_staging_buffer()
+                  .write(&l_EmptyInfo, sizeof(PointLightShadowInfo),
+                         i_StagingOffset),
+              "Failed to write empty pointlight shadow data to "
+              "staging "
+              "buffer");
+
+          VkBufferCopy i_CopyRegion;
+          i_CopyRegion.srcOffset = i_StagingOffset;
+          i_CopyRegion.dstOffset =
+              i_Slot * sizeof(PointLightShadowInfo);
+          i_CopyRegion.size = i_FrameUploadSpace;
+
+          // TODO: Change to transfer queue command buffer - or
+          // leave this specifically on the graphics queue not sure
+          // tbh
+          // TODO: Check if it's possible to batch all these
+          // together per renderscene
+          vkCmdCopyBuffer(
+              Vulkan::Global::get_current_command_buffer(),
+              Vulkan::Global::get_current_frame_staging_buffer()
+                  .buffer.buffer,
+              l_Data.point_light_shadow_buffer.buffer, 1,
+              &i_CopyRegion);
+        }
+
+        for (PointLight i_PointLight :
+             p_ViewInfo.get_dirty_point_lights()) {
+          if (!i_PointLight.is_alive()) {
+            continue;
+          }
+          const u32 l_PointLightSlot = i_PointLight.get_slot();
+          if (l_PointLightSlot >= POINTLIGHT_COUNT) {
+            continue;
+          }
+
+          auto i_Pos = l_Data.point_light_slot_mapping.find(
+              i_PointLight.get_id());
+          u32 i_ShadowSlot = LOW_UINT32_MAX;
+          if (i_Pos == l_Data.point_light_slot_mapping.end()) {
+            if (l_TestedFull) {
+              // We cached that this one does not have any free slots
+              // this frame so we can skip it
+              continue;
+            }
+            for (int i = 0; i < l_Data.point_light_slots.size();
+                 ++i) {
+              PointLight i_Test = l_Data.point_light_slots[i];
+              if (!i_Test.is_alive()) {
+                i_ShadowSlot = i;
+                l_Data.point_light_slots[i] = i_PointLight.get_id();
+                l_Data
+                    .point_light_slot_mapping[i_PointLight.get_id()] =
+                    i;
+                break;
+              }
+            }
+            if (i_ShadowSlot >= MAX_SHADOW_POINTLIGHTS) {
+              // Cache that we are full
+              l_TestedFull = true;
+              continue;
+            }
+          } else {
+            i_ShadowSlot = i_Pos->second;
+          }
+
+          if (i_ShadowSlot >= MAX_SHADOW_POINTLIGHTS) {
+            continue;
+          }
+          PointLightShadowInfo &i_PLInfo =
+              l_Data.point_light_shadow_data[i_ShadowSlot];
+          i_PLInfo.casts_shadow = 1;
+
+          const Math::Vector3 i_PLPos =
+              i_PointLight.get_world_position();
+          const float i_PLRange = i_PointLight.get_range();
+          const float i_PLNear = 0.1f;
+
+          Math::Matrix4x4 i_PLProj = glm::perspective(
+              glm::radians(90.0f), 1.0f, i_PLNear, i_PLRange);
+
+          for (int f = 0; f < 6; ++f) {
+            i_PLInfo.light_space[f] =
+                i_PLProj * glm::lookAt(i_PLPos,
+                                       i_PLPos + l_FaceDirs[f],
+                                       l_FaceUps[f]);
+
+            u32 i_TileIdx = i_ShadowSlot * 6 + f;
+            float i_TileX =
+                (float)(i_TileIdx % l_TilesPerRow) * l_PTileF;
+            float i_TileY =
+                (float)SHADOW_TILE_SIZE_CSM +
+                (float)(i_TileIdx / l_TilesPerRow) * l_PTileF;
+            i_PLInfo.tiles[f].atlas_offset = {i_TileX / l_AtlasF,
+                                              i_TileY / l_AtlasF};
+            i_PLInfo.tiles[f].atlas_scale = {l_PTileF / l_AtlasF,
+                                             l_PTileF / l_AtlasF};
+          }
+
+          // Upload
+          {
+            size_t i_StagingOffset = 0;
+            const u64 i_FrameUploadSpace =
+                Vulkan::Global::get_current_frame_staging_buffer()
+                    .request_space(sizeof(PointLightShadowInfo),
+                                   &i_StagingOffset);
+
+            if (i_FrameUploadSpace < sizeof(PointLightShadowInfo)) {
+              // We don't have enough space on the staging buffer to
+              // upload this pointlight
+              return false;
+            }
+
+            LOW_ASSERT(
+                Vulkan::Global::get_current_frame_staging_buffer()
+                    .write(&i_PLInfo, sizeof(PointLightShadowInfo),
+                           i_StagingOffset),
+                "Failed to write pointlight shadow data to staging "
+                "buffer");
+
+            VkBufferCopy i_CopyRegion;
+            i_CopyRegion.srcOffset = i_StagingOffset;
+            i_CopyRegion.dstOffset = i_PointLight.get_slot() *
+                                     sizeof(PointLightShadowInfo);
+            i_CopyRegion.size = i_FrameUploadSpace;
+
+            // TODO: Change to transfer queue command buffer - or
+            // leave this specifically on the graphics queue not sure
+            // tbh
+            // TODO: Check if it's possible to batch all these
+            // together per renderscene
+            vkCmdCopyBuffer(
+                Vulkan::Global::get_current_command_buffer(),
+                Vulkan::Global::get_current_frame_staging_buffer()
+                    .buffer.buffer,
+                l_Data.point_light_shadow_buffer.buffer, 1,
+                &i_CopyRegion);
+          }
+        }
+
+        p_ViewInfo.get_dirty_point_lights().clear();
+        p_ViewInfo.get_freed_point_light_slots().clear();
+        return true;
+      }
+
       static bool prepare_render_view_dimensions(
           float p_Delta, RenderView p_RenderView, ViewInfo p_ViewInfo)
       {
@@ -1939,6 +2125,11 @@ namespace Low {
           // Reset the current staging buffer
           i_ViewInfo.get_current_staging_buffer().occupied = 0;
 
+          if (!prepare_render_view_point_lights(p_Delta, i_RenderView,
+                                                i_ViewInfo)) {
+            return false;
+          }
+
           if (i_RenderView.is_dimensions_dirty()) {
             i_RenderView.set_camera_dirty(true);
 
@@ -2161,6 +2352,25 @@ namespace Low {
 
           if (i_PointLight.get_slot() < POINTLIGHT_COUNT) {
             // Upload the pointlight to the buffer
+
+            // Mark pointlight as dirty on RenderView
+            {
+              for (u32 k = 0; k < RenderView::living_count(); ++k) {
+                RenderView i_RenderView =
+                    RenderView::living_instances()[k];
+
+                if (i_RenderView.get_render_scene() !=
+                    i_RenderScene) {
+                  continue;
+                }
+
+                ViewInfo i_ViewInfo =
+                    i_RenderView.get_view_info_handle();
+
+                i_ViewInfo.get_dirty_point_lights().insert(
+                    i_PointLight);
+              }
+            }
 
             size_t l_StagingOffset = 0;
             const u64 l_FrameUploadSpace =
