@@ -84,6 +84,7 @@ namespace Low {
         Low::Renderer::Texture object_map;
         Low::Renderer::Texture highlight_map;
         Low::Renderer::Texture lit_image;
+        Low::Renderer::Texture ssgi_image;
         Low::Renderer::Texture blurred_image;
         Low::Renderer::Texture ssao_image;
         Low::Renderer::Texture cavities_image;
@@ -288,6 +289,9 @@ namespace Low {
 
       Low::Renderer::Texture get_lit_image() const;
       void set_lit_image(Low::Renderer::Texture p_Value);
+
+      Low::Renderer::Texture get_ssgi_image() const;
+      void set_ssgi_image(Low::Renderer::Texture p_Value);
 
       Low::Renderer::Texture get_blurred_image() const;
       void set_blurred_image(Low::Renderer::Texture p_Value);

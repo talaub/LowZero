@@ -191,6 +191,9 @@ types:
       lit_image:
         type: Low::Renderer::Texture
         handle: true
+      ssgi_image:
+        type: Low::Renderer::Texture
+        handle: true
       blurred_image:
         type: Low::Renderer::Texture
         handle: true

@@ -89,6 +89,9 @@ namespace Low {
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderView, lit_image,
                                  Low::Renderer::Texture))
           Low::Renderer::Texture();
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderView, ssgi_image,
+                                 Low::Renderer::Texture))
+          Low::Renderer::Texture();
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderView, blurred_image,
                                  Low::Renderer::Texture))
           Low::Renderer::Texture();
@@ -202,6 +205,9 @@ namespace Low {
         }
         if (get_ssao_image().is_alive()) {
           get_ssao_image().destroy();
+        }
+        if (get_ssgi_image().is_alive()) {
+          get_ssgi_image().destroy();
         }
         if (get_cavities_image().is_alive()) {
           get_cavities_image().destroy();
@@ -911,6 +917,38 @@ namespace Low {
         // End property: lit_image
       }
       {
+        // Property: ssgi_image
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(ssgi_image);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderView::Data, ssgi_image);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType =
+            Low::Renderer::Texture::IDENTIFIER;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.get_ssgi_image();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
+                                            ssgi_image,
+                                            Low::Renderer::Texture);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.set_ssgi_image(*(Low::Renderer::Texture *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          *((Low::Renderer::Texture *)p_Data) =
+              l_Handle.get_ssgi_image();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: ssgi_image
+      }
+      {
         // Property: blurred_image
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(blurred_image);
@@ -1552,6 +1590,9 @@ namespace Low {
       }
       if (get_lit_image().is_alive()) {
         l_Handle.set_lit_image(get_lit_image());
+      }
+      if (get_ssgi_image().is_alive()) {
+        l_Handle.set_ssgi_image(get_ssgi_image());
       }
       if (get_blurred_image().is_alive()) {
         l_Handle.set_blurred_image(get_blurred_image());
@@ -2409,6 +2450,32 @@ namespace Low {
       broadcast_observable(N(lit_image));
     }
 
+    Low::Renderer::Texture RenderView::get_ssgi_image() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ssgi_image
+      // LOW_CODEGEN::END::CUSTOM:GETTER_ssgi_image
+
+      return TYPE_SOA(RenderView, ssgi_image, Low::Renderer::Texture);
+    }
+    void RenderView::set_ssgi_image(Low::Renderer::Texture p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ssgi_image
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_ssgi_image
+
+      // Set new value
+      TYPE_SOA(RenderView, ssgi_image, Low::Renderer::Texture) =
+          p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_ssgi_image
+      // LOW_CODEGEN::END::CUSTOM:SETTER_ssgi_image
+
+      broadcast_observable(N(ssgi_image));
+    }
+
     Low::Renderer::Texture RenderView::get_blurred_image() const
     {
       _LOW_ASSERT(is_alive());
@@ -2810,6 +2877,7 @@ namespace Low {
       l_RenderView.add_step_by_name(RENDERSTEP_SSAO_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_CAVITIES_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_LIGHTING_NAME);
+      l_RenderView.add_step_by_name(RENDERSTEP_SSGI_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_DEBUG_GEOMETRY_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_UI_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_OBJECT_ID_COPY);

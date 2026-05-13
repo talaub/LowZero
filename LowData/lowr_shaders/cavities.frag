@@ -1,54 +1,48 @@
 #version 450
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec2 outCavity; // R=ridge, G=valley
 
 #include "fullscreen_effect.glsl"
 
-// Helper: unpack and normalize normal
-vec3 getNormal(vec2 uv) {
-    vec3 n = texture(VIEW_GBUFFER_NORMAL, uv).xyz * 2.0 - 1.0;
-    return normalize(n);
+layout(push_constant) uniform constants
+{
+    float radius;
+    float ridgeStrength;
+    float valleyStrength;
+} params;
+
+vec3 getViewNormal(vec2 uv) {
+    vec3 worldN = texture(VIEW_GBUFFER_NORMAL, uv).xyz * 2.0 - 1.0;
+    return normalize(mat3(g_ViewInfo.viewMatrix) * worldN);
 }
 
 void main() {
-    float cavityStrength = 1.5;
-    float cavityRadius = 2;
-    float bias = 1.0;
-    float curvaturePower = 1.5;
+    vec2 uv = gl_FragCoord.xy * g_ViewInfo.dimensions.zw;
 
-    vec2 fragUV = gl_FragCoord.xy * g_ViewInfo.dimensions.zw;
-
-    vec2 texelSize = 1.0 / vec2(textureSize(VIEW_GBUFFER_NORMAL, 0));
-    float radius = cavityRadius;
-
-    vec3 centerNormal = getNormal(fragUV);
-    float sumDiff = 0.0;
-    int sampleCount = 0;
-
-    // 8 directions sampling (can use Poisson disk or hexagonal for better quality)
-    const vec2 offsets[8] = vec2[](
-        vec2(1,0), vec2(-1,0),
-        vec2(0,1), vec2(0,-1),
-        vec2(1,1), vec2(-1,1),
-        vec2(1,-1), vec2(-1,-1)
-    );
-
-    for (int i = 0; i < 8; i++) {
-        vec2 sampleUV = fragUV + offsets[i] * texelSize * radius;
-        vec3 sampleNormal = getNormal(sampleUV);
-        float diff = 1.0 - dot(centerNormal, sampleNormal); // curvature-like metric
-        sumDiff += diff;
-        sampleCount++;
+    float depth = texture(VIEW_GBUFFER_DEPTH, uv).r;
+    if (depth >= 1.0) {
+        outCavity = vec2(0.0);
+        return;
     }
 
-    float curvature = sumDiff / float(sampleCount);
+    vec2 texelSize = g_ViewInfo.dimensions.zw;
+    float r = params.radius;
 
-    // Adjust curvature to cavity effect
-    float cavity = pow(curvature - bias, curvaturePower);
+    vec3 nRight = getViewNormal(uv + vec2(texelSize.x * r, 0.0));
+    vec3 nLeft  = getViewNormal(uv - vec2(texelSize.x * r, 0.0));
+    vec3 nUp    = getViewNormal(uv + vec2(0.0, texelSize.y * r));
+    vec3 nDown  = getViewNormal(uv - vec2(0.0, texelSize.y * r));
 
-    // Blend: negative curvature -> darken, positive curvature -> lighten
-    float intensity = clamp(cavity * cavityStrength, -1.0, 1.0);
+    // Divergence of the view-space normal field.
+    // Positive = normals spread outward = convex ridge.
+    // Negative = normals converge = concave valley.
+    // Y is flipped (Vulkan NDC: uv y+ = screen down = view-space -y).
+    float curvH = dot(nRight - nLeft, vec3(1.0, 0.0, 0.0));
+    float curvV = dot(nDown  - nUp,   vec3(0.0, 1.0, 0.0));
+    float signedCurvature = (curvH + curvV) * 0.5;
 
-    outColor = vec4(vec3(0.5 + intensity * 0.5), 1.0); // visualize as overlay
+    float ridge  = clamp( signedCurvature * params.ridgeStrength,  0.0, 1.0);
+    float valley = clamp(-signedCurvature * params.valleyStrength, 0.0, 1.0);
 
+    outCavity = vec2(ridge, valley);
 }

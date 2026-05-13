@@ -2058,6 +2058,26 @@ namespace Low {
                     .get_bindless_index();
           }
 
+          l_FrameData.textureIndices.z = 0;
+          if (p_RenderView.get_lit_image().is_alive() &&
+              p_RenderView.get_lit_image().get_state() ==
+                  TextureState::LOADED) {
+            l_FrameData.textureIndices.z =
+                p_RenderView.get_lit_image()
+                    .get_gpu()
+                    .get_bindless_index();
+          }
+
+          l_FrameData.textureIndices.w = 0;
+          if (p_RenderView.get_ssgi_image().is_alive() &&
+              p_RenderView.get_ssgi_image().get_state() ==
+                  TextureState::LOADED) {
+            l_FrameData.textureIndices.w =
+                p_RenderView.get_ssgi_image()
+                    .get_gpu()
+                    .get_bindless_index();
+          }
+
           p_ViewInfo.write_current_staging_buffer(
               &l_FrameData, l_FrameUploadSpace, l_StagingOffset);
 

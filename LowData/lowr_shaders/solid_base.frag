@@ -1,26 +1,35 @@
 #version 450
-
 #include "fragment_solid.glsl"
 
 void main()
 {
+#ifdef SHADOW
+  // depth is written automatically from gl_Position
+#elif defined(HIGHLIGHT)
+  o_Highlight = c_RenderEntry.highlight;
+#else
+    /*
+        	o_Albedo = vec4(
+            in_TextureCoordinates.x, in_TextureCoordinates.y, 0.0, 1.0);
+            */
+
     vec3 l_SurfaceNormal = in_SurfaceNormal;
 
     Material l_Material = g_Materials[RENDER_OBJECT.materialIndex];
 
     uint l_TextureId = uint(l_Material.val0.a);
 
-#ifdef HIGHLIGHT
-    o_Highlight = c_RenderEntry.highlight;
-    return;
-#endif
-
     o_Albedo = vec4(l_Material.val0.rgb, 1.0);
-    if (l_TextureId < 512){
+    if (l_TextureId< 512){
       o_Albedo = vec4(texture(TEX2D(l_TextureId), in_TextureCoordinates).xyz, 1.0);
     }
 
 
+    /*
+    o_Albedo = vec4(
+            texture(TEX2D(0), in_TextureCoordinates).xyz,
+            1.0);
+            */
 
     o_ViewPosition = vec4(in_ViewPosition, 1.0f);
     o_ObjectId = uint(RENDER_OBJECT.objectId);
@@ -29,4 +38,5 @@ void main()
                 (in_SurfaceNormal.y + 1.0) / 2.0,
                 (in_SurfaceNormal.z + 1.0) / 2.0),
             1.0);
+#endif
 }

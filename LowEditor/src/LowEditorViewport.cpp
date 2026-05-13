@@ -24,6 +24,7 @@ namespace Low {
       m_RenderView.add_step_by_name(RENDERSTEP_LIGHTCULLING_NAME);
       m_RenderView.add_step_by_name(RENDERSTEP_CAVITIES_NAME);
       m_RenderView.add_step_by_name(RENDERSTEP_LIGHTING_NAME);
+      m_RenderView.add_step_by_name(RENDERSTEP_SSGI_NAME);
     }
 
     Viewport::~Viewport()

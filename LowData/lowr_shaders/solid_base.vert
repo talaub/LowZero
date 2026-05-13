@@ -1,13 +1,14 @@
 #version 450
 
-#extension GL_GOOGLE_include_directive : require
-
 #include "vertex.glsl"
 
-void main() 
+void main()
 {
-	//output the position of each vertex
   vec4 l_WorldPosition = RENDER_OBJECT.worldMatrix * vec4(VERTEX.position, 1.0);
+
+#ifdef SHADOW
+  gl_Position = c_RenderEntry.lightSpaceMatrix * l_WorldPosition;
+#else
 	gl_Position = g_ViewInfo.viewProjectionMatrix * l_WorldPosition;
 
 #ifdef PICKING
@@ -27,5 +28,6 @@ void main()
   vec3 N = o_SurfaceNormal;
   mat3 TBN = mat3(T, B, N);
   o_TBN = TBN;
+#endif
 #endif
 }
