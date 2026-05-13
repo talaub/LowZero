@@ -64,6 +64,7 @@ namespace Low {
       struct Data
       {
       public:
+        bool scheduled_for_deletion;
         Low::Math::Vector3 camera_position;
         Low::Math::Vector3 camera_direction;
         float camera_fov;
@@ -209,6 +210,10 @@ namespace Low {
         RenderView l_RenderView = p_Handle.get_id();
         l_RenderView.destroy();
       }
+
+      bool is_scheduled_for_deletion() const;
+      void set_scheduled_for_deletion(bool p_Value);
+      void toggle_scheduled_for_deletion();
 
       Low::Math::Vector3 get_camera_position() const;
       void set_camera_position(Low::Math::Vector3 p_Value);

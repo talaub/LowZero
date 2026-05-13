@@ -13,7 +13,6 @@
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 
-#include "LowRendererVkImage.h"
 #include "LowRendererResourceManager.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
@@ -423,6 +422,15 @@ namespace Low {
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: make_from_resource_config
+      }
+      {
+        // Function: is_imgui_texture_ready
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(is_imgui_texture_ready);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: is_imgui_texture_ready
       }
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
@@ -932,6 +940,23 @@ namespace Low {
 
       return l_Texture;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_from_resource_config
+    }
+
+    bool Texture::is_imgui_texture_ready()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_is_imgui_texture_ready
+      if (!is_alive() || get_state() != TextureState::LOADED) {
+        return false;
+      }
+
+      GpuTexture l_Gpu = get_gpu();
+      if (!l_Gpu.is_alive() || l_Gpu.get_imgui_texture_id() == 0) {
+        return false;
+      }
+
+      return true;
+
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_is_imgui_texture_ready
     }
 
     uint32_t Texture::create_instance(u32 &p_PageIndex,

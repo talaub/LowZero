@@ -25,10 +25,8 @@ namespace Low {
           : UiViewport(p_Dimensions), m_Asset(p_Asset)
       {
         m_Instance = m_Asset.spawn_instance(m_Canvas);
-        Core::UI::Component::Display dis =
-            m_Instance.get_root().get_display();
       }
-      ~UiWidgetInteractiveViewport()
+      ~UiWidgetInteractiveViewport() override
       {
         m_Instance.destroy();
       }

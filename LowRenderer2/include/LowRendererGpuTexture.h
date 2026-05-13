@@ -30,6 +30,20 @@ namespace Low {
       LinearRepeatMip = 3,
       LinearClampMip = 4,
     };
+
+    enum class DirtyTextureType
+    {
+      Modified,
+      Deleted
+    };
+
+    struct DirtyTextureEntry
+    {
+      DirtyTextureType type;
+      u64 gpuTextureId;
+      u64 bindless_index;
+      TextureFormatCategory format_category;
+    };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     struct LOW_RENDERER2_API GpuTexture : public Low::Util::Handle
@@ -200,7 +214,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
 
     public:
-      static Low::Util::Set<Low::Renderer::GpuTexture> ms_Dirty;
+      static Low::Util::List<Low::Renderer::DirtyTextureEntry>
+          ms_Dirty;
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
     };
 

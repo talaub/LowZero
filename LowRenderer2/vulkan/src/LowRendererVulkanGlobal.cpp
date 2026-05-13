@@ -80,14 +80,55 @@ namespace Low {
             const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
             void *pUserData)
         {
-          // Print the validation message
-          LOW_LOG_ERROR << "Validation Layer: "
-                        << pCallbackData->pMessage << LOW_LOG_END;
+          const char *l_Severity =
+              messageSeverity &
+                      VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT
+                  ? "error"
+              : messageSeverity &
+                      VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
+                  ? "warning"
+              : messageSeverity &
+                      VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT
+                  ? "info"
+                  : "verbose";
+
+          const char *l_Type =
+              messageTypes &
+                      VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
+                  ? "validation"
+              : messageTypes &
+                      VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT
+                  ? "performance"
+                  : "general";
+
+          if (messageSeverity &
+              VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
+            LOW_LOG_ERROR << "Vulkan validation " << l_Severity
+                          << " [" << l_Type
+                          << "]: " << pCallbackData->pMessage
+                          << LOW_LOG_END;
+          } else if (
+              messageSeverity &
+              VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+            LOW_LOG_WARN << "Vulkan validation " << l_Severity << " ["
+                         << l_Type << "]: " << pCallbackData->pMessage
+                         << LOW_LOG_END;
+          } else if (messageSeverity &
+                     VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
+            LOW_LOG_INFO << "Vulkan validation " << l_Severity << " ["
+                         << l_Type << "]: " << pCallbackData->pMessage
+                         << LOW_LOG_END;
+          } else {
+            LOW_LOG_DEBUG << "Vulkan validation " << l_Severity
+                          << " [" << l_Type
+                          << "]: " << pCallbackData->pMessage
+                          << LOW_LOG_END;
+          }
 
           // Break on error or warning
           if (messageSeverity >=
               VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-             //DEBUG_BREAK();
+            // DEBUG_BREAK();
           }
 
           return VK_FALSE;
@@ -561,6 +602,8 @@ namespace Low {
                       VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                   VMA_MEMORY_USAGE_GPU_ONLY),
               "Could not initialize mesh vertex resource buffer");
+          BufferUtil::set_name(g_MeshVertexBuffer,
+                               "global mesh vertex buffer");
 
           LOW_ASSERT_ERROR_RETURN_FALSE(
               dynamic_buffer_init(
@@ -571,6 +614,8 @@ namespace Low {
                       VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                   VMA_MEMORY_USAGE_GPU_ONLY),
               "Could not initialize mesh index resource buffer");
+          BufferUtil::set_name(g_MeshIndexBuffer,
+                               "global mesh index buffer");
 
           return true;
         }
@@ -586,6 +631,8 @@ namespace Low {
                       VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                   VMA_MEMORY_USAGE_GPU_ONLY),
               "Could not initialize draw command buffer");
+          BufferUtil::set_name(g_DrawCommandBuffer,
+                               "global draw command buffer");
 
           LOW_ASSERT_ERROR_RETURN_FALSE(
               dynamic_buffer_init(
@@ -596,6 +643,8 @@ namespace Low {
                       VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                   VMA_MEMORY_USAGE_GPU_ONLY),
               "Could not initialize ui draw command buffer");
+          BufferUtil::set_name(g_UiDrawCommandBuffer,
+                               "global ui draw command buffer");
 
           g_MaterialDataBuffer = BufferUtil::create_buffer(
               MATERIAL_DATA_SIZE * 1000,
@@ -603,6 +652,8 @@ namespace Low {
                   VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
               VMA_MEMORY_USAGE_GPU_ONLY);
+          BufferUtil::set_name(g_MaterialDataBuffer,
+                               "global material data buffer");
 
           g_SS2DDrawcCommandBuffer = BufferUtil::create_buffer(
               sizeof(SS2DDrawCommandUpload) *
@@ -611,11 +662,15 @@ namespace Low {
                   VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
               VMA_MEMORY_USAGE_GPU_ONLY);
+          BufferUtil::set_name(g_SS2DDrawcCommandBuffer,
+                               "global ss2d draw command buffer");
 
           g_SamplerMapBuffer = BufferUtil::create_buffer(
               sizeof(u32) * GpuTexture::get_capacity(),
               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
               VMA_MEMORY_USAGE_CPU_TO_GPU);
+          BufferUtil::set_name(g_SamplerMapBuffer,
+                               "global sampler map buffer");
           memset(g_SamplerMapBuffer.info.pMappedData, 0,
                  g_SamplerMapBuffer.info.size);
 
@@ -854,8 +909,7 @@ namespace Low {
                 VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
             sampl.addressModeW =
                 VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-            sampl.borderColor =
-                VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+            sampl.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
             sampl.compareEnable = VK_TRUE;
             sampl.compareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
             vkCreateSampler(
@@ -951,13 +1005,45 @@ namespace Low {
         {
           vkb::InstanceBuilder l_InstanceBuilder;
 
+          l_InstanceBuilder.set_app_name("LowEngine")
+              .request_validation_layers(g_ValidationEnabled)
+              //.use_default_debug_messenger()
+              .set_debug_callback(&DebugCallback)
+              .require_api_version(1, 3, 0);
+
+#ifdef LOW_RENDERER_VALIDATION_VERBOSE
+          l_InstanceBuilder.set_debug_messenger_severity(
+              VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+              VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+              VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+              VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT);
+#endif
+
+#ifdef LOW_RENDERER_VALIDATION_BEST_PRACTICES
+          if (g_ValidationEnabled) {
+            l_InstanceBuilder.add_validation_feature_enable(
+                VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT);
+          }
+#endif
+
+#ifdef LOW_RENDERER_VALIDATION_SYNCHRONIZATION
+          if (g_ValidationEnabled) {
+            l_InstanceBuilder.add_validation_feature_enable(
+                VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT);
+          }
+#endif
+
+#ifdef LOW_RENDERER_VALIDATION_GPU_ASSISTED
+          if (g_ValidationEnabled) {
+            l_InstanceBuilder.add_validation_feature_enable(
+                VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT);
+            l_InstanceBuilder.add_validation_feature_enable(
+                VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_RESERVE_BINDING_SLOT_EXT);
+          }
+#endif
+
           vkb::Result<vkb::Instance> l_InstanceReturn =
-              l_InstanceBuilder.set_app_name("LowEngine")
-                  .request_validation_layers(g_ValidationEnabled)
-                  //.use_default_debug_messenger()
-                  .set_debug_callback(&DebugCallback)
-                  .require_api_version(1, 3, 0)
-                  .build();
+              l_InstanceBuilder.build();
 
           if (!l_InstanceReturn) {
             LOW_LOG_ERROR << l_InstanceReturn.full_error()
@@ -1216,8 +1302,8 @@ namespace Low {
             }
             get_samplers().lod_nearest_repeat_black.clear();
           }
-          vkDestroySampler(get_device(), get_samplers().shadow_comparison,
-                           nullptr);
+          vkDestroySampler(get_device(),
+                           get_samplers().shadow_comparison, nullptr);
           return true;
         }
 
@@ -1317,10 +1403,8 @@ namespace Low {
           Image l_OutImage = p_OutImage.get_gpu().get_data_handle();
 
           {
-            ImageUtil::cmd_transition(
-                l_Cmd, l_TempImage,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            ImageUtil::cmd_transition_for_color_write(l_Cmd,
+                                                      l_TempImage);
 
             Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
             l_ColorAttachments.resize(1);
@@ -1362,17 +1446,13 @@ namespace Low {
 
             vkCmdEndRendering(l_Cmd);
 
-            ImageUtil::cmd_transition(
-                l_Cmd, l_TempImage,
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            ImageUtil::cmd_transition_color_write_to_shader_read(
+                l_Cmd, l_TempImage);
           }
 
           {
-            ImageUtil::cmd_transition(
-                l_Cmd, l_OutImage,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            ImageUtil::cmd_transition_for_color_write(l_Cmd,
+                                                      l_OutImage);
 
             Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
             l_ColorAttachments.resize(1);
@@ -1414,10 +1494,8 @@ namespace Low {
 
             vkCmdEndRendering(l_Cmd);
 
-            ImageUtil::cmd_transition(
-                l_Cmd, l_OutImage,
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            ImageUtil::cmd_transition_color_write_to_shader_read(
+                l_Cmd, l_OutImage);
           }
 
           return true;
@@ -1467,10 +1545,8 @@ namespace Low {
           float l_StepSize = 2.0f;
 
           {
-            ImageUtil::cmd_transition(
-                l_Cmd, l_TempImage,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            ImageUtil::cmd_transition_for_color_write(l_Cmd,
+                                                      l_TempImage);
 
             Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
             l_ColorAttachments.resize(1);
@@ -1515,17 +1591,13 @@ namespace Low {
 
             vkCmdEndRendering(l_Cmd);
 
-            ImageUtil::cmd_transition(
-                l_Cmd, l_TempImage,
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            ImageUtil::cmd_transition_color_write_to_shader_read(
+                l_Cmd, l_TempImage);
           }
 
           {
-            ImageUtil::cmd_transition(
-                l_Cmd, l_OutImage,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            ImageUtil::cmd_transition_for_color_write(l_Cmd,
+                                                      l_OutImage);
 
             Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
             l_ColorAttachments.resize(1);
@@ -1570,10 +1642,8 @@ namespace Low {
 
             vkCmdEndRendering(l_Cmd);
 
-            ImageUtil::cmd_transition(
-                l_Cmd, l_OutImage,
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            ImageUtil::cmd_transition_color_write_to_shader_read(
+                l_Cmd, l_OutImage);
           }
 
           return true;

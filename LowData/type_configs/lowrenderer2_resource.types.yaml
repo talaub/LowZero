@@ -131,7 +131,6 @@ types:
           - name: path
             type: Util::String
 
-
   GpuMesh:
     no_auto_serialize: true
     no_auto_deserialize: true
@@ -265,6 +264,8 @@ types:
         parameters:
           - name: config
             type: TextureResourceConfig
+      is_imgui_texture_ready:
+        return_type: bool
 
   TextureStaging:
     properties:
@@ -338,7 +339,6 @@ types:
           - name: formatCategory
             type: TextureFormatCategory
             no_ref: true
-      
 
   Font:
     reference_counted: true
@@ -438,7 +438,7 @@ types:
 
   EditorImage:
     properties:
-      path: 
+      path:
         type: Low::Util::String
       gpu:
         type: Low::Renderer::EditorImageGpu

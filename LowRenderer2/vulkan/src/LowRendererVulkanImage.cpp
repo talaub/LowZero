@@ -10,6 +10,46 @@ namespace Low {
     namespace Vulkan {
       namespace ImageUtil {
         namespace Internal {
+          static bool cmd_transition_color(
+              VkCommandBuffer p_Cmd, AllocatedImage &p_AllocatedImage,
+              VkImageLayout p_NewLayout,
+              VkPipelineStageFlags2 p_SrcStageMask,
+              VkAccessFlags2 p_SrcAccessMask,
+              VkPipelineStageFlags2 p_DstStageMask,
+              VkAccessFlags2 p_DstAccessMask)
+          {
+            if (p_AllocatedImage.layout == p_NewLayout) {
+              return true;
+            }
+
+            VkImageMemoryBarrier2 l_ImageBarrier{};
+            l_ImageBarrier.sType =
+                VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+            l_ImageBarrier.pNext = nullptr;
+            l_ImageBarrier.srcStageMask = p_SrcStageMask;
+            l_ImageBarrier.srcAccessMask = p_SrcAccessMask;
+            l_ImageBarrier.dstStageMask = p_DstStageMask;
+            l_ImageBarrier.dstAccessMask = p_DstAccessMask;
+            l_ImageBarrier.oldLayout = p_AllocatedImage.layout;
+            l_ImageBarrier.newLayout = p_NewLayout;
+            l_ImageBarrier.subresourceRange =
+                InitUtil::image_subresource_range(
+                    VK_IMAGE_ASPECT_COLOR_BIT);
+            l_ImageBarrier.image = p_AllocatedImage.image;
+
+            VkDependencyInfo l_DependencyInfo{};
+            l_DependencyInfo.sType =
+                VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+            l_DependencyInfo.pNext = nullptr;
+            l_DependencyInfo.imageMemoryBarrierCount = 1;
+            l_DependencyInfo.pImageMemoryBarriers = &l_ImageBarrier;
+
+            vkCmdPipelineBarrier2(p_Cmd, &l_DependencyInfo);
+            p_AllocatedImage.layout = p_NewLayout;
+
+            return true;
+          }
+
           bool cmd_transition(VkCommandBuffer p_Cmd,
                               AllocatedImage &p_AllocatedImage,
                               VkImageLayout p_NewLayout)
@@ -293,6 +333,30 @@ namespace Low {
           return Internal::cmd_transition(
               p_Cmd, p_Image.get_allocated_image().image,
               p_CurrentLayout, p_NewLayout);
+        }
+
+        bool cmd_transition_for_color_write(VkCommandBuffer p_Cmd,
+                                            Image p_Image)
+        {
+          return Internal::cmd_transition_color(
+              p_Cmd, p_Image.get_allocated_image(),
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+              VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+              VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+              VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+              VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
+        }
+
+        bool cmd_transition_color_write_to_shader_read(
+            VkCommandBuffer p_Cmd, Image p_Image)
+        {
+          return Internal::cmd_transition_color(
+              p_Cmd, p_Image.get_allocated_image(),
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+              VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+              VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+              VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+              VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
         }
 
         bool cmd_copy2D(VkCommandBuffer p_Cmd, Image p_Source,

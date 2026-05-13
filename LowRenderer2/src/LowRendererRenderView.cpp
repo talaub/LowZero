@@ -53,6 +53,8 @@ namespace Low {
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = RenderView::ms_TypeId;
 
+      ACCESSOR_TYPE_SOA(l_Handle, RenderView, scheduled_for_deletion,
+                        bool) = false;
       ACCESSOR_TYPE_SOA(l_Handle, RenderView, camera_fov, float) =
           0.0f;
       ACCESSOR_TYPE_SOA(l_Handle, RenderView, ui_camera_zoom, float) =
@@ -159,6 +161,7 @@ namespace Low {
 
         if (!ms_FullDestroy) {
           ms_ScheduledForDeletion.insert(get_id());
+          set_scheduled_for_deletion(true);
           return;
         }
 
@@ -167,6 +170,12 @@ namespace Low {
           it->teardown(get_id());
           free(get_step_data()[it->get_index()]);
         }
+
+        Vulkan::ViewInfo l_ViewInfo = get_view_info_handle();
+        if (l_ViewInfo.is_alive()) {
+          l_ViewInfo.destroy();
+        }
+
         if (get_gbuffer_albedo().is_alive()) {
           get_gbuffer_albedo().destroy();
         }
@@ -197,9 +206,8 @@ namespace Low {
         if (get_cavities_image().is_alive()) {
           get_cavities_image().destroy();
         }
-        Vulkan::ViewInfo l_ViewInfo = get_view_info_handle();
-        if (l_ViewInfo.is_alive()) {
-          l_ViewInfo.destroy();
+        if (get_shadow_atlas().is_alive()) {
+          get_shadow_atlas().destroy();
         }
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
@@ -274,6 +282,35 @@ namespace Low {
       l_TypeInfo.get_living_count = &RenderView::living_count;
       l_TypeInfo.component = false;
       l_TypeInfo.uiComponent = false;
+      {
+        // Property: scheduled_for_deletion
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(scheduled_for_deletion);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderView::Data, scheduled_for_deletion);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.is_scheduled_for_deletion();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, RenderView, scheduled_for_deletion, bool);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.set_scheduled_for_deletion(*(bool *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          *((bool *)p_Data) = l_Handle.is_scheduled_for_deletion();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: scheduled_for_deletion
+      }
       {
         // Property: camera_position
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
@@ -1479,6 +1516,8 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       RenderView l_Handle = make(p_Name);
+      l_Handle.set_scheduled_for_deletion(
+          is_scheduled_for_deletion());
       l_Handle.set_camera_position(get_camera_position());
       l_Handle.set_camera_direction(get_camera_direction());
       l_Handle.set_camera_fov(get_camera_fov());
@@ -1624,6 +1663,36 @@ namespace Low {
     {
       RenderView l_RenderView = p_Observer.get_id();
       l_RenderView.notify(p_Observed, p_Observable);
+    }
+
+    bool RenderView::is_scheduled_for_deletion() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_scheduled_for_deletion
+      // LOW_CODEGEN::END::CUSTOM:GETTER_scheduled_for_deletion
+
+      return TYPE_SOA(RenderView, scheduled_for_deletion, bool);
+    }
+    void RenderView::toggle_scheduled_for_deletion()
+    {
+      set_scheduled_for_deletion(!is_scheduled_for_deletion());
+    }
+
+    void RenderView::set_scheduled_for_deletion(bool p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_scheduled_for_deletion
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_scheduled_for_deletion
+
+      // Set new value
+      TYPE_SOA(RenderView, scheduled_for_deletion, bool) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_scheduled_for_deletion
+      // LOW_CODEGEN::END::CUSTOM:SETTER_scheduled_for_deletion
+
+      broadcast_observable(N(scheduled_for_deletion));
     }
 
     Low::Math::Vector3 RenderView::get_camera_position() const
@@ -2076,6 +2145,11 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_desired_dimensions
+
+      if (p_Value.x < 10 || p_Value.y < 10 || p_Value.x > 15000 ||
+          p_Value.y > 15000) {
+        return;
+      }
 
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_desired_dimensions
 

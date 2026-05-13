@@ -22,6 +22,7 @@ namespace Low {
       m_RenderView.add_step_by_name(RENDERSTEP_SOLID_MATERIAL_NAME);
       m_RenderView.add_step_by_name(RENDERSTEP_SSAO_NAME);
       m_RenderView.add_step_by_name(RENDERSTEP_LIGHTCULLING_NAME);
+      m_RenderView.add_step_by_name(RENDERSTEP_CAVITIES_NAME);
       m_RenderView.add_step_by_name(RENDERSTEP_LIGHTING_NAME);
     }
 
@@ -102,8 +103,13 @@ namespace Low {
 
       const ImVec2 l_DrawPos = ImGui::GetCursorScreenPos();
 
-      ImGui::Image(get_out_texture().get_gpu().get_imgui_texture_id(),
-                   ImVec2(l_Dimensions.x, l_Dimensions.y));
+      Renderer::Texture l_OutTexture = get_out_texture();
+      if (l_OutTexture.is_imgui_texture_ready()) {
+        ImGui::Image(l_OutTexture.get_gpu().get_imgui_texture_id(),
+                     ImVec2(l_Dimensions.x, l_Dimensions.y));
+      } else {
+        ImGui::Dummy(ImVec2(l_Dimensions.x, l_Dimensions.y));
+      }
 
       m_ViewportHovered = ImGui::IsItemHovered();
 

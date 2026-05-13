@@ -19,6 +19,7 @@
 #include "LowRendererSubmeshGeometry.h"
 #include "LowRendererTextureStaging.h"
 #include "LowRendererBase.h"
+#include "LowRendererVulkanBuffer.h"
 
 #include "LowUtil.h"
 #include "LowUtilContainers.h"
@@ -1038,6 +1039,14 @@ namespace Low {
                   .m_Buffer.buffer,
               1, &l_CopyRegion);
 
+          Vulkan::BufferUtil::cmd_buffer_barrier(
+              Vulkan::Global::get_current_command_buffer(),
+              Vulkan::Global::get_mesh_vertex_buffer(), l_CopyRegion,
+              VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+              VK_ACCESS_2_TRANSFER_WRITE_BIT,
+              VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT,
+              VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT);
+
           p_UploadEntry.uploadedSize += l_FrameUploadSpace;
           p_UploadEntry.data.mesh.gpuSubmesh
               .set_uploaded_vertex_count(
@@ -1097,6 +1106,14 @@ namespace Low {
                   .buffer.buffer,
               Vulkan::Global::get_mesh_index_buffer().m_Buffer.buffer,
               1, &l_CopyRegion);
+
+          Vulkan::BufferUtil::cmd_buffer_barrier(
+              Vulkan::Global::get_current_command_buffer(),
+              Vulkan::Global::get_mesh_index_buffer(), l_CopyRegion,
+              VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+              VK_ACCESS_2_TRANSFER_WRITE_BIT,
+              VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,
+              VK_ACCESS_2_INDEX_READ_BIT);
 
           p_UploadEntry.uploadedSize += l_FrameUploadSpace;
           p_UploadEntry.data.mesh.gpuSubmesh.set_uploaded_index_count(

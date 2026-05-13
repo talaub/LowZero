@@ -78,6 +78,7 @@ namespace Low {
       l_Handle.set_uv_rect(
           Low::Math::Vector4(0.0f, 0.0f, 1.0f, 1.0f));
 
+      l_Handle.set_slot(LOW_UINT32_MAX);
       l_Handle.set_uploaded(false);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 

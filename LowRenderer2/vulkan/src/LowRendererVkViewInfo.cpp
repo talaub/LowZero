@@ -114,42 +114,54 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
 
         {
+          Util::String l_Name =
+              Util::String(p_Name.c_str()) + " view data buffer";
           AllocatedBuffer l_Buffer = BufferUtil::create_buffer(
               sizeof(ViewInfoFrameData),
               VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
                   VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
               VMA_MEMORY_USAGE_GPU_ONLY);
+          BufferUtil::set_name(l_Buffer, l_Name.c_str());
           l_Handle.set_view_data_buffer(l_Buffer);
         }
 
         {
+          Util::String l_Name = Util::String(p_Name.c_str()) +
+                                " directional light buffer";
           AllocatedBuffer l_Buffer = BufferUtil::create_buffer(
               sizeof(DirectionalLightInfo),
               VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
                   VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
               VMA_MEMORY_USAGE_GPU_ONLY);
+          BufferUtil::set_name(l_Buffer, l_Name.c_str());
           l_Handle.set_directional_light_buffer(l_Buffer);
         }
 
         {
+          Util::String l_Name =
+              Util::String(p_Name.c_str()) + " point light buffer";
           AllocatedBuffer l_Buffer = BufferUtil::create_buffer(
               sizeof(PointLightInfo) * POINTLIGHT_COUNT,
               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                   VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
               VMA_MEMORY_USAGE_GPU_ONLY);
+          BufferUtil::set_name(l_Buffer, l_Name.c_str());
           l_Handle.set_point_light_buffer(l_Buffer);
         }
 
         {
+          Util::String l_Name =
+              Util::String(p_Name.c_str()) + " debug geometry buffer";
           AllocatedBuffer l_Buffer = BufferUtil::create_buffer(
               sizeof(DebugGeometryUpload) * DEBUG_GEOMETRY_COUNT,
               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                   VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
               VMA_MEMORY_USAGE_GPU_ONLY);
+          BufferUtil::set_name(l_Buffer, l_Name.c_str());
           l_Handle.set_debug_geometry_buffer(l_Buffer);
         }
 
@@ -168,6 +180,14 @@ namespace Low {
                     STAGING_BUFFER_SIZE,
                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                     VMA_MEMORY_USAGE_CPU_TO_GPU);
+            Util::StringBuilder l_Builder;
+            l_Builder.append(p_Name);
+            l_Builder.append(" view staging buffer ");
+            l_Builder.append(i);
+            Util::String l_Name = l_Builder.get();
+            BufferUtil::set_name(
+                l_Handle.get_staging_buffers()[i].buffer,
+                l_Name.c_str());
             l_Handle.get_staging_buffers()[i].size =
                 STAGING_BUFFER_SIZE;
             l_Handle.get_staging_buffers()[i].occupied = 0u;
@@ -194,7 +214,6 @@ namespace Low {
 
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-
           BufferUtil::destroy_buffer(get_view_data_buffer());
           BufferUtil::destroy_buffer(get_directional_light_buffer());
           BufferUtil::destroy_buffer(
@@ -204,6 +223,10 @@ namespace Low {
           BufferUtil::destroy_buffer(get_debug_geometry_buffer());
 
           BufferUtil::destroy_buffer(get_object_id_buffer());
+
+          get_shadow_pass_data().point_light_slot_mapping.clear();
+          get_shadow_pass_data().point_light_slots.clear();
+          get_shadow_pass_data().point_light_shadow_data.clear();
 
           for (u32 i = 0u; i < Global::get_frame_overlap(); ++i) {
             BufferUtil::destroy_buffer(

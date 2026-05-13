@@ -23,7 +23,7 @@ namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
 
-    Low::Util::Set<Low::Renderer::GpuTexture>
+    Low::Util::List<Low::Renderer::DirtyTextureEntry>
         Low::Renderer::GpuTexture::ms_Dirty;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
@@ -74,7 +74,12 @@ namespace Low {
 
       l_Handle.set_bindless_index(Vulkan::TextureSlots::allocate(
           l_Handle.get_format_category()));
-      ms_Dirty.insert(l_Handle);
+      DirtyTextureEntry l_Entry;
+      l_Entry.gpuTextureId = l_Handle.get_id();
+      l_Entry.bindless_index = l_Handle.get_bindless_index();
+      l_Entry.format_category = l_Handle.get_format_category();
+      l_Entry.type = DirtyTextureType::Modified;
+      ms_Dirty.push_back(l_Entry);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -86,6 +91,13 @@ namespace Low {
 
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
+        DirtyTextureEntry l_Entry;
+        l_Entry.gpuTextureId = get_id();
+        l_Entry.bindless_index = get_bindless_index();
+        l_Entry.format_category = get_format_category();
+        l_Entry.type = DirtyTextureType::Deleted;
+        ms_Dirty.push_back(l_Entry);
 
         Vulkan::TextureSlots::release(get_format_category(),
                                       get_bindless_index());
@@ -762,6 +774,12 @@ namespace Low {
         TYPE_SOA(GpuTexture, bindless_index, uint32_t) =
             Vulkan::TextureSlots::allocate(get_format_category());
       }
+      DirtyTextureEntry l_Entry;
+      l_Entry.gpuTextureId = get_id();
+      l_Entry.bindless_index = get_bindless_index();
+      l_Entry.format_category = get_format_category();
+      l_Entry.type = DirtyTextureType::Modified;
+      ms_Dirty.push_back(l_Entry);
       // LOW_CODEGEN::END::CUSTOM:SETTER_format_category
 
       broadcast_observable(N(format_category));
@@ -790,7 +808,12 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_data_handle
 
-      ms_Dirty.insert(get_id());
+      DirtyTextureEntry l_Entry;
+      l_Entry.gpuTextureId = get_id();
+      l_Entry.bindless_index = get_bindless_index();
+      l_Entry.format_category = get_format_category();
+      l_Entry.type = DirtyTextureType::Modified;
+      ms_Dirty.push_back(l_Entry);
       // LOW_CODEGEN::END::CUSTOM:SETTER_data_handle
 
       broadcast_observable(N(data_handle));

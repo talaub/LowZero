@@ -135,6 +135,8 @@ types:
     no_auto_serialize: true
     no_auto_deserialize: true
     properties:
+      scheduled_for_deletion:
+        type: bool
       camera_position:
         type: Low::Math::Vector3
         dirty_flag: camera_dirty

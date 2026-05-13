@@ -161,10 +161,18 @@ namespace Low {
         VkSampler shadow_comparison;
       };
 
+      enum class TextureUpdateType
+      {
+        Modified,
+        Deleted
+      };
+
       struct TextureUpdate
       {
-        GpuTexture gpuTexture;
-        u32 textureIndex;
+        TextureUpdateType type;
+        GpuTexture gpu_texture;
+        u32 bindless_index;
+        TextureFormatCategory format_category;
       };
 
       struct EditorImageUpdate

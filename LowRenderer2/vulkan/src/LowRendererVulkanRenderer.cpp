@@ -32,6 +32,7 @@
 
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
+#include "LowUtilHashing.h"
 #include "LowUtilLogger.h"
 #include "LowUtilResource.h"
 
@@ -100,6 +101,9 @@ namespace Low {
       VkDescriptorSet g_Ss2dGlobalSet;
       VkDescriptorSetLayout g_Ss2dCanvasDSLayout;
       VkDescriptorSetLayout g_Ss2dGlobalDSLayout;
+
+      static GpuTexture g_DefaultUintTexture;
+      static GpuTexture g_DefaultIntTexture;
 
       namespace Convert {
         static VkFormat image_format(ImageFormat p_Format)
@@ -489,70 +493,55 @@ namespace Low {
                                              p_Offset);
       }
 
-      static bool initialize_default_texture()
+      static GpuTexture
+      get_default_gpu_texture(TextureFormatCategory p_Category)
       {
-        Vulkan::Image l_Image = Vulkan::Image::make(N(Default));
-        get_default_texture().get_gpu().set_data_handle(
-            l_Image.get_id());
+        if (p_Category == TextureFormatCategory::Float) {
+          return get_default_texture().get_gpu();
+        }
 
-        Math::UVector2 l_Dimensions(128.0f);
+        if (p_Category == TextureFormatCategory::Uint) {
+          if (!g_DefaultUintTexture.is_alive()) {
+            g_DefaultUintTexture = GpuTexture::make(
+                N(DefaultUint), TextureFormatCategory::Uint);
+          }
+          return g_DefaultUintTexture;
+        }
 
+        if (!g_DefaultIntTexture.is_alive()) {
+          g_DefaultIntTexture = GpuTexture::make(
+              N(DefaultInt), TextureFormatCategory::Int);
+        }
+        return g_DefaultIntTexture;
+      }
+
+      static bool upload_default_image(Image p_Image,
+                                       VkFormat p_Format,
+                                       VkExtent3D p_Extent,
+                                       const void *p_PixelData,
+                                       size_t p_PixelDataSize)
+      {
         size_t l_StagingOffset = 0;
         const u64 l_UploadSpace =
             Vulkan::request_resource_staging_buffer_space(
-                l_Dimensions.x * l_Dimensions.y * IMAGE_CHANNEL_COUNT,
-                &l_StagingOffset);
+                p_PixelDataSize, &l_StagingOffset);
 
-        LOW_ASSERT(l_UploadSpace == (l_Dimensions.x * l_Dimensions.y *
-                                     IMAGE_CHANNEL_COUNT),
+        LOW_ASSERT(l_UploadSpace == p_PixelDataSize,
                    "Failed to request resource "
                    "staging buffer space for "
                    "default texture");
 
-        VkExtent3D l_Extent;
-        l_Extent.width = l_Dimensions.x;
-        l_Extent.height = l_Dimensions.y;
-        l_Extent.depth = 1;
-
-        Vulkan::ImageUtil::create(l_Image, l_Extent,
-                                  VK_FORMAT_R8G8B8A8_UNORM,
+        Vulkan::ImageUtil::create(p_Image, p_Extent, p_Format,
                                   VK_IMAGE_USAGE_SAMPLED_BIT, false);
-
-        Util::List<uint8_t> l_Pixels(l_Dimensions.x * l_Dimensions.y *
-                                     IMAGE_CHANNEL_COUNT); // RGBA8
-
-        for (uint32_t y = 0; y < l_Dimensions.y; ++y) {
-          for (uint32_t x = 0; x < l_Dimensions.x; ++x) {
-            // Determine if this tile is white or black
-            // Tile size is 64x64 (128 / 2)
-            bool i_WhiteTile =
-                (x < 64 && y < 64) ||
-                (x >= 64 &&
-                 y >= 64); // Top-left and bottom-right white
-
-            size_t i_Index = (y * l_Dimensions.x + x) * 4;
-            if (i_WhiteTile) {
-              l_Pixels[i_Index + 0] = 228; // R
-              l_Pixels[i_Index + 1] = 114; // G
-              l_Pixels[i_Index + 2] = 184; // B
-              l_Pixels[i_Index + 3] = 255; // A
-            } else {
-              l_Pixels[i_Index + 0] = 114; // R
-              l_Pixels[i_Index + 1] = 184; // G
-              l_Pixels[i_Index + 2] = 228; // B
-              l_Pixels[i_Index + 3] = 255; // A
-            }
-          }
-        }
 
         LOW_ASSERT(
             Vulkan::resource_staging_buffer_write(
-                l_Pixels.data(), l_UploadSpace, l_StagingOffset),
+                (void *)p_PixelData, l_UploadSpace, l_StagingOffset),
             "Failed to upload default image to resource staging "
             "buffer");
 
         ImageUtil::cmd_transition(
-            Global::get_current_command_buffer(), l_Image,
+            Global::get_current_command_buffer(), p_Image,
             VK_IMAGE_LAYOUT_UNDEFINED,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -570,32 +559,129 @@ namespace Low {
         l_Region.imageSubresource.layerCount = 1;
 
         l_Region.imageOffset = {0, 0, 0};
-        l_Region.imageExtent = {
-            l_Dimensions.x, // width
-            l_Dimensions.y, // height
-            1               // depth
-        };
+        l_Region.imageExtent = p_Extent;
 
         vkCmdCopyBufferToImage(
             Vulkan::Global::get_current_command_buffer(),
             Vulkan::Global::get_current_resource_staging_buffer()
                 .buffer.buffer,
-            l_Image.get_allocated_image().image,
+            p_Image.get_allocated_image().image,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &l_Region);
 
         ImageUtil::cmd_transition(
-            Global::get_current_command_buffer(), l_Image,
+            Global::get_current_command_buffer(), p_Image,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-        for (u32 i = 0; i < Global::get_frame_overlap(); ++i) {
-          for (u32 j = 0; j < GpuTexture::get_capacity(); ++j) {
-            if (!GpuTexture::find_by_index(j).is_alive()) {
-              Global::get_texture_update_queue(i).push(
-                  {get_default_texture().get_gpu(), j});
+        return true;
+      }
+
+      static bool initialize_float_default_texture()
+      {
+        Vulkan::Image l_Image = Vulkan::Image::make(N(Default));
+        get_default_texture().get_gpu().set_data_handle(
+            l_Image.get_id());
+
+        Math::UVector2 l_Dimensions(128.0f);
+        VkExtent3D l_Extent;
+        l_Extent.width = l_Dimensions.x;
+        l_Extent.height = l_Dimensions.y;
+        l_Extent.depth = 1;
+
+        Util::List<uint8_t> l_Pixels(l_Dimensions.x * l_Dimensions.y *
+                                     IMAGE_CHANNEL_COUNT); // RGBA8
+
+        for (uint32_t y = 0; y < l_Dimensions.y; ++y) {
+          for (uint32_t x = 0; x < l_Dimensions.x; ++x) {
+            bool i_WhiteTile =
+                (x < 64 && y < 64) || (x >= 64 && y >= 64);
+
+            size_t i_Index = (y * l_Dimensions.x + x) * 4;
+            if (i_WhiteTile) {
+              l_Pixels[i_Index + 0] = 228;
+              l_Pixels[i_Index + 1] = 114;
+              l_Pixels[i_Index + 2] = 184;
+              l_Pixels[i_Index + 3] = 255;
+            } else {
+              l_Pixels[i_Index + 0] = 114;
+              l_Pixels[i_Index + 1] = 184;
+              l_Pixels[i_Index + 2] = 228;
+              l_Pixels[i_Index + 3] = 255;
             }
           }
         }
+
+        return upload_default_image(l_Image, VK_FORMAT_R8G8B8A8_UNORM,
+                                    l_Extent, l_Pixels.data(),
+                                    l_Pixels.size());
+      }
+
+      static bool initialize_integer_default_texture(
+          TextureFormatCategory p_Category)
+      {
+        GpuTexture l_GpuTexture = get_default_gpu_texture(p_Category);
+        Vulkan::Image l_Image;
+        if (p_Category == TextureFormatCategory::Uint) {
+          l_Image = Vulkan::Image::make(N(DefaultUint));
+        } else {
+          l_Image = Vulkan::Image::make(N(DefaultInt));
+        }
+        l_GpuTexture.set_data_handle(l_Image.get_id());
+
+        VkExtent3D l_Extent;
+        l_Extent.width = 1;
+        l_Extent.height = 1;
+        l_Extent.depth = 1;
+
+        if (p_Category == TextureFormatCategory::Uint) {
+          const u32 l_DefaultPixel = LOW_UINT32_MAX;
+          return upload_default_image(l_Image, VK_FORMAT_R32_UINT,
+                                      l_Extent, &l_DefaultPixel,
+                                      sizeof(l_DefaultPixel));
+        }
+
+        const int32_t l_DefaultPixel = 0;
+        return upload_default_image(l_Image, VK_FORMAT_R32_SINT,
+                                    l_Extent, &l_DefaultPixel,
+                                    sizeof(l_DefaultPixel));
+      }
+
+      static void queue_default_texture_for_slots(
+          TextureFormatCategory p_Category)
+      {
+        GpuTexture l_DefaultTexture =
+            get_default_gpu_texture(p_Category);
+
+        for (u32 i = 0; i < Global::get_frame_overlap(); ++i) {
+          for (u32 j = 0; j < TextureSlots::get_capacity(p_Category);
+               ++j) {
+            TextureUpdate i_Update;
+            i_Update.type = TextureUpdateType::Modified;
+            i_Update.gpu_texture = l_DefaultTexture;
+            i_Update.bindless_index = j;
+            i_Update.format_category = p_Category;
+            Global::get_texture_update_queue(i).push(i_Update);
+          }
+        }
+      }
+
+      static bool initialize_default_texture()
+      {
+        LOWR_VK_ASSERT_RETURN(initialize_float_default_texture(),
+                              "Failed to initialize float default "
+                              "texture");
+        LOWR_VK_ASSERT_RETURN(
+            initialize_integer_default_texture(
+                TextureFormatCategory::Uint),
+            "Failed to initialize uint default texture");
+        LOWR_VK_ASSERT_RETURN(
+            initialize_integer_default_texture(
+                TextureFormatCategory::Int),
+            "Failed to initialize int default texture");
+
+        queue_default_texture_for_slots(TextureFormatCategory::Float);
+        queue_default_texture_for_slots(TextureFormatCategory::Uint);
+        queue_default_texture_for_slots(TextureFormatCategory::Int);
 
         return true;
       }
@@ -662,6 +748,12 @@ namespace Low {
 
         for (u32 i = 0u; i < RenderView::living_count(); ++i) {
           RenderView i_RenderView = RenderView::living_instances()[i];
+          if (RenderView::ms_ScheduledForDeletion.find(
+                  i_RenderView) !=
+              RenderView::ms_ScheduledForDeletion.end()) {
+            continue;
+          }
+
           RenderScene i_RenderScene = i_RenderView.get_render_scene();
           if (!i_RenderScene.is_alive()) {
             continue;
@@ -819,11 +911,33 @@ namespace Low {
           l_CopyRegion.dstOffset = 0;
           l_CopyRegion.size = l_FrameUploadSpace;
 
+          BufferUtil::cmd_buffer_barrier(
+              Vulkan::Global::get_current_command_buffer(),
+              p_ViewInfo.get_directional_light_buffer(), l_CopyRegion,
+              VK_PIPELINE_STAGE_2_TRANSFER_BIT |
+                  VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                  VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+                  VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+              VK_ACCESS_2_TRANSFER_WRITE_BIT |
+                  VK_ACCESS_2_UNIFORM_READ_BIT,
+              VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+              VK_ACCESS_2_TRANSFER_WRITE_BIT);
+
           vkCmdCopyBuffer(
               Vulkan::Global::get_current_command_buffer(),
               p_ViewInfo.get_current_staging_buffer().buffer.buffer,
               p_ViewInfo.get_directional_light_buffer().buffer, 1,
               &l_CopyRegion);
+
+          BufferUtil::cmd_buffer_barrier(
+              Vulkan::Global::get_current_command_buffer(),
+              p_ViewInfo.get_directional_light_buffer(), l_CopyRegion,
+              VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+              VK_ACCESS_2_TRANSFER_WRITE_BIT,
+              VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                  VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+                  VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+              VK_ACCESS_2_UNIFORM_READ_BIT);
         }
 
         {
@@ -955,10 +1069,34 @@ namespace Low {
           ShadowPassViewData &l_Data =
               p_ViewInfo.get_shadow_pass_data();
 
-          vkCmdUpdateBuffer(Global::get_current_command_buffer(),
-                            l_Data.directional_shadow_buffer.buffer,
-                            0, sizeof(DirectionalLightShadowInfo),
-                            &l_DirInfo);
+          if (l_Data.directional_shadow_buffer.buffer !=
+                  VK_NULL_HANDLE &&
+              l_Data.directional_shadow_buffer.info.size > 0) {
+            BufferUtil::cmd_buffer_barrier(
+                Global::get_current_command_buffer(),
+                l_Data.directional_shadow_buffer, 0,
+                sizeof(DirectionalLightShadowInfo),
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT |
+                    VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                    VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT |
+                    VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT);
+            vkCmdUpdateBuffer(Global::get_current_command_buffer(),
+                              l_Data.directional_shadow_buffer.buffer,
+                              0, sizeof(DirectionalLightShadowInfo),
+                              &l_DirInfo);
+            BufferUtil::cmd_buffer_barrier(
+                Global::get_current_command_buffer(),
+                l_Data.directional_shadow_buffer, 0,
+                sizeof(DirectionalLightShadowInfo),
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                    VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                VK_ACCESS_2_SHADER_STORAGE_READ_BIT);
+          }
         }
 
         return true;
@@ -1080,12 +1218,32 @@ namespace Low {
           // tbh
           // TODO: Check if it's possible to batch all these
           // together per renderscene
+          BufferUtil::cmd_buffer_barrier(
+              Vulkan::Global::get_current_command_buffer(),
+              l_Data.point_light_shadow_buffer, i_CopyRegion,
+              VK_PIPELINE_STAGE_2_TRANSFER_BIT |
+                  VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                  VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+                  VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+              VK_ACCESS_2_TRANSFER_WRITE_BIT |
+                  VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+              VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+              VK_ACCESS_2_TRANSFER_WRITE_BIT);
           vkCmdCopyBuffer(
               Vulkan::Global::get_current_command_buffer(),
               Vulkan::Global::get_current_frame_staging_buffer()
                   .buffer.buffer,
               l_Data.point_light_shadow_buffer.buffer, 1,
               &i_CopyRegion);
+          BufferUtil::cmd_buffer_barrier(
+              Vulkan::Global::get_current_command_buffer(),
+              l_Data.point_light_shadow_buffer, i_CopyRegion,
+              VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+              VK_ACCESS_2_TRANSFER_WRITE_BIT,
+              VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                  VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+                  VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+              VK_ACCESS_2_SHADER_STORAGE_READ_BIT);
         }
 
         for (PointLight i_PointLight :
@@ -1193,12 +1351,32 @@ namespace Low {
             // tbh
             // TODO: Check if it's possible to batch all these
             // together per renderscene
+            BufferUtil::cmd_buffer_barrier(
+                Vulkan::Global::get_current_command_buffer(),
+                l_Data.point_light_shadow_buffer, i_CopyRegion,
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT |
+                    VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                    VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+                    VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT |
+                    VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT);
             vkCmdCopyBuffer(
                 Vulkan::Global::get_current_command_buffer(),
                 Vulkan::Global::get_current_frame_staging_buffer()
                     .buffer.buffer,
                 l_Data.point_light_shadow_buffer.buffer, 1,
                 &i_CopyRegion);
+            BufferUtil::cmd_buffer_barrier(
+                Vulkan::Global::get_current_command_buffer(),
+                l_Data.point_light_shadow_buffer, i_CopyRegion,
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                    VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+                    VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                VK_ACCESS_2_SHADER_STORAGE_READ_BIT);
           }
         }
 
@@ -1387,6 +1565,11 @@ namespace Low {
                     VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                     VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VMA_MEMORY_USAGE_GPU_ONLY);
+            Util::StringBuilder l_Builder;
+            l_Builder.append(p_RenderView.get_name());
+            l_Builder.append(" ui drawcommand buffer");
+            Util::String l_Name = l_Builder.get();
+            BufferUtil::set_name(l_Buffer, l_Name.c_str());
             p_ViewInfo.set_ui_drawcommand_buffer(l_Buffer);
 
             DescriptorUtil::DescriptorWriter l_Writer;
@@ -1563,6 +1746,16 @@ namespace Low {
               sizeof(u32) * l_Extent.width * l_Extent.height,
               VK_BUFFER_USAGE_TRANSFER_DST_BIT,
               VMA_MEMORY_USAGE_GPU_TO_CPU);
+          {
+            Util::StringBuilder l_Builder;
+            l_Builder.append(p_RenderView.get_name());
+            l_Builder.append(" object id buffer ");
+            l_Builder.append(l_Extent.width);
+            l_Builder.append("x");
+            l_Builder.append(l_Extent.height);
+            Util::String l_Name = l_Builder.get();
+            BufferUtil::set_name(l_ObjectBuffer, l_Name.c_str());
+          }
 
           p_ViewInfo.set_object_id_buffer(l_ObjectBuffer);
 
@@ -1873,11 +2066,33 @@ namespace Low {
           l_CopyRegion.dstOffset = 0;
           l_CopyRegion.size = l_FrameUploadSpace;
 
+          BufferUtil::cmd_buffer_barrier(
+              Vulkan::Global::get_current_command_buffer(),
+              p_ViewInfo.get_view_data_buffer(), l_CopyRegion,
+              VK_PIPELINE_STAGE_2_TRANSFER_BIT |
+                  VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                  VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+                  VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+              VK_ACCESS_2_TRANSFER_WRITE_BIT |
+                  VK_ACCESS_2_UNIFORM_READ_BIT,
+              VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+              VK_ACCESS_2_TRANSFER_WRITE_BIT);
+
           vkCmdCopyBuffer(
               Vulkan::Global::get_current_command_buffer(),
               p_ViewInfo.get_current_staging_buffer().buffer.buffer,
               p_ViewInfo.get_view_data_buffer().buffer, 1,
               &l_CopyRegion);
+
+          BufferUtil::cmd_buffer_barrier(
+              Vulkan::Global::get_current_command_buffer(),
+              p_ViewInfo.get_view_data_buffer(), l_CopyRegion,
+              VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+              VK_ACCESS_2_TRANSFER_WRITE_BIT,
+              VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                  VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+                  VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+              VK_ACCESS_2_UNIFORM_READ_BIT);
         }
 
         return true;
@@ -1997,11 +2212,29 @@ namespace Low {
             // TODO: Change to transfer queue command buffer - or
             // leave this specifically on the graphics queue not sure
             // tbh
+            BufferUtil::cmd_buffer_barrier(
+                Vulkan::Global::get_current_command_buffer(),
+                l_Holder.get(), i_CopyRegion,
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT |
+                    VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                    VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT |
+                    VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT);
             vkCmdCopyBuffer(
                 Vulkan::Global::get_current_command_buffer(),
                 Vulkan::Global::get_current_frame_staging_buffer()
                     .buffer.buffer,
                 l_Holder.get().buffer, 1, &i_CopyRegion);
+            BufferUtil::cmd_buffer_barrier(
+                Vulkan::Global::get_current_command_buffer(),
+                l_Holder.get(), i_CopyRegion,
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                    VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                VK_ACCESS_2_SHADER_STORAGE_READ_BIT);
           }
 
           ImageUtil::cmd_transition(
@@ -2082,8 +2315,16 @@ namespace Low {
       {
         for (u32 i = 0u; i < RenderView::living_count(); ++i) {
           RenderView i_RenderView = RenderView::living_instances()[i];
+          if (RenderView::ms_ScheduledForDeletion.find(
+                  i_RenderView) !=
+              RenderView::ms_ScheduledForDeletion.end()) {
+            continue;
+          }
 
           RenderScene i_RenderScene = i_RenderView.get_render_scene();
+          if (!i_RenderScene.is_alive()) {
+            continue;
+          }
 
           ViewInfo i_ViewInfo = i_RenderView.get_view_info_handle();
 
@@ -2124,6 +2365,10 @@ namespace Low {
 
           // Reset the current staging buffer
           i_ViewInfo.get_current_staging_buffer().occupied = 0;
+
+          if (i_RenderView.is_scheduled_for_deletion()) {
+            continue;
+          }
 
           if (!prepare_render_view_point_lights(p_Delta, i_RenderView,
                                                 i_ViewInfo)) {
@@ -2221,28 +2466,50 @@ namespace Low {
         for (auto it = GpuTexture::ms_Dirty.begin();
              it != GpuTexture::ms_Dirty.end(); ++it) {
 
-          GpuTexture i_GpuTexture = *it;
-          if (!i_GpuTexture.is_alive()) {
-            continue;
-          }
+          if (it->type == DirtyTextureType::Modified) {
+            GpuTexture i_GpuTexture = it->gpuTextureId;
+            if (!i_GpuTexture.is_alive()) {
+              continue;
+            }
 
-          Image i_Image = i_GpuTexture.get_data_handle();
+            if (i_GpuTexture.get_format_category() !=
+                it->format_category) {
+              continue;
+            }
 
-          if (!i_Image.is_alive()) {
-            continue;
-          }
+            Image i_Image = i_GpuTexture.get_data_handle();
 
-          i_GpuTexture.set_imgui_texture_id(
-              (ImTextureID)ImGui_ImplVulkan_AddTexture(
-                  l_Samplers.no_lod_nearest_repeat_black,
-                  i_Image.get_allocated_image().imageView,
-                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+            if (!i_Image.is_alive()) {
+              continue;
+            }
 
-          for (u32 i = 0; i < Global::get_frame_overlap(); ++i) {
-            TextureUpdate i_Update;
-            i_Update.gpuTexture = i_GpuTexture;
-            i_Update.textureIndex = i_GpuTexture.get_bindless_index();
-            Global::get_texture_update_queue(i).push(i_Update);
+            i_GpuTexture.set_imgui_texture_id(
+                (ImTextureID)ImGui_ImplVulkan_AddTexture(
+                    l_Samplers.no_lod_nearest_repeat_black,
+                    i_Image.get_allocated_image().imageView,
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+
+            for (u32 i = 0; i < Global::get_frame_overlap(); ++i) {
+              TextureUpdate i_Update;
+              i_Update.gpu_texture = i_GpuTexture;
+              i_Update.bindless_index = it->bindless_index;
+              i_Update.format_category = it->format_category;
+              i_Update.type = TextureUpdateType::Modified;
+              Global::get_texture_update_queue(i).push(i_Update);
+            }
+          } else if (it->type == DirtyTextureType::Deleted) {
+            for (u32 i = 0; i < Global::get_frame_overlap(); ++i) {
+              TextureUpdate i_Update;
+              i_Update.gpu_texture = 0;
+              i_Update.bindless_index = it->bindless_index;
+              i_Update.format_category = it->format_category;
+              i_Update.type = TextureUpdateType::Deleted;
+
+              Global::get_texture_update_queue(i).push(i_Update);
+            }
+
+          } else {
+            LOW_ASSERT(false, "Unsupported texture dirty type");
           }
         }
 
@@ -2304,12 +2571,32 @@ namespace Low {
             // tbh
             // PERF: First call probably very inefficient, maybe we
             // can fix that at some point
+            BufferUtil::cmd_buffer_barrier(
+                Vulkan::Global::get_current_command_buffer(),
+                i_Scene.get_point_light_buffer(), i_CopyRegion,
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT |
+                    VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                    VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+                    VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT |
+                    VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT);
             vkCmdCopyBuffer(
                 Vulkan::Global::get_current_command_buffer(),
                 Vulkan::Global::get_current_frame_staging_buffer()
                     .buffer.buffer,
                 i_Scene.get_point_light_buffer().buffer, 1,
                 &i_CopyRegion);
+            BufferUtil::cmd_buffer_barrier(
+                Vulkan::Global::get_current_command_buffer(),
+                i_Scene.get_point_light_buffer(), i_CopyRegion,
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                    VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+                    VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                VK_ACCESS_2_SHADER_STORAGE_READ_BIT);
           }
 
           for (auto it = i_RenderScene.get_pointlight_deleted_slots()
@@ -2414,12 +2701,32 @@ namespace Low {
             // tbh
             // TODO: Check if it's possible to batch all these
             // together per renderscene
+            BufferUtil::cmd_buffer_barrier(
+                Vulkan::Global::get_current_command_buffer(),
+                i_Scene.get_point_light_buffer(), i_CopyRegion,
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT |
+                    VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                    VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+                    VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT |
+                    VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT);
             vkCmdCopyBuffer(
                 Vulkan::Global::get_current_command_buffer(),
                 Vulkan::Global::get_current_frame_staging_buffer()
                     .buffer.buffer,
                 i_Scene.get_point_light_buffer().buffer, 1,
                 &i_CopyRegion);
+            BufferUtil::cmd_buffer_barrier(
+                Vulkan::Global::get_current_command_buffer(),
+                i_Scene.get_point_light_buffer(), i_CopyRegion,
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                    VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+                    VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                VK_ACCESS_2_SHADER_STORAGE_READ_BIT);
           }
         }
 
@@ -2482,12 +2789,36 @@ namespace Low {
             // tbh
             // TODO: Check if it's possible to batch all these
             // together per renderscene
+            for (const VkBufferCopy &i_CopyRegion : i_Copies) {
+              BufferUtil::cmd_buffer_barrier(
+                  Vulkan::Global::get_current_command_buffer(),
+                  i_Scene.get_point_light_buffer(), i_CopyRegion,
+                  VK_PIPELINE_STAGE_2_TRANSFER_BIT |
+                      VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                      VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+                      VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                  VK_ACCESS_2_TRANSFER_WRITE_BIT |
+                      VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                  VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                  VK_ACCESS_2_TRANSFER_WRITE_BIT);
+            }
             vkCmdCopyBuffer(
                 Vulkan::Global::get_current_command_buffer(),
                 Vulkan::Global::get_current_frame_staging_buffer()
                     .buffer.buffer,
                 i_Scene.get_point_light_buffer().buffer,
                 i_Copies.size(), i_Copies.data());
+            for (const VkBufferCopy &i_CopyRegion : i_Copies) {
+              BufferUtil::cmd_buffer_barrier(
+                  Vulkan::Global::get_current_command_buffer(),
+                  i_Scene.get_point_light_buffer(), i_CopyRegion,
+                  VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                  VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                  VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                      VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+                      VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                  VK_ACCESS_2_SHADER_STORAGE_READ_BIT);
+            }
           }
 
           i_RenderScene.get_pointlight_deleted_slots().clear();
@@ -2711,6 +3042,9 @@ namespace Low {
         PipelineManager::tick(p_Delta);
 
         bool l_Result = Base::context_prepare_draw(g_Context);
+        if (!l_Result) {
+          return false;
+        }
 
         if (!l_Initialized) {
           initialize_default_texture();
@@ -2751,31 +3085,67 @@ namespace Low {
                 Global::get_current_texture_update_queue().front();
             Global::get_current_texture_update_queue().pop();
 
-            if (!i_Update.gpuTexture.is_alive()) {
-              continue;
-            }
+            if (i_Update.type == TextureUpdateType::Modified) {
+              if (!i_Update.gpu_texture.is_alive()) {
+                continue;
+              }
 
-            Image i_Image = i_Update.gpuTexture.get_data_handle();
+              Image i_Image = i_Update.gpu_texture.get_data_handle();
 
-            if (!i_Image.is_alive()) {
-              continue;
-            }
+              if (!i_Image.is_alive()) {
+                continue;
+              }
 
-            l_AddedEntry = true;
+              l_AddedEntry = true;
 
-            {
-              TextureFormatCategory l_Category =
-                  i_Update.gpuTexture.get_format_category();
-              u32 l_Binding =
-                  (l_Category == TextureFormatCategory::Float)  ? 0
-                  : (l_Category == TextureFormatCategory::Uint) ? 1
-                                                                : 2;
-              l_Writer.write_image(
-                  l_Binding, i_Image.get_allocated_image().imageView,
-                  VK_NULL_HANDLE,
-                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                  VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
-                  i_Update.textureIndex);
+              {
+                TextureFormatCategory l_Category =
+                    i_Update.format_category;
+                u32 l_Binding =
+                    (l_Category == TextureFormatCategory::Float)  ? 0
+                    : (l_Category == TextureFormatCategory::Uint) ? 1
+                                                                  : 2;
+                l_Writer.write_image(
+                    l_Binding,
+                    i_Image.get_allocated_image().imageView,
+                    VK_NULL_HANDLE,
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+                    i_Update.bindless_index);
+              }
+            } else if (i_Update.type == TextureUpdateType::Deleted) {
+              GpuTexture l_DefaultTexture =
+                  get_default_gpu_texture(i_Update.format_category);
+
+              if (!l_DefaultTexture.is_alive()) {
+                continue;
+              }
+
+              Image i_Image = l_DefaultTexture.get_data_handle();
+
+              if (!i_Image.is_alive()) {
+                continue;
+              }
+
+              l_AddedEntry = true;
+
+              {
+                TextureFormatCategory l_Category =
+                    i_Update.format_category;
+                u32 l_Binding =
+                    (l_Category == TextureFormatCategory::Float)  ? 0
+                    : (l_Category == TextureFormatCategory::Uint) ? 1
+                                                                  : 2;
+                l_Writer.write_image(
+                    l_Binding,
+                    i_Image.get_allocated_image().imageView,
+                    VK_NULL_HANDLE,
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+                    i_Update.bindless_index);
+              }
+            } else {
+              LOW_ASSERT(false, "Unsupported texture update type.");
             }
           }
 
@@ -2970,7 +3340,8 @@ namespace Low {
 
         /*
         if (l_Dimensions.x > 0 && l_Dimensions.y > 0) {
-          RenderView i_RenderView = RenderView::living_instances()[0];
+          RenderView i_RenderView =
+        RenderView::living_instances()[0];
           i_RenderView.set_dimensions(l_Dimensions);
         }
         */

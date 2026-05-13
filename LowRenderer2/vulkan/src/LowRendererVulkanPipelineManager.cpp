@@ -7,6 +7,7 @@
 #include "LowUtil.h"
 
 #include "LowRendererShaderSource.h"
+#include "LowUtilString.h"
 
 #ifndef LOW_RENDERER_COMPILE_SHADERS
 #define LOW_RENDERER_COMPILE_SHADERS 0
@@ -95,17 +96,25 @@ namespace Low {
                                    const Util::String p_OutPath)
         {
 #if LOW_RENDERER_COMPILE_SHADERS
+#if 1
           Util::String l_IncludeCommand =
               "-I " + Util::get_project().engineDataPath +
               "\\lowr_shaders\\lib";
           Util::String l_Command =
-              "glslc " + l_IncludeCommand + " " + p_SourcePath;
+              "glslc -g -O0 " + l_IncludeCommand + " " + p_SourcePath;
+#else
+          Util::String l_IncludeCommand =
+              "-I" + Util::get_project().engineDataPath +
+              "\\lowr_shaders\\lib";
+          Util::String l_Command = "glslangValidator -V -gVS " +
+                                   l_IncludeCommand + " " +
+                                   p_SourcePath;
+#endif
 
           l_Command += " -o" + p_OutPath;
 
           Util::String l_Notice = "Compiling shader " + p_SourcePath;
 
-          LOW_LOG_DEBUG << l_Notice << LOW_LOG_END;
           Util::String l_Output;
           int l_Result =
               Util::execute_command(l_Command, true, &l_Output);
@@ -144,11 +153,21 @@ namespace Low {
 #if LOW_RENDERER_COMPILE_SHADERS
           Util::String l_DefineString = "";
 
+#if 1
           Util::String l_IncludeCommand =
               "-I " + Util::get_project().engineDataPath +
               "\\lowr_shaders\\lib";
           Util::String l_Command =
-              "glslc " + l_IncludeCommand + " " + p_SourcePath;
+              "glslc -g -O0 " + l_IncludeCommand + " " + p_SourcePath;
+#else
+          Util::String l_IncludeCommand =
+              "-I" + Util::PathHelper::normalize(
+                         Util::get_project().engineDataPath +
+                         "\\lowr_shaders\\lib");
+          Util::String l_Command =
+              "glslangValidator -V -gVS " + l_IncludeCommand + " " +
+              Util::PathHelper::normalize(p_SourcePath);
+#endif
 
           for (ShaderDefine &i_Define : p_Variant.get_defines()) {
             l_Command += " -D";
@@ -164,7 +183,7 @@ namespace Low {
             }
             l_DefineString += " ";
           }
-          l_Command += " -o" + p_OutPath;
+          l_Command += " -o" + Util::PathHelper::normalize(p_OutPath);
 
           Util::String l_Notice = "Compiling shader " + p_SourcePath;
 

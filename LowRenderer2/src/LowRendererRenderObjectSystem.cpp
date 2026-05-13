@@ -10,6 +10,7 @@
 #include "LowRendererUiDrawCommand.h"
 #include "LowRendererUiRenderObject.h"
 #include "LowRendererVulkan.h"
+#include "LowRendererVulkanBuffer.h"
 #include "LowRenderer.h"
 #include "LowRendererUiCanvas.h"
 #include "LowUtilAssert.h"
@@ -20,6 +21,66 @@
 namespace Low {
   namespace Renderer {
     namespace RenderObjectSystem {
+      static void cmd_prepare_storage_buffer_upload(
+          VkCommandBuffer p_Cmd, Vulkan::DynamicBuffer &p_Buffer,
+          const VkBufferCopy &p_CopyRegion)
+      {
+        Vulkan::BufferUtil::cmd_buffer_barrier(
+            p_Cmd, p_Buffer, p_CopyRegion,
+            VK_PIPELINE_STAGE_2_TRANSFER_BIT |
+                VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+                VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            VK_ACCESS_2_TRANSFER_WRITE_BIT |
+                VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            VK_ACCESS_2_TRANSFER_WRITE_BIT);
+      }
+
+      static void cmd_finish_storage_buffer_upload(
+          VkCommandBuffer p_Cmd, Vulkan::DynamicBuffer &p_Buffer,
+          const VkBufferCopy &p_CopyRegion)
+      {
+        Vulkan::BufferUtil::cmd_buffer_barrier(
+            p_Cmd, p_Buffer, p_CopyRegion,
+            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            VK_ACCESS_2_TRANSFER_WRITE_BIT,
+            VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+                VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            VK_ACCESS_2_SHADER_STORAGE_READ_BIT);
+      }
+
+      static void cmd_prepare_storage_buffer_upload(
+          VkCommandBuffer p_Cmd, Vulkan::AllocatedBuffer p_Buffer,
+          const VkBufferCopy &p_CopyRegion)
+      {
+        Vulkan::BufferUtil::cmd_buffer_barrier(
+            p_Cmd, p_Buffer, p_CopyRegion,
+            VK_PIPELINE_STAGE_2_TRANSFER_BIT |
+                VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+                VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            VK_ACCESS_2_TRANSFER_WRITE_BIT |
+                VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            VK_ACCESS_2_TRANSFER_WRITE_BIT);
+      }
+
+      static void cmd_finish_storage_buffer_upload(
+          VkCommandBuffer p_Cmd, Vulkan::AllocatedBuffer p_Buffer,
+          const VkBufferCopy &p_CopyRegion)
+      {
+        Vulkan::BufferUtil::cmd_buffer_barrier(
+            p_Cmd, p_Buffer, p_CopyRegion,
+            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            VK_ACCESS_2_TRANSFER_WRITE_BIT,
+            VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+                VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            VK_ACCESS_2_SHADER_STORAGE_READ_BIT);
+      }
+
       static bool update_dirty_drawcommands(float p_Delta)
       {
         bool l_Result = true;
@@ -109,6 +170,9 @@ namespace Low {
 
           // TODO: Change to transfer queue command buffer - or leave
           // this specifically on the graphics queue not sure tbh
+          cmd_prepare_storage_buffer_upload(
+              Vulkan::Global::get_current_command_buffer(),
+              Vulkan::Global::get_drawcommand_buffer(), i_CopyRegion);
           vkCmdCopyBuffer(
               Vulkan::Global::get_current_command_buffer(),
               Vulkan::Global::get_current_frame_staging_buffer()
@@ -116,6 +180,9 @@ namespace Low {
               Vulkan::Global::get_drawcommand_buffer()
                   .m_Buffer.buffer,
               1, &i_CopyRegion);
+          cmd_finish_storage_buffer_upload(
+              Vulkan::Global::get_current_command_buffer(),
+              Vulkan::Global::get_drawcommand_buffer(), i_CopyRegion);
         }
 
         DrawCommand::ms_Dirty.clear();
@@ -294,6 +361,9 @@ namespace Low {
           // TODO: Change to transfer queue command buffer - or leave
           // this specifically on the graphics queue not sure tbh
           // TODO: Also adjust the staging buffer if necessary
+          cmd_prepare_storage_buffer_upload(
+              Vulkan::Global::get_current_command_buffer(),
+              Vulkan::Global::get_drawcommand_buffer(), i_CopyRegion);
           vkCmdCopyBuffer(
               Vulkan::Global::get_current_command_buffer(),
               Vulkan::Global::get_current_frame_staging_buffer()
@@ -301,6 +371,9 @@ namespace Low {
               Vulkan::Global::get_drawcommand_buffer()
                   .m_Buffer.buffer,
               1, &i_CopyRegion);
+          cmd_finish_storage_buffer_upload(
+              Vulkan::Global::get_current_command_buffer(),
+              Vulkan::Global::get_drawcommand_buffer(), i_CopyRegion);
 
           i_RenderObject.set_dirty(false);
 
@@ -420,6 +493,10 @@ namespace Low {
 
           // TODO: Change to transfer queue command buffer - or leave
           // this specifically on the graphics queue not sure tbh
+          cmd_prepare_storage_buffer_upload(
+              Vulkan::Global::get_current_command_buffer(),
+              Vulkan::Global::get_ui_drawcommand_buffer(),
+              i_CopyRegion);
           vkCmdCopyBuffer(
               Vulkan::Global::get_current_command_buffer(),
               Vulkan::Global::get_current_frame_staging_buffer()
@@ -427,6 +504,10 @@ namespace Low {
               Vulkan::Global::get_ui_drawcommand_buffer()
                   .m_Buffer.buffer,
               1, &i_CopyRegion);
+          cmd_finish_storage_buffer_upload(
+              Vulkan::Global::get_current_command_buffer(),
+              Vulkan::Global::get_ui_drawcommand_buffer(),
+              i_CopyRegion);
         }
 
         UiDrawCommand::ms_Dirty.clear();
@@ -594,6 +675,10 @@ namespace Low {
           // TODO: Change to transfer queue command buffer - or leave
           // this specifically on the graphics queue not sure tbh
           // TODO: Also adjust the staging buffer if necessary
+          cmd_prepare_storage_buffer_upload(
+              Vulkan::Global::get_current_command_buffer(),
+              Vulkan::Global::get_ui_drawcommand_buffer(),
+              i_CopyRegion);
           vkCmdCopyBuffer(
               Vulkan::Global::get_current_command_buffer(),
               Vulkan::Global::get_current_frame_staging_buffer()
@@ -601,6 +686,10 @@ namespace Low {
               Vulkan::Global::get_ui_drawcommand_buffer()
                   .m_Buffer.buffer,
               1, &i_CopyRegion);
+          cmd_finish_storage_buffer_upload(
+              Vulkan::Global::get_current_command_buffer(),
+              Vulkan::Global::get_ui_drawcommand_buffer(),
+              i_CopyRegion);
 
           i_RenderObject.set_dirty(false);
         }
@@ -657,12 +746,20 @@ namespace Low {
 
           // TODO: Change to transfer queue command buffer - or leave
           // this specifically on the graphics queue not sure tbh
+          cmd_prepare_storage_buffer_upload(
+              Vulkan::Global::get_current_command_buffer(),
+              Vulkan::Global::get_ss2d_drawcommand_buffer(),
+              i_CopyRegion);
           vkCmdCopyBuffer(
               Vulkan::Global::get_current_command_buffer(),
               Vulkan::Global::get_current_frame_staging_buffer()
                   .buffer.buffer,
               Vulkan::Global::get_ss2d_drawcommand_buffer().buffer, 1,
               &i_CopyRegion);
+          cmd_finish_storage_buffer_upload(
+              Vulkan::Global::get_current_command_buffer(),
+              Vulkan::Global::get_ss2d_drawcommand_buffer(),
+              i_CopyRegion);
         }
 
         SS2DDrawCommand::ms_Dirty.clear();

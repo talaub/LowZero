@@ -11,6 +11,7 @@
 
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
+#include "LowUtilHashing.h"
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "imgui.h"
@@ -1632,6 +1633,7 @@ namespace Low {
                   N(SsaoOut), TextureFormatCategory::Float);
               l_Data->tempBlurTexture = Texture::make_gpu_ready(
                   N(SsaoBlurTemp), TextureFormatCategory::Float);
+
               p_RenderView.set_ssao_image(l_Data->texture);
               return true;
             });
@@ -2398,13 +2400,32 @@ namespace Low {
             l_CopyRegion.srcOffset = l_StagingOffset;
             l_CopyRegion.dstOffset = 0;
             l_CopyRegion.size = l_FrameUploadSpace;
+
             // This probably has to be done on the graphics
             // queue so we can leave it as is
+            BufferUtil::cmd_buffer_barrier(
+                Vulkan::Global::get_current_command_buffer(),
+                l_ViewInfo.get_ui_drawcommand_buffer(), l_CopyRegion,
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT |
+                    VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                    VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT |
+                    VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT);
             vkCmdCopyBuffer(
                 Vulkan::Global::get_current_command_buffer(),
                 l_ViewInfo.get_current_staging_buffer().buffer.buffer,
                 l_ViewInfo.get_ui_drawcommand_buffer().buffer, 1,
                 &l_CopyRegion);
+            BufferUtil::cmd_buffer_barrier(
+                Vulkan::Global::get_current_command_buffer(),
+                l_ViewInfo.get_ui_drawcommand_buffer(), l_CopyRegion,
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                    VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                VK_ACCESS_2_SHADER_STORAGE_READ_BIT);
           }
 
           // Render UI
@@ -2578,6 +2599,18 @@ namespace Low {
             l_CopyRegion.srcOffset = l_StagingOffset;
             l_CopyRegion.dstOffset = 0;
             l_CopyRegion.size = l_FrameUploadSpace;
+
+            Vulkan::BufferUtil::cmd_buffer_barrier(
+                Vulkan::Global::get_current_command_buffer(),
+                l_ViewInfo.get_debug_geometry_buffer(), l_CopyRegion,
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT |
+                    VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                    VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT |
+                    VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT);
+
             // This probably has to be done on the graphics
             // queue so we can leave it as is
             vkCmdCopyBuffer(
@@ -2585,6 +2618,15 @@ namespace Low {
                 l_ViewInfo.get_current_staging_buffer().buffer.buffer,
                 l_ViewInfo.get_debug_geometry_buffer().buffer, 1,
                 &l_CopyRegion);
+
+            Vulkan::BufferUtil::cmd_buffer_barrier(
+                Vulkan::Global::get_current_command_buffer(),
+                l_ViewInfo.get_debug_geometry_buffer(), l_CopyRegion,
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                    VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                VK_ACCESS_2_SHADER_STORAGE_READ_BIT);
           }
 
           Image l_LitImage = p_RenderView.get_lit_image()
@@ -2761,11 +2803,29 @@ namespace Low {
                 l_Region.imageSubresource.layerCount = 1;
                 l_Region.imageExtent = {l_Width, l_Height, 1};
 
+                BufferUtil::cmd_buffer_barrier(
+                    l_Cmd, l_ViewInfo.get_object_id_buffer(),
+                    l_Region.bufferOffset,
+                    sizeof(u32) * l_Width * l_Height,
+                    VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                    VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                    VK_ACCESS_2_TRANSFER_WRITE_BIT);
+
                 vkCmdCopyImageToBuffer(
                     l_Cmd, l_Image.get_allocated_image().image,
                     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                     l_ViewInfo.get_object_id_buffer().buffer, 1,
                     &l_Region);
+
+                BufferUtil::cmd_buffer_barrier(
+                    l_Cmd, l_ViewInfo.get_object_id_buffer(),
+                    l_Region.bufferOffset,
+                    sizeof(u32) * l_Width * l_Height,
+                    VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                    VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    VK_PIPELINE_STAGE_2_HOST_BIT,
+                    VK_ACCESS_2_HOST_READ_BIT);
               }
 
               ImageUtil::cmd_transition(
@@ -3019,6 +3079,14 @@ namespace Low {
                       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                           VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                       VMA_MEMORY_USAGE_GPU_ONLY);
+              {
+                Util::StringBuilder l_Builder;
+                l_Builder.append(p_RenderView.get_name());
+                l_Builder.append(" directional shadow buffer");
+                Util::String l_Name = l_Builder.get();
+                BufferUtil::set_name(l_Data.directional_shadow_buffer,
+                                     l_Name.c_str());
+              }
 
               l_Data.point_light_shadow_buffer =
                   BufferUtil::create_buffer(
@@ -3026,6 +3094,14 @@ namespace Low {
                       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                           VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                       VMA_MEMORY_USAGE_GPU_ONLY);
+              {
+                Util::StringBuilder l_Builder;
+                l_Builder.append(p_RenderView.get_name());
+                l_Builder.append(" point light shadow buffer");
+                Util::String l_Name = l_Builder.get();
+                BufferUtil::set_name(l_Data.point_light_shadow_buffer,
+                                     l_Name.c_str());
+              }
 
               return true;
             });
@@ -3080,37 +3156,6 @@ namespace Low {
 
           VK_RENDERDOC_SECTION_BEGIN("Shadow pass",
                                      SINGLE_ARG({0.2f, 0.2f, 0.8f}));
-
-          VkBufferMemoryBarrier2 l_ShadowBufferBarriers[2]{};
-          l_ShadowBufferBarriers[0].sType =
-              VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
-          l_ShadowBufferBarriers[0].srcStageMask =
-              VK_PIPELINE_STAGE_2_TRANSFER_BIT;
-          l_ShadowBufferBarriers[0].srcAccessMask =
-              VK_ACCESS_2_TRANSFER_WRITE_BIT;
-          l_ShadowBufferBarriers[0].dstStageMask =
-              VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
-          l_ShadowBufferBarriers[0].dstAccessMask =
-              VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
-          l_ShadowBufferBarriers[0].buffer =
-              l_Data.directional_shadow_buffer.buffer;
-          l_ShadowBufferBarriers[0].offset = 0;
-          l_ShadowBufferBarriers[0].size =
-              sizeof(DirectionalLightShadowInfo);
-
-          l_ShadowBufferBarriers[1] = l_ShadowBufferBarriers[0];
-          l_ShadowBufferBarriers[1].buffer =
-              l_Data.point_light_shadow_buffer.buffer;
-          l_ShadowBufferBarriers[1].size =
-              sizeof(PointLightShadowInfo) * POINTLIGHT_COUNT;
-
-          VkDependencyInfo l_ShadowBufferDependency{};
-          l_ShadowBufferDependency.sType =
-              VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-          l_ShadowBufferDependency.bufferMemoryBarrierCount = 2;
-          l_ShadowBufferDependency.pBufferMemoryBarriers =
-              l_ShadowBufferBarriers;
-          vkCmdPipelineBarrier2(l_Cmd, &l_ShadowBufferDependency);
 
           Image l_AtlasImage = p_RenderView.get_shadow_atlas()
                                    .get_gpu()

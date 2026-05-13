@@ -8,6 +8,7 @@
 #include "LowRendererResourceManager.h"
 #include "LowRendererMeshResource.h"
 #include "LowRendererVulkan.h"
+#include "LowRendererVulkanBuffer.h"
 #include "LowRendererVkImage.h"
 #include "LowRendererRenderObject.h"
 #include "LowRendererGlobals.h"
@@ -797,6 +798,11 @@ namespace Low {
                  "Failed to cleanup Vulkan renderer");
     }
 
+    void wait_idle()
+    {
+      Vulkan::wait_idle();
+    }
+
     static bool upload_material(float p_Delta, GpuMaterial p_Gpu)
     {
       size_t l_StagingOffset = 0;
@@ -819,12 +825,32 @@ namespace Low {
       l_CopyRegion.dstOffset = p_Gpu.get_index() * MATERIAL_DATA_SIZE;
       l_CopyRegion.size = MATERIAL_DATA_SIZE;
       // TODO: Change to transfer queue command buffer
+      Vulkan::BufferUtil::cmd_buffer_barrier(
+          Vulkan::Global::get_current_command_buffer(),
+          Vulkan::Global::get_material_data_buffer(), l_CopyRegion,
+          VK_PIPELINE_STAGE_2_TRANSFER_BIT |
+              VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+              VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+              VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+          VK_ACCESS_2_TRANSFER_WRITE_BIT |
+              VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+          VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+          VK_ACCESS_2_TRANSFER_WRITE_BIT);
       vkCmdCopyBuffer(
           Vulkan::Global::get_current_command_buffer(),
           Vulkan::Global::get_current_resource_staging_buffer()
               .buffer.buffer,
           Vulkan::Global::get_material_data_buffer().buffer, 1,
           &l_CopyRegion);
+      Vulkan::BufferUtil::cmd_buffer_barrier(
+          Vulkan::Global::get_current_command_buffer(),
+          Vulkan::Global::get_material_data_buffer(), l_CopyRegion,
+          VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+          VK_ACCESS_2_TRANSFER_WRITE_BIT,
+          VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+              VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+              VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+          VK_ACCESS_2_SHADER_STORAGE_READ_BIT);
 
       p_Gpu.set_dirty(false);
       return true;

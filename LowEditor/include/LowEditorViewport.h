@@ -14,7 +14,7 @@ namespace Low {
     struct LOW_EDITOR_API Viewport
     {
       Viewport(const Math::UVector2 p_Dimensions);
-      ~Viewport();
+      virtual ~Viewport();
 
       virtual bool tick(const float p_Delta);
       bool render_viewport(const float p_Delta);

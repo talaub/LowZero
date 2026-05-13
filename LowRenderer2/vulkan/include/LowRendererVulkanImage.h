@@ -51,6 +51,10 @@ namespace Low {
         bool cmd_transition(VkCommandBuffer p_Cmd, Image p_Image,
                             VkImageLayout p_CurrentLayout,
                             VkImageLayout p_NewLayout);
+        bool cmd_transition_for_color_write(VkCommandBuffer p_Cmd,
+                                            Image p_Image);
+        bool cmd_transition_color_write_to_shader_read(
+            VkCommandBuffer p_Cmd, Image p_Image);
 
         bool cmd_copy2D(VkCommandBuffer p_Cmd, Image p_Source,
                         Image p_Destination,

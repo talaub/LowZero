@@ -51,6 +51,7 @@ namespace Low {
 
     void LOW_RENDERER2_API initialize();
     void LOW_RENDERER2_API cleanup();
+    void LOW_RENDERER2_API wait_idle();
     void LOW_RENDERER2_API prepare_tick(float p_Delta);
     void LOW_RENDERER2_API tick(float p_Delta);
 

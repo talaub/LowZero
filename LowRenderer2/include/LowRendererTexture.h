@@ -176,6 +176,7 @@ namespace Low {
       EditorImage get_editor_image();
       static Texture
       make_from_resource_config(TextureResourceConfig &p_Config);
+      bool is_imgui_texture_ready();
       static bool get_page_for_index(const u32 p_Index,
                                      u32 &p_PageIndex,
                                      u32 &p_SlotIndex);

@@ -9,8 +9,7 @@
 #include <stdlib.h>
 #include <mutex>
 
-// TODO TL: Define kilobyte macro
-#define MAX_BUFFER_SIZE (50 * 1024)
+#define MAX_BUFFER_SIZE (5 * LOW_MEGABYTE_I)
 
 namespace Low {
   namespace Util {
