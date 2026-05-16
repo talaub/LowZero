@@ -171,6 +171,58 @@ namespace Low {
         // End property: path
       }
       {
+        // Property: data_path
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(data_path);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(MaterialResource::Data, data_path);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          MaterialResource l_Handle = p_Handle.get_id();
+          l_Handle.get_data_path();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, MaterialResource, data_path, Util::String);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MaterialResource l_Handle = p_Handle.get_id();
+          *((Util::String *)p_Data) = l_Handle.get_data_path();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: data_path
+      }
+      {
+        // Property: material_id
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(material_id);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(MaterialResource::Data, material_id);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          MaterialResource l_Handle = p_Handle.get_id();
+          l_Handle.get_material_id();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, MaterialResource, material_id, uint64_t);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MaterialResource l_Handle = p_Handle.get_id();
+          *((uint64_t *)p_Data) = l_Handle.get_material_id();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: material_id
+      }
+      {
         // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
@@ -352,6 +404,8 @@ namespace Low {
 
       MaterialResource l_Handle = make(p_Name);
       l_Handle.set_path(get_path());
+      l_Handle.set_data_path(get_data_path());
+      l_Handle.set_material_id(get_material_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
 
@@ -381,6 +435,8 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       p_Node["path"] = get_path().c_str();
+      p_Node["data_path"] = get_data_path().c_str();
+      p_Node["material_id"] = get_material_id();
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
@@ -404,6 +460,14 @@ namespace Low {
 
       if (p_Node["path"]) {
         l_Handle.set_path(p_Node["path"].as<Low::Util::String>());
+      }
+      if (p_Node["data_path"]) {
+        l_Handle.set_data_path(
+            p_Node["data_path"].as<Low::Util::String>());
+      }
+      if (p_Node["material_id"]) {
+        l_Handle.set_material_id(
+            p_Node["material_id"].as<uint64_t>());
       }
       if (p_Node["name"]) {
         l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());
@@ -496,6 +560,62 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_path
 
       broadcast_observable(N(path));
+    }
+
+    Util::String MaterialResource::get_data_path() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_data_path
+      // LOW_CODEGEN::END::CUSTOM:GETTER_data_path
+
+      return TYPE_SOA(MaterialResource, data_path, Util::String);
+    }
+    void MaterialResource::set_data_path(const char *p_Value)
+    {
+      Low::Util::String l_Val(p_Value);
+      set_data_path(l_Val);
+    }
+
+    void MaterialResource::set_data_path(Util::String p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_data_path
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_data_path
+
+      // Set new value
+      TYPE_SOA(MaterialResource, data_path, Util::String) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_data_path
+      // LOW_CODEGEN::END::CUSTOM:SETTER_data_path
+
+      broadcast_observable(N(data_path));
+    }
+
+    uint64_t MaterialResource::get_material_id() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_material_id
+      // LOW_CODEGEN::END::CUSTOM:GETTER_material_id
+
+      return TYPE_SOA(MaterialResource, material_id, uint64_t);
+    }
+    void MaterialResource::set_material_id(uint64_t p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material_id
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_material_id
+
+      // Set new value
+      TYPE_SOA(MaterialResource, material_id, uint64_t) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material_id
+      // LOW_CODEGEN::END::CUSTOM:SETTER_material_id
+
+      broadcast_observable(N(material_id));
     }
 
     Low::Util::Name MaterialResource::get_name() const

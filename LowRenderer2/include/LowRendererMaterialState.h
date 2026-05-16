@@ -10,6 +10,9 @@ namespace Low {
     enum class MaterialState : u8
     {
       UNKNOWN,
+      UNLOADED,
+      SCHEDULEDTOLOAD,
+      LOADINGTOMEMORY,
       MEMORYLOADED,
       UPLOADINGTOGPU,
       LOADED,

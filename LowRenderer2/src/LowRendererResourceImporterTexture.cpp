@@ -148,8 +148,7 @@ namespace Low {
             l_BaseAssetPath + ".texture.yaml";
 
         const Util::String l_ResourcePath =
-            Util::get_project().dataPath + "\\" + p_OutputPath +
-            ".texresource.yaml";
+            p_OutputPath + ".texresource.yaml";
 
         Util::Serial::Node l_SidecarInfo;
         {

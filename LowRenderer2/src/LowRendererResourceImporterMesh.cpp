@@ -239,6 +239,7 @@ namespace Low {
         l_RenderView.add_step_by_name(RENDERSTEP_SHADOW_PASS_NAME);
         l_RenderView.add_step_by_name(RENDERSTEP_SOLID_MATERIAL_NAME);
         l_RenderView.add_step_by_name(RENDERSTEP_SSAO_NAME);
+        l_RenderView.add_step_by_name(RENDERSTEP_CAVITIES_NAME);
         l_RenderView.add_step_by_name(RENDERSTEP_LIGHTCULLING_NAME);
         l_RenderView.add_step_by_name(RENDERSTEP_LIGHTING_NAME);
 

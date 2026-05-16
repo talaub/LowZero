@@ -24,22 +24,43 @@ namespace Low {
         }
         {
           Low::Util::RTTI::EnumEntryInfo l_Entry;
-          l_Entry.name = N(MemoryLoaded);
+          l_Entry.name = N(Unloaded);
           l_Entry.value = 1;
 
           l_EnumInfo.entries.push_back(l_Entry);
         }
         {
           Low::Util::RTTI::EnumEntryInfo l_Entry;
-          l_Entry.name = N(UploadingToGpu);
+          l_Entry.name = N(ScheduledToLoad);
           l_Entry.value = 2;
 
           l_EnumInfo.entries.push_back(l_Entry);
         }
         {
           Low::Util::RTTI::EnumEntryInfo l_Entry;
-          l_Entry.name = N(Loaded);
+          l_Entry.name = N(LoadingToMemory);
           l_Entry.value = 3;
+
+          l_EnumInfo.entries.push_back(l_Entry);
+        }
+        {
+          Low::Util::RTTI::EnumEntryInfo l_Entry;
+          l_Entry.name = N(MemoryLoaded);
+          l_Entry.value = 4;
+
+          l_EnumInfo.entries.push_back(l_Entry);
+        }
+        {
+          Low::Util::RTTI::EnumEntryInfo l_Entry;
+          l_Entry.name = N(UploadingToGpu);
+          l_Entry.value = 5;
+
+          l_EnumInfo.entries.push_back(l_Entry);
+        }
+        {
+          Low::Util::RTTI::EnumEntryInfo l_Entry;
+          l_Entry.name = N(Loaded);
+          l_Entry.value = 6;
 
           l_EnumInfo.entries.push_back(l_Entry);
         }
@@ -55,6 +76,15 @@ namespace Low {
       {
         if (p_Value == MaterialState::UNKNOWN) {
           return N(Unknown);
+        }
+        if (p_Value == MaterialState::UNLOADED) {
+          return N(Unloaded);
+        }
+        if (p_Value == MaterialState::SCHEDULEDTOLOAD) {
+          return N(ScheduledToLoad);
+        }
+        if (p_Value == MaterialState::LOADINGTOMEMORY) {
+          return N(LoadingToMemory);
         }
         if (p_Value == MaterialState::MEMORYLOADED) {
           return N(MemoryLoaded);
@@ -83,6 +113,15 @@ namespace Low {
         if (p_Name == N(Unknown)) {
           return Low::Renderer::MaterialState::UNKNOWN;
         }
+        if (p_Name == N(Unloaded)) {
+          return Low::Renderer::MaterialState::UNLOADED;
+        }
+        if (p_Name == N(ScheduledToLoad)) {
+          return Low::Renderer::MaterialState::SCHEDULEDTOLOAD;
+        }
+        if (p_Name == N(LoadingToMemory)) {
+          return Low::Renderer::MaterialState::LOADINGTOMEMORY;
+        }
         if (p_Name == N(MemoryLoaded)) {
           return Low::Renderer::MaterialState::MEMORYLOADED;
         }
@@ -110,7 +149,7 @@ namespace Low {
 
       u8 get_entry_count()
       {
-        return 4;
+        return 7;
       }
     } // namespace MaterialStateEnumHelper
   } // namespace Renderer

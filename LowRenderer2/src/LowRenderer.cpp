@@ -756,10 +756,11 @@ namespace Low {
       LOW_ASSERT(initialize_material_types(),
                  "Failed to initialize material types.");
 
+      LOW_ASSERT(preload_resources(), "Failed to preload resources.");
+
       LOW_ASSERT(initialize_default_materials(),
                  "Failed to initialize default materials");
 
-      LOW_ASSERT(preload_resources(), "Failed to preload resources.");
 
       g_GlobalScene = RenderScene::make(N(Global));
 

@@ -3491,17 +3491,27 @@ namespace Low {
                 l_Extent.depth = 1;
 
                 Vulkan::ImageUtil::create(
-                    l_Image, l_Extent, VK_FORMAT_R8G8B8A8_UNORM,
-                    VK_IMAGE_USAGE_SAMPLED_BIT, false);
+                    l_Image, l_Extent, VK_FORMAT_R8G8B8A8_SNORM,
+                    VK_IMAGE_USAGE_SAMPLED_BIT |
+                        VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                    false);
 
-                Util::List<Math::Color> l_Pixels;
+                struct NoisePixel
+                {
+                  int8_t r, g, b, a;
+                };
+                Util::List<NoisePixel> l_Pixels;
                 for (u32 i = 0;
                      i < (l_NoiseDimensions.x * l_NoiseDimensions.y);
                      ++i) {
-                  l_Pixels.push_back(Math::Color(
-                      (rand() / float(RAND_MAX)) * 2.0f - 1.0f,
-                      (rand() / float(RAND_MAX)) * 2.0f - 1.0f, 0.0f,
-                      1.0f));
+                  l_Pixels.push_back(
+                      {(int8_t)(((rand() / float(RAND_MAX)) * 2.0f -
+                                 1.0f) *
+                                127.0f),
+                       (int8_t)(((rand() / float(RAND_MAX)) * 2.0f -
+                                 1.0f) *
+                                127.0f),
+                       0, 127});
                 }
 
                 LOWR_VK_ASSERT_RETURN(

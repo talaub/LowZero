@@ -496,7 +496,6 @@ types:
       material_type:
         type: MaterialType
         handle: true
-        private_setter: true
         skip_serialization: true
         skip_deserialization: true
       resource:
@@ -647,6 +646,12 @@ types:
     properties:
       path:
         type: Util::String
+        private_setter: true
+      data_path:
+        type: Util::String
+        private_setter: true
+      material_id:
+        type: u64
         private_setter: true
     functions:
       make:

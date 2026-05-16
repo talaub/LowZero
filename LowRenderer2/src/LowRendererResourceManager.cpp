@@ -1,6 +1,7 @@
 #include "LowRendererResourceManager.h"
 
 #include "LowMath.h"
+#include "LowRenderer.h"
 #include "LowRendererEditorImageGpu.h"
 #include "LowRendererEditorImageStaging.h"
 #include "LowRendererMaterialState.h"
@@ -84,6 +85,7 @@ namespace Low {
         Util::Set<Texture> textures;
         Util::Set<Font> fonts;
         Util::Set<EditorImage> editorImages;
+        Util::Set<Material> materials;
       } g_LoadSchedules;
 
       struct UploadEntry
@@ -194,6 +196,102 @@ namespace Low {
         return true;
       }
 
+      static bool material_schedule_memory_load(Material p_Material)
+      {
+        const u64 l_HandleId = p_Material.get_id();
+        const Util::String l_DataPath =
+            p_Material.get_resource().get_data_path();
+
+        p_Material.set_state(MaterialState::LOADINGTOMEMORY);
+
+        Util::JobManager::IO::schedule_read_yaml(
+            l_DataPath,
+            [l_HandleId](bool p_Success, Util::Serial::Node &p_Node) {
+              Material l_Material = l_HandleId;
+              MaterialType l_MaterialType =
+                  l_Material.get_material_type();
+
+              Util::List<Util::Name> l_PropertyNames;
+              l_MaterialType.fill_input_names(l_PropertyNames);
+
+              l_Material.get_properties().clear();
+
+              Util::Serial::Node &l_PropertiesNode =
+                  p_Node["properties"];
+
+              for (Util::Name i_Name : l_PropertyNames) {
+                MaterialTypeInputType i_InputType =
+                    l_MaterialType.get_input_type(i_Name);
+                if (l_PropertiesNode[i_Name.c_str()]) {
+                  switch (i_InputType) {
+                  case MaterialTypeInputType::FLOAT:
+                    l_Material.set_property_float(
+                        i_Name,
+                        l_PropertiesNode[i_Name.c_str()].as<float>());
+                    break;
+                  case MaterialTypeInputType::VECTOR2:
+                    l_Material.set_property_vector2(
+                        i_Name, l_PropertiesNode[i_Name.c_str()]
+                                    .as<Math::Vector2>());
+                    break;
+                  case MaterialTypeInputType::VECTOR3:
+                    l_Material.set_property_vector3(
+                        i_Name, l_PropertiesNode[i_Name.c_str()]
+                                    .as<Math::Vector3>());
+                    break;
+                  case MaterialTypeInputType::VECTOR4:
+                    l_Material.set_property_vector4(
+                        i_Name, l_PropertiesNode[i_Name.c_str()]
+                                    .as<Math::Vector4>());
+                    break;
+                  case MaterialTypeInputType::TEXTURE: {
+                    Texture i_Texture =
+                        ResourceManager::find_asset<Texture>(
+                            l_PropertiesNode[i_Name.c_str()]
+                                .as<Util::U64Id>());
+                    l_Material.set_property_texture(i_Name,
+                                                    i_Texture);
+                    break;
+                  }
+                  default:
+                    LOW_ASSERT(false,
+                               "Unsupported material input type.");
+                    break;
+                  }
+                } else {
+                  switch (i_InputType) {
+                  case MaterialTypeInputType::FLOAT:
+                    l_Material.set_property_float(i_Name, 0.0f);
+                    break;
+                  case MaterialTypeInputType::VECTOR2:
+                    l_Material.set_property_vector2(
+                        i_Name, Math::Vector2(0, 0));
+                    break;
+                  case MaterialTypeInputType::VECTOR3:
+                    l_Material.set_property_vector3(
+                        i_Name, Math::Vector3(0, 0, 0));
+                    break;
+                  case MaterialTypeInputType::VECTOR4:
+                    l_Material.set_property_vector4(
+                        i_Name, Math::Vector4(0, 0, 0, 1));
+                    break;
+                  case MaterialTypeInputType::TEXTURE: {
+                    l_Material.set_property_texture(
+                        i_Name, get_default_texture());
+                    break;
+                  }
+                  default:
+                    LOW_ASSERT(false,
+                               "Unsupported material input type.");
+                    break;
+                  }
+                }
+              }
+              l_Material.set_state(MaterialState::MEMORYLOADED);
+            });
+        return true;
+      }
+
       bool load_material(Material p_Material)
       {
         if (p_Material.is_alive()) {
@@ -206,6 +304,10 @@ namespace Low {
               "Failed to schedule material for GPU upload.");
 
           return true;
+        } else if (p_Material.get_state() ==
+                   MaterialState::UNLOADED) {
+          p_Material.set_state(MaterialState::SCHEDULEDTOLOAD);
+          g_LoadSchedules.materials.insert(p_Material);
         }
         return false;
       }
@@ -233,8 +335,9 @@ namespace Low {
           LOW_ASSERT_ERROR_RETURN_FALSE(unload_mesh(p_Mesh),
                                         "Failed to unload mesh.");
         }
-        LOW_ASSERT_ERROR_RETURN_FALSE(load_mesh(p_Mesh),
-                                      "Failed to load mesh.");
+        LOW_ASSERT_ERROR_RETURN_FALSE(
+            ResourceManager::load_mesh(p_Mesh),
+            "Failed to load mesh.");
 
         return true;
       }
@@ -762,6 +865,39 @@ namespace Low {
         p_Material.update_gpu();
 
         p_Material.set_state(MaterialState::UPLOADINGTOGPU);
+
+        return true;
+      }
+
+      static bool materials_tick(float p_Delta)
+      {
+        for (auto it = g_LoadSchedules.materials.begin();
+             it != g_LoadSchedules.materials.end();) {
+          if (it->get_state() == MaterialState::MEMORYLOADED) {
+            if (!material_schedule_gpu_upload(*it)) {
+              LOW_LOG_ERROR << "Failed to schedule Material '"
+                            << it->get_name() << "' upload to gpu."
+                            << LOW_LOG_END;
+            }
+            ++it;
+            continue;
+          } else if (it->get_state() ==
+                     MaterialState::SCHEDULEDTOLOAD) {
+            if (!material_schedule_memory_load(*it)) {
+              LOW_LOG_ERROR
+                  << "Failed to schedule material '" << it->get_name()
+                  << "' for loading to memory." << LOW_LOG_END;
+            }
+            ++it;
+            continue;
+          } else if (it->get_state() == MaterialState::LOADED ||
+                     it->get_state() == MaterialState::UNLOADED ||
+                     it->get_state() == MaterialState::UNKNOWN) {
+            it = g_LoadSchedules.materials.erase(it);
+          } else {
+            it++;
+          }
+        }
 
         return true;
       }
@@ -1519,6 +1655,7 @@ namespace Low {
         _LOW_ASSERT(fonts_tick(p_Delta));
         _LOW_ASSERT(meshes_tick(p_Delta));
         _LOW_ASSERT(textures_tick(p_Delta));
+        _LOW_ASSERT(materials_tick(p_Delta));
         _LOW_ASSERT(editor_images_tick(p_Delta));
         _LOW_ASSERT(uploads_tick(p_Delta));
       }

@@ -31,6 +31,9 @@ enums:
   MaterialState:
     options:
       - name: Unknown
+      - name: Unloaded
+      - name: ScheduledToLoad
+      - name: LoadingToMemory
       - name: MemoryLoaded
       - name: UploadingToGpu
       - name: Loaded

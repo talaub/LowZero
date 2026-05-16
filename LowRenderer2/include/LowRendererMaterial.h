@@ -15,6 +15,7 @@
 #include "LowRendererTexture.h"
 #include "LowRendererGpuMaterial.h"
 #include "LowRendererMaterialResource.h"
+#include "LowUtilVariant.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -163,6 +164,7 @@ namespace Low {
       void set_state(MaterialState p_Value);
 
       MaterialType get_material_type() const;
+      void set_material_type(MaterialType p_Value);
 
       Low::Renderer::MaterialResource get_resource() const;
       void set_resource(Low::Renderer::MaterialResource p_Value);
@@ -224,7 +226,6 @@ namespace Low {
       static u32 ms_PageSize;
       static u32 create_instance(u32 &p_PageIndex, u32 &p_SlotIndex);
       static u32 create_page();
-      void set_material_type(MaterialType p_Value);
       Low::Util::Set<u64> &get_references() const;
       void set_unique_id(Low::Util::UniqueId p_Value);
 

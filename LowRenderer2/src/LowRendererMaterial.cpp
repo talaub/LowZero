@@ -243,7 +243,10 @@ namespace Low {
               p_Handle, Material, material_type, MaterialType);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {};
+                                const void *p_Data) -> void {
+          Material l_Handle = p_Handle.get_id();
+          l_Handle.set_material_type(*(MaterialType *)p_Data);
+        };
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Material l_Handle = p_Handle.get_id();
@@ -1213,13 +1216,32 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material_type
-
+      LOW_ASSERT(p_Value.is_alive(),
+                 "Cannot set dead material type.");
+      if (p_Value == get_material_type()) {
+        return;
+      }
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_material_type
 
       // Set new value
       TYPE_SOA(Material, material_type, MaterialType) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material_type
+      get_properties().clear();
+      {
+        Util::List<Util::Name> l_Names;
+        p_MaterialType.fill_input_names(l_Names);
+
+        for (u32 i = 0; i < l_Names.size(); ++i) {
+          Util::Name i_Name = l_Names[i];
+
+          if (p_MaterialType.get_input_type(i_Name) ==
+              MaterialTypeInputType::TEXTURE) {
+            l_Material.set_property_texture(i_Name,
+                                            Util::Handle::DEAD);
+          }
+        }
+      }
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_material_type
 
@@ -1402,21 +1424,6 @@ namespace Low {
       Material l_Material = make(p_Name, p_UniqueId);
       l_Material.set_material_type(p_MaterialType);
 
-      {
-        Util::List<Util::Name> l_Names;
-        p_MaterialType.fill_input_names(l_Names);
-
-        for (u32 i = 0; i < l_Names.size(); ++i) {
-          Util::Name i_Name = l_Names[i];
-
-          if (p_MaterialType.get_input_type(i_Name) ==
-              MaterialTypeInputType::TEXTURE) {
-            l_Material.set_property_texture(i_Name,
-                                            Util::Handle::DEAD);
-          }
-        }
-      }
-
       return l_Material;
 
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_with_unique_id
@@ -1479,7 +1486,8 @@ namespace Low {
            ++it) {
         switch (l_MaterialType.get_input_type(*it)) {
         case MaterialTypeInputType::TEXTURE: {
-          set_property_texture(*it, get_property_texture(*it));
+          Texture i_Texture = get_property_texture(*it);
+          set_property_texture(*it, i_Texture);
           break;
         }
         case MaterialTypeInputType::FLOAT: {
@@ -1584,7 +1592,6 @@ namespace Low {
                   MaterialTypeInputType::TEXTURE);
 
       Texture l_OldTexture = get_property_texture(p_Name);
-
       get_properties()[p_Name].set_handle(p_Value.get_id());
 
       if (get_gpu().is_alive()) {

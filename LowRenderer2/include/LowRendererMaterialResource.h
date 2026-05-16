@@ -25,6 +25,8 @@ namespace Low {
       {
       public:
         Util::String path;
+        Util::String data_path;
+        uint64_t material_id;
         Low::Util::Name name;
 
         static size_t get_size()
@@ -143,6 +145,10 @@ namespace Low {
 
       Util::String get_path() const;
 
+      Util::String get_data_path() const;
+
+      uint64_t get_material_id() const;
+
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
@@ -159,6 +165,9 @@ namespace Low {
       static u32 create_page();
       void set_path(Util::String p_Value);
       void set_path(const char *p_Value);
+      void set_data_path(Util::String p_Value);
+      void set_data_path(const char *p_Value);
+      void set_material_id(uint64_t p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
 
