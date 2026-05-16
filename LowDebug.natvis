@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Type Name="eastl::map&lt;*,*,*,*&gt;">
+    <DisplayString Condition="mnSize == 0">[0] {{}}</DisplayString>
+    <DisplayString Condition="mnSize == 1">[1] {{ {((eastl::rbtree_node&lt;eastl::pair&lt;const $T1,$T2&gt; &gt;*)mAnchor.mpNodeLeft)-&gt;mValue} }}</DisplayString>
+    <DisplayString Condition="mnSize &gt; 1">[{mnSize}] {{ {((eastl::rbtree_node&lt;eastl::pair&lt;const $T1,$T2&gt; &gt;*)mAnchor.mpNodeLeft)-&gt;mValue}, ... }}</DisplayString>
+    <Expand>
+      <Item Name="[size]">mnSize</Item>
+      <TreeItems>
+        <Size>mnSize</Size>
+        <HeadPointer>mAnchor.mpNodeParent</HeadPointer>
+        <LeftPointer>mpNodeLeft</LeftPointer>
+        <RightPointer>mpNodeRight</RightPointer>
+        <ValueNode>((eastl::rbtree_node&lt;eastl::pair&lt;const $T1,$T2&gt; &gt;*)this)-&gt;mValue</ValueNode>
+      </TreeItems>
+    </Expand>
+  </Type>
+
+  <Type Name="eastl::multimap&lt;*,*,*,*&gt;">
+    <DisplayString Condition="mnSize == 0">[0] {{}}</DisplayString>
+    <DisplayString Condition="mnSize == 1">[1] {{ {((eastl::rbtree_node&lt;eastl::pair&lt;const $T1,$T2&gt; &gt;*)mAnchor.mpNodeLeft)-&gt;mValue} }}</DisplayString>
+    <DisplayString Condition="mnSize &gt; 1">[{mnSize}] {{ {((eastl::rbtree_node&lt;eastl::pair&lt;const $T1,$T2&gt; &gt;*)mAnchor.mpNodeLeft)-&gt;mValue}, ... }}</DisplayString>
+    <Expand>
+      <Item Name="[size]">mnSize</Item>
+      <TreeItems>
+        <Size>mnSize</Size>
+        <HeadPointer>mAnchor.mpNodeParent</HeadPointer>
+        <LeftPointer>mpNodeLeft</LeftPointer>
+        <RightPointer>mpNodeRight</RightPointer>
+        <ValueNode>((eastl::rbtree_node&lt;eastl::pair&lt;const $T1,$T2&gt; &gt;*)this)-&gt;mValue</ValueNode>
+      </TreeItems>
+    </Expand>
+  </Type>
+</AutoVisualizer>

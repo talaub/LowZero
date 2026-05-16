@@ -1230,14 +1230,14 @@ namespace Low {
       get_properties().clear();
       {
         Util::List<Util::Name> l_Names;
-        p_MaterialType.fill_input_names(l_Names);
+        p_Value.fill_input_names(l_Names);
 
         for (u32 i = 0; i < l_Names.size(); ++i) {
           Util::Name i_Name = l_Names[i];
 
-          if (p_MaterialType.get_input_type(i_Name) ==
+          if (p_Value.get_input_type(i_Name) ==
               MaterialTypeInputType::TEXTURE) {
-            l_Material.set_property_texture(i_Name,
+            set_property_texture(i_Name,
                                             Util::Handle::DEAD);
           }
         }

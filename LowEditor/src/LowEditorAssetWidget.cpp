@@ -281,14 +281,14 @@ namespace Low {
       }
       }
 
-      if ( l_EditorImage.is_alive() &&
+      if (l_EditorImage.is_alive() &&
           l_EditorImage.get_state() ==
               Renderer::TextureState::UNLOADED) {
         Renderer::ResourceManager::load_editor_image(l_EditorImage);
       }
 
       const bool l_IsFallbackEditorImage =
-                    (!l_EditorImage.is_alive() ||
+          (!l_EditorImage.is_alive() ||
            l_EditorImage.get_state() !=
                Renderer::TextureState::LOADED);
       if (l_IsFallbackEditorImage) {
@@ -311,11 +311,10 @@ namespace Low {
                             // ImGui::GetColorU32(ImGuiCol_WindowBg),
                             l_Rounding, ImDrawFlags_RoundCornersTop);
 
-            dl->AddImage(
-                l_EditorImage.get_gpu().get_imgui_texture_id(),
-                l_FallbackMin,
-                l_FallbackMin +
-                    ImVec2(l_FallbackSize, l_FallbackSize));
+          dl->AddImage(l_EditorImage.get_gpu().get_imgui_texture_id(),
+                       l_FallbackMin,
+                       l_FallbackMin +
+                           ImVec2(l_FallbackSize, l_FallbackSize));
         } else {
           dl->AddImageRounded(
               l_EditorImage.get_gpu().get_imgui_texture_id(),

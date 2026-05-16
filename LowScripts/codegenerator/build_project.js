@@ -173,7 +173,19 @@ function generate_root_cmake(p_ProjectConfig) {
     t += `set_target_properties(${i_Module.name} PROPERTIES FOLDER "${p_ProjectConfig.name}Modules")\n\n`;
   }
 
-  t += `add_custom_target(${p_ProjectConfig.name}Project)\n\n`;
+  t += "set(PROJECT_DEBUG_VISUALIZERS\n";
+  t += '  "${LOW_PATH}/LowDependencies/EASTL/doc/EASTL.natvis"\n';
+  t += '  "${LOW_PATH}/LowDebug.natvis"\n';
+  t += ")\n\n";
+
+  t += "if (MSVC)\n";
+  for (const i_Module of p_ProjectConfig.modules) {
+    t += `  target_sources(${i_Module.name} PRIVATE \${PROJECT_DEBUG_VISUALIZERS})\n`;
+  }
+  t += '  source_group("Debug Visualizers" FILES ${PROJECT_DEBUG_VISUALIZERS})\n';
+  t += "endif()\n\n";
+
+  t += `add_custom_target(${p_ProjectConfig.name}Project SOURCES \${PROJECT_DEBUG_VISUALIZERS})\n\n`;
 
   t += `add_dependencies(${p_ProjectConfig.name}Project\n`;
   for (const i_Module of p_ProjectConfig.modules) {

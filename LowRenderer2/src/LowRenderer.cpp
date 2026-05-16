@@ -691,6 +691,7 @@ namespace Low {
         }
       }
 
+#if 0
       {
         Util::List<Util::String> l_Resources;
         Util::FileSystem::collect_files_with_suffix(
@@ -715,6 +716,34 @@ namespace Low {
                                           i_Material);
         }
       }
+#else
+
+      {
+        Util::AssetManager::TypeRegistratorBuilder l_Builder(
+            N(Material), Renderer::Material::IDENTIFIER);
+        l_Builder.auto_initialize(true)
+            .initialize_on_startup(true)
+            .add_asset_suffix(".materialresource.yaml");
+        l_Builder.add_initialize_directory(
+            Util::get_project().dataPath, true);
+        l_Builder.initializer(
+            [](const Util::String p_Path) -> Util::Handle {
+              /*
+                Util::String i_NameString =
+                    Util::PathHelper::get_base_name_no_ext(p_Path);
+                EditorImage i_EditorImage =
+                    EditorImage::make(LOW_NAME(i_NameString.c_str()));
+                i_EditorImage.set_path(
+                    Util::PathHelper::normalize(p_Path));
+
+                return i_EditorImage.get_id();
+                */
+              return Util::Handle::DEAD;
+            });
+
+        Util::AssetManager::register_asset_type(l_Builder.build());
+      }
+#endif
 
       {
         Util::List<Util::String> l_Resources;
@@ -760,7 +789,6 @@ namespace Low {
 
       LOW_ASSERT(initialize_default_materials(),
                  "Failed to initialize default materials");
-
 
       g_GlobalScene = RenderScene::make(N(Global));
 

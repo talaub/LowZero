@@ -180,6 +180,30 @@ add_subdirectory(LowCore)
 add_subdirectory(LowEditor)
 add_subdirectory(Lowder)
 
+set(LOW_DEBUG_VISUALIZERS
+  "${CMAKE_CURRENT_SOURCE_DIR}/LowDependencies/EASTL/doc/EASTL.natvis"
+  "${CMAKE_CURRENT_SOURCE_DIR}/LowDebug.natvis"
+)
+
+function(low_add_debug_visualizers target_name)
+  if (MSVC AND TARGET ${target_name})
+    target_sources(${target_name} PRIVATE ${LOW_DEBUG_VISUALIZERS})
+    source_group("Debug Visualizers" FILES ${LOW_DEBUG_VISUALIZERS})
+  endif()
+endfunction()
+
+foreach(LOW_VISUALIZER_TARGET
+  LowMath
+  LowUtil
+  LowRenderer
+  LowRenderer2
+  LowCore
+  LowEditor
+  Lowder
+)
+  low_add_debug_visualizers(${LOW_VISUALIZER_TARGET})
+endforeach()
+
 # add_dependencies(LowEngineZero
   #LowMath
   #LowUtil
@@ -197,4 +221,3 @@ foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
 endforeach( OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
 
 SET(CMAKE_BINARY_DIR SAVED_BINARY_PATH)
-
