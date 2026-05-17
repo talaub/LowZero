@@ -283,6 +283,24 @@ namespace Low {
 
       {
         MaterialType l_MT = Low::Renderer::MaterialType::make(
+            N(water), Low::Renderer::MaterialTypeFamily::SOLID);
+        l_MT.add_input(N(shallow_color),
+                       Low::Renderer::MaterialTypeInputType::VECTOR3);
+        l_MT.add_input(N(deep_color),
+                       Low::Renderer::MaterialTypeInputType::VECTOR3);
+        l_MT.add_input(N(fresnel_power),
+                       Low::Renderer::MaterialTypeInputType::FLOAT);
+        l_MT.finalize();
+
+        l_MT.set_draw_vertex_shader_path("water.vert");
+        l_MT.set_draw_fragment_shader_path("water.frag");
+        l_MT.casts_shadows(false);
+
+        g_MaterialTypes.water = l_MT;
+      }
+
+      {
+        MaterialType l_MT = Low::Renderer::MaterialType::make(
             N(debug_geometry),
             Low::Renderer::MaterialTypeFamily::DEBUGGEOMETRY);
         l_MT.finalize();

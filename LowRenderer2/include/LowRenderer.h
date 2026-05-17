@@ -17,6 +17,7 @@ namespace Low {
     struct MaterialTypes
     {
       MaterialType solidBase;
+      MaterialType water;
       MaterialType uiBase;
       MaterialType uiText;
       MaterialType uiOutline;
