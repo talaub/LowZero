@@ -304,6 +304,11 @@ namespace Low {
                     Util::RTTI::PropertyInfo &p_PropertyInfo,
                     Util::Map<Util::Name, Util::Variant> &p_Variants);
 
+      const char *debug_string() const;
+      const char *debug_type_string() const;
+      const char *debug_liveness_string() const;
+      const char *debug_name_string() const;
+
       const static u64 DEAD;
 
       [[nodiscard]] static u16

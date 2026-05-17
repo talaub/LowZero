@@ -11,6 +11,12 @@
 
 #define MAX_BUFFER_SIZE (5 * LOW_MEGABYTE_I)
 
+#if defined(_MSC_VER)
+#define LOW_NAME_DEBUG_NOINLINE __declspec(noinline)
+#else
+#define LOW_NAME_DEBUG_NOINLINE __attribute__((noinline))
+#endif
+
 namespace Low {
   namespace Util {
     char *g_StringBuffer;
@@ -61,6 +67,33 @@ namespace Low {
       LOW_ASSERT(is_valid(), "Name not found");
 
       return g_NameMap[m_Index];
+    }
+
+    const char *Name::debug_c_str() const
+    {
+      return debug_string(m_Index);
+    }
+
+    LOW_NAME_DEBUG_NOINLINE const char *
+    Name::debug_string_or_null(uint32_t p_Index)
+    {
+      Map<uint32_t, char *>::iterator l_It = g_NameMap.find(p_Index);
+      if (l_It == g_NameMap.end()) {
+        return nullptr;
+      }
+
+      return l_It->second;
+    }
+
+    LOW_NAME_DEBUG_NOINLINE const char *
+    Name::debug_string(uint32_t p_Index)
+    {
+      const char *l_String = debug_string_or_null(p_Index);
+      if (!l_String) {
+        return "<unknown name>";
+      }
+
+      return l_String;
     }
 
     void Name::initialize()
@@ -151,3 +184,4 @@ namespace Low {
 } // namespace Low
 
 #undef MAX_BUFFER_SIZE
+#undef LOW_NAME_DEBUG_NOINLINE

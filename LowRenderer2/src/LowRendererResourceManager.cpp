@@ -5,6 +5,7 @@
 #include "LowRendererEditorImageGpu.h"
 #include "LowRendererEditorImageStaging.h"
 #include "LowRendererMaterialState.h"
+#include "LowRendererMaterialType.h"
 #include "LowRendererMeshResourceState.h"
 #include "LowRendererMeshState.h"
 #include "LowRendererTextureResource.h"
@@ -208,8 +209,25 @@ namespace Low {
             l_DataPath,
             [l_HandleId](bool p_Success, Util::Serial::Node &p_Node) {
               Material l_Material = l_HandleId;
+              LOW_ASSERT(
+                  (bool)p_Node["material_type"],
+                  "Material file does not contain material type.");
+
+              Util::Name l_MaterialTypeName =
+                  p_Node["material_type"].as<Util::Name>();
+
               MaterialType l_MaterialType =
-                  l_Material.get_material_type();
+                  MaterialType::find_by_name(l_MaterialTypeName);
+              if (!l_MaterialType.is_alive()) {
+                l_MaterialType =
+                    MaterialType::find_by_name(N(solid_base));
+                LOW_LOG_WARN
+                    << "Could not find material type with name "
+                    << l_MaterialTypeName
+                    << " falling back so solid_base." << LOW_LOG_END;
+              }
+
+              l_Material.set_material_type(l_MaterialType);
 
               Util::List<Util::Name> l_PropertyNames;
               l_MaterialType.fill_input_names(l_PropertyNames);
@@ -1701,6 +1719,8 @@ namespace Low {
           p_Config.path = p_Path;
           return true;
         }
+        LOW_ASSERT(false, "Unsupported mesh resource version.");
+
         return true;
       }
 
@@ -1744,6 +1764,38 @@ namespace Low {
           p_Config.path = Util::PathHelper::normalize(p_Path);
           return true;
         }
+        LOW_ASSERT(false, "Unsupported texture resource version.");
+        return true;
+      }
+
+      bool
+      parse_material_resource_config(Util::String p_Path,
+                                     Util::Serial::Node &p_Node,
+                                     MaterialResourceConfig &p_Config)
+      {
+        LOWR_ASSERT_RETURN(p_Node["version"],
+                           "Could not find version");
+        const u32 l_Version = p_Node["version"].as<u32>();
+
+        if (l_Version == 1) {
+          LOWR_ASSERT_RETURN(p_Node["name"],
+                             "Could not find material name");
+          p_Config.name = p_Node["name"].as<Util::Name>();
+
+          LOWR_ASSERT_RETURN(p_Node["material_id"],
+                             "Could not find material id");
+          p_Config.material_id =
+              p_Node["material_id"].as<Util::U64Id>().val;
+
+          p_Config.data_path =
+              Util::get_project().assetCachePath + "/" +
+              Util::hash_to_string(p_Config.material_id) +
+              ".material.yaml";
+
+          p_Config.path = Util::PathHelper::normalize(p_Path);
+          return true;
+        }
+        LOW_ASSERT(false, "Unsupported material resource version.");
         return true;
       }
 

@@ -538,6 +538,23 @@ namespace Low {
         // End function: make_gpu_ready_with_uid
       }
       {
+        // Function: make_from_resource_config
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(make_from_resource_config);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = Material::type_id();
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Config);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: make_from_resource_config
+      }
+      {
         // Function: update_gpu
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(update_gpu);
@@ -1237,8 +1254,7 @@ namespace Low {
 
           if (p_Value.get_input_type(i_Name) ==
               MaterialTypeInputType::TEXTURE) {
-            set_property_texture(i_Name,
-                                            Util::Handle::DEAD);
+            set_property_texture(i_Name, Util::Handle::DEAD);
           }
         }
       }
@@ -1461,6 +1477,25 @@ namespace Low {
 
       return l_Material;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_gpu_ready_with_uid
+    }
+
+    Material Material::make_from_resource_config(
+        MaterialResourceConfig &p_Config)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_from_resource_config
+      MaterialResource l_Resource =
+          MaterialResource::make_from_config(p_Config);
+      Material l_Material =
+          Material::make(p_Config.name, l_Resource.get_material_id());
+      l_Material.set_resource(l_Resource);
+
+      l_Material.set_state(MaterialState::UNLOADED);
+
+      ResourceManager::register_asset(l_Material.get_unique_id(),
+                                      l_Material);
+
+      return l_Material;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_from_resource_config
     }
 
     void Material::update_gpu()

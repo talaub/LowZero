@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <OutputType>library</OutputType>
+    <AssemblyName>LowEngineDebugVisualizerExtension</AssemblyName>
+    <TargetName>LowEngineDebugVisualizerExtension</TargetName>
+    <RootNamespace>LowEngine.DebugVisualizerExtension</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
+    <VSSDKBuildToolsAutoSetup>true</VSSDKBuildToolsAutoSetup>
+    <GeneratePkgDefFile>false</GeneratePkgDefFile>
+    <IncludeAssemblyInVSIXContainer>true</IncludeAssemblyInVSIXContainer>
+    <IncludeAssemblyFromOutputFolderInVSIXContainer>true</IncludeAssemblyFromOutputFolderInVSIXContainer>
+    <VsdConfigFile>$(OutputPath)$(AssemblyName).vsdconfig</VsdConfigFile>
+    <CreateVsdbgConfigFileDependsOn>CopyFilesToOutputDirectory</CreateVsdbgConfigFileDependsOn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectCapability Include="CreateVsixContainer" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.VisualStudio.Debugger.Engine">
+      <HintPath>C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\Microsoft.VisualStudio.Debugger.Engine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="source.extension.vsixmanifest" />
+    <VsdConfigXmlFiles Include="LowEngineIntrinsicEvaluator.vsdconfigxml" />
+    <Content Include="LowEngineDebug.natvis">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+  </ItemGroup>
+
+  <Target Name="IncludeLowEngineDebuggerConfigInVsix"
+          BeforeTargets="GetVsixSourceItems"
+          DependsOnTargets="CreateVsdbgConfigFile">
+    <ItemGroup>
+      <VSIXSourceItem Include="$(VsdConfigFile)">
+        <VSIXSubPath></VSIXSubPath>
+      </VSIXSourceItem>
+    </ItemGroup>
+  </Target>
+
+  <Import Project="C:\Program Files\Microsoft Visual Studio\18\Community\VSSDK\VisualStudioIntegration\Tools\Bin\Microsoft.VSSDK.Debugger.VSDConfigTool.targets" />
+  <Import Project="C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\VSSDK\Microsoft.VsSDK.targets" />
+</Project>

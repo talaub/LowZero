@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Intrinsic
+    Name="low_name_debug_string"
+    SourceId="8d6a4ce8-f35a-41e9-bf1e-5b51f4ecb5b1"
+    LanguageId="3a12d0b7-c26c-11d0-b442-00a0244a1dd2"
+    Id="1001"
+    ReturnType="char const *"
+    Category="Property">
+    <Parameter Type="Low::Util::Name *" />
+  </Intrinsic>
+
+  <Intrinsic
+    Name="low_handle_debug_string"
+    SourceId="8d6a4ce8-f35a-41e9-bf1e-5b51f4ecb5b1"
+    LanguageId="3a12d0b7-c26c-11d0-b442-00a0244a1dd2"
+    Id="1101"
+    ReturnType="char const *"
+    Category="Property">
+    <Parameter Type="void *" />
+  </Intrinsic>
+
+  <Intrinsic
+    Name="low_handle_type_string"
+    SourceId="8d6a4ce8-f35a-41e9-bf1e-5b51f4ecb5b1"
+    LanguageId="3a12d0b7-c26c-11d0-b442-00a0244a1dd2"
+    Id="1102"
+    ReturnType="char const *"
+    Category="Property">
+    <Parameter Type="void *" />
+  </Intrinsic>
+
+  <Intrinsic
+    Name="low_handle_liveness_string"
+    SourceId="8d6a4ce8-f35a-41e9-bf1e-5b51f4ecb5b1"
+    LanguageId="3a12d0b7-c26c-11d0-b442-00a0244a1dd2"
+    Id="1103"
+    ReturnType="char const *"
+    Category="Property">
+    <Parameter Type="void *" />
+  </Intrinsic>
+
+  <Intrinsic
+    Name="low_handle_name_string"
+    SourceId="8d6a4ce8-f35a-41e9-bf1e-5b51f4ecb5b1"
+    LanguageId="3a12d0b7-c26c-11d0-b442-00a0244a1dd2"
+    Id="1104"
+    ReturnType="char const *"
+    Category="Property">
+    <Parameter Type="void *" />
+  </Intrinsic>
+
+  <Type Name="Low::Util::Name">
+    <DisplayString>{low_name_debug_string(this),s}</DisplayString>
+    <Expand>
+      <Item Name="[string]">low_name_debug_string(this),s</Item>
+      <Item Name="[hash]">m_Index</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Low::Util::Handle" Inheritable="true">
+    <DisplayString>{low_handle_debug_string((void*)&amp;m_Id),s}</DisplayString>
+    <Expand>
+      <Item Name="[type]">low_handle_type_string((void*)&amp;m_Id),s</Item>
+      <Item Name="[liveness]">low_handle_liveness_string((void*)&amp;m_Id),s</Item>
+      <Item Name="[name]">low_handle_name_string((void*)&amp;m_Id),s</Item>
+      <Item Name="[id]">m_Id</Item>
+      <Item Name="[index]">m_Data.m_Index</Item>
+      <Item Name="[generation]">m_Data.m_Generation</Item>
+      <Item Name="[type id]">m_Data.m_Type</Item>
+    </Expand>
+  </Type>
+</AutoVisualizer>

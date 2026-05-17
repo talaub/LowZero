@@ -34,6 +34,10 @@ namespace Low {
                                     Util::Serial::Node &p_Node,
                                     TextureResourceConfig &p_Config);
 
+      bool parse_material_resource_config(
+          Util::String p_Path, Util::Serial::Node &p_Node,
+          MaterialResourceConfig &p_Config);
+
       void register_asset_id(const u64 p_AssetId,
                              const u64 p_AssetHandleId);
 

@@ -12,6 +12,7 @@
 #include <chrono>
 #include <random>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 namespace Low {
@@ -299,6 +300,130 @@ namespace Low {
 
     Handle::Handle(uint64_t p_Id) : m_Id(p_Id)
     {
+    }
+
+    static const char *debug_type_string_for_handle(Handle p_Handle)
+    {
+      thread_local char s_Buffer[256];
+
+      if (p_Handle.m_Id == Handle::DEAD) {
+        snprintf(s_Buffer, sizeof(s_Buffer), "DEAD");
+        return s_Buffer;
+      }
+
+      if (!Handle::is_registered_type(p_Handle.get_type())) {
+        snprintf(s_Buffer, sizeof(s_Buffer), "<unregistered type %u>",
+                 static_cast<unsigned>(p_Handle.get_type()));
+        return s_Buffer;
+      }
+
+      TypeIdentifier l_Identifier = Handle::identifier(p_Handle.get_type());
+      snprintf(s_Buffer, sizeof(s_Buffer), "%s:%s",
+               Name::debug_string(l_Identifier.module.m_Index),
+               Name::debug_string(l_Identifier.name.m_Index));
+
+      return s_Buffer;
+    }
+
+    static const char *debug_liveness_string_for_handle(Handle p_Handle)
+    {
+      if (p_Handle.m_Id == Handle::DEAD) {
+        return "dead";
+      }
+
+      if (!Handle::is_registered_type(p_Handle.get_type())) {
+        return "unregistered";
+      }
+
+      RTTI::TypeInfo &l_TypeInfo =
+          Handle::get_type_info(p_Handle.get_type());
+      if (!l_TypeInfo.is_alive) {
+        return "unknown";
+      }
+
+      return l_TypeInfo.is_alive(p_Handle) ? "alive" : "stale";
+    }
+
+    static const char *debug_name_string_for_handle(Handle p_Handle)
+    {
+      static const u32 l_NameHash = Name::to_hash("name");
+      thread_local char s_Buffer[256];
+
+      if (p_Handle.m_Id == Handle::DEAD) {
+        return "<dead>";
+      }
+
+      if (!Handle::is_registered_type(p_Handle.get_type())) {
+        return "<unregistered type>";
+      }
+
+      RTTI::TypeInfo &l_TypeInfo =
+          Handle::get_type_info(p_Handle.get_type());
+      if (!l_TypeInfo.is_alive || !l_TypeInfo.is_alive(p_Handle)) {
+        return "<not alive>";
+      }
+
+      Name l_NameName(l_NameHash);
+      auto l_PropertyIt = l_TypeInfo.properties.find(l_NameName);
+      if (l_PropertyIt == l_TypeInfo.properties.end()) {
+        return "<no name property>";
+      }
+
+      RTTI::PropertyInfo &l_PropertyInfo = l_PropertyIt->second;
+      if (l_PropertyInfo.type != RTTI::PropertyType::NAME ||
+          !l_PropertyInfo.get_return) {
+        return "<name property is not a Name>";
+      }
+
+      const Name *l_Name =
+          static_cast<const Name *>(l_PropertyInfo.get_return(p_Handle));
+      if (!l_Name) {
+        return "<null name>";
+      }
+
+      snprintf(s_Buffer, sizeof(s_Buffer), "%s",
+               Name::debug_string(l_Name->m_Index));
+      return s_Buffer;
+    }
+
+    const char *Handle::debug_type_string() const
+    {
+      return debug_type_string_for_handle(*this);
+    }
+
+    const char *Handle::debug_liveness_string() const
+    {
+      return debug_liveness_string_for_handle(*this);
+    }
+
+    const char *Handle::debug_name_string() const
+    {
+      return debug_name_string_for_handle(*this);
+    }
+
+    const char *Handle::debug_string() const
+    {
+      thread_local char s_Buffer[512];
+
+      if (m_Id == DEAD) {
+        snprintf(s_Buffer, sizeof(s_Buffer),
+                 "DEAD (index=%u, generation=%u, type=%u)",
+                 static_cast<unsigned>(get_index()),
+                 static_cast<unsigned>(get_generation()),
+                 static_cast<unsigned>(get_type()));
+        return s_Buffer;
+      }
+
+      snprintf(s_Buffer, sizeof(s_Buffer),
+               "%s, %s, name=%s, index=%u, generation=%u, type=%u",
+               debug_type_string_for_handle(*this),
+               debug_liveness_string_for_handle(*this),
+               debug_name_string_for_handle(*this),
+               static_cast<unsigned>(get_index()),
+               static_cast<unsigned>(get_generation()),
+               static_cast<unsigned>(get_type()));
+
+      return s_Buffer;
     }
 
     bool Handle::operator==(const Handle &p_Other) const

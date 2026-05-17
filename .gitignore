@@ -14,6 +14,12 @@ build/
 /misteda
 LowScriptingApi/bin
 LowScriptingApi/obj
+LowDebugVisualizerExtension/bin
+LowDebugVisualizerExtension/obj
+LowDebugVisualizerExtension/*.vsix
+LowDebugVisualizerExtension/*.vsdconfig
+LowDebugVisualizerExtension/extension.vsixmanifest
+LowDebugVisualizerExtension/merged.source.extension.vsixmanifest
 .rgignore
 .clangflags
 misteda-crash-reporter

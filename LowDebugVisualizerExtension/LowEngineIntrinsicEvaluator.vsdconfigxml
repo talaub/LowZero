@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Configuration xmlns="http://schemas.microsoft.com/vstudio/vsdconfig/2008">
+  <ManagedComponent
+    ComponentId="e5a0897b-2c6f-4d10-a609-0bce9f70d746"
+    ComponentLevel="9992000"
+    AssemblyName="LowEngineDebugVisualizerExtension">
+    <Class
+      Name="LowEngine.DebugVisualizerExtension.LowEngineIntrinsicEvaluator"
+      WorkerProcessSupported="true">
+      <Implements>
+        <InterfaceGroup>
+          <Filter>
+            <LanguageId RequiredValue="3a12d0b7-c26c-11d0-b442-00a0244a1dd2" />
+            <SourceId RequiredValue="8d6a4ce8-f35a-41e9-bf1e-5b51f4ecb5b1" />
+          </Filter>
+          <Interface Name="IDkmIntrinsicFunctionEvaluator140" />
+        </InterfaceGroup>
+      </Implements>
+    </Class>
+  </ManagedComponent>
+</Configuration>

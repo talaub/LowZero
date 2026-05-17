@@ -492,6 +492,7 @@ namespace Low {
         }
       }
 #else
+      // Mesh asset type
       Util::AssetManager::TypeRegistratorBuilder l_Builder(
           N(Mesh), Renderer::Mesh::IDENTIFIER);
       l_Builder.auto_initialize(true)
@@ -580,6 +581,7 @@ namespace Low {
               Texture::make_from_resource_config(i_ResourceConfig));
         }
       } else {
+        // Texture asset type
         Util::AssetManager::TypeRegistratorBuilder l_Builder(
             N(Texture), Renderer::Texture::IDENTIFIER);
         l_Builder.auto_initialize(true)
@@ -717,7 +719,7 @@ namespace Low {
         }
       }
 #else
-
+      // Material asset type
       {
         Util::AssetManager::TypeRegistratorBuilder l_Builder(
             N(Material), Renderer::Material::IDENTIFIER);
@@ -728,17 +730,24 @@ namespace Low {
             Util::get_project().dataPath, true);
         l_Builder.initializer(
             [](const Util::String p_Path) -> Util::Handle {
-              /*
-                Util::String i_NameString =
-                    Util::PathHelper::get_base_name_no_ext(p_Path);
-                EditorImage i_EditorImage =
-                    EditorImage::make(LOW_NAME(i_NameString.c_str()));
-                i_EditorImage.set_path(
-                    Util::PathHelper::normalize(p_Path));
+              Util::Serial::Node l_ResourceNode =
+                  Util::Serial::load_yaml_file(p_Path.c_str());
 
-                return i_EditorImage.get_id();
-                */
-              return Util::Handle::DEAD;
+              MaterialResourceConfig l_ResourceConfig;
+
+              LOWR_ASSERT_RETURN(
+                  ResourceManager::parse_material_resource_config(
+                      p_Path, l_ResourceNode, l_ResourceConfig),
+                  "Failed to parse texture resource config.");
+              Material l_ExistingMaterial =
+                  ResourceManager::find_asset<Material>(
+                      l_ResourceConfig.material_id);
+              if (!l_ExistingMaterial.is_alive()) {
+                ResourceManager::register_asset(
+                    l_ResourceConfig.material_id,
+                    Material::make_from_resource_config(
+                        l_ResourceConfig));
+              }
             });
 
         Util::AssetManager::register_asset_type(l_Builder.build());

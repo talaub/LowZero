@@ -14,7 +14,13 @@
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-
+    struct MaterialResourceConfig
+    {
+      Util::Name name;
+      u64 material_id;
+      Util::String path;
+      Util::String data_path;
+    };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     struct LOW_RENDERER2_API MaterialResource
@@ -154,6 +160,8 @@ namespace Low {
 
       static MaterialResource make(Util::String p_Path);
       static MaterialResource find_by_path(Util::String p_Path);
+      static MaterialResource
+      make_from_config(MaterialResourceConfig &p_Config);
       static bool get_page_for_index(const u32 p_Index,
                                      u32 &p_PageIndex,
                                      u32 &p_SlotIndex);

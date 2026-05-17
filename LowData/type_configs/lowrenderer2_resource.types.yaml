@@ -558,6 +558,13 @@ types:
             handle: true
           - name: uniqueId
             type: uint64_t
+      make_from_resource_config:
+        static: true
+        return_type: Material
+        return_handle: true
+        parameters:
+          - name: config
+            type: MaterialResourceConfig
       update_gpu:
         return_type: void
       set_property_vector4:
@@ -668,6 +675,13 @@ types:
         parameters:
           - name: path
             type: Util::String
+      make_from_config:
+        static: true
+        return_type: MaterialResource
+        return_handle: true
+        parameters:
+          - name: config
+            type: MaterialResourceConfig
 
   GpuMaterial:
     dynamic_increase: false

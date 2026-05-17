@@ -585,6 +585,10 @@ namespace Low {
                      "Material of draw command is not alive "
                      "anymore. This should not happen.");
 
+          if (i_Material.get_state() != MaterialState::LOADED) {
+            i_Material = get_default_material_texture();
+         }
+
           if (i_Material.get_material_type() !=
               l_CurrentMaterialType) {
             l_CurrentMaterialType = i_Material.get_material_type();
@@ -986,6 +990,10 @@ namespace Low {
             LOW_ASSERT(i_Material.is_alive(),
                        "Material of draw command is not alive "
                        "anymore. This should not happen.");
+
+            if (i_Material.get_state() != MaterialState::LOADED){
+              i_Material = get_default_material_texture();
+            }
 
             if (i_Material.get_material_type() !=
                 l_CurrentMaterialType) {

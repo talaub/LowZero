@@ -196,6 +196,8 @@ namespace Low {
           Low::Util::Name p_Name,
           Low::Renderer::MaterialType p_MaterialType,
           uint64_t p_UniqueId);
+      static Material
+      make_from_resource_config(MaterialResourceConfig &p_Config);
       void update_gpu();
       void set_property_vector4(Util::Name p_Name,
                                 Math::Vector4 p_Value);

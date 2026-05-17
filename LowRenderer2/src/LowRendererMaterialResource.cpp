@@ -285,6 +285,23 @@ namespace Low {
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: find_by_path
       }
+      {
+        // Function: make_from_config
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(make_from_config);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = MaterialResource::type_id();
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Config);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: make_from_config
+      }
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
       // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
@@ -681,6 +698,20 @@ namespace Low {
 
       return Util::Handle::DEAD;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_find_by_path
+    }
+
+    MaterialResource MaterialResource::make_from_config(
+        MaterialResourceConfig &p_Config)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_from_config
+      MaterialResource l_Resource =
+          MaterialResource::make(p_Config.name);
+      l_Resource.set_path(p_Config.path);
+      l_Resource.set_material_id(p_Config.material_id);
+      l_Resource.set_data_path(p_Config.data_path);
+
+      return l_Resource;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_from_config
     }
 
     uint32_t MaterialResource::create_instance(u32 &p_PageIndex,

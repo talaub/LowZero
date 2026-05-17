@@ -27,12 +27,15 @@ namespace Low {
       Name &operator=(const Name p_Other);
 
       char *c_str() const;
+      const char *debug_c_str() const;
       bool is_valid() const;
 
       static void initialize();
       static void cleanup();
 
       static uint32_t to_hash(const char *p_String);
+      static const char *debug_string_or_null(uint32_t p_Index);
+      static const char *debug_string(uint32_t p_Index);
 
       static Name from_string(String p_String);
 

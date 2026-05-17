@@ -68,7 +68,7 @@ namespace Low {
             AssetType l_AssetType = AssetType::File;
             if (p_Watcher.subtype == "meshresource") {
               l_AssetType = AssetType::Mesh;
-            } else if (p_Watcher.subtype == "material") {
+            } else if (p_Watcher.subtype == "materialresource") {
               l_AssetType = AssetType::Material;
             } else if (p_Watcher.subtype == "model") {
               l_AssetType = AssetType::Model;
