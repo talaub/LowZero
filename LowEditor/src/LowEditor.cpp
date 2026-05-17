@@ -1114,12 +1114,15 @@ namespace Low {
       Util::Serial::Node l_Node;
       p_Entity.serialize(l_Node);
       l_Node.remove("unique_id");
+      l_Node.remove("_unique_id");
       Util::String l_NameString = l_Node["name"].as<Util::String>();
       l_NameString += " Clone";
       l_Node["name"] = l_NameString.c_str();
 
-      Util::Serial::Node l_ComponentsNode = l_Node["components"];
-      for (auto [_, i_ComponentNode] : l_ComponentsNode) {
+      Util::Serial::Node &l_ComponentsNode = l_Node["components"];
+      for (int i = 0; i < l_ComponentsNode.size(); ++i) {
+        Util::Serial::Node &i_ComponentNode = l_ComponentsNode[i];
+        i_ComponentNode["properties"].remove("_unique_id");
         i_ComponentNode["properties"].remove("unique_id");
       }
 
