@@ -1028,6 +1028,8 @@ namespace Low {
       {
         TypeEditor::register_type<MeshAssetEditor>(
             Renderer::Mesh::type_id());
+        TypeEditor::register_type<MaterialAssetEditor>(
+            Renderer::Material::type_id());
         TypeEditor::register_type<TextureAssetEditor>(
             Renderer::Texture::type_id());
         TypeEditor::register_type<FontAssetEditor>(

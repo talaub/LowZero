@@ -99,6 +99,12 @@ namespace Low {
     }
 
     void TypeEditor::show_line(const Util::String p_Label,
+                               Util::Function<bool()> p_Function)
+    {
+      PropertyEditors::render_line(p_Label, p_Function);
+    }
+
+    void TypeEditor::show_line(const Util::String p_Label,
                                const Util::String p_Content)
     {
       PropertyEditors::render_line(p_Label, [p_Content]() -> bool {

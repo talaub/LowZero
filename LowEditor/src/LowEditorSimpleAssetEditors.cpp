@@ -3,17 +3,21 @@
 #include "LowCore.h"
 #include "LowEditor.h"
 #include "LowEditorFonts.h"
+#include "LowEditorGui.h"
 
 #include "LowEditorThemes.h"
 #include "LowEditorViewport.h"
 #include "LowMath.h"
+#include "LowRendererMaterialType.h"
 #include "LowRendererMesh.h"
 #include "LowRendererTexture.h"
 #include "LowRendererFont.h"
 #include "LowRendererTextureState.h"
 #include "LowRendererResourceManager.h"
+#include "LowEditorPropertyEditors.h"
 #include "LowUtilHashing.h"
 #include "LowUtilLogger.h"
+#include "LowUtilAssetManager.h"
 #include <imgui.h>
 
 namespace Low {
@@ -129,6 +133,142 @@ namespace Low {
       m_MeshViewer->tick(LOW_DELTA_TIME);
 
       m_MeshViewer->set_dimensions(l_Avail.x, l_Avail.y);
+    }
+
+    MaterialAssetEditor::MaterialAssetEditor(Util::Handle p_Handle)
+        : TypeEditor(p_Handle)
+    {
+      m_MaterialViewer = new MaterialViewer(p_Handle.get_id(),
+                                            Math::UVector2(500, 500));
+    }
+
+    MaterialAssetEditor::~MaterialAssetEditor()
+    {
+      delete m_MaterialViewer;
+    }
+
+    void MaterialAssetEditor::render(const float p_Delta)
+    {
+      Renderer::Material l_Material = m_Handle.get_id();
+
+      draw_header(l_Material.get_name().c_str(), "Material",
+                  AssetType::Material);
+
+      show_line("ID",
+                Util::hash_to_string(
+                    l_Material.get_resource().get_material_id()));
+
+      /*
+      {
+        Util::StringBuilder l_Line;
+        l_Line.append(l_Mesh.get_submesh_count());
+        show_line("Submeshes", l_Line.get());
+      }
+      */
+
+      Util::List<Util::Name> l_InputNames;
+      Renderer::MaterialType l_MaterialType =
+          l_Material.get_material_type();
+      l_MaterialType.fill_input_names(l_InputNames);
+
+      const u64 l_MaterialHandleId = l_Material.get_id();
+
+      for (Util::Name i_InputName : l_InputNames) {
+        Renderer::MaterialTypeInputType i_InputType =
+            l_MaterialType.get_input_type(i_InputName);
+        switch (i_InputType) {
+        case Renderer::MaterialTypeInputType::FLOAT: {
+          show_line(
+              i_InputName.c_str(),
+              [l_MaterialHandleId, i_InputName]() -> bool {
+                Renderer::Material i_Material = l_MaterialHandleId;
+                float i_Val =
+                    i_Material.get_property_float(i_InputName);
+                if (Gui::DragFloatWithButtons(
+                        (Util::String("##") + i_InputName.c_str())
+                            .c_str(),
+                        &i_Val)) {
+                  i_Material.set_property_float(i_InputName, i_Val);
+                }
+                return false;
+              });
+          break;
+        }
+        case Renderer::MaterialTypeInputType::VECTOR3: {
+          show_line(
+              i_InputName.c_str(),
+              [l_MaterialHandleId, i_InputName]() -> bool {
+                Renderer::Material i_Material = l_MaterialHandleId;
+                Math::Vector3 i_Val =
+                    i_Material.get_property_vector3(i_InputName);
+                if (Gui::Vector3Edit(i_Val)) {
+                  i_Material.set_property_vector3(i_InputName, i_Val);
+                }
+                return false;
+              });
+          break;
+        }
+        case Renderer::MaterialTypeInputType::VECTOR4: {
+          show_line(
+              i_InputName.c_str(),
+              [l_MaterialHandleId, i_InputName]() -> bool {
+                Renderer::Material i_Material = l_MaterialHandleId;
+                Math::Vector4 i_Val =
+                    i_Material.get_property_vector4(i_InputName);
+                if (ImGui::ColorPicker4(
+                        (Util::String("##") + i_InputName.c_str())
+                            .c_str(),
+                        (float *)&i_Val)) {
+                  i_Material.set_property_vector4(i_InputName, i_Val);
+                }
+                return false;
+              });
+          break;
+        }
+        case Renderer::MaterialTypeInputType::TEXTURE: {
+
+          Renderer::Texture i_Val =
+              l_Material.get_property_texture(i_InputName);
+          if (PropertyEditors::render_handle_selector(
+                  i_InputName.c_str(), Renderer::Texture::type_id(),
+                  (u64 *)&i_Val)) {
+            l_Material.set_property_texture(i_InputName, i_Val);
+          }
+          /*)
+    show_line(
+        i_InputName.c_str(),
+        [l_MaterialHandleId, i_InputName]() -> bool {
+          Renderer::Material i_Material = l_MaterialHandleId;
+          Renderer::Texture i_Val =
+              i_Material.get_property_texture(i_InputName);
+          if (PropertyEditors::render_handle_selector(
+                  (Util::String("##") + i_InputName.c_str())
+                      .c_str(),
+                  Renderer::Texture::type_id(),
+                  (u64 *)&i_Val)) {
+            i_Material.set_property_texture(i_InputName, i_Val);
+          }
+          return false;
+        });
+        */
+          break;
+        }
+        }
+      }
+
+      ImGui::Dummy(ImVec2(0, 10));
+
+      if (Gui::SaveButton()) {
+        Util::AssetManager::save(l_Material);
+      }
+
+      ImGui::Dummy(ImVec2(0, 5));
+
+      const ImVec2 l_Avail = ImGui::GetContentRegionAvail();
+
+      m_MaterialViewer->tick(LOW_DELTA_TIME);
+
+      m_MaterialViewer->set_dimensions(l_Avail.x, l_Avail.y);
     }
 
     void TextureAssetEditor::render(const float p_Delta)

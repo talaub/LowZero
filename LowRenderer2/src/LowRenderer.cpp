@@ -743,7 +743,9 @@ namespace Low {
             N(Material), Renderer::Material::IDENTIFIER);
         l_Builder.auto_initialize(true)
             .initialize_on_startup(true)
+            .load_path_property_name(N(path))
             .add_asset_suffix(".materialresource.yaml");
+
         l_Builder.add_initialize_directory(
             Util::get_project().dataPath, true);
         l_Builder.initializer(

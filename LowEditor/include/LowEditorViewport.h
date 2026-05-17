@@ -3,6 +3,7 @@
 #include "LowEditorApi.h"
 
 #include "LowMath.h"
+#include "LowRendererPrimitives.h"
 #include "LowRendererRenderStep.h"
 #include "LowRendererRenderView.h"
 #include "LowRendererRenderObject.h"
@@ -85,6 +86,47 @@ namespace Low {
         m_RenderScene.set_directional_light_intensity(0.75f);
         m_RenderScene.set_directional_light_direction(-0.15f, -1.0f,
                                                       -1.5f);
+
+        m_RenderView.add_step_by_name(RENDERSTEP_SKY_GRADIENT_NAME);
+      }
+
+      virtual bool tick(const float p_Delta) override;
+
+      Renderer::RenderObject m_RenderObject;
+
+    private:
+      bool m_InitialCameraSetup;
+      float m_CameraOrbitDistance;
+    };
+
+    struct LOW_EDITOR_API MaterialViewer : public Viewport
+    {
+      MaterialViewer(Renderer::Material p_Material,
+                     const Math::UVector2 p_Dimensions)
+          : Viewport(p_Dimensions), m_InitialCameraSetup(false),
+            m_CameraOrbitDistance(0.0f)
+      {
+        m_RenderObject =
+            spawn_mesh(Renderer::get_primitives().unitIcoSphere);
+        m_RenderObject.set_material(p_Material);
+
+        Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
+
+        l_LocalMatrix =
+            glm::translate(l_LocalMatrix, Math::Vector3(0.0f));
+        l_LocalMatrix *=
+            glm::toMat4(Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f));
+        l_LocalMatrix =
+            glm::scale(l_LocalMatrix, Math::Vector3(1.0f));
+
+        m_RenderObject.set_world_transform(l_LocalMatrix);
+
+        m_RenderScene.set_directional_light_color(1.0f, 1.0f, 1.0f);
+        m_RenderScene.set_directional_light_intensity(0.75f);
+        m_RenderScene.set_directional_light_direction(-0.15f, -1.0f,
+                                                      -1.5f);
+
+        m_RenderView.add_step_by_name(RENDERSTEP_SKY_GRADIENT_NAME);
       }
 
       virtual bool tick(const float p_Delta) override;

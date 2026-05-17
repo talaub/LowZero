@@ -11,6 +11,7 @@
 #include "LowCoreUiWidgetAsset.h"
 
 #include "LowUtilLogger.h"
+#include "LowUtil.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "IconsFontAwesome5.h"
@@ -47,6 +48,7 @@ namespace Low {
 
       Util::Map<uint16_t, Util::FileSystem::WatchHandle>
           g_SelectedDirectoryPerType;
+      Util::Map<AssetType, Util::String> g_SelectedAssetDirectory;
 
       static bool asset_type_from_handle_type(
           const uint16_t p_TypeId, AssetType &p_AssetType)
@@ -126,6 +128,170 @@ namespace Low {
         }
 
         return l_EditorImage;
+      }
+
+      static Util::String get_asset_path_for_handle(
+          const AssetType p_AssetType, const Util::Handle p_Handle)
+      {
+        switch (p_AssetType) {
+        case AssetType::Mesh: {
+          Renderer::Mesh l_Mesh = p_Handle.get_id();
+          if (l_Mesh.is_alive() && l_Mesh.get_resource().is_alive()) {
+            return l_Mesh.get_resource().get_path();
+          }
+          break;
+        }
+        case AssetType::Texture: {
+          Renderer::Texture l_Texture = p_Handle.get_id();
+          if (l_Texture.is_alive() &&
+              l_Texture.get_resource().is_alive()) {
+            return l_Texture.get_resource().get_path();
+          }
+          break;
+        }
+        case AssetType::Material: {
+          Renderer::Material l_Material = p_Handle.get_id();
+          if (l_Material.is_alive() &&
+              l_Material.get_resource().is_alive()) {
+            return l_Material.get_resource().get_path();
+          }
+          break;
+        }
+        case AssetType::Font: {
+          Renderer::Font l_Font = p_Handle.get_id();
+          if (l_Font.is_alive() && l_Font.get_resource().is_alive()) {
+            return l_Font.get_resource().get_path();
+          }
+          break;
+        }
+        case AssetType::Model: {
+          Renderer::Model l_Model = p_Handle.get_id();
+          if (l_Model.is_alive() && l_Model.get_resource().is_alive()) {
+            return l_Model.get_resource().get_path();
+          }
+          break;
+        }
+        case AssetType::UiWidget: {
+          Core::UI::WidgetAsset l_Widget = p_Handle.get_id();
+          if (l_Widget.is_alive()) {
+            return l_Widget.get_path();
+          }
+          break;
+        }
+        case AssetType::Script: {
+          Core::Scripting::Asset l_Asset = p_Handle.get_id();
+          if (l_Asset.is_alive()) {
+            return l_Asset.get_source_path();
+          }
+          break;
+        }
+        }
+
+        return "";
+      }
+
+      static Util::String get_asset_directory_for_handle(
+          const AssetType p_AssetType, const Util::Handle p_Handle)
+      {
+        Util::String l_Path =
+            Util::PathHelper::normalize(get_asset_path_for_handle(
+                p_AssetType, p_Handle));
+
+        if (l_Path.empty()) {
+          return "";
+        }
+
+        l_Path = Util::StringHelper::replace(l_Path, '\\', '/');
+        Util::String l_DataPath = Util::StringHelper::replace(
+            Util::PathHelper::normalize(Util::get_project().dataPath),
+            '\\', '/');
+
+        if (!l_DataPath.empty() &&
+            Util::StringHelper::begins_with(l_Path, l_DataPath)) {
+          l_Path = l_Path.substr(l_DataPath.size());
+          if (!l_Path.empty() && l_Path[0] == '/') {
+            l_Path = l_Path.substr(1);
+          }
+        }
+
+        const size_t l_Slash = l_Path.find_last_of('/');
+        if (l_Slash == Util::String::npos) {
+          return ".";
+        }
+        return l_Path.substr(0, l_Slash);
+      }
+
+      static bool asset_directory_matches_filter(
+          const Util::String &p_AssetDirectory,
+          const Util::String &p_FilterDirectory)
+      {
+        if (p_FilterDirectory.empty()) {
+          return true;
+        }
+
+        if (p_AssetDirectory == p_FilterDirectory) {
+          return true;
+        }
+
+        Util::String l_Prefix = p_FilterDirectory;
+        l_Prefix += "/";
+        return Util::StringHelper::begins_with(p_AssetDirectory,
+                                               l_Prefix);
+      }
+
+      static bool list_contains_string(const Util::List<Util::String> &p_List,
+                                       const Util::String &p_Value)
+      {
+        for (u32 i = 0; i < p_List.size(); ++i) {
+          if (p_List[i] == p_Value) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      static void add_asset_directory_with_parents(
+          Util::List<Util::String> &p_Directories,
+          const Util::String &p_Directory)
+      {
+        if (p_Directory.empty()) {
+          return;
+        }
+
+        if (p_Directory == ".") {
+          if (!list_contains_string(p_Directories, p_Directory)) {
+            p_Directories.push_back(p_Directory);
+          }
+          return;
+        }
+
+        Util::String l_Current;
+        Util::List<Util::String> l_Parts;
+        Util::StringHelper::split(p_Directory, '/', l_Parts);
+        for (u32 i = 0; i < l_Parts.size(); ++i) {
+          if (!l_Current.empty()) {
+            l_Current += "/";
+          }
+          l_Current += l_Parts[i];
+
+          if (!list_contains_string(p_Directories, l_Current)) {
+            p_Directories.push_back(l_Current);
+          }
+        }
+      }
+
+      static Util::String get_asset_directory_display_name(
+          const Util::String &p_Directory)
+      {
+        if (p_Directory == ".") {
+          return "Root";
+        }
+
+        const size_t l_Slash = p_Directory.find_last_of('/');
+        if (l_Slash == Util::String::npos) {
+          return p_Directory;
+        }
+        return p_Directory.substr(l_Slash + 1);
       }
 
       static void draw_asset_handle_thumbnail(
@@ -516,14 +682,60 @@ namespace Low {
 #undef SEARCH_BUFFER_SIZE
             ImGui::Spacing();
 
+            Util::Handle *l_Handles =
+                p_TypeInfo.get_living_instances();
+
+            Util::List<Util::String> l_Directories;
+            for (uint32_t i = 0u; i < p_TypeInfo.get_living_count();
+                 ++i) {
+              add_asset_directory_with_parents(
+                  l_Directories,
+                  get_asset_directory_for_handle(p_AssetType,
+                                                 l_Handles[i]));
+            }
+
+            Util::String &l_SelectedDirectory =
+                g_SelectedAssetDirectory[p_AssetType];
+            if (!l_SelectedDirectory.empty() &&
+                !list_contains_string(l_Directories,
+                                      l_SelectedDirectory)) {
+              l_SelectedDirectory = "";
+            }
+
+            const bool l_ShowDirectories = !l_Directories.empty();
+            if (l_ShowDirectories) {
+              ImGui::BeginChild(
+                  "Directories",
+                  ImVec2(ASSET_SELECTOR_DIRECTORY_WIDTH,
+                         ASSET_SELECTOR_POPUP_HEIGHT),
+                  true);
+
+              if (ImGui::Selectable("All",
+                                    l_SelectedDirectory.empty())) {
+                l_SelectedDirectory = "";
+              }
+
+              for (u32 i = 0; i < l_Directories.size(); ++i) {
+                const Util::String &i_Directory = l_Directories[i];
+                Util::String i_Display =
+                    get_asset_directory_display_name(i_Directory);
+
+                if (ImGui::Selectable(
+                        i_Display.c_str(),
+                        l_SelectedDirectory == i_Directory)) {
+                  l_SelectedDirectory = i_Directory;
+                }
+              }
+
+              ImGui::EndChild();
+              ImGui::SameLine();
+            }
+
             ImGui::BeginChild(
                 "Assets",
                 ImVec2(ASSET_SELECTOR_CONTENT_WIDTH,
                        ASSET_SELECTOR_POPUP_HEIGHT),
                 true);
-
-            Util::Handle *l_Handles =
-                p_TypeInfo.get_living_instances();
 
             for (uint32_t i = 0u; i < p_TypeInfo.get_living_count();
                  ++i) {
@@ -539,6 +751,14 @@ namespace Low {
                 continue;
               }
 
+              if (l_ShowDirectories &&
+                  !asset_directory_matches_filter(
+                      get_asset_directory_for_handle(p_AssetType,
+                                                     l_Handles[i]),
+                      l_SelectedDirectory)) {
+                continue;
+              }
+
               if (render_asset_selector_row(
                       l_Handles[i], i_DisplayName, p_AssetType,
                       l_Handles[i].get_id() == *p_HandleId)) {
@@ -547,7 +767,6 @@ namespace Low {
                 l_Changed = true;
                 ImGui::CloseCurrentPopup();
               }
-              ImGui::Dummy(ImVec2(0.0f, 4.0f));
             }
 
             ImGui::EndChild();
@@ -1229,7 +1448,6 @@ namespace Low {
                 l_Changed = true;
                 ImGui::CloseCurrentPopup();
               }
-              ImGui::Dummy(ImVec2(0.0f, 4.0f));
             } else {
               if (ImGui::Selectable(i_Name.c_str(), false)) {
                 *p_HandleId = i_FileWatcher.handle.get_id();

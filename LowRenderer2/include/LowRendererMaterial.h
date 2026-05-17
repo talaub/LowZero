@@ -35,6 +35,7 @@ namespace Low {
         MaterialType material_type;
         Low::Renderer::MaterialResource resource;
         Low::Renderer::GpuMaterial gpu;
+        Low::Util::String path;
         Low::Util::Map<Low::Util::Name, Low::Util::Variant>
             properties;
         Low::Util::Set<u64> references;
@@ -171,6 +172,10 @@ namespace Low {
 
       Low::Renderer::GpuMaterial get_gpu() const;
       void set_gpu(Low::Renderer::GpuMaterial p_Value);
+
+      Low::Util::String get_path() const;
+      void set_path(Low::Util::String p_Value);
+      void set_path(const char *p_Value);
 
       Low::Util::Map<Low::Util::Name, Low::Util::Variant> &
       get_properties() const;

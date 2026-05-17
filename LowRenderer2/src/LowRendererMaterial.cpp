@@ -319,6 +319,34 @@ namespace Low {
         // End property: gpu
       }
       {
+        // Property: path
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(path);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(Material::Data, path);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          Material l_Handle = p_Handle.get_id();
+          l_Handle.get_path();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Material, path,
+                                            Low::Util::String);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          Material l_Handle = p_Handle.get_id();
+          l_Handle.set_path(*(Low::Util::String *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Material l_Handle = p_Handle.get_id();
+          *((Low::Util::String *)p_Data) = l_Handle.get_path();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: path
+      }
+      {
         // Property: properties
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(properties);
@@ -925,6 +953,7 @@ namespace Low {
       if (get_gpu().is_alive()) {
         l_Handle.set_gpu(get_gpu());
       }
+      l_Handle.set_path(get_path());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
 
@@ -961,12 +990,12 @@ namespace Low {
       Util::List<Util::Name> l_InputNames;
       get_material_type().fill_input_names(l_InputNames);
 
-      Util::Serial::Node l_PropertiesNode = p_Node["properties"];
+      Util::Serial::Node &l_PropertiesNode = p_Node["properties"];
 
       for (u32 i = 0; i < l_InputNames.size(); ++i) {
         Util::Name i_Name = l_InputNames[i];
         const char *i_NameC = i_Name.c_str();
-        Util::Serial::Node i_Node = l_PropertiesNode[i_NameC];
+        Util::Serial::Node &i_Node = l_PropertiesNode[i_NameC];
         MaterialTypeInputType i_Type =
             get_material_type().get_input_type(i_Name);
         switch (i_Type) {
@@ -1326,6 +1355,37 @@ namespace Low {
       broadcast_observable(N(gpu));
     }
 
+    Low::Util::String Material::get_path() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_path
+      // LOW_CODEGEN::END::CUSTOM:GETTER_path
+
+      return TYPE_SOA(Material, path, Low::Util::String);
+    }
+    void Material::set_path(const char *p_Value)
+    {
+      Low::Util::String l_Val(p_Value);
+      set_path(l_Val);
+    }
+
+    void Material::set_path(Low::Util::String p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_path
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_path
+
+      // Set new value
+      TYPE_SOA(Material, path, Low::Util::String) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_path
+      // LOW_CODEGEN::END::CUSTOM:SETTER_path
+
+      broadcast_observable(N(path));
+    }
+
     Low::Util::Map<Low::Util::Name, Low::Util::Variant> &
     Material::get_properties() const
     {
@@ -1490,6 +1550,8 @@ namespace Low {
       l_Material.set_resource(l_Resource);
 
       l_Material.set_state(MaterialState::UNLOADED);
+
+      l_Material.set_path(l_Resource.get_data_path());
 
       ResourceManager::register_asset(l_Material.get_unique_id(),
                                       l_Material);

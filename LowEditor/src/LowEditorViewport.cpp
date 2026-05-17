@@ -224,6 +224,103 @@ namespace Low {
       return true;
     }
 
+    bool MaterialViewer::tick(const float p_Delta)
+    {
+      if (!Viewport::tick(p_Delta)) {
+        return false;
+      }
+
+      if (m_RenderObject.get_mesh().get_state() !=
+          Renderer::MeshState::LOADED) {
+        return true;
+      }
+
+      const Math::Sphere l_BoundingSphere =
+          m_RenderObject.get_mesh().get_gpu().get_bounding_sphere();
+      const Math::Vector3 l_Target = l_BoundingSphere.position;
+
+      if (!m_InitialCameraSetup) {
+        m_InitialCameraSetup = true;
+
+        const Math::Vector3 l_Direction =
+            glm::normalize(Math::Vector3(0.2f, -0.1f, -1.0f));
+
+        m_CameraOrbitDistance = l_BoundingSphere.radius + 15.0f;
+        set_camera_direction(l_Direction);
+        set_camera_position(l_Target -
+                            (l_Direction * m_CameraOrbitDistance));
+      }
+
+      Math::Vector3 l_CameraPosition = get_camera_position();
+      Math::Vector3 l_Offset = l_CameraPosition - l_Target;
+
+      if (glm::length(l_Offset) < 0.001f) {
+        l_Offset = Math::Vector3(0.0f, 0.0f, 1.0f);
+      }
+
+      m_CameraOrbitDistance = glm::length(l_Offset);
+
+      if (m_ViewportHovered) {
+        ImGuiIO &l_Io = ImGui::GetIO();
+
+        if (l_Io.MouseWheel != 0.0f) {
+          const float l_MinDistance =
+              glm::max(l_BoundingSphere.radius * 0.25f, 0.05f);
+          const float l_ZoomSpeed =
+              glm::max(m_CameraOrbitDistance * 0.15f, 0.1f);
+
+          m_CameraOrbitDistance -= l_Io.MouseWheel * l_ZoomSpeed;
+          m_CameraOrbitDistance =
+              glm::max(m_CameraOrbitDistance, l_MinDistance);
+
+          l_Offset = glm::normalize(l_Offset) * m_CameraOrbitDistance;
+        }
+
+        if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
+          const ImVec2 l_MouseDelta = l_Io.MouseDelta;
+
+          if (l_MouseDelta.x != 0.0f || l_MouseDelta.y != 0.0f) {
+            const float l_RotationSpeed = 0.01f;
+            const float l_Yaw = -l_MouseDelta.x * l_RotationSpeed;
+            const float l_Pitch = -l_MouseDelta.y * l_RotationSpeed;
+
+            const Math::Vector3 l_Up(0.0f, 1.0f, 0.0f);
+            Math::Vector3 l_Right = glm::cross(l_Up, l_Offset);
+
+            if (glm::length(l_Right) > 0.0001f) {
+              l_Right = glm::normalize(l_Right);
+
+              const Math::Quaternion l_YawRotation =
+                  glm::angleAxis(l_Yaw, l_Up);
+              const Math::Quaternion l_PitchRotation =
+                  glm::angleAxis(l_Pitch, l_Right);
+
+              Math::Vector3 l_RotatedOffset =
+                  l_YawRotation * l_Offset;
+              Math::Vector3 l_PitchedOffset =
+                  l_PitchRotation * l_RotatedOffset;
+
+              const Math::Vector3 l_ViewDirection =
+                  glm::normalize(-l_PitchedOffset);
+
+              if (glm::abs(glm::dot(l_ViewDirection, l_Up)) < 0.99f) {
+                l_Offset = l_PitchedOffset;
+              } else {
+                l_Offset = l_RotatedOffset;
+              }
+            }
+          }
+        }
+      }
+
+      l_CameraPosition = l_Target + l_Offset;
+      set_camera_position(l_CameraPosition);
+      set_camera_direction(
+          glm::normalize(l_Target - l_CameraPosition));
+
+      return true;
+    }
+
     bool UiViewport::tick(const float p_Delta)
     {
       if (!Viewport::tick(p_Delta)) {

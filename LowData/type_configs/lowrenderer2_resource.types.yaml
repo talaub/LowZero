@@ -508,6 +508,10 @@ types:
         handle: true
         skip_serialization: true
         skip_deserialization: true
+      path:
+        type: Low::Util::String
+        skip_serialization: true
+        skip_deserialization: true
       properties:
         type: Low::Util::Map<Low::Util::Name, Low::Util::Variant>
         no_setter: true

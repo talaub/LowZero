@@ -5,6 +5,7 @@
 #include "LowEditorMainWindow.h"
 #include "LowEditorThemes.h"
 #include "LowMath.h"
+#include "LowRendererMaterialResource.h"
 #include "LowRendererMeshResource.h"
 #include "LowRendererTextureState.h"
 #include "LowRendererMesh.h"
@@ -111,6 +112,18 @@ namespace Low {
                 p_Watcher.assetId = l_Resource.get_texture_id();
                 l_Handle = Renderer::ResourceManager::find_asset<
                     Renderer::Texture>(l_Resource.get_texture_id());
+              }
+
+              break;
+            }
+            case AssetType::Material: {
+              Renderer::MaterialResource l_Resource =
+                  Renderer::MaterialResource::find_by_path(
+                      p_Watcher.path);
+              if (l_Resource.is_alive()) {
+                p_Watcher.assetId = l_Resource.get_material_id();
+                l_Handle = Renderer::ResourceManager::find_asset<
+                    Renderer::Material>(l_Resource.get_material_id());
               }
 
               break;

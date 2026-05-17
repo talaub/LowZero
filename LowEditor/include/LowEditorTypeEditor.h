@@ -6,6 +6,7 @@
 #include "LowEditorMetadata.h"
 
 #include "LowMath.h"
+#include "LowUtilContainers.h"
 #include "LowUtilHandle.h"
 #include <memory>
 
@@ -65,6 +66,8 @@ namespace Low {
 
       void show_line(const Util::String p_Label,
                      const Util::String p_Content);
+      void show_line(const Util::String p_Label,
+                     Util::Function<bool()> p_Function);
 
     public:
       static void cleanup_registered_types();
