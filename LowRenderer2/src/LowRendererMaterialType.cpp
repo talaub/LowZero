@@ -1692,6 +1692,7 @@ namespace Low {
               ImageFormat::DEPTH;
 
           l_Handle.get_pick_pipeline_config().alphaBlending = false;
+          l_Handle.get_pick_pipeline_config().depthTest = true;
         }
         {
           l_Handle.get_highlight_pipeline_config()

@@ -1539,11 +1539,8 @@ namespace Low {
                                  Math::Color *p_Color)
       {
         return render_line(p_Label, [&p_Label, p_Color]() {
-          return ImGui::ColorEdit4(
-              (Util::String("##") + p_Label).c_str(),
-              (float *)p_Color,
-              ImGuiColorEditFlags_NoInputs |
-                  ImGuiColorEditFlags_NoLabel);
+          return Gui::ColorRGBAInput(
+              (Util::String("##") + p_Label).c_str(), p_Color);
         });
       }
 
@@ -1555,11 +1552,9 @@ namespace Low {
         return render_line(p_Label, [&p_Label, &p_Color]() {
           Math::ColorRGB l_Color = p_Color;
 
-          if (ImGui::ColorEdit3(
+          if (Gui::ColorRGBInput(
                   (Util::String("##") + p_Label).c_str(),
-                  (float *)&l_Color,
-                  ImGuiColorEditFlags_NoInputs |
-                      ImGuiColorEditFlags_NoLabel)) {
+                  &l_Color)) {
             p_Color = l_Color;
             return true;
           }

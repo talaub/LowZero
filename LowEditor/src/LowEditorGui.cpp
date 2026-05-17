@@ -272,40 +272,114 @@ namespace Low {
 
       bool Vector3Edit(Math::Vector3 &p_Vector, float p_MaxWidth)
       {
-        float l_FullWidth = ImGui::GetContentRegionAvail().x;
+        Theme &l_Theme = theme_get_current();
+        const float l_Scale = 1.0f;
+        ImFont *l_Font =
+            Fonts::UI(19.0f * l_Scale, Fonts::Weight::Regular);
+
+        float l_FullWidth = ImGui::CalcItemWidth();
         if (p_MaxWidth > 0.0f) {
           l_FullWidth = p_MaxWidth;
         }
 
-        const float l_Spacing = LOW_EDITOR_SPACING;
-        const float l_Width =
-            (l_FullWidth - (l_Spacing * 2.0f)) / 3.0f;
+        ImGui::BeginGroup();
+        ImGui::PushFont(l_Font);
+
+        ImGuiStyle &l_Style = ImGui::GetStyle();
+        const float l_TargetFrameHeight = 27.0f * l_Scale;
+        const float l_Rounding = 4.0f * l_Scale;
+        const float l_BorderSize = 1.0f;
+        const float l_TextLineHeight = ImGui::GetTextLineHeight();
+        float l_PadY = 0.0f;
+        if (l_TargetFrameHeight > l_TextLineHeight) {
+          l_PadY = (l_TargetFrameHeight - l_TextLineHeight) * 0.5f;
+        }
+
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,
+                            ImVec2(l_Style.FramePadding.x * l_Scale,
+                                   l_PadY));
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing,
+                            ImVec2(0.0f, 0.0f));
+
+        ImGui::PushStyleColor(ImGuiCol_FrameBg,
+                              color_to_imvec4(l_Theme.input));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgHovered,
+                              color_to_imvec4(l_Theme.inputHover));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgActive,
+                              color_to_imvec4(l_Theme.inputActive));
+        ImGui::PushStyleColor(ImGuiCol_Border,
+                              color_to_imvec4(l_Theme.button));
 
         bool l_Changed = false;
-        Theme &l_Theme = theme_get_current();
+        const float l_ChannelWidth =
+            LOW_MATH_MAX(38.0f * l_Scale, l_FullWidth / 3.0f);
+        const float l_FrameHeight = l_TargetFrameHeight;
+        const float l_FrameWidth = l_ChannelWidth * 3.0f;
 
-        ImGui::BeginGroup(); // keep the three fields as one logical
-                             // block
+        ImVec2 l_FrameMin = ImGui::GetCursorScreenPos();
+        ImVec2 l_FrameMax(l_FrameMin.x + l_FrameWidth,
+                          l_FrameMin.y + l_FrameHeight);
+        ImDrawList *l_DrawList = ImGui::GetWindowDrawList();
+        const ImU32 l_InputColor = color_to_imcolor(l_Theme.input);
+        const ImU32 l_BorderColor =
+            color_to_imcolor(l_Theme.button);
+        const ImU32 l_DividerColor =
+            color_to_imcolor(l_Theme.subtext);
+        const ImU32 l_ChannelColors[3] = {
+            color_to_imcolor(l_Theme.coords0),
+            color_to_imcolor(l_Theme.coords1),
+            color_to_imcolor(l_Theme.coords2)};
+        float *l_Values[3] = {&p_Vector.x, &p_Vector.y,
+                              &p_Vector.z};
+        const char *l_Ids[3] = {"##X", "##Y", "##Z"};
 
-        // X
-        l_Changed |= draw_single_coefficient_editor(
-            "X", color_to_imcolor(l_Theme.coords0), &p_Vector.x,
-            l_Width, l_Spacing, false);
+        l_DrawList->AddRectFilled(l_FrameMin, l_FrameMax,
+                                  l_InputColor, l_Rounding);
 
-        // Y
-        l_Changed |= draw_single_coefficient_editor(
-            "Y", color_to_imcolor(l_Theme.coords1), &p_Vector.y,
-            l_Width, l_Spacing, false);
+        for (int i = 0; i < 3; ++i) {
+          if (i > 0) {
+            ImGui::SameLine(0.0f, 0.0f);
+          }
 
-        // Z (last in the row -> break)
-        l_Changed |= draw_single_coefficient_editor(
-            "Z", color_to_imcolor(l_Theme.coords2), &p_Vector.z,
-            l_Width, /*p_Margin*/ 0.0f, /*p_Break*/ true);
+          ImGui::SetNextItemWidth(l_ChannelWidth);
+          if (ImGui::DragFloat(l_Ids[i], l_Values[i], 0.2f, 0.0f,
+                               0.0f, "%.3f")) {
+            l_Changed = true;
+          }
 
+          ImVec2 l_ItemMin = ImGui::GetItemRectMin();
+          ImVec2 l_ItemMax = ImGui::GetItemRectMax();
+          const float l_StripMinX =
+              l_ItemMin.x + (i > 0 ? l_BorderSize : 0.0f);
+          l_DrawList->PushClipRect(l_ItemMin, l_ItemMax, true);
+          l_DrawList->AddRectFilled(
+              ImVec2(l_StripMinX,
+                     l_ItemMin.y + (3.0f * l_Scale)),
+              ImVec2(l_ItemMin.x + (4.0f * l_Scale),
+                     l_ItemMax.y - (3.0f * l_Scale)),
+              l_ChannelColors[i], 2.0f * l_Scale,
+              ImDrawFlags_RoundCornersRight);
+          l_DrawList->PopClipRect();
+        }
+
+        l_DrawList->AddRect(l_FrameMin, l_FrameMax, l_BorderColor,
+                            l_Rounding, 0, l_BorderSize);
+        for (int i = 1; i < 3; ++i) {
+          const float l_DividerX =
+              l_FrameMin.x + (l_ChannelWidth * static_cast<float>(i));
+          l_DrawList->AddLine(
+              ImVec2(l_DividerX, l_FrameMin.y + (3.0f * l_Scale)),
+              ImVec2(l_DividerX, l_FrameMax.y - (3.0f * l_Scale)),
+              l_DividerColor, l_BorderSize);
+        }
+
+        ImGui::PopStyleColor(4);
+        ImGui::PopStyleVar(4);
+        ImGui::PopFont();
         ImGui::EndGroup();
 
-        // After EndGroup(), ImGui will naturally move to the next
-        // line as needed
         return l_Changed;
       }
 
@@ -671,27 +745,52 @@ namespace Low {
                                 float speed, float min, float max,
                                 const char *format, float p_Scale)
       {
+        Theme &l_Theme = theme_get_current();
         const float l_Scale = LOW_MATH_MAX(0.75f, p_Scale);
         ImFont *l_Font =
             Fonts::UI(19.0f * l_Scale, Fonts::Weight::Regular);
 
         ImGui::BeginGroup();
         ImGui::PushFont(l_Font);
+
         ImGuiStyle &l_Style = ImGui::GetStyle();
+        const float l_TargetFrameHeight = 27.0f * l_Scale;
+        const float l_Rounding = 4.0f * l_Scale;
+        const float l_BorderSize = 1.0f;
+        const float l_TextLineHeight = ImGui::GetTextLineHeight();
+        float l_PadY = 0.0f;
+        if (l_TargetFrameHeight > l_TextLineHeight) {
+          l_PadY = (l_TargetFrameHeight - l_TextLineHeight) * 0.5f;
+        }
+
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,
                             ImVec2(l_Style.FramePadding.x * l_Scale,
-                                   l_Style.FramePadding.y * l_Scale));
-        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding,
-                            4.0f * l_Scale);
-        ImGui::PushStyleVar(
-            ImGuiStyleVar_ItemInnerSpacing,
-            ImVec2(l_Style.ItemInnerSpacing.x * l_Scale,
-                   l_Style.ItemInnerSpacing.y));
+                                   l_PadY));
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, l_Rounding);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize,
+                            l_BorderSize);
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing,
+                            ImVec2(0.0f, 0.0f));
+
+        ImGui::PushStyleColor(ImGuiCol_FrameBg,
+                              color_to_imvec4(l_Theme.input));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgHovered,
+                              color_to_imvec4(l_Theme.inputHover));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgActive,
+                              color_to_imvec4(l_Theme.inputActive));
+        ImGui::PushStyleColor(ImGuiCol_Border,
+                              color_to_imvec4(l_Theme.button));
+        ImGui::PushStyleColor(ImGuiCol_Button,
+                              color_to_imvec4(l_Theme.input));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
+                              color_to_imvec4(l_Theme.inputHover));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive,
+                              color_to_imvec4(l_Theme.inputActive));
 
         bool l_Edited = false;
 
         const float l_FullWidth = ImGui::CalcItemWidth();
-        const float l_ButtonWidth = DRAG_BUTTON_WIDTH * l_Scale;
+        const float l_ButtonWidth = 28.0f * l_Scale;
         const float l_Spacing = ImGui::GetStyle().ItemInnerSpacing.x;
 
         // Drag width accounts for two buttons + two inner spacings
@@ -701,7 +800,21 @@ namespace Low {
 
         ImGui::PushID(label);
 
+        const ImVec2 l_FrameMin = ImGui::GetCursorScreenPos();
+        const float l_FrameHeight = ImGui::GetFrameHeight();
+        const float l_FrameWidth =
+            l_DragWidth + (l_ButtonWidth * 2.0f) + (l_Spacing * 2.0f);
+        const ImVec2 l_FrameMax(l_FrameMin.x + l_FrameWidth,
+                                l_FrameMin.y + l_FrameHeight);
+        ImDrawList *l_DrawList = ImGui::GetWindowDrawList();
+        const ImU32 l_BorderColor =
+            color_to_imcolor(l_Theme.button);
+        const float l_DividerX0 = l_FrameMin.x + l_DragWidth;
+        const float l_DividerX1 =
+            l_FrameMin.x + l_DragWidth + l_ButtonWidth;
+
         // --- Value drag ---
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
         ImGui::SetNextItemWidth(l_DragWidth);
         if (ImGui::DragFloat("##Drag", value, speed, min, max,
                              format)) {
@@ -709,13 +822,17 @@ namespace Low {
             *value = ImClamp(*value, min, max);
           l_Edited = true;
         }
+        ImGui::PopStyleVar();
 
         // --- Plus button ---
         ImGui::SameLine(0.0f, l_Spacing);
         ImGui::PushItemFlag(
             ImGuiItemFlags_NoNavDefaultFocus,
             true); // keep nav focus on the drag by default
-        if (ButtonNoRounding(ICON_LC_PLUS, l_ButtonWidth)) {
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
+        if (ImGui::Button(ICON_LC_PLUS,
+                          ImVec2(l_ButtonWidth, 0.0f))) {
           *value += 1.0f;
           if (min < max)
             *value = ImClamp(*value, min, max);
@@ -724,22 +841,228 @@ namespace Low {
 
         // --- Minus button (right-rounded) ---
         ImGui::SameLine(0.0f, l_Spacing);
-        if (ButtonRounding(ICON_LC_MINUS,
-                           ImDrawFlags_RoundCornersRight,
-                           l_ButtonWidth)) {
+        ImGui::PopStyleVar(2);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
+        if (ImGui::Button(ICON_LC_MINUS,
+                          ImVec2(l_ButtonWidth, 0.0f))) {
           *value -= 1.0f;
           if (min < max)
             *value = ImClamp(*value, min, max);
           l_Edited = true;
         }
+        ImGui::PopStyleVar(2);
         ImGui::PopItemFlag();
 
+        l_DrawList->AddRect(l_FrameMin, l_FrameMax, l_BorderColor,
+                            l_Rounding, 0, l_BorderSize);
+        l_DrawList->AddLine(ImVec2(l_DividerX0, l_FrameMin.y + 3.0f),
+                            ImVec2(l_DividerX0, l_FrameMax.y - 3.0f),
+                            l_BorderColor, l_BorderSize);
+        l_DrawList->AddLine(ImVec2(l_DividerX1, l_FrameMin.y + 3.0f),
+                            ImVec2(l_DividerX1, l_FrameMax.y - 3.0f),
+                            l_BorderColor, l_BorderSize);
+
         ImGui::PopID();
-        ImGui::PopStyleVar(3);
+        ImGui::PopStyleColor(7);
+        ImGui::PopStyleVar(4);
         ImGui::PopFont();
         ImGui::EndGroup();
 
         return l_Edited;
+      }
+
+      static bool color_input_internal(const char *p_Label,
+                                       float *p_Values,
+                                       int p_ComponentCount,
+                                       float p_Scale)
+      {
+        Theme &l_Theme = theme_get_current();
+        const float l_Scale = LOW_MATH_MAX(0.75f, p_Scale);
+        ImFont *l_Font =
+            Fonts::UI(19.0f * l_Scale, Fonts::Weight::Regular);
+
+        ImGui::BeginGroup();
+        ImGui::PushID(p_Label);
+        ImGui::PushFont(l_Font);
+
+        ImGuiStyle &l_Style = ImGui::GetStyle();
+        const float l_TargetFrameHeight = 27.0f * l_Scale;
+        const float l_Rounding = 4.0f * l_Scale;
+        const float l_BorderSize = 1.0f;
+        const float l_TextLineHeight = ImGui::GetTextLineHeight();
+        float l_PadY = 0.0f;
+        if (l_TargetFrameHeight > l_TextLineHeight) {
+          l_PadY = (l_TargetFrameHeight - l_TextLineHeight) * 0.5f;
+        }
+
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,
+                            ImVec2(l_Style.FramePadding.x * l_Scale,
+                                   l_PadY));
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing,
+                            ImVec2(0.0f, 0.0f));
+
+        ImGui::PushStyleColor(ImGuiCol_FrameBg,
+                              color_to_imvec4(l_Theme.input));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgHovered,
+                              color_to_imvec4(l_Theme.inputHover));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgActive,
+                              color_to_imvec4(l_Theme.inputActive));
+        ImGui::PushStyleColor(ImGuiCol_Border,
+                              color_to_imvec4(l_Theme.button));
+
+        bool l_Edited = false;
+        const float l_FullWidth = ImGui::CalcItemWidth();
+        const float l_SwatchWidth = 36.0f * l_Scale;
+        const float l_FrameHeight = l_TargetFrameHeight;
+        const float l_ChannelWidth = LOW_MATH_MAX(
+            38.0f * l_Scale,
+            (l_FullWidth - l_SwatchWidth) /
+                LOW_MATH_MAX(1, p_ComponentCount));
+        const float l_FrameWidth =
+            l_SwatchWidth + (l_ChannelWidth * p_ComponentCount);
+
+        ImVec2 l_FrameMin = ImGui::GetCursorScreenPos();
+        ImVec2 l_FrameMax(l_FrameMin.x + l_FrameWidth,
+                          l_FrameMin.y + l_FrameHeight);
+        ImDrawList *l_DrawList = ImGui::GetWindowDrawList();
+        const ImU32 l_InputColor = color_to_imcolor(l_Theme.input);
+        const ImU32 l_BorderColor =
+            color_to_imcolor(l_Theme.button);
+        const ImU32 l_TextMutedColor =
+            color_to_imcolor(l_Theme.subtext);
+
+        l_DrawList->AddRectFilled(l_FrameMin, l_FrameMax,
+                                  l_InputColor, l_Rounding);
+
+        if (ImGui::InvisibleButton("##swatch",
+                                   ImVec2(l_SwatchWidth,
+                                          l_FrameHeight))) {
+          ImGui::OpenPopup("picker");
+        }
+
+        ImVec2 l_SwatchMin = ImGui::GetItemRectMin();
+        ImVec2 l_SwatchMax = ImGui::GetItemRectMax();
+        ImVec2 l_ChipMin(l_SwatchMin.x + (7.0f * l_Scale),
+                         l_SwatchMin.y + (5.0f * l_Scale));
+        ImVec2 l_ChipMax(l_SwatchMax.x - (7.0f * l_Scale),
+                         l_SwatchMax.y - (5.0f * l_Scale));
+        ImU32 l_Color = ImGui::ColorConvertFloat4ToU32(ImVec4(
+            p_Values[0], p_Values[1], p_Values[2],
+            p_ComponentCount == 4 ? p_Values[3] : 1.0f));
+        l_DrawList->AddRectFilled(l_ChipMin, l_ChipMax, l_Color,
+                                  3.0f * l_Scale);
+        l_DrawList->AddRect(l_ChipMin, l_ChipMax, l_BorderColor,
+                            3.0f * l_Scale, 0, l_BorderSize);
+
+        const char *l_Labels[4] = {"%.2f", "%.2f", "%.2f",
+                                   "%.2f"};
+        const char *l_Ids[4] = {"##R", "##G", "##B", "##A"};
+        const ImU32 l_ChannelColors[4] = {
+            color_to_imcolor(l_Theme.coords0),
+            color_to_imcolor(l_Theme.coords1),
+            color_to_imcolor(l_Theme.coords2),
+            color_to_imcolor(l_Theme.coords3)};
+
+        for (int i = 0; i < p_ComponentCount; ++i) {
+          ImGui::SameLine(0.0f, 0.0f);
+          ImGui::SetNextItemWidth(l_ChannelWidth);
+          if (ImGui::DragFloat(l_Ids[i], &p_Values[i], 0.01f, 0.0f,
+                               1.0f, l_Labels[i])) {
+            p_Values[i] = ImClamp(p_Values[i], 0.0f, 1.0f);
+            l_Edited = true;
+          }
+
+          ImVec2 l_ItemMin = ImGui::GetItemRectMin();
+          ImVec2 l_ItemMax = ImGui::GetItemRectMax();
+          const float l_StripMinX =
+              l_ItemMin.x + (i > 0 ? l_BorderSize : 0.0f);
+          l_DrawList->PushClipRect(l_ItemMin, l_ItemMax, true);
+          l_DrawList->AddRectFilled(
+              ImVec2(l_StripMinX,
+                     l_ItemMin.y + (3.0f * l_Scale)),
+              ImVec2(l_ItemMin.x + (4.0f * l_Scale),
+                     l_ItemMax.y - (3.0f * l_Scale)),
+              l_ChannelColors[i], 2.0f * l_Scale,
+              ImDrawFlags_RoundCornersRight);
+          l_DrawList->PopClipRect();
+        }
+
+        if (ImGui::BeginPopup("picker")) {
+          ImGuiColorEditFlags l_Flags =
+              ImGuiColorEditFlags_NoSidePreview |
+              ImGuiColorEditFlags_NoSmallPreview;
+          if (p_ComponentCount == 4) {
+            l_Flags |= ImGuiColorEditFlags_AlphaBar;
+            if (ImGui::ColorPicker4("##picker", p_Values,
+                                    l_Flags)) {
+              l_Edited = true;
+            }
+          } else {
+            if (ImGui::ColorPicker3("##picker", p_Values,
+                                    l_Flags)) {
+              l_Edited = true;
+            }
+          }
+          ImGui::EndPopup();
+        }
+
+        for (int i = 0; i < p_ComponentCount; ++i) {
+          p_Values[i] = ImClamp(p_Values[i], 0.0f, 1.0f);
+        }
+
+        l_DrawList->AddRect(l_FrameMin, l_FrameMax, l_BorderColor,
+                            l_Rounding, 0, l_BorderSize);
+        for (int i = 0; i < p_ComponentCount; ++i) {
+          float l_DividerX =
+              l_FrameMin.x + l_SwatchWidth +
+              (l_ChannelWidth * static_cast<float>(i));
+          l_DrawList->AddLine(
+              ImVec2(l_DividerX, l_FrameMin.y + (3.0f * l_Scale)),
+              ImVec2(l_DividerX, l_FrameMax.y - (3.0f * l_Scale)),
+              i == 0 ? l_BorderColor : l_TextMutedColor,
+              l_BorderSize);
+        }
+
+        ImGui::PopStyleColor(4);
+        ImGui::PopStyleVar(4);
+        ImGui::PopFont();
+        ImGui::PopID();
+        ImGui::EndGroup();
+
+        return l_Edited;
+      }
+
+      bool ColorRGBInput(const char *p_Label,
+                         Math::ColorRGB *p_Value, float p_Scale)
+      {
+        float l_Values[3] = {p_Value->r, p_Value->g, p_Value->b};
+        if (!color_input_internal(p_Label, l_Values, 3, p_Scale)) {
+          return false;
+        }
+
+        p_Value->r = l_Values[0];
+        p_Value->g = l_Values[1];
+        p_Value->b = l_Values[2];
+        return true;
+      }
+
+      bool ColorRGBAInput(const char *p_Label, Math::Color *p_Value,
+                          float p_Scale)
+      {
+        float l_Values[4] = {p_Value->r, p_Value->g, p_Value->b,
+                             p_Value->a};
+        if (!color_input_internal(p_Label, l_Values, 4, p_Scale)) {
+          return false;
+        }
+
+        p_Value->r = l_Values[0];
+        p_Value->g = l_Values[1];
+        p_Value->b = l_Values[2];
+        p_Value->a = l_Values[3];
+        return true;
       }
 
       // Layout-safe custom buttons that don't move the cursor

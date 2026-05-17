@@ -367,6 +367,75 @@ namespace Low {
       }
     }
 
+    bool render_frosted_viewport_icon_button(
+        const char *p_Id, const char *p_Icon, const char *p_Tooltip,
+        ImTextureID p_Background, const ImVec2 &p_SceneRectMin,
+        const ImVec2 &p_SceneRectMax, const ImVec2 &p_ButtonCenter)
+    {
+      const float l_S = ImGui::GetIO().FontGlobalScale > 0.0f
+                            ? ImGui::GetIO().FontGlobalScale
+                            : 1.0f;
+      const float l_ButtonSize = 34.0f * l_S;
+      const float l_Radius = 10.0f * l_S;
+      const float l_IconSize = 18.0f * l_S;
+
+      const ImVec2 l_ButtonMin(p_ButtonCenter.x - l_ButtonSize * 0.5f,
+                               p_ButtonCenter.y - l_ButtonSize * 0.5f);
+      const ImVec2 l_ButtonMax(p_ButtonCenter.x + l_ButtonSize * 0.5f,
+                               p_ButtonCenter.y + l_ButtonSize * 0.5f);
+
+      ImDrawList *l_Draw = ImGui::GetWindowDrawList();
+      if (p_Background) {
+        draw_frosted_toolbar_bg(
+            l_Draw, p_Background, l_ButtonMin, l_ButtonMax,
+            p_SceneRectMin, p_SceneRectMax, ImVec2(0, 0),
+            ImVec2(1, 1), l_Radius, IM_COL32(255, 255, 255, 10),
+            IM_COL32(0, 0, 0, 0));
+      } else {
+        l_Draw->AddRectFilled(
+            l_ButtonMin, l_ButtonMax,
+            ImGui::GetColorU32(ImGuiCol_WindowBg), l_Radius,
+            ImDrawFlags_RoundCornersAll);
+      }
+
+      ImGui::PushID(p_Id);
+      ImGui::SetCursorScreenPos(l_ButtonMin);
+      ImGui::InvisibleButton("button", ImVec2(l_ButtonSize, l_ButtonSize));
+
+      const bool l_Hovered = ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly);
+      const bool l_Held = ImGui::IsItemActive();
+      const bool l_Pressed = ImGui::IsItemClicked(ImGuiMouseButton_Left);
+
+      if (l_Hovered || l_Held) {
+        const ImU32 l_Fill = ImGui::GetColorU32(
+            l_Held ? ImGuiCol_ButtonActive : ImGuiCol_ButtonHovered);
+        l_Draw->AddRectFilled(l_ButtonMin, l_ButtonMax, l_Fill,
+                              l_Radius * 0.6f,
+                              ImDrawFlags_RoundCornersAll);
+      }
+
+      ImVec2 l_TextSize = ImGui::CalcTextSize(p_Icon);
+      float l_FontSize = ImGui::GetFontSize();
+      float l_Scale =
+          (l_TextSize.y > 0.0f) ? (l_IconSize / l_TextSize.y) : 1.0f;
+      ImVec2 l_SizeScaled(l_TextSize.x * l_Scale,
+                          l_TextSize.y * l_Scale);
+      ImVec2 l_TextPos(p_ButtonCenter.x - l_SizeScaled.x * 0.5f,
+                       p_ButtonCenter.y - l_SizeScaled.y * 0.5f);
+      l_Draw->AddText(ImGui::GetFont(), l_FontSize * l_Scale,
+                      l_TextPos, ImGui::GetColorU32(ImGuiCol_Text),
+                      p_Icon);
+
+      if (l_Hovered && p_Tooltip && *p_Tooltip) {
+        ImGui::BeginTooltip();
+        ImGui::TextUnformatted(p_Tooltip);
+        ImGui::EndTooltip();
+      }
+
+      ImGui::PopID();
+      return l_Pressed;
+    }
+
     void render_billboards(float p_Delta,
                            RenderViewWidget &p_RenderViewWidget)
     {
@@ -594,8 +663,18 @@ namespace Low {
 
       {
         ImVec2 l_Avail;
-        l_Avail.x = p_RenderViewWidget.get_widget_dimensions().x;
-        l_Avail.y = p_RenderViewWidget.get_widget_dimensions().y;
+        l_Avail.x =
+            (float)p_RenderViewWidget.get_widget_dimensions().x;
+        l_Avail.y =
+            (float)p_RenderViewWidget.get_widget_dimensions().y;
+
+        ImTextureID l_BlurredViewportTexture =
+            p_RenderViewWidget.get_renderview()
+                .get_blurred_image()
+                .get_gpu()
+                .get_imgui_texture_id();
+        const ImVec2 l_SceneRectMin = ImGui::GetItemRectMin();
+        const ImVec2 l_SceneRectMax = ImGui::GetItemRectMax();
 
         Util::List<ToolbarItem> l_Items{
             {EditorTool::Select, "Select", ICON_LC_MOUSE_POINTER, 0,
@@ -611,45 +690,32 @@ namespace Low {
         l_Style.dpi_scale = ImGui::GetIO().FontGlobalScale;
 
         render_viewport_with_vertical_toolbar(
-            p_RenderViewWidget.get_renderview()
-                .get_blurred_image()
-                .get_gpu()
-                .get_imgui_texture_id(),
-            l_Avail, l_Items, &l_ActiveTool, l_Style);
-      }
+            l_BlurredViewportTexture, l_Avail, l_Items, &l_ActiveTool,
+            l_Style);
 
-      ImVec2 l_WindowPos = ImGui::GetWindowPos();
+        const ImVec2 l_PlayButtonCenter(
+            l_SceneRectMin.x + (l_SceneRectMax.x - l_SceneRectMin.x) *
+                                   0.5f,
+            l_SceneRectMin.y + l_TopPadding);
 
-      ImGui::SetNextWindowPos(
-          {p_RenderViewWidget.get_widget_position().x +
-               (p_RenderViewWidget.get_renderview()
-                    .get_dimensions()
-                    .x /
-                2.0f) +
-               10.0f,
-           p_RenderViewWidget.get_widget_position().y +
-               l_TopPadding});
-
-      ImGui::BeginChild("Controls", ImVec2(30, 30), false,
-                        ImGuiWindowFlags_NoBackground |
-                            ImGuiWindowFlags_NoDocking |
-                            ImGuiWindowFlags_NoCollapse |
-                            ImGuiWindowFlags_NoScrollbar |
-                            ImGuiWindowFlags_NoScrollWithMouse |
-                            ImGuiWindowFlags_NoSavedSettings |
-                            ImGuiWindowFlags_NoDecoration);
-      if (Core::get_engine_state() == Util::EngineState::EDITING) {
-        if (ImGui::Button(ICON_LC_PLAY)) {
-          set_selected_entity(0);
-          Core::begin_playmode();
-        }
-      } else if (Core::get_engine_state() ==
-                 Util::EngineState::PLAYING) {
-        if (ImGui::Button(ICON_LC_PAUSE)) {
-          Core::exit_playmode();
+        if (Core::get_engine_state() == Util::EngineState::EDITING) {
+          if (render_frosted_viewport_icon_button(
+                  "PlayModeButton", ICON_LC_PLAY, "Play",
+                  l_BlurredViewportTexture, l_SceneRectMin,
+                  l_SceneRectMax, l_PlayButtonCenter)) {
+            set_selected_entity(0);
+            Core::begin_playmode();
+          }
+        } else if (Core::get_engine_state() ==
+                   Util::EngineState::PLAYING) {
+          if (render_frosted_viewport_icon_button(
+                  "PlayModeButton", ICON_LC_PAUSE, "Stop",
+                  l_BlurredViewportTexture, l_SceneRectMin,
+                  l_SceneRectMax, l_PlayButtonCenter)) {
+            Core::exit_playmode();
+          }
         }
       }
-      ImGui::EndChild();
 
       if (Core::get_engine_state() != Util::EngineState::EDITING) {
         return;

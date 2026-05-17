@@ -201,7 +201,10 @@ namespace Low {
                 Renderer::Material i_Material = l_MaterialHandleId;
                 Math::Vector3 i_Val =
                     i_Material.get_property_vector3(i_InputName);
-                if (Gui::Vector3Edit(i_Val)) {
+                if (Gui::ColorRGBInput(
+                        (Util::String("##") + i_InputName.c_str())
+                            .c_str(),
+                        &i_Val)) {
                   i_Material.set_property_vector3(i_InputName, i_Val);
                 }
                 return false;

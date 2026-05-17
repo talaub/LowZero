@@ -47,6 +47,13 @@ namespace Low {
           float min = 0.0f, float max = 0.0f,
           const char *format = "%.3f", float p_Scale = 1.0f);
 
+      bool LOW_EDITOR_API ColorRGBInput(
+          const char *label, Math::ColorRGB *value,
+          float p_Scale = 1.0f);
+      bool LOW_EDITOR_API ColorRGBAInput(
+          const char *label, Math::Color *value,
+          float p_Scale = 1.0f);
+
       bool LOW_EDITOR_API DragIntWithButtons(const char *label,
                                              int *value,
                                              int speed = 1,
