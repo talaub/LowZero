@@ -2878,6 +2878,7 @@ namespace Low {
       l_RenderView.add_step_by_name(RENDERSTEP_CAVITIES_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_LIGHTING_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_SSGI_NAME);
+      l_RenderView.add_step_by_name(RENDERSTEP_SKY_GRADIENT_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_DEBUG_GEOMETRY_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_UI_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_OBJECT_ID_COPY);

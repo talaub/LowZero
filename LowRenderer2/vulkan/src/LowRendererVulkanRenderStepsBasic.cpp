@@ -4093,6 +4093,159 @@ namespace Low {
         return true;
       }
 
+      struct SkyGradientStepData
+      {
+        Pipeline pipeline;
+      };
+
+      static bool initialize_sky_gradient_renderstep()
+      {
+        RenderStep l_RenderStep =
+            RenderStep::make(RENDERSTEP_SKY_GRADIENT_NAME);
+
+        l_RenderStep.set_prepare_callback(
+            [&](RenderStep p_RenderStep,
+                RenderView p_RenderView) -> bool {
+              SkyGradientStepData *l_Data = new SkyGradientStepData;
+
+              PipelineUtil::GraphicsPipelineBuilder l_Builder;
+              l_Builder.pipelineLayout =
+                  Global::get_lighting_pipeline_layout();
+              l_Builder.set_shaders("fullscreen_triangle.vert",
+                                    "sky_gradient.frag");
+              l_Builder.set_input_topology(
+                  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+              l_Builder.set_polygon_mode(VK_POLYGON_MODE_FILL);
+              l_Builder.set_cull_mode(VK_CULL_MODE_BACK_BIT,
+                                      VK_FRONT_FACE_CLOCKWISE);
+              l_Builder.set_multismapling_none();
+              l_Builder.disable_blending();
+              l_Builder.disable_depth_test();
+
+              l_Builder.colorAttachmentFormats.clear();
+              l_Builder.colorAttachmentFormats.push_back(
+                  VK_FORMAT_R16G16B16A16_SFLOAT);
+
+              l_Builder.set_depth_format(VK_FORMAT_UNDEFINED);
+
+              l_Data->pipeline = l_Builder.register_pipeline();
+
+              p_RenderView.get_step_data()[p_RenderStep.get_index()] =
+                  l_Data;
+              return true;
+            });
+
+        l_RenderStep.set_teardown_callback(
+            [&](RenderStep p_RenderStep,
+                RenderView p_RenderView) -> bool {
+              return true;
+            });
+
+        l_RenderStep.set_execute_callback(
+            [&](RenderStep p_RenderStep, float p_Delta,
+                RenderView p_RenderView) -> bool {
+              VkCommandBuffer l_Cmd =
+                  Global::get_current_command_buffer();
+
+              VK_RENDERDOC_SECTION_BEGIN("Sky gradient",
+                                         SINGLE_ARG({0.3f, 0.6f, 1.0f}));
+
+              SkyGradientStepData *l_Data =
+                  (SkyGradientStepData *)p_RenderView
+                      .get_step_data()[p_RenderStep.get_index()];
+
+              ViewInfo l_ViewInfo = p_RenderView.get_view_info_handle();
+
+              ImageUtil::cmd_transition(
+                  l_Cmd,
+                  p_RenderView.get_lit_image()
+                      .get_gpu()
+                      .get_data_handle(),
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+              Image l_LitImage = p_RenderView.get_lit_image()
+                                     .get_gpu()
+                                     .get_data_handle();
+
+              Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
+              l_ColorAttachments.resize(1);
+              l_ColorAttachments[0] = InitUtil::attachment_info(
+                  l_LitImage.get_allocated_image().imageView, nullptr,
+                  VK_IMAGE_LAYOUT_GENERAL);
+
+              VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
+                  {p_RenderView.get_dimensions().x,
+                   p_RenderView.get_dimensions().y},
+                  l_ColorAttachments.data(), l_ColorAttachments.size(),
+                  nullptr);
+              vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
+
+              vkCmdBindPipeline(l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                l_Data->pipeline.get());
+
+              {
+                VkDescriptorSet l_GlobalSet =
+                    Global::get_global_descriptor_set();
+                vkCmdBindDescriptorSets(
+                    l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    Global::get_lighting_pipeline_layout().get(), 0, 1,
+                    &l_GlobalSet, 0, nullptr);
+
+                VkDescriptorSet l_TextureSet =
+                    Global::get_current_texture_descriptor_set();
+                vkCmdBindDescriptorSets(
+                    l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    Global::get_lighting_pipeline_layout().get(), 1, 1,
+                    &l_TextureSet, 0, nullptr);
+
+                VkDescriptorSet l_ViewSet =
+                    l_ViewInfo.get_view_data_descriptor_set();
+                vkCmdBindDescriptorSets(
+                    l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    Global::get_lighting_pipeline_layout().get(), 2, 1,
+                    &l_ViewSet, 0, nullptr);
+
+                VkViewport l_Viewport = {};
+                l_Viewport.x = 0;
+                l_Viewport.y = 0;
+                l_Viewport.width = static_cast<float>(
+                    p_RenderView.get_dimensions().x);
+                l_Viewport.height = static_cast<float>(
+                    p_RenderView.get_dimensions().y);
+                l_Viewport.minDepth = 0.f;
+                l_Viewport.maxDepth = 1.f;
+                vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
+
+                VkRect2D l_Scissor = {};
+                l_Scissor.offset.x = 0;
+                l_Scissor.offset.y = 0;
+                l_Scissor.extent.width =
+                    p_RenderView.get_dimensions().x;
+                l_Scissor.extent.height =
+                    p_RenderView.get_dimensions().y;
+                vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
+
+                vkCmdDraw(l_Cmd, 3, 1, 0, 0);
+              }
+
+              vkCmdEndRendering(l_Cmd);
+
+              ImageUtil::cmd_transition(
+                  l_Cmd,
+                  p_RenderView.get_lit_image()
+                      .get_gpu()
+                      .get_data_handle(),
+                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+              VK_RENDERDOC_SECTION_END();
+              return true;
+            });
+
+        return true;
+      }
+
       bool initialize_basic_rendersteps()
       {
         LOWR_VK_ASSERT_RETURN(
@@ -4115,6 +4268,9 @@ namespace Low {
             "Failed to initialize base ssao renderstep");
         LOWR_VK_ASSERT_RETURN(initialize_ssgi_renderstep(),
                               "Failed to initialize SSGI renderstep");
+        LOWR_VK_ASSERT_RETURN(
+            initialize_sky_gradient_renderstep(),
+            "Failed to initialize sky gradient renderstep");
         LOWR_VK_ASSERT_RETURN(initialize_ui_renderstep(),
                               "Failed to initialize UI renderstep");
         LOWR_VK_ASSERT_RETURN(

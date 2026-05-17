@@ -23,6 +23,7 @@
 #define RENDERSTEP_HIGHLIGHT_EDGE_DRAW N(highlight_edge_draw)
 #define RENDERSTEP_SHADOW_PASS_NAME N(shadow_pass)
 #define RENDERSTEP_SSGI_NAME N(basic_ssgi)
+#define RENDERSTEP_SKY_GRADIENT_NAME N(sky_gradient)
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
