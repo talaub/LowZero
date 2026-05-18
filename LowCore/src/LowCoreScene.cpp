@@ -14,7 +14,8 @@
 #include "LowCoreRegion.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
-
+#include "LowUtilAssetManager.h"
+#include "LowUtilJobManager.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -307,7 +308,21 @@ namespace Low {
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
       // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
-
+      Util::AssetManager::TypeRegistratorBuilder l_Builder(
+          N(Scene), IDENTIFIER);
+      l_Builder.auto_initialize(true)
+          .initialize_on_startup(true)
+          .add_asset_suffix(".scene.yaml");
+      l_Builder.add_initialize_directory(
+          Util::project_data_path("assets/scenes"), false);
+      l_Builder.initializer(
+          [](const Util::String p_Path) -> Util::Handle {
+            Util::Serial::Node l_Node =
+                Util::Serial::load_yaml_file(p_Path.c_str());
+            Scene l_Scene = deserialize(l_Node, Util::Handle::DEAD);
+            return l_Scene.get_id();
+          });
+      Util::AssetManager::register_asset_type(l_Builder.build());
       // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
     }
 
@@ -475,7 +490,9 @@ namespace Low {
             Util::find_handle_by_unique_id(i_Value.as<Util::U64Id>())
                 .get_id();
 
-        i_Region.set_scene(l_Scene);
+        if (i_Region.is_alive()) {
+          i_Region.set_scene(l_Scene);
+        }
       }
 
       return l_Scene;

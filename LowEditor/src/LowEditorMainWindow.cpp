@@ -35,6 +35,7 @@
 #include "LowEditorScriptingErrorWidget.h"
 #include "LowEditorAppearanceWidget.h"
 #include "LowEditorScriptWidget.h"
+#include "LowEditorVersionControlWidget.h"
 #include "LowEditorEditWidget.h"
 #include "LowEditorJobWidget.h"
 #include "LowEditor.h"
@@ -1215,6 +1216,8 @@ namespace Low {
                              false, false);
       g_ScriptWidget = new ScriptWidget;
       register_editor_widget("Code Editor", g_ScriptWidget, false);
+      register_editor_widget("Version control",
+                             new VersionControlWidget, false);
 
       register_widget("Debug/Jobs", new JobWidget(), false);
 

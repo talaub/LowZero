@@ -4,6 +4,7 @@
 
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
+#include "LowUtilHandle.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
@@ -15,7 +16,8 @@
 #include "LowUtilFileIO.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
-
+#include "LowUtilAssetManager.h"
+#include "LowUtilJobManager.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -459,6 +461,30 @@ namespace Low {
                                                         l_TypeInfo);
       // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
 
+      Util::AssetManager::TypeRegistratorBuilder l_Builder(
+          N(Region), IDENTIFIER);
+      l_Builder.auto_initialize(true)
+          .initialize_on_startup(true)
+          .add_asset_suffix(".region.yaml");
+      l_Builder.add_initialize_directory(
+          Util::project_data_path("assets/regions"), false);
+      l_Builder.initializer(
+          [](const Util::String p_Path) -> Util::Handle {
+            Util::Serial::Node l_Node =
+                Util::Serial::load_yaml_file(p_Path.c_str());
+            Region l_Region = deserialize(l_Node, Util::Handle::DEAD);
+            return l_Region.get_id();
+          });
+      l_Builder.post_register([](Util::Handle p_Handle) {
+        Region l_Region = p_Handle.get_id();
+        Util::String l_Path =
+            Util::get_project().dataPath + "\\assets\\regions\\";
+        l_Path += Util::hash_to_string(l_Region.get_unique_id());
+        l_Path += ".entities.yaml";
+        Util::AssetManager::register_alias(l_Region, l_Path);
+      });
+
+      Util::AssetManager::register_asset_type(l_Builder.build());
       // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
     }
 
@@ -605,7 +631,7 @@ namespace Low {
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
-
+      p_Node["scene"] = Util::U64Id{get_scene().get_unique_id()};
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
@@ -651,7 +677,13 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
-
+      if (p_Node["scene"]) {
+        const u64 l_SceneUid = p_Node["scene"].as<Util::U64Id>();
+        Scene l_Scene = Util::find_handle_by_unique_id(l_SceneUid);
+        if (l_Scene.is_alive()) {
+          l_Handle.set_scene(l_Scene);
+        }
+      }
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
       return l_Handle;

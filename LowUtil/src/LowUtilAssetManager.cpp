@@ -1,5 +1,7 @@
 #include "LowUtilAssetManager.h"
 
+#include "LowUtilAssert.h"
+#include "LowUtilContainers.h"
 #include "LowUtilFileSystem.h"
 #include "LowUtil.h"
 #include "LowUtilHandle.h"
@@ -22,10 +24,29 @@ namespace Low {
     {
       String path;
       Handle handle;
+      u64 unique_id;
+      Util::Name name;
+
+      AssetRecord()
+      {
+      }
       AssetRecord(Handle h, const String p) : path(p), handle(h)
       {
         if (Handle::is_registered_type(h.get_type())) {
-          RTTI::TypeInfo t = Handle::get_type_info(h.get_type());
+          RTTI::TypeInfo &l_TypeInfo =
+              Handle::get_type_info(h.get_type());
+          {
+            auto l_Pos = l_TypeInfo.properties.find(N(unique_id));
+            if (l_Pos != l_TypeInfo.properties.end()) {
+              l_Pos->second.get(h, &unique_id);
+            }
+          }
+          {
+            auto l_Pos = l_TypeInfo.properties.find(N(name));
+            if (l_Pos != l_TypeInfo.properties.end()) {
+              l_Pos->second.get(h, &name);
+            }
+          }
         }
       }
     };
@@ -33,6 +54,46 @@ namespace Low {
     List<AssetRecord> g_AssetRecords;
 
     FileSystem::Watcher g_DataWatcher;
+
+    static String normalize_asset_path(const String &p_Path)
+    {
+      return PathHelper::normalize(p_Path);
+    }
+
+    static AssetRecord *
+    find_asset_record_by_path(const String &p_Path)
+    {
+      const String l_Path = normalize_asset_path(p_Path);
+      for (AssetRecord &i_Record : g_AssetRecords) {
+        if (i_Record.path == l_Path) {
+          return &i_Record;
+        }
+      }
+
+      return nullptr;
+    }
+
+    static AssetRecord *find_primary_asset_record(Handle p_Handle)
+    {
+      for (AssetRecord &i_Record : g_AssetRecords) {
+        if (i_Record.handle == p_Handle) {
+          return &i_Record;
+        }
+      }
+
+      return nullptr;
+    }
+
+    static void upsert_asset_record(const AssetRecord &p_Record)
+    {
+      if (AssetRecord *i_Record =
+              find_asset_record_by_path(p_Record.path)) {
+        *i_Record = p_Record;
+        return;
+      }
+
+      g_AssetRecords.push_back(p_Record);
+    }
 
     struct LoadEntry
     {
@@ -75,6 +136,23 @@ namespace Low {
     }
 
     static void
+    initialize_asset(const AssetManager::TypeRegistrator &p_AssetType,
+                     const Util::String p_Path)
+    {
+      if (p_AssetType.initializer) {
+        Util::Handle l_Handle = p_AssetType.initializer(p_Path);
+
+        AssetManager::_register(l_Handle, p_Path);
+      } else {
+        LOW_LOG_ERROR << "Failed to initialize " << p_AssetType.name
+                      << " using path " << p_Path << LOW_LOG_END;
+        LOW_ASSERT(
+            false,
+            "Trying to initialize asset put no initializer found.");
+      }
+    }
+
+    static void
     import(const AssetManager::TypeRegistrator &p_AssetType,
            const String &p_Path)
     {
@@ -84,10 +162,8 @@ namespace Low {
           p_AssetType.importer(Util::String(p_Path.c_str()));
 
       if (!l_ImportedPath.empty()) {
-        AM_LOG_DEBUG << "Import sucessful" << LOW_LOG_END;
-        Handle i_Handle = p_AssetType.initializer(l_ImportedPath);
-        g_AssetRecords.emplace_back(
-            i_Handle, PathHelper::normalize(l_ImportedPath));
+        AM_LOG_DEBUG << "Import successful" << LOW_LOG_END;
+        initialize_asset(p_AssetType, l_ImportedPath);
       } else {
         AM_LOG_DEBUG << "Import aborted" << LOW_LOG_END;
       }
@@ -108,10 +184,8 @@ namespace Low {
           Handle::get_type_info(p_AssetType.typeId);
 
       for (auto it : l_Paths) {
-        Handle i_Handle = p_AssetType.initializer(it);
 
-        g_AssetRecords.emplace_back(i_Handle,
-                                    PathHelper::normalize(it));
+        initialize_asset(p_AssetType, it);
       }
     }
 
@@ -184,9 +258,7 @@ namespace Low {
                   String i_Path = PathHelper::normalize(
                       Util::get_project().dataPath + "/" +
                       p_Event.path.string().c_str());
-                  Handle i_Handle = i_Type.initializer(i_Path);
-
-                  g_AssetRecords.emplace_back(i_Handle, i_Path);
+                  initialize_asset(i_Type, i_Path);
                 }
               }
               break;
@@ -312,11 +384,8 @@ namespace Low {
 
     Handle AssetManager::_find_by_path(const String p_Path)
     {
-      const String l_Path = PathHelper::normalize(p_Path);
-      for (const AssetRecord &i_Record : g_AssetRecords) {
-        if (i_Record.path == l_Path) {
-          return i_Record.handle;
-        }
+      if (AssetRecord *l_Record = find_asset_record_by_path(p_Path)) {
+        return l_Record->handle;
       }
 
       return Handle::DEAD;
@@ -460,6 +529,57 @@ namespace Low {
       l_Entry.priority = p_Priority;
 
       g_LoadEntries.emplace(l_Entry);
+    }
+
+    void AssetManager::_register(Util::Handle p_Handle,
+                                 Util::String p_Path)
+    {
+      upsert_asset_record(
+          AssetRecord(p_Handle, normalize_asset_path(p_Path)));
+
+      TypeRegistrator l_AssetType;
+      if (find_asset_type(p_Handle.get_type(), l_AssetType)) {
+        if (l_AssetType.postRegister) {
+          l_AssetType.postRegister(p_Handle);
+        }
+      }
+    }
+
+    void AssetManager::_register(Util::Handle p_Handle,
+                                 Util::String p_Path,
+                                 Util::Name p_Name,
+                                 const u64 p_UniqueId)
+    {
+      AssetRecord l_Record;
+      l_Record.handle = p_Handle;
+      l_Record.unique_id = p_UniqueId;
+      l_Record.path = normalize_asset_path(p_Path);
+      l_Record.name = p_Name;
+
+      upsert_asset_record(l_Record);
+
+      TypeRegistrator l_AssetType;
+      if (find_asset_type(p_Handle.get_type(), l_AssetType)) {
+        if (l_AssetType.postRegister) {
+          l_AssetType.postRegister(p_Handle);
+        }
+      }
+    }
+
+    void AssetManager::_register_alias(Util::Handle p_Handle,
+                                       Util::String p_Path)
+    {
+      AssetRecord l_Record;
+      if (AssetRecord *i_Primary =
+              find_primary_asset_record(p_Handle)) {
+        l_Record = *i_Primary;
+        l_Record.path = normalize_asset_path(p_Path);
+      } else {
+        l_Record =
+            AssetRecord(p_Handle, normalize_asset_path(p_Path));
+      }
+
+      upsert_asset_record(l_Record);
     }
 
   } // namespace Util

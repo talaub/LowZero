@@ -26,6 +26,7 @@ namespace Low {
       typedef void (*Loader)(Low::Util::Handle);
       typedef void (*Saver)(Low::Util::Handle);
       typedef bool (*SimpleCheck)(Low::Util::Handle);
+      typedef void (*SimpleCall)(Low::Util::Handle);
 
       struct ImportDirectory
       {
@@ -49,7 +50,7 @@ namespace Low {
       {
         Name name;
         u16 typeId;
-        Initializer initializer;
+        Initializer initializer = nullptr;
         Creator creator;
         Importer importer;
         Deleter rawDeleter;
@@ -68,6 +69,7 @@ namespace Low {
         bool supportsSaving;
         SimpleCheck isLoadable;
         StoreSettings storeSettings;
+        SimpleCall postRegister;
       };
 
       struct TypeRegistratorBuilder
@@ -86,6 +88,7 @@ namespace Low {
           m_Registrator.loader = nullptr;
           m_Registrator.creatable = false;
           m_Registrator.importOnStartup = false;
+          m_Registrator.postRegister = nullptr;
         }
 
         TypeRegistratorBuilder &
@@ -98,6 +101,12 @@ namespace Low {
         TypeRegistratorBuilder &creator(const Creator p_Creator)
         {
           m_Registrator.creator = p_Creator;
+          return *this;
+        }
+
+        TypeRegistratorBuilder &post_register(const SimpleCall p_Call)
+        {
+          m_Registrator.postRegister = p_Call;
           return *this;
         }
 
@@ -268,6 +277,27 @@ namespace Low {
       template <typename T> T find_by_path(const String p_Path)
       {
         return _find_by_path(p_Path).get_id();
+      }
+
+      void LOW_EXPORT _register(Util::Handle p_Handle,
+                                Util::String p_Path,
+                                Util::Name p_Name,
+                                const u64 p_UniqueId);
+      void LOW_EXPORT _register(Util::Handle p_Handle,
+                                Util::String p_Path);
+      void LOW_EXPORT _register_alias(Util::Handle p_Handle,
+                                      Util::String p_Path);
+
+      template <typename T>
+      void register_asset(T p_Handle, const Util::String p_Path)
+      {
+        _register(p_Handle.get_id(), p_Path);
+      }
+
+      template <typename T>
+      void register_alias(T p_Handle, const Util::String p_Path)
+      {
+        _register_alias(p_Handle.get_id(), p_Path);
       }
 
     } // namespace AssetManager

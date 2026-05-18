@@ -133,6 +133,9 @@ namespace Low {
 
       for (auto it = Core::Region::ms_LivingInstances.begin();
            it != Core::Region::ms_LivingInstances.end(); ++it) {
+        if (!it->get_scene().is_alive()) {
+          continue;
+        }
         if (!it->get_scene().is_loaded()) {
           continue;
         }

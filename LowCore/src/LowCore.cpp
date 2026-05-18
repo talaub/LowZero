@@ -41,6 +41,7 @@
 #include "LowUtil.h"
 #include "LowUtilAssetManager.h"
 #include "LowUtilFileIO.h"
+#include "LowUtilName.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilString.h"
 #include "LowUtilLogger.h"
@@ -129,8 +130,8 @@ namespace Low {
 
     static void initialize_base_types()
     {
-      Scene::initialize();
       Region::initialize();
+      Scene::initialize();
       Entity::initialize();
       GameMode::initialize();
     }
@@ -284,8 +285,8 @@ namespace Low {
 
       load_assets();
 
-      load_regions();
-      load_scenes();
+      // load_regions();
+      // load_scenes();
 
       load_gamemodes();
 

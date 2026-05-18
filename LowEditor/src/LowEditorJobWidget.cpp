@@ -182,7 +182,6 @@ namespace Low {
 
     void JobWidget::render(float p_Delta)
     {
-      (void)p_Delta;
 
       ImGui::Begin(ICON_LC_LIST_CHECKS " Jobs", &m_Open);
 
