@@ -38,8 +38,7 @@ namespace Low {
         l_Hash *= 16777619u;
       }
 
-      const float l_Hue =
-          static_cast<float>(l_Hash % 360u) / 360.0f;
+      const float l_Hue = static_cast<float>(l_Hash % 360u) / 360.0f;
       const float l_Value =
           0.70f + static_cast<float>((l_Hash >> 8u) % 20u) / 100.0f;
       return ImGui::ColorConvertFloat4ToU32(
@@ -55,9 +54,9 @@ namespace Low {
       p_Buffer[BUFFER_SIZE - 1] = p_Value;
     }
 
-    static void build_scope_stats(
-        const Util::Profiler::Frame &p_Frame,
-        Util::List<ProfilerScopeStats> &p_Stats)
+    static void
+    build_scope_stats(const Util::Profiler::Frame &p_Frame,
+                      Util::List<ProfilerScopeStats> &p_Stats)
     {
       p_Stats.clear();
 
@@ -96,7 +95,8 @@ namespace Low {
                 });
     }
 
-    static void render_metric(const char *p_Label, const char *p_Value,
+    static void render_metric(const char *p_Label,
+                              const char *p_Value,
                               const Math::Color &p_Color)
     {
       Theme &l_Theme = theme_get_current();
@@ -106,16 +106,15 @@ namespace Low {
       const float l_Height = 32.0f;
       const ImVec2 l_Max(l_Pos.x + l_Width, l_Pos.y + l_Height);
 
-      l_DrawList->AddRectFilled(l_Pos, l_Max,
-                                color_to_imcolor(l_Theme.input),
-                                3.0f);
+      l_DrawList->AddRectFilled(
+          l_Pos, l_Max, color_to_imcolor(l_Theme.input), 3.0f);
       l_DrawList->AddRectFilled(l_Pos,
                                 ImVec2(l_Pos.x + 3.0f, l_Max.y),
                                 color_to_imcolor(p_Color), 3.0f,
                                 ImDrawFlags_RoundCornersLeft);
 
-      ImGui::SetCursorScreenPos(ImVec2(l_Pos.x + 9.0f,
-                                       l_Pos.y + 5.0f));
+      ImGui::SetCursorScreenPos(
+          ImVec2(l_Pos.x + 9.0f, l_Pos.y + 5.0f));
       ImGui::PushStyleColor(ImGuiCol_Text,
                             color_to_imvec4(l_Theme.subtext));
       ImGui::TextUnformatted(p_Label);
@@ -123,8 +122,8 @@ namespace Low {
 
       ImGui::SameLine();
       const ImVec2 l_ValueSize = ImGui::CalcTextSize(p_Value);
-      ImGui::SetCursorScreenPos(ImVec2(
-          l_Max.x - l_ValueSize.x - 9.0f, l_Pos.y + 5.0f));
+      ImGui::SetCursorScreenPos(
+          ImVec2(l_Max.x - l_ValueSize.x - 9.0f, l_Pos.y + 5.0f));
       ImGui::TextUnformatted(p_Value);
 
       ImGui::SetCursorScreenPos(ImVec2(l_Pos.x, l_Max.y + 5.0f));
@@ -143,8 +142,7 @@ namespace Low {
       ImGui::PopStyleColor(2);
     }
 
-    static void render_timeline(
-        const Util::Profiler::Frame &p_Frame)
+    static void render_timeline(const Util::Profiler::Frame &p_Frame)
     {
       Theme &l_Theme = theme_get_current();
       const ImVec2 l_CanvasStart = ImGui::GetCursorScreenPos();
@@ -153,16 +151,15 @@ namespace Low {
       const float l_Height = 120.0f;
       ImDrawList *l_DrawList = ImGui::GetWindowDrawList();
 
-      l_DrawList->AddRectFilled(
-          l_CanvasStart,
-          ImVec2(l_CanvasStart.x + l_Width,
-                 l_CanvasStart.y + l_Height),
-          color_to_imcolor(l_Theme.input), 3.0f);
-      l_DrawList->AddRect(
-          l_CanvasStart,
-          ImVec2(l_CanvasStart.x + l_Width,
-                 l_CanvasStart.y + l_Height),
-          color_to_imcolor(l_Theme.border), 3.0f);
+      l_DrawList->AddRectFilled(l_CanvasStart,
+                                ImVec2(l_CanvasStart.x + l_Width,
+                                       l_CanvasStart.y + l_Height),
+                                color_to_imcolor(l_Theme.input),
+                                3.0f);
+      l_DrawList->AddRect(l_CanvasStart,
+                          ImVec2(l_CanvasStart.x + l_Width,
+                                 l_CanvasStart.y + l_Height),
+                          color_to_imcolor(l_Theme.border), 3.0f);
 
       const float l_FrameDuration =
           std::max(p_Frame.durationMs, 0.001f);
@@ -186,16 +183,15 @@ namespace Low {
 
         const Util::String l_Label =
             i_Sample.group + "::" + i_Sample.name;
-        l_DrawList->AddRectFilled(
-            ImVec2(l_X, l_Y),
-            ImVec2(std::max(l_X + 1.0f, l_EndX),
-                   l_Y + l_RowHeight - 3.0f),
-            profiler_color(l_Label), 2.0f);
+        l_DrawList->AddRectFilled(ImVec2(l_X, l_Y),
+                                  ImVec2(std::max(l_X + 1.0f, l_EndX),
+                                         l_Y + l_RowHeight - 3.0f),
+                                  profiler_color(l_Label), 2.0f);
 
         if (l_EndX - l_X > 90.0f) {
-          l_DrawList->AddText(
-              ImVec2(l_X + 4.0f, l_Y + 1.0f),
-              ImGui::GetColorU32(ImGuiCol_Text), l_Label.c_str());
+          l_DrawList->AddText(ImVec2(l_X + 4.0f, l_Y + 1.0f),
+                              ImGui::GetColorU32(ImGuiCol_Text),
+                              l_Label.c_str());
         }
       }
 
@@ -204,7 +200,7 @@ namespace Low {
 
     void ProfilerWidget::render(float p_Delta)
     {
-      ImGui::Begin(ICON_LC_TIMER " Profiler");
+      ImGui::Begin(ICON_LC_TIMER " Profiler", &m_Open);
 
       Theme &l_Theme = theme_get_current();
 
@@ -230,8 +226,7 @@ namespace Low {
       char l_Buffer[64];
       snprintf(l_Buffer, sizeof(l_Buffer), "%.0f",
                static_cast<float>(Core::GameLoop::get_fps()));
-      render_metric(ICON_LC_GAUGE " FPS", l_Buffer,
-                    l_Theme.success);
+      render_metric(ICON_LC_GAUGE " FPS", l_Buffer, l_Theme.success);
       render_plot("##fps", g_FpsBuffer, 160.0f);
 
       snprintf(l_Buffer, sizeof(l_Buffer), "%.2f ms  %u scopes",
@@ -278,12 +273,13 @@ namespace Low {
                               color_to_imvec4(l_Theme.base));
         ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt,
                               color_to_imvec4(l_Theme.input));
-        ImGui::BeginChild("ProfilerScopeList",
-                          ImVec2(0.0f, 165.0f), true);
-        if (ImGui::BeginTable("ProfilerScopes", 5,
-                              ImGuiTableFlags_RowBg |
-                                  ImGuiTableFlags_BordersInnerV |
-                                  ImGuiTableFlags_SizingStretchProp)) {
+        ImGui::BeginChild("ProfilerScopeList", ImVec2(0.0f, 165.0f),
+                          true);
+        if (ImGui::BeginTable(
+                "ProfilerScopes", 5,
+                ImGuiTableFlags_RowBg |
+                    ImGuiTableFlags_BordersInnerV |
+                    ImGuiTableFlags_SizingStretchProp)) {
           ImGui::TableSetupColumn(
               "Group", ImGuiTableColumnFlags_WidthFixed, 72.0f);
           ImGui::TableSetupColumn("Scope");

@@ -390,6 +390,10 @@ namespace Low {
         return;
       }
 
+      if (l_AssetType.saver) {
+        l_AssetType.saver(p_Handle);
+        return;
+      }
       RTTI::TypeInfo &l_TypeInfo =
           Handle::get_type_info(p_Handle.get_type());
       RTTI::PropertyInfo &l_PathProperty =

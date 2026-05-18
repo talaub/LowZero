@@ -4,6 +4,7 @@
 
 #include <fstream>
 #include <string>
+#include <chrono>
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -107,6 +108,167 @@ namespace Low {
       }
 
       // -----------------------------------------------------------------------
+      // Job Tracking
+      // -----------------------------------------------------------------------
+
+      namespace {
+#if LOW_JOBMANAGER_TRACKING
+        struct TrackedJob
+        {
+          u64 id = 0;
+          Tracking::JobType type = Tracking::JobType::Background;
+          std::atomic<int> status{
+              static_cast<int>(Background::JobStatus::Pending)};
+          std::atomic<float> progress{0.0f};
+          std::atomic<u64> elapsedMs{0};
+          std::chrono::steady_clock::time_point startTime;
+          String label;
+          String detail;
+        };
+
+        static std::atomic<u64> g_NextTrackedJobId{1};
+        static UnorderedMap<u64, SharedPtr<TrackedJob>> g_TrackedJobs;
+        static std::mutex g_TrackedJobsMutex;
+
+        static u64 tracking_begin(Tracking::JobType p_Type,
+                                  const char *p_Label,
+                                  const String &p_Detail)
+        {
+          SharedPtr<TrackedJob> l_Job = make_shared<TrackedJob>();
+          l_Job->id = g_NextTrackedJobId.fetch_add(
+              1, std::memory_order_relaxed);
+          l_Job->type = p_Type;
+          l_Job->label = p_Label;
+          l_Job->detail = p_Detail;
+          l_Job->startTime = std::chrono::steady_clock::now();
+
+          std::unique_lock<std::mutex> l_Lock(g_TrackedJobsMutex);
+          g_TrackedJobs[l_Job->id] = l_Job;
+          return l_Job->id;
+        }
+
+        static u64 tracking_begin(Tracking::JobType p_Type,
+                                  const String &p_Label,
+                                  const String &p_Detail)
+        {
+          SharedPtr<TrackedJob> l_Job = make_shared<TrackedJob>();
+          l_Job->id = g_NextTrackedJobId.fetch_add(
+              1, std::memory_order_relaxed);
+          l_Job->type = p_Type;
+          l_Job->label = p_Label;
+          l_Job->detail = p_Detail;
+          l_Job->startTime = std::chrono::steady_clock::now();
+
+          std::unique_lock<std::mutex> l_Lock(g_TrackedJobsMutex);
+          g_TrackedJobs[l_Job->id] = l_Job;
+          return l_Job->id;
+        }
+
+        static u64 tracking_begin(Tracking::JobType p_Type,
+                                  const String &p_Label,
+                                  const char *p_Detail)
+        {
+          SharedPtr<TrackedJob> l_Job = make_shared<TrackedJob>();
+          l_Job->id = g_NextTrackedJobId.fetch_add(
+              1, std::memory_order_relaxed);
+          l_Job->type = p_Type;
+          l_Job->label = p_Label;
+          l_Job->detail = p_Detail;
+          l_Job->startTime = std::chrono::steady_clock::now();
+
+          std::unique_lock<std::mutex> l_Lock(g_TrackedJobsMutex);
+          g_TrackedJobs[l_Job->id] = l_Job;
+          return l_Job->id;
+        }
+
+        static void tracking_set_status(u64 p_Id,
+                                        Background::JobStatus p_Status)
+        {
+          std::unique_lock<std::mutex> l_Lock(g_TrackedJobsMutex);
+          auto l_It = g_TrackedJobs.find(p_Id);
+          if (l_It == g_TrackedJobs.end()) {
+            return;
+          }
+          l_It->second->status.store(static_cast<int>(p_Status),
+                                     std::memory_order_release);
+        }
+
+        static void tracking_set_progress(u64 p_Id, float p_Progress)
+        {
+          std::unique_lock<std::mutex> l_Lock(g_TrackedJobsMutex);
+          auto l_It = g_TrackedJobs.find(p_Id);
+          if (l_It == g_TrackedJobs.end()) {
+            return;
+          }
+          l_It->second->progress.store(p_Progress,
+                                       std::memory_order_relaxed);
+        }
+
+        static void tracking_finish(u64 p_Id, bool p_Success)
+        {
+          std::unique_lock<std::mutex> l_Lock(g_TrackedJobsMutex);
+          auto l_It = g_TrackedJobs.find(p_Id);
+          if (l_It == g_TrackedJobs.end()) {
+            return;
+          }
+          const auto l_Now = std::chrono::steady_clock::now();
+          l_It->second->elapsedMs.store(
+              static_cast<u64>(
+                  std::chrono::duration_cast<std::chrono::milliseconds>(
+                      l_Now - l_It->second->startTime)
+                      .count()),
+              std::memory_order_relaxed);
+          l_It->second->progress.store(p_Success ? 1.0f : 0.0f,
+                                       std::memory_order_relaxed);
+          l_It->second->status.store(
+              static_cast<int>(p_Success ? Background::JobStatus::Completed
+                                         : Background::JobStatus::Failed),
+              std::memory_order_release);
+        }
+
+        static void tracking_release(u64 p_Id)
+        {
+          std::unique_lock<std::mutex> l_Lock(g_TrackedJobsMutex);
+          g_TrackedJobs.erase(p_Id);
+        }
+#else
+        static u64 tracking_begin(Tracking::JobType, const char *,
+                                  const String &)
+        {
+          return 0;
+        }
+
+        static u64 tracking_begin(Tracking::JobType, const String &,
+                                  const String &)
+        {
+          return 0;
+        }
+
+        static u64 tracking_begin(Tracking::JobType, const String &,
+                                  const char *)
+        {
+          return 0;
+        }
+
+        static void tracking_set_status(u64, Background::JobStatus)
+        {
+        }
+
+        static void tracking_set_progress(u64, float)
+        {
+        }
+
+        static void tracking_finish(u64, bool)
+        {
+        }
+
+        static void tracking_release(u64)
+        {
+        }
+#endif
+      } // namespace
+
+      // -----------------------------------------------------------------------
       // IO Worker
       // -----------------------------------------------------------------------
 
@@ -188,8 +350,12 @@ namespace Low {
             String p_Path,
             Function<void(bool, List<uint8_t> &)> p_Callback)
         {
+          u64 l_JobId = tracking_begin(Tracking::JobType::IO,
+                                       "Read raw", p_Path);
           io_enqueue([l_Path = std::move(p_Path),
-                      l_Callback = std::move(p_Callback)]() mutable {
+                      l_Callback = std::move(p_Callback),
+                      l_JobId]() mutable {
+            tracking_set_status(l_JobId, Background::JobStatus::Running);
             bool l_Success = false;
             List<uint8_t> l_Data;
             try {
@@ -207,8 +373,10 @@ namespace Low {
             }
             io_post_completion(
                 [l_Success, l_Data = std::move(l_Data),
-                 l_Callback = std::move(l_Callback)]() mutable {
+                 l_Callback = std::move(l_Callback),
+                 l_JobId]() mutable {
                   l_Callback(l_Success, l_Data);
+                  tracking_finish(l_JobId, l_Success);
                 });
           });
         }
@@ -217,8 +385,12 @@ namespace Low {
             String p_Path,
             Function<void(bool, Resource::ImageMipMaps &)> p_Callback)
         {
+          u64 l_JobId = tracking_begin(Tracking::JobType::IO,
+                                       "Read texture", p_Path);
           io_enqueue([l_Path = std::move(p_Path),
-                      l_Callback = std::move(p_Callback)]() mutable {
+                      l_Callback = std::move(p_Callback),
+                      l_JobId]() mutable {
+            tracking_set_status(l_JobId, Background::JobStatus::Running);
             bool l_Success = false;
             Resource::ImageMipMaps l_MipMaps;
             try {
@@ -228,8 +400,10 @@ namespace Low {
             }
             io_post_completion(
                 [l_Success, l_MipMaps = std::move(l_MipMaps),
-                 l_Callback = std::move(l_Callback)]() mutable {
+                 l_Callback = std::move(l_Callback),
+                 l_JobId]() mutable {
                   l_Callback(l_Success, l_MipMaps);
+                  tracking_finish(l_JobId, l_Success);
                 });
           });
         }
@@ -238,9 +412,13 @@ namespace Low {
             String p_MeshPath, String p_SidecarPath,
             Function<void(bool, MeshLoadResult &)> p_Callback)
         {
+          u64 l_JobId = tracking_begin(Tracking::JobType::IO,
+                                       "Read mesh", p_MeshPath);
           io_enqueue([l_MeshPath = std::move(p_MeshPath),
                       l_SidecarPath = std::move(p_SidecarPath),
-                      l_Callback = std::move(p_Callback)]() mutable {
+                      l_Callback = std::move(p_Callback),
+                      l_JobId]() mutable {
+            tracking_set_status(l_JobId, Background::JobStatus::Running);
             bool l_Success = false;
             MeshLoadResult l_Result;
             try {
@@ -277,8 +455,10 @@ namespace Low {
             }
             io_post_completion(
                 [l_Success, l_Result = std::move(l_Result),
-                 l_Callback = std::move(l_Callback)]() mutable {
+                 l_Callback = std::move(l_Callback),
+                 l_JobId]() mutable {
                   l_Callback(l_Success, l_Result);
+                  tracking_finish(l_JobId, l_Success);
                 });
           });
         }
@@ -287,8 +467,12 @@ namespace Low {
             String p_Path,
             Function<void(bool, Serial::Node &)> p_Callback)
         {
+          u64 l_JobId = tracking_begin(Tracking::JobType::IO,
+                                       "Read yaml", p_Path);
           io_enqueue([l_Path = std::move(p_Path),
-                      l_Callback = std::move(p_Callback)]() mutable {
+                      l_Callback = std::move(p_Callback),
+                      l_JobId]() mutable {
+            tracking_set_status(l_JobId, Background::JobStatus::Running);
             bool l_Success = false;
             Serial::Node l_Node;
             try {
@@ -298,8 +482,10 @@ namespace Low {
             }
             io_post_completion(
                 [l_Success, l_Node = std::move(l_Node),
-                 l_Callback = std::move(l_Callback)]() mutable {
+                 l_Callback = std::move(l_Callback),
+                 l_JobId]() mutable {
                   l_Callback(l_Success, l_Node);
+                  tracking_finish(l_JobId, l_Success);
                 });
           });
         }
@@ -307,9 +493,13 @@ namespace Low {
         void schedule_write_yaml(String p_Path, Serial::Node p_Node,
                                   Function<void(bool)> p_Callback)
         {
+          u64 l_JobId = tracking_begin(Tracking::JobType::IO,
+                                       "Write yaml", p_Path);
           io_enqueue([l_Path = std::move(p_Path),
                       l_Node = std::move(p_Node),
-                      l_Callback = std::move(p_Callback)]() mutable {
+                      l_Callback = std::move(p_Callback),
+                      l_JobId]() mutable {
+            tracking_set_status(l_JobId, Background::JobStatus::Running);
             bool l_Success = false;
             try {
               Serial::write_yaml_file(l_Path.c_str(), l_Node);
@@ -319,9 +509,13 @@ namespace Low {
             if (l_Callback) {
               io_post_completion(
                   [l_Success,
-                   l_Callback = std::move(l_Callback)]() mutable {
+                   l_Callback = std::move(l_Callback),
+                   l_JobId]() mutable {
                     l_Callback(l_Success);
+                    tracking_finish(l_JobId, l_Success);
                   });
+            } else {
+              tracking_finish(l_JobId, l_Success);
             }
           });
         }
@@ -337,6 +531,7 @@ namespace Low {
         struct BackgroundJobEntry
         {
           u64 id;
+          u64 trackedId = 0;
           JobPriority priority;
           std::atomic<int> status{
               static_cast<int>(JobStatus::Pending)};
@@ -389,22 +584,28 @@ namespace Low {
               l_Entry->status.store(
                   static_cast<int>(JobStatus::Running),
                   std::memory_order_release);
+              tracking_set_status(l_Entry->trackedId,
+                                  JobStatus::Running);
             }
 
             try {
               l_Entry->work([&l_Entry](float p_Progress) {
                 l_Entry->progress.store(p_Progress,
                                         std::memory_order_relaxed);
+                tracking_set_progress(l_Entry->trackedId,
+                                      p_Progress);
               });
               l_Entry->progress.store(1.0f,
                                       std::memory_order_relaxed);
               l_Entry->status.store(
                   static_cast<int>(JobStatus::Completed),
                   std::memory_order_release);
+              tracking_finish(l_Entry->trackedId, true);
             } catch (...) {
               l_Entry->status.store(
                   static_cast<int>(JobStatus::Failed),
                   std::memory_order_release);
+              tracking_finish(l_Entry->trackedId, false);
             }
           }
         }
@@ -441,6 +642,9 @@ namespace Low {
           auto l_Entry = make_shared<BackgroundJobEntry>();
           l_Entry->id =
               g_NextJobId.fetch_add(1, std::memory_order_relaxed);
+          l_Entry->trackedId =
+              tracking_begin(Tracking::JobType::Background,
+                             p_Label, "");
           l_Entry->priority = p_Priority;
           l_Entry->label = std::move(p_Label);
           l_Entry->work = std::move(p_Work);
@@ -495,10 +699,136 @@ namespace Low {
         void release(JobHandle p_Handle)
         {
           std::unique_lock<std::mutex> l_Lock(g_Mutex);
-          g_Jobs.erase(p_Handle.id);
+          auto l_It = g_Jobs.find(p_Handle.id);
+          if (l_It != g_Jobs.end()) {
+            tracking_release(l_It->second->trackedId);
+            g_Jobs.erase(l_It);
+          }
         }
 
       } // namespace Background
+
+      namespace Tracking {
+
+        bool is_enabled()
+        {
+#if LOW_JOBMANAGER_TRACKING
+          return true;
+#else
+          return false;
+#endif
+        }
+
+        bool has_active_jobs()
+        {
+#if LOW_JOBMANAGER_TRACKING
+          std::unique_lock<std::mutex> l_Lock(g_TrackedJobsMutex);
+          for (auto &i_Entry : g_TrackedJobs) {
+            const Background::JobStatus l_Status =
+                static_cast<Background::JobStatus>(
+                    i_Entry.second->status.load(
+                        std::memory_order_acquire));
+            if (l_Status == Background::JobStatus::Pending ||
+                l_Status == Background::JobStatus::Running) {
+              return true;
+            }
+          }
+#endif
+          return false;
+        }
+
+        String get_active_job_label()
+        {
+#if LOW_JOBMANAGER_TRACKING
+          std::unique_lock<std::mutex> l_Lock(g_TrackedJobsMutex);
+          String l_PendingLabel = "";
+
+          for (auto &i_Entry : g_TrackedJobs) {
+            const Background::JobStatus l_Status =
+                static_cast<Background::JobStatus>(
+                    i_Entry.second->status.load(
+                        std::memory_order_acquire));
+
+            if (l_Status == Background::JobStatus::Running) {
+              return i_Entry.second->label;
+            }
+
+            if (l_Status == Background::JobStatus::Pending &&
+                l_PendingLabel.empty()) {
+              l_PendingLabel = i_Entry.second->label;
+            }
+          }
+
+          return l_PendingLabel;
+#else
+          return "";
+#endif
+        }
+
+        List<JobSnapshot> get_snapshot()
+        {
+          List<JobSnapshot> l_Result;
+#if LOW_JOBMANAGER_TRACKING
+          const auto l_Now = std::chrono::steady_clock::now();
+
+          std::unique_lock<std::mutex> l_Lock(g_TrackedJobsMutex);
+          l_Result.reserve(g_TrackedJobs.size());
+
+          for (auto &i_Entry : g_TrackedJobs) {
+            SharedPtr<TrackedJob> i_Job = i_Entry.second;
+            JobSnapshot i_Snapshot;
+            i_Snapshot.id = i_Job->id;
+            i_Snapshot.type = i_Job->type;
+            i_Snapshot.status =
+                static_cast<Background::JobStatus>(
+                    i_Job->status.load(std::memory_order_acquire));
+            i_Snapshot.progress =
+                i_Job->progress.load(std::memory_order_relaxed);
+            if (i_Snapshot.status ==
+                    Background::JobStatus::Completed ||
+                i_Snapshot.status == Background::JobStatus::Failed) {
+              i_Snapshot.elapsedMs = i_Job->elapsedMs.load(
+                  std::memory_order_relaxed);
+            } else {
+              i_Snapshot.elapsedMs =
+                  static_cast<u64>(
+                      std::chrono::duration_cast<
+                          std::chrono::milliseconds>(
+                          l_Now - i_Job->startTime)
+                          .count());
+            }
+            i_Snapshot.label = i_Job->label;
+            i_Snapshot.detail = i_Job->detail;
+            l_Result.push_back(i_Snapshot);
+          }
+#endif
+          return l_Result;
+        }
+
+        void clear_completed()
+        {
+#if LOW_JOBMANAGER_TRACKING
+          std::unique_lock<std::mutex> l_Lock(g_TrackedJobsMutex);
+          List<u64> l_RemoveIds;
+          for (auto &i_Entry : g_TrackedJobs) {
+            int l_Status = i_Entry.second->status.load(
+                std::memory_order_acquire);
+            if (l_Status ==
+                    static_cast<int>(
+                        Background::JobStatus::Completed) ||
+                l_Status ==
+                    static_cast<int>(Background::JobStatus::Failed)) {
+              l_RemoveIds.push_back(i_Entry.first);
+            }
+          }
+
+          for (u64 i_Id : l_RemoveIds) {
+            g_TrackedJobs.erase(i_Id);
+          }
+#endif
+        }
+
+      } // namespace Tracking
 
     } // namespace JobManager
   } // namespace Util

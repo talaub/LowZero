@@ -1503,7 +1503,8 @@ namespace Low {
 
         bool blur_image_4(Texture p_ImageToBlur, Texture p_TempImage,
                           Texture p_OutImage,
-                          Math::UVector2 p_Dimensions)
+                          Math::UVector2 p_Dimensions,
+                          BlurSettings p_Settings)
         {
           VkCommandBuffer l_Cmd = get_current_command_buffer();
 
@@ -1540,10 +1541,6 @@ namespace Low {
               p_ImageToBlur.get_gpu().get_data_handle();
           Image l_OutImage = p_OutImage.get_gpu().get_data_handle();
 
-          u32 l_Radius = 8;
-          float l_Sigma = 4.0f;
-          float l_StepSize = 2.0f;
-
           {
             ImageUtil::cmd_transition_for_color_write(l_Cmd,
                                                       l_TempImage);
@@ -1574,9 +1571,9 @@ namespace Low {
             l_PushConstants.texelSize = l_InverseDimensions;
             l_PushConstants.inputTextureIndex =
                 p_ImageToBlur.get_gpu().get_bindless_index();
-            l_PushConstants.radius = l_Radius;
-            l_PushConstants.sigma = l_Sigma;
-            l_PushConstants.stepScale = l_StepSize;
+            l_PushConstants.radius = p_Settings.radius;
+            l_PushConstants.sigma = p_Settings.sigma;
+            l_PushConstants.stepScale = p_Settings.stepScale;
 
             vkCmdPushConstants(
                 l_Cmd, g_DynamicBlurPipelineLayout.get(),
@@ -1625,9 +1622,9 @@ namespace Low {
             l_PushConstants.texelSize = l_InverseDimensions;
             l_PushConstants.inputTextureIndex =
                 p_TempImage.get_gpu().get_bindless_index();
-            l_PushConstants.radius = l_Radius;
-            l_PushConstants.sigma = l_Sigma;
-            l_PushConstants.stepScale = l_StepSize;
+            l_PushConstants.radius = p_Settings.radius;
+            l_PushConstants.sigma = p_Settings.sigma;
+            l_PushConstants.stepScale = p_Settings.stepScale;
 
             vkCmdPushConstants(
                 l_Cmd, g_DynamicBlurPipelineLayout.get(),

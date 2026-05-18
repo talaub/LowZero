@@ -36,6 +36,7 @@
 #include "LowEditorAppearanceWidget.h"
 #include "LowEditorScriptWidget.h"
 #include "LowEditorEditWidget.h"
+#include "LowEditorJobWidget.h"
 #include "LowEditor.h"
 #include "LowEditorNodeGraph.h"
 #include "LowUtil.h"
@@ -58,6 +59,7 @@
 #include <cctype>
 #include <chrono>
 #include <cstddef>
+#include <cfloat>
 #include <cstdio>
 #include <functional>
 #include <future>
@@ -665,25 +667,6 @@ namespace Low {
 
           ImGui::EndMenu();
         }
-        if (ImGui::BeginMenu("Resources")) {
-          if (ImGui::MenuItem("Import", NULL, nullptr)) {
-            Util::String l_Path = Gui::FileExplorer();
-
-            if (!l_Path.empty()) {
-              if (Util::StringHelper::ends_with(
-                      l_Path, Util::String(".png"))) {
-                schedule_import_image(l_Path);
-              } else if (Util::StringHelper::ends_with(
-                             l_Path, Util::String(".obj")) ||
-                         Util::StringHelper::ends_with(
-                             l_Path, Util::String(".glb"))) {
-                schedule_import_mesh(l_Path);
-              }
-            }
-          }
-
-          ImGui::EndMenu();
-        }
 
         for (auto it = g_MenuEntries.begin();
              it != g_MenuEntries.end(); ++it) {
@@ -912,6 +895,17 @@ namespace Low {
       return l_Context;
     }
 
+    static Util::String build_status_bar_job_text()
+    {
+      Util::String l_ActiveJobName = get_active_editor_job_name();
+      if (l_ActiveJobName.empty()) {
+        l_ActiveJobName =
+            Util::JobManager::Tracking::get_active_job_label();
+      }
+
+      return l_ActiveJobName;
+    }
+
     static Util::String build_status_bar_system_text(float p_Delta)
     {
       static float l_UpdateTimer = 0.0f;
@@ -946,13 +940,80 @@ namespace Low {
         l_Text += "    ";
       }
 
-      if (is_editor_job_in_progress()) {
-        l_Text += get_active_editor_job_name().c_str();
-        l_Text += "    ";
-      }
-
       l_Text += l_FrameText;
       return l_Text;
+    }
+
+    static bool should_show_status_bar_spinner()
+    {
+      return is_editor_job_in_progress() ||
+             Util::JobManager::Tracking::has_active_jobs();
+    }
+
+    static bool is_status_bar_job_active(
+        const Util::JobManager::Tracking::JobSnapshot &p_Job)
+    {
+      using namespace Util::JobManager::Background;
+      return p_Job.status == JobStatus::Pending ||
+             p_Job.status == JobStatus::Running;
+    }
+
+    static void render_status_bar_job_popup()
+    {
+      Theme &l_Theme = theme_get_current();
+      Util::List<Util::JobManager::Tracking::JobSnapshot> l_Jobs =
+          Util::JobManager::Tracking::get_snapshot();
+
+      uint32_t l_ActiveCount = is_editor_job_in_progress() ? 1u : 0u;
+      for (const auto &i_Job : l_Jobs) {
+        if (is_status_bar_job_active(i_Job)) {
+          l_ActiveCount++;
+        }
+      }
+
+      ImGui::PushFont(Fonts::UI(12));
+      ImGui::PushStyleColor(ImGuiCol_Text,
+                            color_to_imvec4(l_Theme.subtext));
+      ImGui::Text("%u active %s", l_ActiveCount,
+                  l_ActiveCount == 1 ? "job" : "jobs");
+      ImGui::PopStyleColor();
+      ImGui::PopFont();
+
+      ImGui::Separator();
+
+      if (l_ActiveCount == 0) {
+        ImGui::TextDisabled("No active jobs");
+        return;
+      }
+
+      if (is_editor_job_in_progress()) {
+        ImGui::TextUnformatted(get_active_editor_job_name().c_str());
+        ImGui::ProgressBar(-1.0f *
+                               static_cast<float>(ImGui::GetTime()),
+                           ImVec2(-FLT_MIN, 0.0f), "");
+        ImGui::Spacing();
+      }
+
+      for (const auto &i_Job : l_Jobs) {
+        if (!is_status_bar_job_active(i_Job)) {
+          continue;
+        }
+
+        ImGui::TextUnformatted(i_Job.label.c_str());
+        if (!i_Job.detail.empty()) {
+          ImGui::PushStyleColor(ImGuiCol_Text,
+                                color_to_imvec4(l_Theme.subtext));
+          ImGui::TextUnformatted(i_Job.detail.c_str());
+          ImGui::PopStyleColor();
+        }
+
+        ImGui::PushStyleColor(ImGuiCol_PlotHistogram,
+                              color_to_imvec4(l_Theme.info));
+        ImGui::ProgressBar(i_Job.progress, ImVec2(-FLT_MIN, 0.0f),
+                           "");
+        ImGui::PopStyleColor();
+        ImGui::Spacing();
+      }
     }
 
     static inline void render_status_bar(float p_Delta)
@@ -981,11 +1042,17 @@ namespace Low {
 
         const Util::String l_SystemText =
             build_status_bar_system_text(p_Delta);
+        const Util::String l_JobText = build_status_bar_job_text();
+        const bool l_ShowSpinner = should_show_status_bar_spinner();
         const float l_SystemWidth =
             ImGui::CalcTextSize(l_SystemText.c_str()).x;
-        const float l_SpinnerWidth =
-            is_editor_job_in_progress() ? 24.0f : 0.0f;
-        const float l_RightWidth = l_SystemWidth + l_SpinnerWidth;
+        const float l_JobWidth =
+            l_ShowSpinner ? ImGui::CalcTextSize(l_JobText.c_str()).x
+                          : 0.0f;
+        const float l_SpinnerWidth = l_ShowSpinner ? 18.0f : 0.0f;
+        const float l_SeparatorWidth = l_ShowSpinner ? 16.0f : 0.0f;
+        const float l_RightWidth = l_SystemWidth + l_SpinnerWidth +
+                                   l_JobWidth + l_SeparatorWidth;
         const float l_RightPadding = 12.0f;
         const float l_RightX = ImGui::GetWindowContentRegionMax().x -
                                l_RightWidth - l_RightPadding;
@@ -1000,11 +1067,46 @@ namespace Low {
         ImGui::SetCursorPos(
             {l_StatusCursor.x, l_StatusCursor.y + l_TextYOffset});
 
-        if (is_editor_job_in_progress()) {
-          Gui::spinner("Loading", 6.0f, 2.0f,
-                       Math::Color(0.0f, 0.7f, 0.73f, 1.0f));
+        if (l_ShowSpinner) {
+          const ImVec2 l_JobSegmentScreenPos =
+              ImGui::GetCursorScreenPos();
+          ImGui::BeginGroup();
+          {
+            Gui::spinner("StatusBarJobSpinner", 6.0f, 2.0f,
+                         Math::Color(0.0f, 0.7f, 0.73f, 1.0f));
+            ImGui::SameLine(0.0f, 6.0f);
+            ImGui::PushStyleColor(
+                ImGuiCol_Text,
+                color_to_imvec4(theme_get_current().subtext));
+            ImGui::TextUnformatted(l_JobText.c_str());
+            ImGui::PopStyleColor();
+          }
+          ImGui::EndGroup();
+
+          if (ImGui::IsItemHovered()) {
+            ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+          }
+
+          if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+            ImGui::OpenPopup("StatusBarJobsPopup");
+          }
+
+          ImGui::SetNextWindowPos(
+              ImVec2(l_JobSegmentScreenPos.x,
+                     l_JobSegmentScreenPos.y - 6.0f),
+              ImGuiCond_Appearing, ImVec2(0.0f, 1.0f));
+          ImGui::SetNextWindowSize(ImVec2(360.0f, 0.0f),
+                                   ImGuiCond_Appearing);
+          if (ImGui::BeginPopup("StatusBarJobsPopup")) {
+            render_status_bar_job_popup();
+            ImGui::EndPopup();
+          }
+
+          ImGui::SameLine(0.0f, 8.0f);
+          Gui::VerticalSeparator(3.0f);
           ImGui::SameLine(0.0f, 8.0f);
         }
+
         ImGui::PushStyleColor(
             ImGuiCol_Text,
             color_to_imvec4(theme_get_current().subtext));
@@ -1098,7 +1200,7 @@ namespace Low {
       register_editor_widget("Log", new LogWidget(), true);
       g_DetailsWidget = new DetailsWidget();
       register_editor_widget("Details", g_DetailsWidget, true);
-      register_editor_widget("Profiler", new ProfilerWidget());
+      register_widget("Debug/Profiler", new ProfilerWidget());
       register_editor_widget("Assets", new AssetWidget(), true);
       register_editor_widget("Scene", new SceneWidget(), true);
       register_editor_widget("Regions", new RegionWidget(), true);
@@ -1113,6 +1215,8 @@ namespace Low {
                              false, false);
       g_ScriptWidget = new ScriptWidget;
       register_editor_widget("Code Editor", g_ScriptWidget, false);
+
+      register_widget("Debug/Jobs", new JobWidget(), false);
 
       for (auto &it : get_type_metadata()) {
         if (it.second.editor.manager) {

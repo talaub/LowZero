@@ -61,6 +61,7 @@
 #include "LowUtilSerialization.h"
 #include "LowUtilString.h"
 #include "LowUtilAssetManager.h"
+#include "LowUtilJobManager.h"
 
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_vulkan.h"
@@ -769,6 +770,45 @@ namespace Low {
                         l_ResourceConfig));
               }
             });
+
+        l_Builder.creatable().creator([](const Util::Name p_Name,
+                                         const Util::String p_Path)
+                                          -> Util::Handle {
+          Material l_Material =
+              Material::make(p_Name, get_material_types().solidBase);
+          MaterialResourceConfig l_ResourceConfig;
+          l_ResourceConfig.material_id = l_Material.get_unique_id();
+          l_ResourceConfig.path = p_Path;
+          l_ResourceConfig.data_path = Util::project_asset_cache_path(
+              Util::hash_to_string(l_Material.get_id()) +
+              "material.yaml");
+          l_ResourceConfig.name = p_Name;
+
+          MaterialResource l_Resource =
+              MaterialResource::make_from_config(l_ResourceConfig);
+          l_Material.set_resource(l_Resource);
+
+          return l_Material.get_id();
+        });
+
+        l_Builder.saver([](Util::Handle p_Handle) {
+          Material l_Material = p_Handle.get_id();
+          MaterialResource l_Resource = l_Material.get_resource();
+
+          Util::Serial::Node l_DataNode;
+          l_Material.serialize(l_DataNode);
+
+          Util::Serial::Node l_ResourceNode;
+          l_ResourceNode["version"] = 1;
+          l_ResourceNode["name"] = l_Material.get_name();
+          l_ResourceNode["material_id"] =
+              Util::U64Id{l_Material.get_unique_id()};
+
+          Util::JobManager::IO::schedule_write_yaml(
+              l_Resource.get_data_path().c_str(), l_DataNode);
+          Util::JobManager::IO::schedule_write_yaml(
+              l_Resource.get_path().c_str(), l_ResourceNode);
+        });
 
         Util::AssetManager::register_asset_type(l_Builder.build());
       }

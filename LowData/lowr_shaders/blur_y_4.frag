@@ -7,21 +7,31 @@ layout(location = 0) out vec4 fragColor;
 layout(push_constant) uniform BlurParams {
     vec2 texelSize; // 1.0 / texture resolution
     uint inputTextureIndex;
+    uint radius;
+    float sigma;
+    float stepScale;
 } params;
 
-const float weights[5] = float[](0.227027, 0.316216, 0.070270, 0.070270, 0.316216);
+const int MAX_RADIUS = 32;
 
 void main() {
     vec2 texCoords = gl_FragCoord.xy * params.texelSize;
 
-    vec4 result = texture(TEX2D(params.inputTextureIndex), texCoords) * weights[0];
+    int radius = int(min(params.radius, uint(MAX_RADIUS)));
+    float sigma = max(params.sigma, 0.001);
+    float twoSigmaSq = 2.0 * sigma * sigma;
 
-    // Vertical blur
-    for (int i = 1; i < 3; ++i) {
-        result += texture(TEX2D(params.inputTextureIndex), texCoords + vec2(0.0, params.texelSize.y * i)) * weights[i];
-        result += texture(TEX2D(params.inputTextureIndex), texCoords - vec2(0.0, params.texelSize.y * i)) * weights[i];
+    vec4 result = texture(TEX2D(params.inputTextureIndex), texCoords);
+    float totalWeight = 1.0;
+
+    for (int i = 1; i <= radius; ++i) {
+        float y = float(i);
+        float weight = exp(-(y * y) / twoSigmaSq);
+        vec2 offset = vec2(0.0, params.texelSize.y * y * params.stepScale);
+        result += texture(TEX2D(params.inputTextureIndex), texCoords + offset) * weight;
+        result += texture(TEX2D(params.inputTextureIndex), texCoords - offset) * weight;
+        totalWeight += weight * 2.0;
     }
 
-    fragColor = result;
+    fragColor = result / totalWeight;
 }
-

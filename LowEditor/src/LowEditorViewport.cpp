@@ -138,6 +138,27 @@ namespace Low {
         return true;
       }
 
+      if (!m_LowSpotCalculated) {
+        m_LowSpotCalculated = true;
+
+        const float l_LowSpot = m_RenderObject.get_mesh()
+                                    .get_gpu()
+                                    .get_aabb()
+                                    .bounds.min.y -
+                                0.1f;
+
+        Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
+
+        l_LocalMatrix = glm::translate(
+            l_LocalMatrix, Math::Vector3(0.0f, l_LowSpot, 0.0f));
+        l_LocalMatrix *=
+            glm::toMat4(Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f));
+        l_LocalMatrix = glm::scale(l_LocalMatrix,
+                                   Math::Vector3(50.0f, 0.2f, 50.0f));
+
+        m_GroundRenderObject.set_world_transform(l_LocalMatrix);
+      }
+
       const Math::Sphere l_BoundingSphere =
           m_RenderObject.get_mesh().get_gpu().get_bounding_sphere();
       const Math::Vector3 l_Target = l_BoundingSphere.position;

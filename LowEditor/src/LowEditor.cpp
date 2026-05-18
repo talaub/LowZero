@@ -1106,6 +1106,53 @@ namespace Low {
       return Util::StringHelper::technify_string(p_String);
     }
 
+    Util::Name get_unique_entity_name(Util::String p_Name)
+    {
+      if (!Core::Entity::find_by_name(LOW_NAME(p_Name.c_str()))
+               .is_alive()) {
+        return LOW_NAME(p_Name.c_str());
+      }
+
+      Util::String l_BaseName = p_Name;
+      u32 l_Suffix = 1;
+      u32 l_SuffixStart = p_Name.size();
+
+      while (l_SuffixStart > 0 &&
+             p_Name[l_SuffixStart - 1] >= '0' &&
+             p_Name[l_SuffixStart - 1] <= '9') {
+        l_SuffixStart--;
+      }
+
+      if (l_SuffixStart < p_Name.size()) {
+        l_BaseName = p_Name.substr(0, l_SuffixStart);
+        l_Suffix = 0;
+        for (u32 i = l_SuffixStart; i < p_Name.size(); ++i) {
+          l_Suffix =
+              (l_Suffix * 10) + (u32)(p_Name[i] - '0');
+        }
+      }
+
+      u32 i = l_Suffix + 1;
+      while (true) {
+        Util::String i_Name = l_BaseName + LOW_TO_STRING(i);
+        if (!Core::Entity::find_by_name(LOW_NAME(i_Name.c_str()))
+                 .is_alive()) {
+          return LOW_NAME(i_Name.c_str());
+        }
+        i++;
+      }
+    }
+
+    Util::Name get_unique_entity_name(const char *p_Name)
+    {
+      return get_unique_entity_name(Util::String(p_Name));
+    }
+
+    Util::Name get_unique_entity_name(Util::Name p_Name)
+    {
+      return get_unique_entity_name(Util::String(p_Name.c_str()));
+    }
+
     DirectoryWatchers &get_directory_watchers()
     {
       return g_DirectoryWatchers;

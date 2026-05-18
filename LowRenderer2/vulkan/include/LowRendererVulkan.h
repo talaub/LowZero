@@ -266,9 +266,18 @@ namespace Low {
         bool blur_image_1(Texture p_ImageToBlur, Texture p_TempImage,
                           Texture p_OutImage,
                           Math::UVector2 p_Dimensions);
+
+        struct BlurSettings
+        {
+          u32 radius = 8;
+          float sigma = 4.0f;
+          float stepScale = 2.0f;
+        };
+
         bool blur_image_4(Texture p_ImageToBlur, Texture p_TempImage,
                           Texture p_OutImage,
-                          Math::UVector2 p_Dimensions);
+                          Math::UVector2 p_Dimensions,
+                          BlurSettings p_Settings = {});
       } // namespace Global
 
       struct Context;

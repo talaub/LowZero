@@ -10,6 +10,14 @@
 #include <condition_variable>
 #include <atomic>
 
+#ifndef LOW_JOBMANAGER_TRACKING
+#if defined(LOW_EDITOR_BUILD) && (!defined(RELEASE_BUILD) || RELEASE_BUILD == 0)
+#define LOW_JOBMANAGER_TRACKING 1
+#else
+#define LOW_JOBMANAGER_TRACKING 0
+#endif
+#endif
+
 namespace Low {
   namespace Util {
     namespace Serial {
@@ -134,6 +142,33 @@ namespace Low {
         LOW_EXPORT void release(JobHandle p_Handle);
 
       } // namespace Background
+
+      namespace Tracking {
+
+        enum class JobType
+        {
+          IO,
+          Background
+        };
+
+        struct LOW_EXPORT JobSnapshot
+        {
+          u64 id = 0;
+          JobType type = JobType::Background;
+          Background::JobStatus status = Background::JobStatus::Pending;
+          float progress = 0.0f;
+          u64 elapsedMs = 0;
+          String label;
+          String detail;
+        };
+
+        LOW_EXPORT bool is_enabled();
+        LOW_EXPORT bool has_active_jobs();
+        LOW_EXPORT String get_active_job_label();
+        LOW_EXPORT List<JobSnapshot> get_snapshot();
+        LOW_EXPORT void clear_completed();
+
+      } // namespace Tracking
 
     } // namespace JobManager
   } // namespace Util

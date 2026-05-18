@@ -89,40 +89,65 @@ namespace Low {
           return Util::Handle::DEAD;
         }
 
+        static void initialize_aabb(Math::AABB &p_AABB)
+        {
+          p_AABB.bounds.min =
+              Math::Vector3(LOW_FLOAT_MAX, LOW_FLOAT_MAX,
+                            LOW_FLOAT_MAX);
+          p_AABB.bounds.max =
+              Math::Vector3(-LOW_FLOAT_MAX, -LOW_FLOAT_MAX,
+                            -LOW_FLOAT_MAX);
+          p_AABB.center = Math::Vector3(0.0f);
+        }
+
+        static void include_vertex_in_aabb(Math::AABB &p_AABB,
+                                           const aiVector3D &p_Vertex)
+        {
+          p_AABB.bounds.min.x =
+              LOW_MATH_MIN(p_AABB.bounds.min.x, p_Vertex.x);
+          p_AABB.bounds.min.y =
+              LOW_MATH_MIN(p_AABB.bounds.min.y, p_Vertex.y);
+          p_AABB.bounds.min.z =
+              LOW_MATH_MIN(p_AABB.bounds.min.z, p_Vertex.z);
+
+          p_AABB.bounds.max.x =
+              LOW_MATH_MAX(p_AABB.bounds.max.x, p_Vertex.x);
+          p_AABB.bounds.max.y =
+              LOW_MATH_MAX(p_AABB.bounds.max.y, p_Vertex.y);
+          p_AABB.bounds.max.z =
+              LOW_MATH_MAX(p_AABB.bounds.max.z, p_Vertex.z);
+        }
+
+        static void finalize_aabb(Math::AABB &p_AABB)
+        {
+          p_AABB.center =
+              (p_AABB.bounds.min + p_AABB.bounds.max) * 0.5f;
+        }
+
         static bool
         calculate_bounding_sphere(const aiMesh *p_Mesh,
+                                  const Math::Vector3 &p_Center,
                                   Math::Sphere &p_BoundingSphere)
         {
-          using namespace Low::Math;
-
           LOWR_IMP_ASSERT_RETURN(
               p_Mesh && p_Mesh->mNumVertices > 0,
               "Mesh must not be null and must have vertices");
 
-          Vector3 l_Center = Vector3(0.0f);
-          u32 l_NumVertices = p_Mesh->mNumVertices;
-
-          // Compute centroid
-          for (u32 i = 0; i < l_NumVertices; ++i) {
-            const aiVector3D &l_V = p_Mesh->mVertices[i];
-            l_Center += Vector3(l_V.x, l_V.y, l_V.z);
-          }
-          l_Center /= static_cast<float>(l_NumVertices);
-
           // Compute maximum squared distance from center
           float l_MaxDistanceSquared = 0.0f;
-          for (u32 i = 0; i < l_NumVertices; ++i) {
+          for (u32 i = 0; i < p_Mesh->mNumVertices; ++i) {
             const aiVector3D &i_V = p_Mesh->mVertices[i];
-            const Vector3 i_Position(i_V.x, i_V.y, i_V.z);
+            const Math::Vector3 i_Position(i_V.x, i_V.y, i_V.z);
             const float i_DistanceSq =
-                VectorUtil::distance_squared(l_Center, i_Position);
+                Math::VectorUtil::distance_squared(p_Center,
+                                                   i_Position);
 
             if (i_DistanceSq > l_MaxDistanceSquared) {
               l_MaxDistanceSquared = i_DistanceSq;
             }
           }
 
-          p_BoundingSphere.position = l_Center;
+          p_BoundingSphere.position = p_Center;
           p_BoundingSphere.radius = glm::sqrt(l_MaxDistanceSquared);
 
           return true;
@@ -133,30 +158,82 @@ namespace Low {
                                    Math::Sphere &p_BoundingSphere,
                                    Math::AABB &p_AABB)
         {
-          Math::Vector3 l_Min(LOW_FLOAT_MAX, LOW_FLOAT_MAX,
-                              LOW_FLOAT_MAX);
-          Math::Vector3 l_Max(LOW_FLOAT_MIN, LOW_FLOAT_MIN,
-                              LOW_FLOAT_MIN);
+          LOWR_IMP_ASSERT_RETURN(
+              p_Mesh && p_Mesh->mNumVertices > 0,
+              "Mesh must not be null and must have vertices");
+
+          initialize_aabb(p_AABB);
 
           for (u32 i = 0; i < p_Mesh->mNumVertices; ++i) {
-            aiVector3D i_Vertex = p_Mesh->mVertices[i];
-            l_Min.x = LOW_MATH_MIN(l_Min.x, i_Vertex.x);
-            l_Min.y = LOW_MATH_MIN(l_Min.y, i_Vertex.y);
-            l_Min.z = LOW_MATH_MIN(l_Min.z, i_Vertex.z);
-
-            l_Max.x = LOW_MATH_MAX(l_Max.x, i_Vertex.x);
-            l_Max.y = LOW_MATH_MAX(l_Max.y, i_Vertex.y);
-            l_Max.z = LOW_MATH_MAX(l_Max.z, i_Vertex.z);
+            include_vertex_in_aabb(p_AABB, p_Mesh->mVertices[i]);
           }
 
-          p_AABB.bounds.min = l_Min;
-          p_AABB.bounds.max = l_Max;
-
-          p_AABB.center = (l_Min + l_Max) * 0.5f;
+          finalize_aabb(p_AABB);
 
           LOWR_IMP_ASSERT_RETURN(
-              calculate_bounding_sphere(p_Mesh, p_BoundingSphere),
+              calculate_bounding_sphere(p_Mesh, p_AABB.center,
+                                        p_BoundingSphere),
               "Failed to calculate bounding sphere for mesh");
+
+          return true;
+        }
+
+        static bool
+        calculate_bounding_sphere(const aiScene *p_Scene,
+                                  const Math::Vector3 &p_Center,
+                                  Math::Sphere &p_BoundingSphere)
+        {
+          LOWR_IMP_ASSERT_RETURN(
+              p_Scene && p_Scene->mNumMeshes > 0,
+              "Scene must not be null and must have meshes");
+
+          float l_MaxDistanceSquared = 0.0f;
+          for (u32 i = 0; i < p_Scene->mNumMeshes; ++i) {
+            aiMesh *i_Mesh = p_Scene->mMeshes[i];
+            for (u32 j = 0; j < i_Mesh->mNumVertices; ++j) {
+              const aiVector3D &j_Vertex = i_Mesh->mVertices[j];
+              const Math::Vector3 j_Position(
+                  j_Vertex.x, j_Vertex.y, j_Vertex.z);
+              const float j_DistanceSq =
+                  Math::VectorUtil::distance_squared(p_Center,
+                                                     j_Position);
+
+              if (j_DistanceSq > l_MaxDistanceSquared) {
+                l_MaxDistanceSquared = j_DistanceSq;
+              }
+            }
+          }
+
+          p_BoundingSphere.position = p_Center;
+          p_BoundingSphere.radius = glm::sqrt(l_MaxDistanceSquared);
+
+          return true;
+        }
+
+        static bool
+        calculate_bounding_volumes(const aiScene *p_Scene,
+                                   Math::Sphere &p_BoundingSphere,
+                                   Math::AABB &p_AABB)
+        {
+          LOWR_IMP_ASSERT_RETURN(
+              p_Scene && p_Scene->mNumMeshes > 0,
+              "Scene must not be null and must have meshes");
+
+          initialize_aabb(p_AABB);
+
+          for (u32 i = 0; i < p_Scene->mNumMeshes; ++i) {
+            aiMesh *i_Mesh = p_Scene->mMeshes[i];
+            for (u32 j = 0; j < i_Mesh->mNumVertices; ++j) {
+              include_vertex_in_aabb(p_AABB, i_Mesh->mVertices[j]);
+            }
+          }
+
+          finalize_aabb(p_AABB);
+
+          LOWR_IMP_ASSERT_RETURN(
+              calculate_bounding_sphere(p_Scene, p_AABB.center,
+                                        p_BoundingSphere),
+              "Failed to calculate bounding sphere for scene");
 
           return true;
         }
@@ -173,10 +250,12 @@ namespace Low {
           p_Node["scene_name"] = p_Scene->mName.C_Str();
 
           Math::AABB l_AABB;
-          l_AABB.bounds.min = Vector3(LOW_FLOAT_MAX);
-          l_AABB.bounds.max = Vector3(LOW_FLOAT_MIN);
-
           Math::Sphere l_BoundingSphere;
+
+          LOWR_IMP_ASSERT_RETURN(
+              calculate_bounding_volumes(p_Scene, l_BoundingSphere,
+                                         l_AABB),
+              "Failed to calculate scene bounding volumes.");
 
           for (u32 i = 0; i < p_Scene->mNumMeshes; ++i) {
             aiMesh *i_Submesh = p_Scene->mMeshes[i];
@@ -191,25 +270,13 @@ namespace Low {
                                            i_BoundingSphere, i_AABB),
                 "Failed to calculate mesh bounding volumes.");
 
-            // TODO: REMOVE!!! This is a hack for testing
-            l_BoundingSphere = i_BoundingSphere;
-
-            l_AABB.bounds.min =
-                glm::min(l_AABB.bounds.min, i_AABB.bounds.min);
-            l_AABB.bounds.max =
-                glm::max(l_AABB.bounds.max, i_AABB.bounds.max);
-
             i_Node["aabb"] = i_AABB;
             i_Node["bounding_sphere"] = i_BoundingSphere;
 
             p_Node["submeshes"][i_Submesh->mName.C_Str()] = i_Node;
           }
 
-          l_AABB.center =
-              (l_AABB.bounds.min + l_AABB.bounds.max) * 0.5f;
-
           p_Node["aabb"] = l_AABB;
-          // TODO: Calculate bounding sphere for whole mesh
           p_Node["bounding_sphere"] = l_BoundingSphere;
           return true;
         }

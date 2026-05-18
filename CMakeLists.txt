@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.5)
 
 set(LOW_YEAR_VERSION 2026)
 set(LOW_MAJOR_VERSION 5)
-set(LOW_MINOR_VERSION 11)
+set(LOW_MINOR_VERSION 12)
 set(LOW_RELEASE_VERSION_SUFFIX "")
 
 if (DEFINED LOW_OVERRIDE_YEAR_VERSION)
@@ -18,7 +18,7 @@ if (DEFINED LOW_OVERRIDE_MAJOR_VERSION)
 endif()
 
 if (DEFINED LOW_OVERRIDE_MINOR_VERSION)
-  set(LOW_MINOR_VERSION 11)
+  set(LOW_MINOR_VERSION 12)
 endif()
 
 if (DEFINED LOW_OVERRIDE_RELEASE_VERSION_SUFFIX)
@@ -169,6 +169,20 @@ if (LOW_ENABLE_ASAN)
     add_compile_options(/fsanitize=address)
     add_link_options(/INCREMENTAL:NO)
   endif()
+endif()
+
+if (ENGINE_BUILD)
+  option(LOW_JOBMANAGER_TRACKING
+         "Track JobManager jobs for editor/debug tooling" OFF)
+else()
+  option(LOW_JOBMANAGER_TRACKING
+         "Track JobManager jobs for editor/debug tooling" ON)
+endif()
+
+if (LOW_JOBMANAGER_TRACKING)
+  add_compile_definitions(LOW_JOBMANAGER_TRACKING=1)
+else()
+  add_compile_definitions(LOW_JOBMANAGER_TRACKING=0)
 endif()
 
 add_subdirectory(LowDependencies)

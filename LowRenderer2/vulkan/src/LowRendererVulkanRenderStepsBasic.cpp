@@ -2852,6 +2852,34 @@ namespace Low {
         Texture tempBlurTexture;
       };
 
+      static Global::BlurSettings
+      calculate_blur_settings(Math::UVector2 p_Dimensions,
+                              u8 p_Scale)
+      {
+        Global::BlurSettings l_Settings;
+
+        const u32 l_MinDimension = p_Dimensions.x < p_Dimensions.y
+                                       ? p_Dimensions.x
+                                       : p_Dimensions.y;
+        const float l_TargetScreenRadius =
+            Math::Util::clamp(float(l_MinDimension) *
+                                  (16.0f / 1080.0f),
+                              8.0f, 32.0f);
+        const float l_TargetTextureRadius =
+            l_TargetScreenRadius / float(p_Scale);
+        const float l_Radius =
+            Math::Util::floor(
+                (l_TargetTextureRadius / l_Settings.stepScale) +
+                0.999f);
+
+        l_Settings.radius = Math::Util::clamp((u32)l_Radius, 1, 32);
+        l_Settings.sigma = Math::Util::clamp(float(l_Settings.radius) *
+                                                 0.5f,
+                                             1.0f, 16.0f);
+
+        return l_Settings;
+      }
+
       bool initialize_blur_renderstep()
       {
         RenderStep l_RenderStep = RenderStep::make(RENDERSTEP_BLUR);
@@ -3048,7 +3076,8 @@ namespace Low {
               p_RenderView.get_lit_image(), l_Data->tempBlurTexture,
               p_RenderView.get_blurred_image(),
               {p_RenderView.get_dimensions().x / l_Scale,
-               p_RenderView.get_dimensions().y / l_Scale});
+               p_RenderView.get_dimensions().y / l_Scale},
+              calculate_blur_settings(l_Dimensions, l_Scale));
 
           VK_RENDERDOC_SECTION_END();
 

@@ -69,34 +69,55 @@ namespace Low {
           : Viewport(p_Dimensions), m_InitialCameraSetup(false),
             m_CameraOrbitDistance(0.0f)
       {
-        m_RenderObject = spawn_mesh(p_Mesh);
-
-        Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
-
-        l_LocalMatrix =
-            glm::translate(l_LocalMatrix, Math::Vector3(0.0f));
-        l_LocalMatrix *=
-            glm::toMat4(Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f));
-        l_LocalMatrix =
-            glm::scale(l_LocalMatrix, Math::Vector3(1.0f));
-
-        m_RenderObject.set_world_transform(l_LocalMatrix);
-
         m_RenderScene.set_directional_light_color(1.0f, 1.0f, 1.0f);
         m_RenderScene.set_directional_light_intensity(0.75f);
         m_RenderScene.set_directional_light_direction(-0.15f, -1.0f,
                                                       -1.5f);
 
         m_RenderView.add_step_by_name(RENDERSTEP_SKY_GRADIENT_NAME);
+
+        {
+          m_RenderObject = spawn_mesh(p_Mesh);
+
+          Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
+
+          l_LocalMatrix =
+              glm::translate(l_LocalMatrix, Math::Vector3(0.0f));
+          l_LocalMatrix *=
+              glm::toMat4(Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f));
+          l_LocalMatrix =
+              glm::scale(l_LocalMatrix, Math::Vector3(1.0f));
+
+          m_RenderObject.set_world_transform(l_LocalMatrix);
+        }
+
+        {
+          m_GroundRenderObject =
+              spawn_mesh(Renderer::get_primitives().unitCube);
+
+          Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
+
+          l_LocalMatrix = glm::translate(
+              l_LocalMatrix, Math::Vector3(0.0f, 0.0f, 0.0f));
+          l_LocalMatrix *=
+              glm::toMat4(Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f));
+          l_LocalMatrix = glm::scale(
+              l_LocalMatrix, Math::Vector3(50.0f, 0.2f, 50.0f));
+
+          m_GroundRenderObject.set_world_transform(l_LocalMatrix);
+        }
       }
 
       virtual bool tick(const float p_Delta) override;
 
       Renderer::RenderObject m_RenderObject;
 
+      Renderer::RenderObject m_GroundRenderObject;
+
     private:
       bool m_InitialCameraSetup;
       float m_CameraOrbitDistance;
+      bool m_LowSpotCalculated = false;
     };
 
     struct LOW_EDITOR_API MaterialViewer : public Viewport

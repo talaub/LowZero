@@ -5,6 +5,7 @@
 #include "LowEditorMainWindow.h"
 #include "LowEditorThemes.h"
 #include "LowMath.h"
+#include "LowRendererMaterial.h"
 #include "LowRendererMaterialResource.h"
 #include "LowRendererMeshResource.h"
 #include "LowRendererTextureState.h"
@@ -503,6 +504,13 @@ namespace Low {
               get_directory_watcher(m_SelectedDirectory);
           Util::AssetManager::create<Core::UI::WidgetAsset>(
               N(Testwidget), l_Watcher.path);
+        }
+        if (ImGui::MenuItem("New Material")) {
+          using namespace Low::Util::FileSystem;
+          DirectoryWatcher &l_Watcher =
+              get_directory_watcher(m_SelectedDirectory);
+          Util::AssetManager::create<Renderer::Material>(
+              N(Material), l_Watcher.path);
         }
         ImGui::EndPopup();
       }

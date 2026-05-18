@@ -1,5 +1,8 @@
 #include "LowEditorRegionWidget.h"
 
+#include "LowEditorIcons.h"
+#include "LowRendererPrimitives.h"
+#include "LowRenderer.h"
 #include "imgui.h"
 #include "IconsLucide.h"
 
@@ -14,6 +17,7 @@
 #include "LowCoreEntity.h"
 #include "LowCoreRegion.h"
 #include "LowCoreTransform.h"
+#include "LowCoreMeshRenderer.h"
 
 #include "LowUtilString.h"
 
@@ -157,8 +161,8 @@ namespace Low {
 
         Util::String i_IdString = LOW_TO_STRING(it->get_id());
         ImGui::PushID(i_IdString.c_str());
-        bool i_Open = ImGui::TreeNodeEx("##region_row", i_Flags,
-                                        "%s", i_Label.c_str());
+        bool i_Open = ImGui::TreeNodeEx("##region_row", i_Flags, "%s",
+                                        i_Label.c_str());
 
         if (ImGui::IsItemClicked()) {
           select_region(*it);
@@ -169,7 +173,30 @@ namespace Low {
         if (ImGui::BeginPopupContextItem()) {
           l_OpenedEntryPopup = true;
           select_region(*it);
-          if (ImGui::MenuItem("Delete")) {
+          if (ImGui::MenuItem(LOW_EDITOR_ICON_CYLINDER
+                              " Create empty")) {
+            Core::Entity l_Entity = Core::Entity::make("Empty");
+            Core::Component::Transform::make(l_Entity);
+
+            l_Entity.set_region(*it);
+            set_selected_entity(l_Entity);
+          }
+          if (ImGui::MenuItem(LOW_EDITOR_ICON_CUBE
+                              " Create mesh renderer")) {
+            Core::Entity l_Entity = Core::Entity::make("Mesh");
+            Core::Component::Transform::make(l_Entity);
+            Core::Component::MeshRenderer l_MeshRenderer =
+                Core::Component::MeshRenderer::make(l_Entity);
+            l_MeshRenderer.set_mesh(
+                Renderer::get_primitives().unitCube);
+            l_MeshRenderer.set_material(
+                Renderer::get_default_material_texture());
+
+            l_Entity.set_region(*it);
+            set_selected_entity(l_Entity);
+          }
+          ImGui::Separator();
+          if (ImGui::MenuItem(LOW_EDITOR_ICON_DELETE " Delete")) {
             Core::Region::destroy(*it);
             i_Break = true;
           }
@@ -177,7 +204,8 @@ namespace Low {
         }
 
         if (i_Open && !i_Break) {
-          for (auto entityIt = Core::Entity::ms_LivingInstances.begin();
+          for (auto entityIt =
+                   Core::Entity::ms_LivingInstances.begin();
                entityIt != Core::Entity::ms_LivingInstances.end();
                ++entityIt) {
             if (entityIt->get_region() != *it) {

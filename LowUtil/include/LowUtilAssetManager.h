@@ -24,6 +24,7 @@ namespace Low {
       typedef void (*Deleter)(const Low::Util::String);
 
       typedef void (*Loader)(Low::Util::Handle);
+      typedef void (*Saver)(Low::Util::Handle);
       typedef bool (*SimpleCheck)(Low::Util::Handle);
 
       struct ImportDirectory
@@ -62,6 +63,7 @@ namespace Low {
         List<String> assetSuffixes;
         List<String> rawSuffixes;
         Loader loader;
+        Saver saver;
         bool supportsLoading;
         bool supportsSaving;
         SimpleCheck isLoadable;
@@ -114,6 +116,12 @@ namespace Low {
         TypeRegistratorBuilder &deleter(const Deleter p_Deleter)
         {
           m_Registrator.deleter = p_Deleter;
+          return *this;
+        }
+
+        TypeRegistratorBuilder &saver(const Saver p_Saver)
+        {
+          m_Registrator.saver = p_Saver;
           return *this;
         }
 
