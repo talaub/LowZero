@@ -1638,6 +1638,26 @@ namespace Low {
         return l_Changed;
       }
 
+      bool InputText(Util::String p_Label, Util::String &p_Text,
+                     int p_Length, ImGuiInputTextFlags p_Flags,
+                     float p_Scale)
+      {
+        const int l_BufferLength = LOW_MATH_MAX(1, p_Length);
+        Util::List<char> l_TextBuffer;
+        l_TextBuffer.resize(l_BufferLength);
+
+        snprintf(l_TextBuffer.data(), l_TextBuffer.size(), "%s",
+                 p_Text.c_str());
+
+        if (!InputText(p_Label, l_TextBuffer.data(), l_BufferLength,
+                       p_Flags, p_Scale)) {
+          return false;
+        }
+
+        p_Text = l_TextBuffer.data();
+        return true;
+      }
+
       bool NameInput(Util::String p_Label, Util::Name &p_Name,
                      int p_Length, ImGuiInputTextFlags p_Flags,
                      float p_Scale)

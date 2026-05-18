@@ -1,6 +1,7 @@
 #include "LowEditorVersionControlWidget.h"
 
 #include "LowEditorGui.h"
+#include "LowEditorPropertyEditors.h"
 #include "LowEditorThemes.h"
 
 #include "LowUtil.h"
@@ -69,8 +70,8 @@ namespace Low {
       static Util::String g_OperationLabel;
       static Util::String g_LastOperation;
       static Util::String g_LastError;
-      static std::array<char, 256> g_CommitMessage = {};
-      static std::array<char, 96> g_CommitSystem = {};
+      static Util::String g_CommitMessage = "";
+      static Util::String g_CommitSystem = "";
       static int g_CommitTypeIndex = 1;
       struct CommitTypeOption
       {
@@ -709,8 +710,7 @@ namespace Low {
 
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2.0f);
         if (is_busy()) {
-          Gui::spinner("VersionControlBusy", 6.0f, 2,
-                       l_Theme.info);
+          Gui::spinner("VersionControlBusy", 6.0f, 2, l_Theme.info);
           ImGui::SameLine(0.0f, 8.0f);
           ImGui::TextUnformatted(g_OperationLabel.empty()
                                      ? "Refreshing..."
@@ -866,47 +866,44 @@ namespace Low {
       ImGui::TextDisabled("Commit message");
 
       const float l_LabelWidth = 78.0f;
-      ImGui::AlignTextToFramePadding();
-      ImGui::TextUnformatted("Type");
-      ImGui::SameLine(l_LabelWidth);
-      ImGui::PushItemWidth(-1.0f);
-      if (ImGui::BeginCombo("##VersionControlCommitType",
-                            g_CommitTypes[g_CommitTypeIndex].label)) {
-        for (int i = 0; i < g_CommitTypeCount; ++i) {
-          const bool l_Selected = g_CommitTypeIndex == i;
-          if (ImGui::Selectable(g_CommitTypes[i].label,
-                                l_Selected)) {
-            g_CommitTypeIndex = i;
+      PropertyEditors::render_line("Type", []() -> bool {
+        if (ImGui::BeginCombo(
+                "##committype",
+                g_CommitTypes[g_CommitTypeIndex].label)) {
+          for (int i = 0; i < g_CommitTypeCount; ++i) {
+            const bool l_Selected = g_CommitTypeIndex == i;
+            if (ImGui::Selectable(g_CommitTypes[i].label,
+                                  l_Selected)) {
+              g_CommitTypeIndex = i;
+            }
+            if (l_Selected) {
+              ImGui::SetItemDefaultFocus();
+            }
           }
-          if (l_Selected) {
-            ImGui::SetItemDefaultFocus();
-          }
+          ImGui::EndCombo();
         }
-        ImGui::EndCombo();
-      }
-      ImGui::PopItemWidth();
+        return false;
+      });
 
-      render_labeled_text_input(
-          "System", g_CommitSystem.data(),
-          static_cast<int>(g_CommitSystem.size()), l_LabelWidth);
-      render_labeled_text_input(
-          "Message", g_CommitMessage.data(),
-          static_cast<int>(g_CommitMessage.size()), l_LabelWidth);
+      PropertyEditors::render_line("Project", []() -> bool {
+        return Gui::InputText("systeminput", g_CommitSystem);
+      });
+      PropertyEditors::render_line("Message", []() -> bool {
+        return Gui::InputText("messageinput", g_CommitMessage);
+      });
 
       const Util::String l_CommitPreview = build_commit_message();
-      ImGui::AlignTextToFramePadding();
-      ImGui::TextUnformatted("Final");
-      ImGui::SameLine(l_LabelWidth);
-      ImGui::PushStyleColor(ImGuiCol_Text,
-                            color_to_imvec4(l_Theme.subtext));
-      ImGui::TextUnformatted(l_CommitPreview.empty()
-                                 ? "#CHANGE Your message"
-                                 : l_CommitPreview.c_str());
-      ImGui::PopStyleColor();
+      PropertyEditors::render_line(
+          "Final", [&l_CommitPreview]() -> bool {
+            ImGui::Text(l_CommitPreview.c_str());
+            return false;
+          });
 
-      const bool l_CanCommit =
-          !l_Busy && !g_Snapshot.changes.empty() &&
-          !l_CommitPreview.empty();
+      ImGui::Dummy(ImVec2{0, 5});
+
+      const bool l_CanCommit = !l_Busy &&
+                               !g_Snapshot.changes.empty() &&
+                               !l_CommitPreview.empty();
       if (render_toolbar_button("Commit project data",
                                 ICON_LC_GIT_COMMIT_HORIZONTAL,
                                 l_Theme.save, !l_CanCommit)) {

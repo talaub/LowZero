@@ -28,6 +28,7 @@ namespace Low {
 
     protected:
       bool m_Open;
+      float m_VerticalSplitter;
     };
   } // namespace Editor
 } // namespace Low
