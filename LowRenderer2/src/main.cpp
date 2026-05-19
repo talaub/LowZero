@@ -347,9 +347,10 @@ void init()
         RENDERSTEP_SSAO_NAME));
     g_RenderView.add_step(Low::Renderer::RenderStep::find_by_name(
         RENDERSTEP_LIGHTING_NAME));
-    g_RenderView.add_step_by_name(RENDERSTEP_DEBUG_GEOMETRY_NAME);
     g_RenderView.add_step(
         Low::Renderer::RenderStep::find_by_name(RENDERSTEP_UI_NAME));
+    g_RenderView.add_step_by_name(RENDERSTEP_TONEMAPPING_NAME);
+    g_RenderView.add_step_by_name(RENDERSTEP_DEBUG_GEOMETRY_NAME);
     g_RenderView.add_step_by_name(RENDERSTEP_OBJECT_ID_COPY);
 
     g_UiMaterial = Low::Renderer::Material::make_gpu_ready(

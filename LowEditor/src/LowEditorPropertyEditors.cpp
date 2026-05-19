@@ -1066,9 +1066,8 @@ namespace Low {
 
           ImVec2 l_Pos = ImGui::GetCursorScreenPos();
           float l_FullWidth = ImGui::GetContentRegionAvail().x;
-          float l_ButtonWidth = HANDLE_SELECTOR_BUTTON_WIDTH;
-          float l_NameWidth =
-              l_FullWidth - l_ButtonWidth - LOW_EDITOR_SPACING;
+          const float l_ButtonWidth = 34.0f;
+          const float l_FieldHeight = ImGui::GetFrameHeight() + 4.0f;
 
           bool l_Changed = false;
 
@@ -1095,44 +1094,56 @@ namespace Low {
             }
             l_HasNameProperty = true;
           }
-          int l_NameLength = strlen(l_DisplayName);
+          const int l_NameLength = strlen(l_DisplayName);
 
-          ImVec2 cursor_pos = ImGui::GetCursorScreenPos();
-          ImVec2 widget_size = ImVec2(
-              l_NameWidth + 2.0f,
-              ImGui::GetFrameHeight()); // Customize width as needed
+          ImVec2 l_FieldMin = ImGui::GetCursorScreenPos();
+          ImVec2 l_FieldSize(l_FullWidth, l_FieldHeight);
+          ImVec2 l_FieldMax = l_FieldMin + l_FieldSize;
+          ImVec2 l_ButtonMin(l_FieldMax.x - l_ButtonWidth,
+                             l_FieldMin.y);
 
-          // Draw background with custom corner rounding
-          ImDrawList *draw_list = ImGui::GetWindowDrawList();
-          ImVec4 bg_color = color_to_imvec4(
-              theme_get_current().input); // Customize color here
-          draw_list->AddRectFilled(
-              cursor_pos,
-              ImVec2(cursor_pos.x + widget_size.x,
-                     cursor_pos.y + widget_size.y),
-              ImGui::GetColorU32(bg_color),
-              2.0f, // Rounding amount
-              ImDrawFlags_RoundCornersLeft
-              // corners
-          );
+          ImDrawList *l_DrawList = ImGui::GetWindowDrawList();
+          const Theme &l_Theme = theme_get_current();
+          const float l_Rounding = 3.0f;
 
-          ImGui::SetCursorScreenPos(cursor_pos); // Reset cursor
-                                                 // position
-          ImGui::RenderTextEllipsis(
-              ImGui::GetWindowDrawList(),
-              l_Pos + ImVec2(HANDLE_SELECTOR_NAME_OFFSET_X,
-                             HANDLE_SELECTOR_NAME_OFFSET_Y),
-              l_Pos +
-                  ImVec2(l_NameWidth, LOW_EDITOR_LABEL_HEIGHT_ABS),
-              l_Pos.x + l_NameWidth - LOW_EDITOR_SPACING,
-              l_DisplayName, l_DisplayName + l_NameLength, nullptr);
-
-          ImGui::SetCursorScreenPos(l_Pos +
-                                    ImVec2(l_NameWidth, 0.0f));
-
-          if (ImGui::Button(ICON_LC_CIRCLE_DOT)) {
+          ImGui::InvisibleButton("##handle_selector_value",
+                                 l_FieldSize);
+          const bool l_Hovered = ImGui::IsItemHovered();
+          if (ImGui::IsItemClicked()) {
             ImGui::OpenPopup(l_PopupName.c_str());
           }
+
+          const ImU32 l_BackgroundColor =
+              l_Hovered ? color_to_imcolor(l_Theme.headerHover)
+                        : color_to_imcolor(l_Theme.input);
+          l_DrawList->AddRectFilled(l_FieldMin, l_FieldMax,
+                                    l_BackgroundColor, l_Rounding);
+          l_DrawList->AddRect(l_FieldMin, l_FieldMax,
+                              color_to_imcolor(l_Theme.border),
+                              l_Rounding);
+          l_DrawList->AddLine(
+              ImVec2(l_ButtonMin.x, l_FieldMin.y + 4.0f),
+              ImVec2(l_ButtonMin.x, l_FieldMax.y - 4.0f),
+              color_to_imcolor(l_Theme.button));
+
+          const float l_TextY =
+              l_FieldMin.y +
+              (l_FieldHeight - ImGui::GetTextLineHeight()) * 0.5f;
+          ImGui::RenderTextEllipsis(
+              l_DrawList,
+              ImVec2(l_FieldMin.x + 6.0f, l_TextY),
+              ImVec2(l_ButtonMin.x - 8.0f, l_FieldMax.y),
+              l_ButtonMin.x - 10.0f,
+              l_DisplayName, l_DisplayName + l_NameLength, nullptr);
+
+          const ImVec2 l_IconSize =
+              ImGui::CalcTextSize(ICON_LC_CIRCLE_DOT);
+          l_DrawList->AddText(
+              ImVec2(l_ButtonMin.x +
+                         (l_ButtonWidth - l_IconSize.x) * 0.5f,
+                     l_FieldMin.y +
+                         (l_FieldHeight - l_IconSize.y) * 0.5f),
+              color_to_imcolor(l_Theme.subtext), ICON_LC_CIRCLE_DOT);
 
           if (ImGui::BeginDragDropTarget()) {
             if (const ImGuiPayload *l_Payload =

@@ -111,6 +111,8 @@ namespace Low {
           switch (p_Format) {
           case ImageFormat::UNDEFINED:
             return VK_FORMAT_UNDEFINED;
+          case ImageFormat::RGBA8_UNORM:
+            return VK_FORMAT_R8G8B8A8_UNORM;
           case ImageFormat::RGBA16_SFLOAT:
             return VK_FORMAT_R16G16B16A16_SFLOAT;
           case ImageFormat::R16_SFLOAT:
@@ -1488,6 +1490,19 @@ namespace Low {
             l_Image.destroy();
           }
           {
+            Image l_Image = p_RenderView.get_tonemapped_image()
+                                .get_gpu()
+                                .get_data_handle();
+
+            ImGui_ImplVulkan_RemoveTexture(
+                (VkDescriptorSet)p_RenderView.get_tonemapped_image()
+                    .get_gpu()
+                    .get_imgui_texture_id());
+
+            ImageUtil::destroy(l_Image);
+            l_Image.destroy();
+          }
+          {
             Image l_Image = p_RenderView.get_blurred_image()
                                 .get_gpu()
                                 .get_data_handle();
@@ -1792,6 +1807,37 @@ namespace Low {
                   VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
                   VK_IMAGE_USAGE_SAMPLED_BIT,
               false);
+
+          ImageUtil::cmd_transition(
+              l_Cmd, l_Image, VK_IMAGE_LAYOUT_UNDEFINED,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }
+
+        {
+          if (!p_RenderView.get_tonemapped_image().is_alive()) {
+            p_RenderView.set_tonemapped_image(Texture::make_gpu_ready(
+                N(Tonemapped), TextureFormatCategory::Float));
+          }
+
+          Image l_Image = p_RenderView.get_tonemapped_image()
+                              .get_gpu()
+                              .get_data_handle();
+
+          if (!l_Image.is_alive()) {
+            l_Image = Image::make(N(Tonemapped));
+            p_RenderView.get_tonemapped_image()
+                .get_gpu()
+                .set_data_handle(l_Image.get_id());
+          }
+
+          ImageUtil::create(l_Image, l_Extent,
+                            VK_FORMAT_R8G8B8A8_UNORM,
+                            VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                                VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                                VK_IMAGE_USAGE_STORAGE_BIT |
+                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                                VK_IMAGE_USAGE_SAMPLED_BIT,
+                            false);
 
           ImageUtil::cmd_transition(
               l_Cmd, l_Image, VK_IMAGE_LAYOUT_UNDEFINED,

@@ -20,6 +20,7 @@ namespace Low {
     enum class ImageFormat
     {
       UNDEFINED,
+      RGBA8_UNORM,
       RGBA16_SFLOAT,
       RGB16_SFLOAT,
       R16_SFLOAT,

@@ -88,6 +88,7 @@ namespace Low {
         Low::Renderer::Texture blurred_image;
         Low::Renderer::Texture ssao_image;
         Low::Renderer::Texture cavities_image;
+        Low::Renderer::Texture tonemapped_image;
         Low::Renderer::Texture shadow_atlas;
         Low::Util::List<Low::Renderer::RenderStep> steps;
         Low::Util::List<RenderStepDataPtr> step_data;
@@ -301,6 +302,9 @@ namespace Low {
 
       Low::Renderer::Texture get_cavities_image() const;
       void set_cavities_image(Low::Renderer::Texture p_Value);
+
+      Low::Renderer::Texture get_tonemapped_image() const;
+      void set_tonemapped_image(Low::Renderer::Texture p_Value);
 
       Low::Renderer::Texture get_shadow_atlas() const;
       void set_shadow_atlas(Low::Renderer::Texture p_Value);

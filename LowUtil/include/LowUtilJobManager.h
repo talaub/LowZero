@@ -11,11 +11,7 @@
 #include <atomic>
 
 #ifndef LOW_JOBMANAGER_TRACKING
-#if defined(LOW_EDITOR_BUILD) && (!defined(RELEASE_BUILD) || RELEASE_BUILD == 0)
 #define LOW_JOBMANAGER_TRACKING 1
-#else
-#define LOW_JOBMANAGER_TRACKING 0
-#endif
 #endif
 
 namespace Low {
@@ -90,9 +86,9 @@ namespace Low {
             String p_Path,
             Function<void(bool, Serial::Node &)> p_Callback);
 
-        LOW_EXPORT void
-        schedule_write_yaml(String p_Path, Serial::Node p_Node,
-                            Function<void(bool)> p_Callback = nullptr);
+        LOW_EXPORT void schedule_write_yaml(
+            String p_Path, Serial::Node p_Node,
+            Function<void(bool)> p_Callback = nullptr);
 
       } // namespace IO
 
@@ -155,7 +151,8 @@ namespace Low {
         {
           u64 id = 0;
           JobType type = JobType::Background;
-          Background::JobStatus status = Background::JobStatus::Pending;
+          Background::JobStatus status =
+              Background::JobStatus::Pending;
           float progress = 0.0f;
           u64 elapsedMs = 0;
           String label;

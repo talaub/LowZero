@@ -1725,7 +1725,7 @@ namespace Low {
         {
           l_Handle.get_draw_pipeline_config()
               .colorAttachmentFormats.push_back(
-                  ImageFormat::RGBA16_SFLOAT);
+                  ImageFormat::RGBA8_UNORM);
 
           l_Handle.get_draw_pipeline_config().alphaBlending = true;
           l_Handle.get_draw_pipeline_config().depthTest = true;

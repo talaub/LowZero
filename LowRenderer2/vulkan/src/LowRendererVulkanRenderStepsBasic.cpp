@@ -99,6 +99,10 @@ namespace Low {
                      "Material of draw command is not alive "
                      "anymore. This should not happen.");
 
+          if (!i_Material.get_material_type().is_alive()) {
+            continue;
+          }
+
           if (i_Material.get_material_type() !=
               l_CurrentMaterialType) {
             l_CurrentMaterialType = i_Material.get_material_type();
@@ -311,7 +315,7 @@ namespace Low {
                       prepare_fullscreen_effect(
                           Global::get_blur_pipeline_layout(),
                           "highlight_edge.frag",
-                          VK_FORMAT_R16G16B16A16_SFLOAT)
+                          VK_FORMAT_R8G8B8A8_UNORM)
                           .register_pipeline();
 
               p_RenderView.get_step_data()[p_RenderStep.get_index()] =
@@ -348,14 +352,14 @@ namespace Low {
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-          Image l_LitImage = p_RenderView.get_lit_image()
+          Image l_OutImage = p_RenderView.get_tonemapped_image()
                                  .get_gpu()
                                  .get_data_handle();
 
           Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
           l_ColorAttachments.resize(1);
           l_ColorAttachments[0] = InitUtil::attachment_info(
-              l_LitImage.get_allocated_image().imageView, nullptr,
+              l_OutImage.get_allocated_image().imageView, nullptr,
               VK_IMAGE_LAYOUT_GENERAL);
 
           VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
@@ -587,7 +591,7 @@ namespace Low {
 
           if (i_Material.get_state() != MaterialState::LOADED) {
             i_Material = get_default_material_texture();
-         }
+          }
 
           if (i_Material.get_material_type() !=
               l_CurrentMaterialType) {
@@ -991,7 +995,7 @@ namespace Low {
                        "Material of draw command is not alive "
                        "anymore. This should not happen.");
 
-            if (i_Material.get_state() != MaterialState::LOADED){
+            if (i_Material.get_state() != MaterialState::LOADED) {
               i_Material = get_default_material_texture();
             }
 
@@ -1170,7 +1174,7 @@ namespace Low {
 
           ImageUtil::cmd_transition(
               l_Cmd,
-              p_RenderView.get_lit_image()
+              p_RenderView.get_tonemapped_image()
                   .get_gpu()
                   .get_data_handle(),
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -1251,7 +1255,7 @@ namespace Low {
 
             ImageUtil::cmd_transition(
                 l_Cmd,
-                p_RenderView.get_lit_image()
+                p_RenderView.get_tonemapped_image()
                     .get_gpu()
                     .get_data_handle(),
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -2637,16 +2641,17 @@ namespace Low {
                 VK_ACCESS_2_SHADER_STORAGE_READ_BIT);
           }
 
-          Image l_LitImage = p_RenderView.get_lit_image()
-                                 .get_gpu()
-                                 .get_data_handle();
-
           Image l_DepthImage = p_RenderView.get_gbuffer_depth()
                                    .get_gpu()
                                    .get_data_handle();
 
+          Image l_TonemappedImage =
+              p_RenderView.get_tonemapped_image()
+                  .get_gpu()
+                  .get_data_handle();
+
           ImageUtil::cmd_transition(
-              l_Cmd, l_LitImage,
+              l_Cmd, l_TonemappedImage,
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
           ImageUtil::cmd_transition(
@@ -2657,8 +2662,8 @@ namespace Low {
           Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
           l_ColorAttachments.resize(1);
           l_ColorAttachments[0] = InitUtil::attachment_info(
-              l_LitImage.get_allocated_image().imageView, nullptr,
-              VK_IMAGE_LAYOUT_GENERAL);
+              l_TonemappedImage.get_allocated_image().imageView,
+              nullptr, VK_IMAGE_LAYOUT_GENERAL);
 
           VkRenderingAttachmentInfo l_DepthAttachment =
               InitUtil::attachment_info(
@@ -2751,7 +2756,7 @@ namespace Low {
           vkCmdEndRendering(l_Cmd);
 
           ImageUtil::cmd_transition(
-              l_Cmd, l_LitImage,
+              l_Cmd, l_TonemappedImage,
               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
           ImageUtil::cmd_transition(
@@ -2853,29 +2858,23 @@ namespace Low {
       };
 
       static Global::BlurSettings
-      calculate_blur_settings(Math::UVector2 p_Dimensions,
-                              u8 p_Scale)
+      calculate_blur_settings(Math::UVector2 p_Dimensions, u8 p_Scale)
       {
         Global::BlurSettings l_Settings;
 
         const u32 l_MinDimension = p_Dimensions.x < p_Dimensions.y
                                        ? p_Dimensions.x
                                        : p_Dimensions.y;
-        const float l_TargetScreenRadius =
-            Math::Util::clamp(float(l_MinDimension) *
-                                  (16.0f / 1080.0f),
-                              8.0f, 32.0f);
+        const float l_TargetScreenRadius = Math::Util::clamp(
+            float(l_MinDimension) * (16.0f / 1080.0f), 8.0f, 32.0f);
         const float l_TargetTextureRadius =
             l_TargetScreenRadius / float(p_Scale);
-        const float l_Radius =
-            Math::Util::floor(
-                (l_TargetTextureRadius / l_Settings.stepScale) +
-                0.999f);
+        const float l_Radius = Math::Util::floor(
+            (l_TargetTextureRadius / l_Settings.stepScale) + 0.999f);
 
         l_Settings.radius = Math::Util::clamp((u32)l_Radius, 1, 32);
-        l_Settings.sigma = Math::Util::clamp(float(l_Settings.radius) *
-                                                 0.5f,
-                                             1.0f, 16.0f);
+        l_Settings.sigma = Math::Util::clamp(
+            float(l_Settings.radius) * 0.5f, 1.0f, 16.0f);
 
         return l_Settings;
       }
@@ -3073,7 +3072,8 @@ namespace Low {
           }
 
           Global::blur_image_4(
-              p_RenderView.get_lit_image(), l_Data->tempBlurTexture,
+              p_RenderView.get_tonemapped_image(),
+              l_Data->tempBlurTexture,
               p_RenderView.get_blurred_image(),
               {p_RenderView.get_dimensions().x / l_Scale,
                p_RenderView.get_dimensions().y / l_Scale},
@@ -3441,282 +3441,280 @@ namespace Low {
         const Math::UVector2 l_NoiseDimensions(4);
         const u32 l_KernelSize = 16u;
 
-        l_RenderStep.set_setup_callback(
-            [l_NoiseDimensions,
-             l_KernelSize](RenderStep p_RenderStep) -> bool {
-              {
-                g_SsgiStepData.kernelBuffer = BufferUtil::create_buffer(
-                    sizeof(KERNEL_VECTOR) * l_KernelSize,
-                    VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
-                        VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                    VMA_MEMORY_USAGE_GPU_ONLY);
-              }
+        l_RenderStep.set_setup_callback([l_NoiseDimensions,
+                                         l_KernelSize](
+                                            RenderStep p_RenderStep)
+                                            -> bool {
+          {
+            g_SsgiStepData.kernelBuffer = BufferUtil::create_buffer(
+                sizeof(KERNEL_VECTOR) * l_KernelSize,
+                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
+                    VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                VMA_MEMORY_USAGE_GPU_ONLY);
+          }
 
-              {
-                const size_t l_KernelDataSize =
-                    l_KernelSize * sizeof(KERNEL_VECTOR);
+          {
+            const size_t l_KernelDataSize =
+                l_KernelSize * sizeof(KERNEL_VECTOR);
 
-                Low::Util::List<KERNEL_VECTOR> l_Kernel;
-                for (u32 i = 0; i < l_KernelSize; ++i) {
-                  KERNEL_VECTOR i_Sample(
-                      (rand() / float(RAND_MAX)) * 2.0f - 1.0f,
-                      (rand() / float(RAND_MAX)) * 2.0f - 1.0f,
-                      rand() / float(RAND_MAX), 0.0f);
-                  i_Sample = glm::normalize(i_Sample);
-                  i_Sample *= rand() / float(RAND_MAX);
-                  float i_Scale = float(i) / float(l_KernelSize);
-                  i_Scale = glm::mix(0.1f, 1.0f, i_Scale * i_Scale);
-                  i_Sample *= i_Scale;
-                  l_Kernel.push_back(i_Sample);
-                }
+            Low::Util::List<KERNEL_VECTOR> l_Kernel;
+            for (u32 i = 0; i < l_KernelSize; ++i) {
+              KERNEL_VECTOR i_Sample(
+                  (rand() / float(RAND_MAX)) * 2.0f - 1.0f,
+                  (rand() / float(RAND_MAX)) * 2.0f - 1.0f,
+                  rand() / float(RAND_MAX), 0.0f);
+              i_Sample = glm::normalize(i_Sample);
+              i_Sample *= rand() / float(RAND_MAX);
+              float i_Scale = float(i) / float(l_KernelSize);
+              i_Scale = glm::mix(0.1f, 1.0f, i_Scale * i_Scale);
+              i_Sample *= i_Scale;
+              l_Kernel.push_back(i_Sample);
+            }
 
-                size_t l_StagingOffset = 0;
-                const u64 l_FrameUploadSpace =
-                    request_resource_staging_buffer_space(
-                        l_KernelDataSize, &l_StagingOffset);
+            size_t l_StagingOffset = 0;
+            const u64 l_FrameUploadSpace =
+                request_resource_staging_buffer_space(
+                    l_KernelDataSize, &l_StagingOffset);
 
-                LOWR_VK_ASSERT_RETURN(
-                    l_FrameUploadSpace >= l_KernelDataSize,
-                    "Did not have enough staging buffer space to upload "
-                    "SSGI kernel data.");
+            LOWR_VK_ASSERT_RETURN(
+                l_FrameUploadSpace >= l_KernelDataSize,
+                "Did not have enough staging buffer space to upload "
+                "SSGI kernel data.");
 
-                LOWR_VK_ASSERT_RETURN(
-                    resource_staging_buffer_write(
-                        l_Kernel.data(), l_FrameUploadSpace,
-                        l_StagingOffset),
-                    "Failed to write SSGI kernel data to staging "
-                    "buffer");
+            LOWR_VK_ASSERT_RETURN(
+                resource_staging_buffer_write(l_Kernel.data(),
+                                              l_FrameUploadSpace,
+                                              l_StagingOffset),
+                "Failed to write SSGI kernel data to staging "
+                "buffer");
 
-                VkBufferCopy l_CopyRegion{};
-                l_CopyRegion.srcOffset = l_StagingOffset;
-                l_CopyRegion.dstOffset = 0;
-                l_CopyRegion.size = l_FrameUploadSpace;
-                vkCmdCopyBuffer(
-                    Vulkan::Global::get_current_command_buffer(),
-                    Vulkan::Global::get_current_resource_staging_buffer()
-                        .buffer.buffer,
-                    g_SsgiStepData.kernelBuffer.buffer, 1,
-                    &l_CopyRegion);
-              }
+            VkBufferCopy l_CopyRegion{};
+            l_CopyRegion.srcOffset = l_StagingOffset;
+            l_CopyRegion.dstOffset = 0;
+            l_CopyRegion.size = l_FrameUploadSpace;
+            vkCmdCopyBuffer(
+                Vulkan::Global::get_current_command_buffer(),
+                Vulkan::Global::get_current_resource_staging_buffer()
+                    .buffer.buffer,
+                g_SsgiStepData.kernelBuffer.buffer, 1, &l_CopyRegion);
+          }
 
-              {
-                g_SsgiStepData.noiseTex = Texture::make_gpu_ready(
-                    N(SsgiNoise), TextureFormatCategory::Float);
-                Vulkan::Image l_Image =
-                    Vulkan::Image::make(N(SsgiNoise));
-                g_SsgiStepData.noiseTex.get_gpu().set_data_handle(
-                    l_Image.get_id());
-                g_SsgiStepData.noiseImage = l_Image;
+          {
+            g_SsgiStepData.noiseTex = Texture::make_gpu_ready(
+                N(SsgiNoise), TextureFormatCategory::Float);
+            Vulkan::Image l_Image = Vulkan::Image::make(N(SsgiNoise));
+            g_SsgiStepData.noiseTex.get_gpu().set_data_handle(
+                l_Image.get_id());
+            g_SsgiStepData.noiseImage = l_Image;
 
-                size_t l_StagingOffset = 0;
-                const u64 l_UploadSpace =
-                    Vulkan::request_resource_staging_buffer_space(
-                        l_NoiseDimensions.x * l_NoiseDimensions.y *
-                            IMAGE_CHANNEL_COUNT,
-                        &l_StagingOffset);
+            size_t l_StagingOffset = 0;
+            const u64 l_UploadSpace =
+                Vulkan::request_resource_staging_buffer_space(
+                    l_NoiseDimensions.x * l_NoiseDimensions.y *
+                        IMAGE_CHANNEL_COUNT,
+                    &l_StagingOffset);
 
-                LOWR_VK_ASSERT_RETURN(
-                    l_UploadSpace ==
-                        (l_NoiseDimensions.x * l_NoiseDimensions.y *
-                         IMAGE_CHANNEL_COUNT),
-                    "Failed to request resource staging buffer space "
-                    "for SSGI noise texture");
+            LOWR_VK_ASSERT_RETURN(
+                l_UploadSpace ==
+                    (l_NoiseDimensions.x * l_NoiseDimensions.y *
+                     IMAGE_CHANNEL_COUNT),
+                "Failed to request resource staging buffer space "
+                "for SSGI noise texture");
 
-                VkExtent3D l_Extent;
-                l_Extent.width = l_NoiseDimensions.x;
-                l_Extent.height = l_NoiseDimensions.y;
-                l_Extent.depth = 1;
+            VkExtent3D l_Extent;
+            l_Extent.width = l_NoiseDimensions.x;
+            l_Extent.height = l_NoiseDimensions.y;
+            l_Extent.depth = 1;
 
-                Vulkan::ImageUtil::create(
-                    l_Image, l_Extent, VK_FORMAT_R8G8B8A8_SNORM,
-                    VK_IMAGE_USAGE_SAMPLED_BIT |
-                        VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-                    false);
+            Vulkan::ImageUtil::create(
+                l_Image, l_Extent, VK_FORMAT_R8G8B8A8_SNORM,
+                VK_IMAGE_USAGE_SAMPLED_BIT |
+                    VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                false);
 
-                struct NoisePixel
-                {
-                  int8_t r, g, b, a;
-                };
-                Util::List<NoisePixel> l_Pixels;
-                for (u32 i = 0;
-                     i < (l_NoiseDimensions.x * l_NoiseDimensions.y);
-                     ++i) {
-                  l_Pixels.push_back(
-                      {(int8_t)(((rand() / float(RAND_MAX)) * 2.0f -
-                                 1.0f) *
-                                127.0f),
-                       (int8_t)(((rand() / float(RAND_MAX)) * 2.0f -
-                                 1.0f) *
-                                127.0f),
-                       0, 127});
-                }
+            struct NoisePixel
+            {
+              int8_t r, g, b, a;
+            };
+            Util::List<NoisePixel> l_Pixels;
+            for (u32 i = 0;
+                 i < (l_NoiseDimensions.x * l_NoiseDimensions.y);
+                 ++i) {
+              l_Pixels.push_back(
+                  {(int8_t)(((rand() / float(RAND_MAX)) * 2.0f -
+                             1.0f) *
+                            127.0f),
+                   (int8_t)(((rand() / float(RAND_MAX)) * 2.0f -
+                             1.0f) *
+                            127.0f),
+                   0, 127});
+            }
 
-                LOWR_VK_ASSERT_RETURN(
-                    Vulkan::resource_staging_buffer_write(
-                        l_Pixels.data(), l_UploadSpace, l_StagingOffset),
-                    "Failed to upload SSGI noise texture to resource "
-                    "staging buffer");
+            LOWR_VK_ASSERT_RETURN(
+                Vulkan::resource_staging_buffer_write(
+                    l_Pixels.data(), l_UploadSpace, l_StagingOffset),
+                "Failed to upload SSGI noise texture to resource "
+                "staging buffer");
 
-                ImageUtil::cmd_transition(
-                    Global::get_current_command_buffer(), l_Image,
-                    VK_IMAGE_LAYOUT_UNDEFINED,
-                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            ImageUtil::cmd_transition(
+                Global::get_current_command_buffer(), l_Image,
+                VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-                VkBufferImageCopy l_Region = {};
-                l_Region.bufferOffset = l_StagingOffset;
-                l_Region.bufferRowLength = 0;
-                l_Region.bufferImageHeight = 0;
-                l_Region.imageSubresource.aspectMask =
-                    VK_IMAGE_ASPECT_COLOR_BIT;
-                l_Region.imageSubresource.mipLevel = 0;
-                l_Region.imageSubresource.baseArrayLayer = 0;
-                l_Region.imageSubresource.layerCount = 1;
-                l_Region.imageOffset = {0, 0, 0};
-                l_Region.imageExtent = {l_NoiseDimensions.x,
-                                        l_NoiseDimensions.y, 1};
+            VkBufferImageCopy l_Region = {};
+            l_Region.bufferOffset = l_StagingOffset;
+            l_Region.bufferRowLength = 0;
+            l_Region.bufferImageHeight = 0;
+            l_Region.imageSubresource.aspectMask =
+                VK_IMAGE_ASPECT_COLOR_BIT;
+            l_Region.imageSubresource.mipLevel = 0;
+            l_Region.imageSubresource.baseArrayLayer = 0;
+            l_Region.imageSubresource.layerCount = 1;
+            l_Region.imageOffset = {0, 0, 0};
+            l_Region.imageExtent = {l_NoiseDimensions.x,
+                                    l_NoiseDimensions.y, 1};
 
-                vkCmdCopyBufferToImage(
-                    Vulkan::Global::get_current_command_buffer(),
-                    Vulkan::Global::get_current_resource_staging_buffer()
-                        .buffer.buffer,
-                    l_Image.get_allocated_image().image,
-                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &l_Region);
+            vkCmdCopyBufferToImage(
+                Vulkan::Global::get_current_command_buffer(),
+                Vulkan::Global::get_current_resource_staging_buffer()
+                    .buffer.buffer,
+                l_Image.get_allocated_image().image,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &l_Region);
 
-                ImageUtil::cmd_transition(
-                    Global::get_current_command_buffer(), l_Image,
-                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-              }
+            ImageUtil::cmd_transition(
+                Global::get_current_command_buffer(), l_Image,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+          }
 
-              {
-                DescriptorUtil::DescriptorLayoutBuilder l_Builder;
-                l_Builder.add_binding(
-                    0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-                l_Builder.add_binding(
-                    1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-                g_SsgiStepData.descriptorSetLayout = l_Builder.build(
-                    Global::get_device(), VK_SHADER_STAGE_ALL_GRAPHICS);
+          {
+            DescriptorUtil::DescriptorLayoutBuilder l_Builder;
+            l_Builder.add_binding(0,
+                                  VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            l_Builder.add_binding(
+                1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            g_SsgiStepData.descriptorSetLayout = l_Builder.build(
+                Global::get_device(), VK_SHADER_STAGE_ALL_GRAPHICS);
 
-                g_SsgiStepData.descriptorSet =
-                    Global::get_global_descriptor_allocator().allocate(
-                        Global::get_device(),
-                        g_SsgiStepData.descriptorSetLayout);
-              }
-
-              {
-                Samplers &l_Samplers = Global::get_samplers();
-
-                DescriptorUtil::DescriptorWriter l_Writer;
-                l_Writer.write_buffer(
-                    0, g_SsgiStepData.kernelBuffer.buffer,
-                    sizeof(KERNEL_VECTOR) * l_KernelSize, 0,
-                    VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-                l_Writer.write_image(
-                    1,
-                    g_SsgiStepData.noiseImage.get_allocated_image()
-                        .imageView,
-                    l_Samplers.no_lod_nearest_repeat_black,
-                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                    VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-
-                l_Writer.update_set(Global::get_device(),
-                                    g_SsgiStepData.descriptorSet);
-              }
-
-              {
-                Util::List<VkDescriptorSetLayout> l_DescriptorSetLayouts;
-                l_DescriptorSetLayouts.push_back(
-                    Global::get_global_descriptor_set_layout());
-                l_DescriptorSetLayouts.push_back(
-                    Global::get_texture_descriptor_set_layout());
-                l_DescriptorSetLayouts.push_back(
-                    Global::get_view_info_descriptor_set_layout());
-                l_DescriptorSetLayouts.push_back(
+            g_SsgiStepData.descriptorSet =
+                Global::get_global_descriptor_allocator().allocate(
+                    Global::get_device(),
                     g_SsgiStepData.descriptorSetLayout);
+          }
 
-                VkPipelineLayoutCreateInfo l_Layout{};
-                l_Layout.sType =
-                    VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-                l_Layout.pNext = nullptr;
-                l_Layout.pSetLayouts = l_DescriptorSetLayouts.data();
-                l_Layout.setLayoutCount = l_DescriptorSetLayouts.size();
+          {
+            Samplers &l_Samplers = Global::get_samplers();
 
-                VkPushConstantRange l_PushConstant{};
-                l_PushConstant.offset = 0;
-                l_PushConstant.size = sizeof(SsgiPushConstants);
-                l_PushConstant.stageFlags =
-                    VK_SHADER_STAGE_FRAGMENT_BIT;
+            DescriptorUtil::DescriptorWriter l_Writer;
+            l_Writer.write_buffer(
+                0, g_SsgiStepData.kernelBuffer.buffer,
+                sizeof(KERNEL_VECTOR) * l_KernelSize, 0,
+                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            l_Writer.write_image(
+                1,
+                g_SsgiStepData.noiseImage.get_allocated_image()
+                    .imageView,
+                l_Samplers.no_lod_nearest_repeat_black,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
-                l_Layout.pPushConstantRanges = &l_PushConstant;
-                l_Layout.pushConstantRangeCount = 1;
+            l_Writer.update_set(Global::get_device(),
+                                g_SsgiStepData.descriptorSet);
+          }
 
-                g_SsgiStepData.pipelineLayout =
-                    PipelineUtil::create_layout(N(SSGI), l_Layout);
-              }
+          {
+            Util::List<VkDescriptorSetLayout> l_DescriptorSetLayouts;
+            l_DescriptorSetLayouts.push_back(
+                Global::get_global_descriptor_set_layout());
+            l_DescriptorSetLayouts.push_back(
+                Global::get_texture_descriptor_set_layout());
+            l_DescriptorSetLayouts.push_back(
+                Global::get_view_info_descriptor_set_layout());
+            l_DescriptorSetLayouts.push_back(
+                g_SsgiStepData.descriptorSetLayout);
 
-              {
-                PipelineUtil::GraphicsPipelineBuilder l_Builder;
-                l_Builder.set_shaders("fullscreen_triangle.vert",
-                                      "ssgi.frag");
-                l_Builder.pipelineLayout = g_SsgiStepData.pipelineLayout;
-                l_Builder.set_input_topology(
-                    VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-                l_Builder.set_polygon_mode(VK_POLYGON_MODE_FILL);
-                l_Builder.set_cull_mode(VK_CULL_MODE_BACK_BIT,
-                                        VK_FRONT_FACE_CLOCKWISE);
-                l_Builder.set_multismapling_none();
-                l_Builder.disable_blending();
-                l_Builder.disable_depth_test();
-                l_Builder.colorAttachmentFormats.clear();
-                l_Builder.colorAttachmentFormats.push_back(
-                    VK_FORMAT_R16G16B16A16_SFLOAT);
-                l_Builder.set_depth_format(VK_FORMAT_UNDEFINED);
+            VkPipelineLayoutCreateInfo l_Layout{};
+            l_Layout.sType =
+                VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+            l_Layout.pNext = nullptr;
+            l_Layout.pSetLayouts = l_DescriptorSetLayouts.data();
+            l_Layout.setLayoutCount = l_DescriptorSetLayouts.size();
 
-                g_SsgiStepData.generationPipeline =
-                    l_Builder.register_pipeline();
-              }
+            VkPushConstantRange l_PushConstant{};
+            l_PushConstant.offset = 0;
+            l_PushConstant.size = sizeof(SsgiPushConstants);
+            l_PushConstant.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-              {
-                PipelineUtil::GraphicsPipelineBuilder l_Builder;
-                l_Builder.set_shaders("fullscreen_triangle.vert",
-                                      "ssgi_composite.frag");
-                l_Builder.pipelineLayout =
-                    Global::get_lighting_pipeline_layout();
-                l_Builder.set_input_topology(
-                    VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-                l_Builder.set_polygon_mode(VK_POLYGON_MODE_FILL);
-                l_Builder.set_cull_mode(VK_CULL_MODE_BACK_BIT,
-                                        VK_FRONT_FACE_CLOCKWISE);
-                l_Builder.set_multismapling_none();
-                l_Builder.colorBlendAttachment.blendEnable = VK_TRUE;
-                l_Builder.colorBlendAttachment.srcColorBlendFactor =
-                    VK_BLEND_FACTOR_ONE;
-                l_Builder.colorBlendAttachment.dstColorBlendFactor =
-                    VK_BLEND_FACTOR_ONE;
-                l_Builder.colorBlendAttachment.colorBlendOp =
-                    VK_BLEND_OP_ADD;
-                l_Builder.colorBlendAttachment.srcAlphaBlendFactor =
-                    VK_BLEND_FACTOR_ZERO;
-                l_Builder.colorBlendAttachment.dstAlphaBlendFactor =
-                    VK_BLEND_FACTOR_ONE;
-                l_Builder.colorBlendAttachment.alphaBlendOp =
-                    VK_BLEND_OP_ADD;
-                l_Builder.colorBlendAttachment.colorWriteMask =
-                    VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-                    VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-                l_Builder.disable_depth_test();
-                l_Builder.colorAttachmentFormats.clear();
-                l_Builder.colorAttachmentFormats.push_back(
-                    VK_FORMAT_R16G16B16A16_SFLOAT);
-                l_Builder.set_depth_format(VK_FORMAT_UNDEFINED);
+            l_Layout.pPushConstantRanges = &l_PushConstant;
+            l_Layout.pushConstantRangeCount = 1;
 
-                g_SsgiStepData.compositePipeline =
-                    l_Builder.register_pipeline();
-              }
+            g_SsgiStepData.pipelineLayout =
+                PipelineUtil::create_layout(N(SSGI), l_Layout);
+          }
 
-              g_SsgiStepData.initialized = true;
-              return true;
-            });
+          {
+            PipelineUtil::GraphicsPipelineBuilder l_Builder;
+            l_Builder.set_shaders("fullscreen_triangle.vert",
+                                  "ssgi.frag");
+            l_Builder.pipelineLayout = g_SsgiStepData.pipelineLayout;
+            l_Builder.set_input_topology(
+                VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+            l_Builder.set_polygon_mode(VK_POLYGON_MODE_FILL);
+            l_Builder.set_cull_mode(VK_CULL_MODE_BACK_BIT,
+                                    VK_FRONT_FACE_CLOCKWISE);
+            l_Builder.set_multismapling_none();
+            l_Builder.disable_blending();
+            l_Builder.disable_depth_test();
+            l_Builder.colorAttachmentFormats.clear();
+            l_Builder.colorAttachmentFormats.push_back(
+                VK_FORMAT_R16G16B16A16_SFLOAT);
+            l_Builder.set_depth_format(VK_FORMAT_UNDEFINED);
+
+            g_SsgiStepData.generationPipeline =
+                l_Builder.register_pipeline();
+          }
+
+          {
+            PipelineUtil::GraphicsPipelineBuilder l_Builder;
+            l_Builder.set_shaders("fullscreen_triangle.vert",
+                                  "ssgi_composite.frag");
+            l_Builder.pipelineLayout =
+                Global::get_lighting_pipeline_layout();
+            l_Builder.set_input_topology(
+                VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+            l_Builder.set_polygon_mode(VK_POLYGON_MODE_FILL);
+            l_Builder.set_cull_mode(VK_CULL_MODE_BACK_BIT,
+                                    VK_FRONT_FACE_CLOCKWISE);
+            l_Builder.set_multismapling_none();
+            l_Builder.colorBlendAttachment.blendEnable = VK_TRUE;
+            l_Builder.colorBlendAttachment.srcColorBlendFactor =
+                VK_BLEND_FACTOR_ONE;
+            l_Builder.colorBlendAttachment.dstColorBlendFactor =
+                VK_BLEND_FACTOR_ONE;
+            l_Builder.colorBlendAttachment.colorBlendOp =
+                VK_BLEND_OP_ADD;
+            l_Builder.colorBlendAttachment.srcAlphaBlendFactor =
+                VK_BLEND_FACTOR_ZERO;
+            l_Builder.colorBlendAttachment.dstAlphaBlendFactor =
+                VK_BLEND_FACTOR_ONE;
+            l_Builder.colorBlendAttachment.alphaBlendOp =
+                VK_BLEND_OP_ADD;
+            l_Builder.colorBlendAttachment.colorWriteMask =
+                VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+            l_Builder.disable_depth_test();
+            l_Builder.colorAttachmentFormats.clear();
+            l_Builder.colorAttachmentFormats.push_back(
+                VK_FORMAT_R16G16B16A16_SFLOAT);
+            l_Builder.set_depth_format(VK_FORMAT_UNDEFINED);
+
+            g_SsgiStepData.compositePipeline =
+                l_Builder.register_pipeline();
+          }
+
+          g_SsgiStepData.initialized = true;
+          return true;
+        });
 
         l_RenderStep.set_prepare_callback(
             [](RenderStep p_RenderStep,
@@ -3735,9 +3733,8 @@ namespace Low {
         l_RenderStep.set_teardown_callback(
             [](RenderStep p_RenderStep,
                RenderView p_RenderView) -> bool {
-              SsgiStepData *l_Data =
-                  (SsgiStepData *)GET_STEP_DATA(p_RenderView,
-                                                p_RenderStep);
+              SsgiStepData *l_Data = (SsgiStepData *)GET_STEP_DATA(
+                  p_RenderView, p_RenderStep);
               if (l_Data) {
                 if (l_Data->texture.is_alive()) {
                   l_Data->texture.destroy();
@@ -3756,9 +3753,8 @@ namespace Low {
               VkCommandBuffer l_Cmd =
                   Global::get_current_command_buffer();
 
-              SsgiStepData *l_Data =
-                  (SsgiStepData *)GET_STEP_DATA(p_RenderView,
-                                                p_RenderStep);
+              SsgiStepData *l_Data = (SsgiStepData *)GET_STEP_DATA(
+                  p_RenderView, p_RenderStep);
 
               {
                 Texture l_Texture = l_Data->texture;
@@ -3788,7 +3784,8 @@ namespace Low {
 
                 LOWR_VK_ASSERT_RETURN(
                     Vulkan::ImageUtil::create(
-                        l_Image, l_Extent, VK_FORMAT_R16G16B16A16_SFLOAT,
+                        l_Image, l_Extent,
+                        VK_FORMAT_R16G16B16A16_SFLOAT,
                         VK_IMAGE_USAGE_SAMPLED_BIT |
                             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                         false),
@@ -3840,7 +3837,8 @@ namespace Low {
 
                   ImageUtil::cmd_transition(
                       l_Cmd,
-                      l_Data->tempBlurTexture.get_gpu().get_data_handle(),
+                      l_Data->tempBlurTexture.get_gpu()
+                          .get_data_handle(),
                       VK_IMAGE_LAYOUT_UNDEFINED,
                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
                 }
@@ -3849,275 +3847,275 @@ namespace Low {
               return true;
             });
 
-        l_RenderStep.set_execute_callback(
-            [l_Scale,
-             l_NoiseDimensions](RenderStep p_RenderStep, float p_Delta,
-                                RenderView p_RenderView) -> bool {
-              VkCommandBuffer l_Cmd =
-                  Global::get_current_command_buffer();
+        l_RenderStep.set_execute_callback([l_Scale,
+                                           l_NoiseDimensions](
+                                              RenderStep p_RenderStep,
+                                              float p_Delta,
+                                              RenderView p_RenderView)
+                                              -> bool {
+          VkCommandBuffer l_Cmd =
+              Global::get_current_command_buffer();
 
-              VK_RENDERDOC_SECTION_BEGIN("SSGI",
-                                         SINGLE_ARG({0.3f, 0.8f, 0.3f}));
+          VK_RENDERDOC_SECTION_BEGIN("SSGI",
+                                     SINGLE_ARG({0.3f, 0.8f, 0.3f}));
 
-              ViewInfo l_ViewInfo = p_RenderView.get_view_info_handle();
+          ViewInfo l_ViewInfo = p_RenderView.get_view_info_handle();
 
-              SsgiStepData *l_Data =
-                  (SsgiStepData *)GET_STEP_DATA(p_RenderView,
-                                                p_RenderStep);
+          SsgiStepData *l_Data = (SsgiStepData *)GET_STEP_DATA(
+              p_RenderView, p_RenderStep);
 
-              Texture l_Texture = l_Data->texture;
+          Texture l_Texture = l_Data->texture;
+          LOWR_VK_ASSERT_RETURN(
+              l_Texture.is_alive(),
+              "Failed to execute SSGI renderstep because SSGI output "
+              "texture was not alive.");
+
+          Math::UVector2 l_Dimensions = p_RenderView.get_dimensions();
+
+          Vulkan::Image l_Image =
+              l_Texture.get_gpu().get_data_handle();
+
+          if (!l_Image.is_alive()) {
+            l_Image = Vulkan::Image::make(N(SsgiOut));
+            l_Texture.get_gpu().set_data_handle(l_Image.get_id());
+
+            VkExtent3D l_Extent;
+            l_Extent.width = l_Dimensions.x / l_Scale;
+            l_Extent.height = l_Dimensions.y / l_Scale;
+            l_Extent.depth = 1;
+
+            LOWR_VK_ASSERT_RETURN(
+                Vulkan::ImageUtil::create(
+                    l_Image, l_Extent, VK_FORMAT_R16G16B16A16_SFLOAT,
+                    VK_IMAGE_USAGE_SAMPLED_BIT |
+                        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                    false),
+                "Failed to create SSGI out image.");
+
+            ImageUtil::cmd_transition(
+                l_Cmd, l_Data->texture.get_gpu().get_data_handle(),
+                VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+          }
+
+          {
+            Image l_TempImage =
+                l_Data->tempBlurTexture.get_gpu().get_data_handle();
+            if (!l_TempImage.is_alive()) {
+              l_Data->tempBlurTexture.get_gpu().set_data_handle(
+                  Vulkan::Image::make(N(SsgiBlur)));
+
+              VkExtent3D l_Extent;
+              l_Extent.width = l_Dimensions.x / l_Scale;
+              l_Extent.height = l_Dimensions.y / l_Scale;
+              l_Extent.depth = 1;
+
               LOWR_VK_ASSERT_RETURN(
-                  l_Texture.is_alive(),
-                  "Failed to execute SSGI renderstep because SSGI output "
-                  "texture was not alive.");
-
-              Math::UVector2 l_Dimensions =
-                  p_RenderView.get_dimensions();
-
-              Vulkan::Image l_Image =
-                  l_Texture.get_gpu().get_data_handle();
-
-              if (!l_Image.is_alive()) {
-                l_Image = Vulkan::Image::make(N(SsgiOut));
-                l_Texture.get_gpu().set_data_handle(l_Image.get_id());
-
-                VkExtent3D l_Extent;
-                l_Extent.width = l_Dimensions.x / l_Scale;
-                l_Extent.height = l_Dimensions.y / l_Scale;
-                l_Extent.depth = 1;
-
-                LOWR_VK_ASSERT_RETURN(
-                    Vulkan::ImageUtil::create(
-                        l_Image, l_Extent, VK_FORMAT_R16G16B16A16_SFLOAT,
-                        VK_IMAGE_USAGE_SAMPLED_BIT |
-                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-                        false),
-                    "Failed to create SSGI out image.");
-
-                ImageUtil::cmd_transition(
-                    l_Cmd, l_Data->texture.get_gpu().get_data_handle(),
-                    VK_IMAGE_LAYOUT_UNDEFINED,
-                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-              }
-
-              {
-                Image l_TempImage =
-                    l_Data->tempBlurTexture.get_gpu().get_data_handle();
-                if (!l_TempImage.is_alive()) {
-                  l_Data->tempBlurTexture.get_gpu().set_data_handle(
-                      Vulkan::Image::make(N(SsgiBlur)));
-
-                  VkExtent3D l_Extent;
-                  l_Extent.width = l_Dimensions.x / l_Scale;
-                  l_Extent.height = l_Dimensions.y / l_Scale;
-                  l_Extent.depth = 1;
-
-                  LOWR_VK_ASSERT_RETURN(
-                      Vulkan::ImageUtil::create(
-                          l_Data->tempBlurTexture.get_gpu()
-                              .get_data_handle(),
-                          l_Extent, VK_FORMAT_R16G16B16A16_SFLOAT,
-                          VK_IMAGE_USAGE_SAMPLED_BIT |
-                              VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-                          false),
-                      "Failed to create SSGI blur image.");
-
-                  ImageUtil::cmd_transition(
-                      l_Cmd,
-                      l_Data->tempBlurTexture.get_gpu().get_data_handle(),
-                      VK_IMAGE_LAYOUT_UNDEFINED,
-                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-                }
-              }
-
-              // Generation pass
-              ImageUtil::cmd_transition(
-                  l_Cmd, l_Data->texture.get_gpu().get_data_handle(),
-                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-              {
-                VkClearValue l_ClearValue = {};
-                l_ClearValue.color = {{0.0f, 0.0f, 0.0f, 0.0f}};
-
-                Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
-                l_ColorAttachments.resize(1);
-                l_ColorAttachments[0] = InitUtil::attachment_info(
-                    l_Image.get_allocated_image().imageView, &l_ClearValue,
-                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-                VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
-                    {l_Dimensions.x / l_Scale, l_Dimensions.y / l_Scale},
-                    l_ColorAttachments.data(), l_ColorAttachments.size(),
-                    nullptr);
-                vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
-
-                vkCmdBindPipeline(
-                    l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    g_SsgiStepData.generationPipeline.get());
-
-                {
-                  VkDescriptorSet l_Set =
-                      Global::get_global_descriptor_set();
-                  vkCmdBindDescriptorSets(
-                      l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                      g_SsgiStepData.pipelineLayout.get(), 0, 1, &l_Set,
-                      0, nullptr);
-
-                  VkDescriptorSet l_TextureSet =
-                      Global::get_current_texture_descriptor_set();
-                  vkCmdBindDescriptorSets(
-                      l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                      g_SsgiStepData.pipelineLayout.get(), 1, 1,
-                      &l_TextureSet, 0, nullptr);
-
-                  VkDescriptorSet l_ViewDescSet =
-                      l_ViewInfo.get_view_data_descriptor_set();
-                  vkCmdBindDescriptorSets(
-                      l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                      g_SsgiStepData.pipelineLayout.get(), 2, 1,
-                      &l_ViewDescSet, 0, nullptr);
-
-                  vkCmdBindDescriptorSets(
-                      l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                      g_SsgiStepData.pipelineLayout.get(), 3, 1,
-                      &g_SsgiStepData.descriptorSet, 0, nullptr);
-                }
-
-                SsgiPushConstants l_PushConstants;
-                l_PushConstants.noiseScale.x =
-                    1.0f / (float(l_Dimensions.x) /
-                            float(l_NoiseDimensions.x));
-                l_PushConstants.noiseScale.y =
-                    1.0f / (float(l_Dimensions.y) /
-                            float(l_NoiseDimensions.y));
-                l_PushConstants.radius = 1.5f;
-                l_PushConstants.strength = 0.5f;
-
-                vkCmdPushConstants(
-                    l_Cmd, g_SsgiStepData.pipelineLayout.get(),
-                    VK_SHADER_STAGE_FRAGMENT_BIT, 0,
-                    sizeof(SsgiPushConstants), &l_PushConstants);
-
-                VkViewport l_Viewport = {};
-                l_Viewport.x = 0;
-                l_Viewport.y = 0;
-                l_Viewport.width =
-                    static_cast<float>(l_Dimensions.x / l_Scale);
-                l_Viewport.height =
-                    static_cast<float>(l_Dimensions.y / l_Scale);
-                l_Viewport.minDepth = 0.f;
-                l_Viewport.maxDepth = 1.f;
-                vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
-
-                VkRect2D l_Scissor = {};
-                l_Scissor.offset.x = 0;
-                l_Scissor.offset.y = 0;
-                l_Scissor.extent.width = l_Dimensions.x / l_Scale;
-                l_Scissor.extent.height = l_Dimensions.y / l_Scale;
-                vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
-
-                vkCmdDraw(l_Cmd, 3, 1, 0, 0);
-
-                vkCmdEndRendering(l_Cmd);
-              }
-
-              ImageUtil::cmd_transition(
-                  l_Cmd, l_Data->texture.get_gpu().get_data_handle(),
-                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-              // Blur the SSGI output
-              Global::blur_image_4(
-                  l_Data->texture, l_Data->tempBlurTexture,
-                  l_Data->texture,
-                  {l_Dimensions.x / l_Scale, l_Dimensions.y / l_Scale});
-
-              // Composite pass: additively blend SSGI onto lit_image
-              ImageUtil::cmd_transition(
-                  l_Cmd,
-                  p_RenderView.get_lit_image()
-                      .get_gpu()
-                      .get_data_handle(),
-                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-              {
-                Image l_LitImage = p_RenderView.get_lit_image()
-                                       .get_gpu()
-                                       .get_data_handle();
-
-                Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
-                l_ColorAttachments.resize(1);
-                l_ColorAttachments[0] = InitUtil::attachment_info(
-                    l_LitImage.get_allocated_image().imageView, nullptr,
-                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-                VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
-                    {l_Dimensions.x, l_Dimensions.y},
-                    l_ColorAttachments.data(), l_ColorAttachments.size(),
-                    nullptr);
-                vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
-
-                vkCmdBindPipeline(
-                    l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    g_SsgiStepData.compositePipeline.get());
-
-                {
-                  VkDescriptorSet l_Set =
-                      Global::get_global_descriptor_set();
-                  vkCmdBindDescriptorSets(
-                      l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                      Global::get_lighting_pipeline_layout().get(), 0, 1,
-                      &l_Set, 0, nullptr);
-
-                  VkDescriptorSet l_TextureSet =
-                      Global::get_current_texture_descriptor_set();
-                  vkCmdBindDescriptorSets(
-                      l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                      Global::get_lighting_pipeline_layout().get(), 1, 1,
-                      &l_TextureSet, 0, nullptr);
-
-                  VkDescriptorSet l_ViewDescSet =
-                      l_ViewInfo.get_view_data_descriptor_set();
-                  vkCmdBindDescriptorSets(
-                      l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                      Global::get_lighting_pipeline_layout().get(), 2, 1,
-                      &l_ViewDescSet, 0, nullptr);
-                }
-
-                VkViewport l_Viewport = {};
-                l_Viewport.x = 0;
-                l_Viewport.y = 0;
-                l_Viewport.width = static_cast<float>(l_Dimensions.x);
-                l_Viewport.height = static_cast<float>(l_Dimensions.y);
-                l_Viewport.minDepth = 0.f;
-                l_Viewport.maxDepth = 1.f;
-                vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
-
-                VkRect2D l_Scissor = {};
-                l_Scissor.offset.x = 0;
-                l_Scissor.offset.y = 0;
-                l_Scissor.extent.width = l_Dimensions.x;
-                l_Scissor.extent.height = l_Dimensions.y;
-                vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
-
-                vkCmdDraw(l_Cmd, 3, 1, 0, 0);
-
-                vkCmdEndRendering(l_Cmd);
-              }
+                  Vulkan::ImageUtil::create(
+                      l_Data->tempBlurTexture.get_gpu()
+                          .get_data_handle(),
+                      l_Extent, VK_FORMAT_R16G16B16A16_SFLOAT,
+                      VK_IMAGE_USAGE_SAMPLED_BIT |
+                          VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                      false),
+                  "Failed to create SSGI blur image.");
 
               ImageUtil::cmd_transition(
                   l_Cmd,
-                  p_RenderView.get_lit_image()
-                      .get_gpu()
-                      .get_data_handle(),
-                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                  l_Data->tempBlurTexture.get_gpu().get_data_handle(),
+                  VK_IMAGE_LAYOUT_UNDEFINED,
                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            }
+          }
 
-              VK_RENDERDOC_SECTION_END();
-              return true;
-            });
+          // Generation pass
+          ImageUtil::cmd_transition(
+              l_Cmd, l_Data->texture.get_gpu().get_data_handle(),
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+          {
+            VkClearValue l_ClearValue = {};
+            l_ClearValue.color = {{0.0f, 0.0f, 0.0f, 0.0f}};
+
+            Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
+            l_ColorAttachments.resize(1);
+            l_ColorAttachments[0] = InitUtil::attachment_info(
+                l_Image.get_allocated_image().imageView,
+                &l_ClearValue,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+            VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
+                {l_Dimensions.x / l_Scale, l_Dimensions.y / l_Scale},
+                l_ColorAttachments.data(), l_ColorAttachments.size(),
+                nullptr);
+            vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
+
+            vkCmdBindPipeline(
+                l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                g_SsgiStepData.generationPipeline.get());
+
+            {
+              VkDescriptorSet l_Set =
+                  Global::get_global_descriptor_set();
+              vkCmdBindDescriptorSets(
+                  l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                  g_SsgiStepData.pipelineLayout.get(), 0, 1, &l_Set,
+                  0, nullptr);
+
+              VkDescriptorSet l_TextureSet =
+                  Global::get_current_texture_descriptor_set();
+              vkCmdBindDescriptorSets(
+                  l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                  g_SsgiStepData.pipelineLayout.get(), 1, 1,
+                  &l_TextureSet, 0, nullptr);
+
+              VkDescriptorSet l_ViewDescSet =
+                  l_ViewInfo.get_view_data_descriptor_set();
+              vkCmdBindDescriptorSets(
+                  l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                  g_SsgiStepData.pipelineLayout.get(), 2, 1,
+                  &l_ViewDescSet, 0, nullptr);
+
+              vkCmdBindDescriptorSets(
+                  l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                  g_SsgiStepData.pipelineLayout.get(), 3, 1,
+                  &g_SsgiStepData.descriptorSet, 0, nullptr);
+            }
+
+            SsgiPushConstants l_PushConstants;
+            l_PushConstants.noiseScale.x =
+                1.0f /
+                (float(l_Dimensions.x) / float(l_NoiseDimensions.x));
+            l_PushConstants.noiseScale.y =
+                1.0f /
+                (float(l_Dimensions.y) / float(l_NoiseDimensions.y));
+            l_PushConstants.radius = 1.5f;
+            l_PushConstants.strength = 0.5f;
+
+            vkCmdPushConstants(
+                l_Cmd, g_SsgiStepData.pipelineLayout.get(),
+                VK_SHADER_STAGE_FRAGMENT_BIT, 0,
+                sizeof(SsgiPushConstants), &l_PushConstants);
+
+            VkViewport l_Viewport = {};
+            l_Viewport.x = 0;
+            l_Viewport.y = 0;
+            l_Viewport.width =
+                static_cast<float>(l_Dimensions.x / l_Scale);
+            l_Viewport.height =
+                static_cast<float>(l_Dimensions.y / l_Scale);
+            l_Viewport.minDepth = 0.f;
+            l_Viewport.maxDepth = 1.f;
+            vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
+
+            VkRect2D l_Scissor = {};
+            l_Scissor.offset.x = 0;
+            l_Scissor.offset.y = 0;
+            l_Scissor.extent.width = l_Dimensions.x / l_Scale;
+            l_Scissor.extent.height = l_Dimensions.y / l_Scale;
+            vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
+
+            vkCmdDraw(l_Cmd, 3, 1, 0, 0);
+
+            vkCmdEndRendering(l_Cmd);
+          }
+
+          ImageUtil::cmd_transition(
+              l_Cmd, l_Data->texture.get_gpu().get_data_handle(),
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+          // Blur the SSGI output
+          Global::blur_image_4(
+              l_Data->texture, l_Data->tempBlurTexture,
+              l_Data->texture,
+              {l_Dimensions.x / l_Scale, l_Dimensions.y / l_Scale});
+
+          // Composite pass: additively blend SSGI onto lit_image
+          ImageUtil::cmd_transition(
+              l_Cmd,
+              p_RenderView.get_lit_image()
+                  .get_gpu()
+                  .get_data_handle(),
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+          {
+            Image l_LitImage = p_RenderView.get_lit_image()
+                                   .get_gpu()
+                                   .get_data_handle();
+
+            Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
+            l_ColorAttachments.resize(1);
+            l_ColorAttachments[0] = InitUtil::attachment_info(
+                l_LitImage.get_allocated_image().imageView, nullptr,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+            VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
+                {l_Dimensions.x, l_Dimensions.y},
+                l_ColorAttachments.data(), l_ColorAttachments.size(),
+                nullptr);
+            vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
+
+            vkCmdBindPipeline(l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                              g_SsgiStepData.compositePipeline.get());
+
+            {
+              VkDescriptorSet l_Set =
+                  Global::get_global_descriptor_set();
+              vkCmdBindDescriptorSets(
+                  l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                  Global::get_lighting_pipeline_layout().get(), 0, 1,
+                  &l_Set, 0, nullptr);
+
+              VkDescriptorSet l_TextureSet =
+                  Global::get_current_texture_descriptor_set();
+              vkCmdBindDescriptorSets(
+                  l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                  Global::get_lighting_pipeline_layout().get(), 1, 1,
+                  &l_TextureSet, 0, nullptr);
+
+              VkDescriptorSet l_ViewDescSet =
+                  l_ViewInfo.get_view_data_descriptor_set();
+              vkCmdBindDescriptorSets(
+                  l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                  Global::get_lighting_pipeline_layout().get(), 2, 1,
+                  &l_ViewDescSet, 0, nullptr);
+            }
+
+            VkViewport l_Viewport = {};
+            l_Viewport.x = 0;
+            l_Viewport.y = 0;
+            l_Viewport.width = static_cast<float>(l_Dimensions.x);
+            l_Viewport.height = static_cast<float>(l_Dimensions.y);
+            l_Viewport.minDepth = 0.f;
+            l_Viewport.maxDepth = 1.f;
+            vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
+
+            VkRect2D l_Scissor = {};
+            l_Scissor.offset.x = 0;
+            l_Scissor.offset.y = 0;
+            l_Scissor.extent.width = l_Dimensions.x;
+            l_Scissor.extent.height = l_Dimensions.y;
+            vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
+
+            vkCmdDraw(l_Cmd, 3, 1, 0, 0);
+
+            vkCmdEndRendering(l_Cmd);
+          }
+
+          ImageUtil::cmd_transition(
+              l_Cmd,
+              p_RenderView.get_lit_image()
+                  .get_gpu()
+                  .get_data_handle(),
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+          VK_RENDERDOC_SECTION_END();
+          return true;
+        });
 
         return true;
       }
@@ -4126,6 +4124,150 @@ namespace Low {
       {
         Pipeline pipeline;
       };
+
+      struct TonemappingStepData
+      {
+        Pipeline pipeline;
+      };
+
+      static bool initialize_tonemapping_renderstep()
+      {
+        RenderStep l_RenderStep =
+            RenderStep::make(RENDERSTEP_TONEMAPPING_NAME);
+
+        l_RenderStep.set_prepare_callback(
+            [&](RenderStep p_RenderStep,
+                RenderView p_RenderView) -> bool {
+              TonemappingStepData *l_Data = new TonemappingStepData;
+
+              PipelineUtil::GraphicsPipelineBuilder l_Builder;
+              l_Builder.pipelineLayout =
+                  Global::get_lighting_pipeline_layout();
+              l_Builder.set_shaders("fullscreen_triangle.vert",
+                                    "tonemapping.frag");
+              l_Builder.set_input_topology(
+                  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+              l_Builder.set_polygon_mode(VK_POLYGON_MODE_FILL);
+              l_Builder.set_cull_mode(VK_CULL_MODE_BACK_BIT,
+                                      VK_FRONT_FACE_CLOCKWISE);
+              l_Builder.set_multismapling_none();
+              l_Builder.disable_blending();
+              l_Builder.disable_depth_test();
+
+              l_Builder.colorAttachmentFormats.clear();
+              l_Builder.colorAttachmentFormats.push_back(
+                  VK_FORMAT_R8G8B8A8_UNORM);
+
+              l_Builder.set_depth_format(VK_FORMAT_UNDEFINED);
+
+              l_Data->pipeline = l_Builder.register_pipeline();
+
+              p_RenderView.get_step_data()[p_RenderStep.get_index()] =
+                  l_Data;
+              return true;
+            });
+
+        l_RenderStep.set_teardown_callback(
+            [&](RenderStep p_RenderStep,
+                RenderView p_RenderView) -> bool { return true; });
+
+        l_RenderStep.set_execute_callback([&](RenderStep p_RenderStep,
+                                              float p_Delta,
+                                              RenderView p_RenderView)
+                                              -> bool {
+          VkCommandBuffer l_Cmd =
+              Global::get_current_command_buffer();
+
+          VK_RENDERDOC_SECTION_BEGIN("Tonemapping",
+                                     SINGLE_ARG({1.0f, 0.75f, 0.2f}));
+
+          TonemappingStepData *l_Data =
+              (TonemappingStepData *)p_RenderView
+                  .get_step_data()[p_RenderStep.get_index()];
+
+          ViewInfo l_ViewInfo = p_RenderView.get_view_info_handle();
+          Image l_TonemappedImage =
+              p_RenderView.get_tonemapped_image()
+                  .get_gpu()
+                  .get_data_handle();
+
+          ImageUtil::cmd_transition(
+              l_Cmd, l_TonemappedImage,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+          VkClearValue l_ClearColorValue = {};
+          l_ClearColorValue.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+
+          Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
+          l_ColorAttachments.resize(1);
+          l_ColorAttachments[0] = InitUtil::attachment_info(
+              l_TonemappedImage.get_allocated_image().imageView,
+              &l_ClearColorValue, VK_IMAGE_LAYOUT_GENERAL);
+
+          VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
+              {p_RenderView.get_dimensions().x,
+               p_RenderView.get_dimensions().y},
+              l_ColorAttachments.data(), l_ColorAttachments.size(),
+              nullptr);
+          vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
+
+          vkCmdBindPipeline(l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            l_Data->pipeline.get());
+
+          VkDescriptorSet l_GlobalSet =
+              Global::get_global_descriptor_set();
+          vkCmdBindDescriptorSets(
+              l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+              Global::get_lighting_pipeline_layout().get(), 0, 1,
+              &l_GlobalSet, 0, nullptr);
+
+          VkDescriptorSet l_TextureSet =
+              Global::get_current_texture_descriptor_set();
+          vkCmdBindDescriptorSets(
+              l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+              Global::get_lighting_pipeline_layout().get(), 1, 1,
+              &l_TextureSet, 0, nullptr);
+
+          VkDescriptorSet l_ViewSet =
+              l_ViewInfo.get_view_data_descriptor_set();
+          vkCmdBindDescriptorSets(
+              l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+              Global::get_lighting_pipeline_layout().get(), 2, 1,
+              &l_ViewSet, 0, nullptr);
+
+          VkViewport l_Viewport = {};
+          l_Viewport.x = 0;
+          l_Viewport.y = 0;
+          l_Viewport.width =
+              static_cast<float>(p_RenderView.get_dimensions().x);
+          l_Viewport.height =
+              static_cast<float>(p_RenderView.get_dimensions().y);
+          l_Viewport.minDepth = 0.f;
+          l_Viewport.maxDepth = 1.f;
+          vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
+
+          VkRect2D l_Scissor = {};
+          l_Scissor.offset.x = 0;
+          l_Scissor.offset.y = 0;
+          l_Scissor.extent.width = p_RenderView.get_dimensions().x;
+          l_Scissor.extent.height = p_RenderView.get_dimensions().y;
+          vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
+
+          vkCmdDraw(l_Cmd, 3, 1, 0, 0);
+          vkCmdEndRendering(l_Cmd);
+
+          ImageUtil::cmd_transition(
+              l_Cmd, l_TonemappedImage,
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+          VK_RENDERDOC_SECTION_END();
+          return true;
+        });
+
+        return true;
+      }
 
       static bool initialize_sky_gradient_renderstep()
       {
@@ -4166,111 +4308,108 @@ namespace Low {
 
         l_RenderStep.set_teardown_callback(
             [&](RenderStep p_RenderStep,
-                RenderView p_RenderView) -> bool {
-              return true;
-            });
+                RenderView p_RenderView) -> bool { return true; });
 
-        l_RenderStep.set_execute_callback(
-            [&](RenderStep p_RenderStep, float p_Delta,
-                RenderView p_RenderView) -> bool {
-              VkCommandBuffer l_Cmd =
-                  Global::get_current_command_buffer();
+        l_RenderStep.set_execute_callback([&](RenderStep p_RenderStep,
+                                              float p_Delta,
+                                              RenderView p_RenderView)
+                                              -> bool {
+          VkCommandBuffer l_Cmd =
+              Global::get_current_command_buffer();
 
-              VK_RENDERDOC_SECTION_BEGIN("Sky gradient",
-                                         SINGLE_ARG({0.3f, 0.6f, 1.0f}));
+          VK_RENDERDOC_SECTION_BEGIN("Sky gradient",
+                                     SINGLE_ARG({0.3f, 0.6f, 1.0f}));
 
-              SkyGradientStepData *l_Data =
-                  (SkyGradientStepData *)p_RenderView
-                      .get_step_data()[p_RenderStep.get_index()];
+          SkyGradientStepData *l_Data =
+              (SkyGradientStepData *)p_RenderView
+                  .get_step_data()[p_RenderStep.get_index()];
 
-              ViewInfo l_ViewInfo = p_RenderView.get_view_info_handle();
+          ViewInfo l_ViewInfo = p_RenderView.get_view_info_handle();
 
-              ImageUtil::cmd_transition(
-                  l_Cmd,
-                  p_RenderView.get_lit_image()
-                      .get_gpu()
-                      .get_data_handle(),
-                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+          ImageUtil::cmd_transition(
+              l_Cmd,
+              p_RenderView.get_lit_image()
+                  .get_gpu()
+                  .get_data_handle(),
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-              Image l_LitImage = p_RenderView.get_lit_image()
-                                     .get_gpu()
-                                     .get_data_handle();
+          Image l_LitImage = p_RenderView.get_lit_image()
+                                 .get_gpu()
+                                 .get_data_handle();
 
-              Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
-              l_ColorAttachments.resize(1);
-              l_ColorAttachments[0] = InitUtil::attachment_info(
-                  l_LitImage.get_allocated_image().imageView, nullptr,
-                  VK_IMAGE_LAYOUT_GENERAL);
+          Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
+          l_ColorAttachments.resize(1);
+          l_ColorAttachments[0] = InitUtil::attachment_info(
+              l_LitImage.get_allocated_image().imageView, nullptr,
+              VK_IMAGE_LAYOUT_GENERAL);
 
-              VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
-                  {p_RenderView.get_dimensions().x,
-                   p_RenderView.get_dimensions().y},
-                  l_ColorAttachments.data(), l_ColorAttachments.size(),
-                  nullptr);
-              vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
+          VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
+              {p_RenderView.get_dimensions().x,
+               p_RenderView.get_dimensions().y},
+              l_ColorAttachments.data(), l_ColorAttachments.size(),
+              nullptr);
+          vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
 
-              vkCmdBindPipeline(l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                l_Data->pipeline.get());
+          vkCmdBindPipeline(l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            l_Data->pipeline.get());
 
-              {
-                VkDescriptorSet l_GlobalSet =
-                    Global::get_global_descriptor_set();
-                vkCmdBindDescriptorSets(
-                    l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    Global::get_lighting_pipeline_layout().get(), 0, 1,
-                    &l_GlobalSet, 0, nullptr);
+          {
+            VkDescriptorSet l_GlobalSet =
+                Global::get_global_descriptor_set();
+            vkCmdBindDescriptorSets(
+                l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                Global::get_lighting_pipeline_layout().get(), 0, 1,
+                &l_GlobalSet, 0, nullptr);
 
-                VkDescriptorSet l_TextureSet =
-                    Global::get_current_texture_descriptor_set();
-                vkCmdBindDescriptorSets(
-                    l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    Global::get_lighting_pipeline_layout().get(), 1, 1,
-                    &l_TextureSet, 0, nullptr);
+            VkDescriptorSet l_TextureSet =
+                Global::get_current_texture_descriptor_set();
+            vkCmdBindDescriptorSets(
+                l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                Global::get_lighting_pipeline_layout().get(), 1, 1,
+                &l_TextureSet, 0, nullptr);
 
-                VkDescriptorSet l_ViewSet =
-                    l_ViewInfo.get_view_data_descriptor_set();
-                vkCmdBindDescriptorSets(
-                    l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    Global::get_lighting_pipeline_layout().get(), 2, 1,
-                    &l_ViewSet, 0, nullptr);
+            VkDescriptorSet l_ViewSet =
+                l_ViewInfo.get_view_data_descriptor_set();
+            vkCmdBindDescriptorSets(
+                l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                Global::get_lighting_pipeline_layout().get(), 2, 1,
+                &l_ViewSet, 0, nullptr);
 
-                VkViewport l_Viewport = {};
-                l_Viewport.x = 0;
-                l_Viewport.y = 0;
-                l_Viewport.width = static_cast<float>(
-                    p_RenderView.get_dimensions().x);
-                l_Viewport.height = static_cast<float>(
-                    p_RenderView.get_dimensions().y);
-                l_Viewport.minDepth = 0.f;
-                l_Viewport.maxDepth = 1.f;
-                vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
+            VkViewport l_Viewport = {};
+            l_Viewport.x = 0;
+            l_Viewport.y = 0;
+            l_Viewport.width =
+                static_cast<float>(p_RenderView.get_dimensions().x);
+            l_Viewport.height =
+                static_cast<float>(p_RenderView.get_dimensions().y);
+            l_Viewport.minDepth = 0.f;
+            l_Viewport.maxDepth = 1.f;
+            vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
 
-                VkRect2D l_Scissor = {};
-                l_Scissor.offset.x = 0;
-                l_Scissor.offset.y = 0;
-                l_Scissor.extent.width =
-                    p_RenderView.get_dimensions().x;
-                l_Scissor.extent.height =
-                    p_RenderView.get_dimensions().y;
-                vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
+            VkRect2D l_Scissor = {};
+            l_Scissor.offset.x = 0;
+            l_Scissor.offset.y = 0;
+            l_Scissor.extent.width = p_RenderView.get_dimensions().x;
+            l_Scissor.extent.height = p_RenderView.get_dimensions().y;
+            vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
 
-                vkCmdDraw(l_Cmd, 3, 1, 0, 0);
-              }
+            vkCmdDraw(l_Cmd, 3, 1, 0, 0);
+          }
 
-              vkCmdEndRendering(l_Cmd);
+          vkCmdEndRendering(l_Cmd);
 
-              ImageUtil::cmd_transition(
-                  l_Cmd,
-                  p_RenderView.get_lit_image()
-                      .get_gpu()
-                      .get_data_handle(),
-                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+          ImageUtil::cmd_transition(
+              l_Cmd,
+              p_RenderView.get_lit_image()
+                  .get_gpu()
+                  .get_data_handle(),
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-              VK_RENDERDOC_SECTION_END();
-              return true;
-            });
+          VK_RENDERDOC_SECTION_END();
+          return true;
+        });
 
         return true;
       }
@@ -4300,6 +4439,9 @@ namespace Low {
         LOWR_VK_ASSERT_RETURN(
             initialize_sky_gradient_renderstep(),
             "Failed to initialize sky gradient renderstep");
+        LOWR_VK_ASSERT_RETURN(
+            initialize_tonemapping_renderstep(),
+            "Failed to initialize tonemapping renderstep");
         LOWR_VK_ASSERT_RETURN(initialize_ui_renderstep(),
                               "Failed to initialize UI renderstep");
         LOWR_VK_ASSERT_RETURN(

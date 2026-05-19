@@ -80,9 +80,14 @@ namespace Low {
         }
         ImVec2 l_DrawDimension(l_ViewportDimensions.x,
                                l_ViewportDimensions.y);
-        Renderer::Texture l_LitImage = l_RenderView.get_lit_image();
-        if (l_LitImage.is_imgui_texture_ready()) {
-          ImGui::Image(l_LitImage.get_gpu().get_imgui_texture_id(),
+        Renderer::Texture l_DisplayImage =
+            l_RenderView.get_tonemapped_image();
+        if (!l_DisplayImage.is_imgui_texture_ready()) {
+          l_DisplayImage = l_RenderView.get_lit_image();
+        }
+
+        if (l_DisplayImage.is_imgui_texture_ready()) {
+          ImGui::Image(l_DisplayImage.get_gpu().get_imgui_texture_id(),
                        l_DrawDimension);
         } else {
           ImGui::Dummy(l_DrawDimension);

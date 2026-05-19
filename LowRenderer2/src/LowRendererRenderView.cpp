@@ -101,6 +101,9 @@ namespace Low {
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderView, cavities_image,
                                  Low::Renderer::Texture))
           Low::Renderer::Texture();
+      new (ACCESSOR_TYPE_SOA_PTR(
+          l_Handle, RenderView, tonemapped_image,
+          Low::Renderer::Texture)) Low::Renderer::Texture();
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderView, shadow_atlas,
                                  Low::Renderer::Texture))
           Low::Renderer::Texture();
@@ -202,6 +205,9 @@ namespace Low {
         }
         if (get_blurred_image().is_alive()) {
           get_blurred_image().destroy();
+        }
+        if (get_tonemapped_image().is_alive()) {
+          get_tonemapped_image().destroy();
         }
         if (get_ssao_image().is_alive()) {
           get_ssao_image().destroy();
@@ -1047,6 +1053,39 @@ namespace Low {
         // End property: cavities_image
       }
       {
+        // Property: tonemapped_image
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(tonemapped_image);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderView::Data, tonemapped_image);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType =
+            Low::Renderer::Texture::IDENTIFIER;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.get_tonemapped_image();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
+                                            tonemapped_image,
+                                            Low::Renderer::Texture);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.set_tonemapped_image(
+              *(Low::Renderer::Texture *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          *((Low::Renderer::Texture *)p_Data) =
+              l_Handle.get_tonemapped_image();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: tonemapped_image
+      }
+      {
         // Property: shadow_atlas
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(shadow_atlas);
@@ -1602,6 +1641,9 @@ namespace Low {
       }
       if (get_cavities_image().is_alive()) {
         l_Handle.set_cavities_image(get_cavities_image());
+      }
+      if (get_tonemapped_image().is_alive()) {
+        l_Handle.set_tonemapped_image(get_tonemapped_image());
       }
       if (get_shadow_atlas().is_alive()) {
         l_Handle.set_shadow_atlas(get_shadow_atlas());
@@ -2563,6 +2605,34 @@ namespace Low {
       broadcast_observable(N(cavities_image));
     }
 
+    Low::Renderer::Texture RenderView::get_tonemapped_image() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_tonemapped_image
+      // LOW_CODEGEN::END::CUSTOM:GETTER_tonemapped_image
+
+      return TYPE_SOA(RenderView, tonemapped_image,
+                      Low::Renderer::Texture);
+    }
+    void
+    RenderView::set_tonemapped_image(Low::Renderer::Texture p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_tonemapped_image
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_tonemapped_image
+
+      // Set new value
+      TYPE_SOA(RenderView, tonemapped_image, Low::Renderer::Texture) =
+          p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_tonemapped_image
+      // LOW_CODEGEN::END::CUSTOM:SETTER_tonemapped_image
+
+      broadcast_observable(N(tonemapped_image));
+    }
+
     Low::Renderer::Texture RenderView::get_shadow_atlas() const
     {
       _LOW_ASSERT(is_alive());
@@ -2879,8 +2949,9 @@ namespace Low {
       l_RenderView.add_step_by_name(RENDERSTEP_LIGHTING_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_SKY_GRADIENT_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_SSGI_NAME);
-      l_RenderView.add_step_by_name(RENDERSTEP_DEBUG_GEOMETRY_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_UI_NAME);
+      l_RenderView.add_step_by_name(RENDERSTEP_TONEMAPPING_NAME);
+      l_RenderView.add_step_by_name(RENDERSTEP_DEBUG_GEOMETRY_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_OBJECT_ID_COPY);
 
       return l_RenderView;

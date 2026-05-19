@@ -203,6 +203,9 @@ types:
       cavities_image:
         type: Low::Renderer::Texture
         handle: true
+      tonemapped_image:
+        type: Low::Renderer::Texture
+        handle: true
       shadow_atlas:
         type: Low::Renderer::Texture
         handle: true

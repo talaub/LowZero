@@ -309,6 +309,7 @@ namespace Low {
         l_RenderView.add_step_by_name(RENDERSTEP_CAVITIES_NAME);
         l_RenderView.add_step_by_name(RENDERSTEP_LIGHTCULLING_NAME);
         l_RenderView.add_step_by_name(RENDERSTEP_LIGHTING_NAME);
+        l_RenderView.add_step_by_name(RENDERSTEP_TONEMAPPING_NAME);
 
         RenderObject l_RenderObject =
             RenderObject::make(l_RenderScene, p_Mesh);

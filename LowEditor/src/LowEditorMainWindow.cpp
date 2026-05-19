@@ -37,6 +37,7 @@
 #include "LowEditorScriptWidget.h"
 #include "LowEditorVersionControlWidget.h"
 #include "LowEditorEditWidget.h"
+#include "LowEditorRendererDebugWidget.h"
 #include "LowEditorJobWidget.h"
 #include "LowEditor.h"
 #include "LowEditorNodeGraph.h"
@@ -64,6 +65,7 @@
 #include <cstdio>
 #include <functional>
 #include <future>
+#include <filesystem>
 #include <ctype.h>
 
 #if defined(_WIN32)
@@ -188,28 +190,84 @@ namespace Low {
 #endif
     }
 
-    static Util::String refresh_project_git_status()
+    struct StatusBarGitInfo
     {
+      Util::String branch;
+      uint32_t modified = 0;
+      uint32_t added = 0;
+      uint32_t deleted = 0;
+
+      bool has_changes() const
+      {
+        return modified > 0 || added > 0 || deleted > 0;
+      }
+    };
+
+    static Util::String get_project_data_pathspec()
+    {
+      std::filesystem::path l_DataPath(
+          Util::get_project().dataPath.c_str());
+      std::filesystem::path l_RootPath(
+          Util::get_project().rootPath.c_str());
+      std::error_code l_Error;
+      l_DataPath = std::filesystem::absolute(l_DataPath, l_Error);
+      l_RootPath = std::filesystem::absolute(l_RootPath, l_Error);
+      std::filesystem::path l_Relative =
+          std::filesystem::relative(l_DataPath, l_RootPath, l_Error);
+
+      if (!l_Error && !l_Relative.empty()) {
+        return l_Relative.generic_string().c_str();
+      }
+
+      return "data";
+    }
+
+    static void
+    count_status_bar_git_change(const Util::String &p_Status,
+                                StatusBarGitInfo &p_Info)
+    {
+      if (p_Status == "??" ||
+          p_Status.find('A') != Util::String::npos) {
+        p_Info.added++;
+        return;
+      }
+
+      if (p_Status.find('D') != Util::String::npos) {
+        p_Info.deleted++;
+        return;
+      }
+
+      if (p_Status.find('M') != Util::String::npos ||
+          p_Status.find('R') != Util::String::npos ||
+          p_Status.find('U') != Util::String::npos) {
+        p_Info.modified++;
+      }
+    }
+
+    static StatusBarGitInfo refresh_project_git_status()
+    {
+      StatusBarGitInfo l_Info;
       const Util::String l_ProjectRoot = Util::get_project().rootPath;
       if (l_ProjectRoot.empty()) {
-        return "";
+        return l_Info;
       }
 
       const Util::String l_Command =
           Util::StringBuilder()
               .append("git -C ")
               .append(quote_command_argument(l_ProjectRoot))
-              .append(" status --short --branch")
+              .append(" status --short --branch -- ")
+              .append(
+                  quote_command_argument(get_project_data_pathspec()))
               .get();
       const Util::String l_Output = run_status_command(l_Command);
       if (l_Output.empty()) {
-        return "";
+        return l_Info;
       }
 
       size_t l_LineStart = 0;
       bool l_ReadBranch = false;
       Util::String l_Branch = "";
-      uint32_t l_ChangedFiles = 0;
 
       while (l_LineStart < l_Output.size()) {
         size_t l_LineEnd = l_Output.find('\n', l_LineStart);
@@ -235,7 +293,7 @@ namespace Low {
             l_Branch = trim_status_text(l_Branch);
             l_ReadBranch = true;
           } else {
-            l_ChangedFiles++;
+            count_status_bar_git_change(l_Line.substr(0, 2), l_Info);
           }
         }
 
@@ -243,26 +301,19 @@ namespace Low {
       }
 
       if (l_Branch.empty()) {
-        return "";
+        return l_Info;
       }
 
-      Util::String l_Status = ICON_CI_GIT_BRANCH " ";
-      l_Status += l_Branch;
-      /*
-      if (l_ChangedFiles > 0) {
-        l_Status += " +";
-        l_Status += LOW_TO_STRING(l_ChangedFiles);
-      }
-      */
+      l_Info.branch = l_Branch;
 
-      return l_Status;
+      return l_Info;
     }
 
-    static Util::String get_project_git_status(float p_Delta)
+    static StatusBarGitInfo get_project_git_status(float p_Delta)
     {
       static float l_RefreshTimer = 10.0f;
-      static Util::String l_CachedStatus = "";
-      static std::future<Util::String> l_PendingRefresh;
+      static StatusBarGitInfo l_CachedStatus;
+      static std::future<StatusBarGitInfo> l_PendingRefresh;
 
       if (l_PendingRefresh.valid() &&
           l_PendingRefresh.wait_for(std::chrono::seconds(0)) ==
@@ -936,13 +987,71 @@ namespace Low {
                     "%5.1f ms  %4.0f FPS", l_DisplayedFrameMs,
                     l_DisplayedFps);
 
-      Util::String l_Text = get_project_git_status(p_Delta);
-      if (!l_Text.empty()) {
-        l_Text += "    ";
+      return l_FrameText;
+    }
+
+    static void open_status_bar_version_control_widget()
+    {
+      auto l_It = g_Widgets.find(Util::String("Version control"));
+      if (l_It == g_Widgets.end()) {
+        return;
       }
 
-      l_Text += l_FrameText;
-      return l_Text;
+      l_It->second.open = true;
+      save_user_settings();
+    }
+
+    static void
+    render_status_bar_git_segment(const StatusBarGitInfo &p_Info)
+    {
+      if (p_Info.branch.empty()) {
+        return;
+      }
+
+      ImGui::BeginGroup();
+
+      ImGui::PushStyleColor(
+          ImGuiCol_Text,
+          color_to_imvec4(theme_get_current().subtext));
+      ImGui::Text(ICON_CI_GIT_BRANCH " %s", p_Info.branch.c_str());
+      ImGui::PopStyleColor();
+
+      if (p_Info.modified > 0) {
+        ImGui::SameLine(0.0f, 8.0f);
+        ImGui::PushStyleColor(
+            ImGuiCol_Text,
+            color_to_imvec4(theme_get_current().warning));
+        ImGui::Text(ICON_LC_FILE_PEN " %u", p_Info.modified);
+        ImGui::PopStyleColor();
+      }
+
+      if (p_Info.added > 0) {
+        ImGui::SameLine(0.0f, 8.0f);
+        ImGui::PushStyleColor(
+            ImGuiCol_Text, color_to_imvec4(theme_get_current().add));
+        ImGui::Text(ICON_LC_FILE_PLUS " %u", p_Info.added);
+        ImGui::PopStyleColor();
+      }
+
+      if (p_Info.deleted > 0) {
+        ImGui::SameLine(0.0f, 8.0f);
+        ImGui::PushStyleColor(
+            ImGuiCol_Text,
+            color_to_imvec4(theme_get_current().remove));
+        ImGui::Text(ICON_LC_FILE_MINUS " %u", p_Info.deleted);
+        ImGui::PopStyleColor();
+      }
+
+      ImGui::EndGroup();
+
+      if (ImGui::IsItemHovered()) {
+        ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+        ImGui::SetTooltip("Open version control");
+      }
+
+      if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+        open_status_bar_version_control_widget();
+      }
     }
 
     static bool should_show_status_bar_spinner()
@@ -1041,10 +1150,23 @@ namespace Low {
         ImGui::TextUnformatted(l_ContextText.c_str());
         ImGui::PopStyleColor();
 
+        const StatusBarGitInfo l_GitInfo =
+            get_project_git_status(p_Delta);
         const Util::String l_SystemText =
             build_status_bar_system_text(p_Delta);
         const Util::String l_JobText = build_status_bar_job_text();
         const bool l_ShowSpinner = should_show_status_bar_spinner();
+        const float l_GitWidth =
+            l_GitInfo.branch.empty()
+                ? 0.0f
+                : ImGui::CalcTextSize(
+                      (Util::String(ICON_CI_GIT_BRANCH " ") +
+                       l_GitInfo.branch)
+                          .c_str())
+                          .x +
+                      (l_GitInfo.modified > 0 ? 42.0f : 0.0f) +
+                      (l_GitInfo.added > 0 ? 42.0f : 0.0f) +
+                      (l_GitInfo.deleted > 0 ? 42.0f : 0.0f) + 20.0f;
         const float l_SystemWidth =
             ImGui::CalcTextSize(l_SystemText.c_str()).x;
         const float l_JobWidth =
@@ -1052,8 +1174,9 @@ namespace Low {
                           : 0.0f;
         const float l_SpinnerWidth = l_ShowSpinner ? 18.0f : 0.0f;
         const float l_SeparatorWidth = l_ShowSpinner ? 16.0f : 0.0f;
-        const float l_RightWidth = l_SystemWidth + l_SpinnerWidth +
-                                   l_JobWidth + l_SeparatorWidth;
+        const float l_RightWidth = l_GitWidth + l_SystemWidth +
+                                   l_SpinnerWidth + l_JobWidth +
+                                   l_SeparatorWidth;
         const float l_RightPadding = 12.0f;
         const float l_RightX = ImGui::GetWindowContentRegionMax().x -
                                l_RightWidth - l_RightPadding;
@@ -1106,6 +1229,11 @@ namespace Low {
           ImGui::SameLine(0.0f, 8.0f);
           Gui::VerticalSeparator(3.0f);
           ImGui::SameLine(0.0f, 8.0f);
+        }
+
+        render_status_bar_git_segment(l_GitInfo);
+        if (!l_GitInfo.branch.empty()) {
+          ImGui::SameLine(0.0f, 12.0f);
         }
 
         ImGui::PushStyleColor(
@@ -1220,6 +1348,8 @@ namespace Low {
                              new VersionControlWidget, false);
 
       register_widget("Debug/Jobs", new JobWidget(), false);
+      register_widget("Debug/Renderer Debug",
+                      new RendererDebugWidget(), false);
 
       for (auto &it : get_type_metadata()) {
         if (it.second.editor.manager) {
