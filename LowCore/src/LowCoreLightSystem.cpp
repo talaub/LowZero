@@ -52,6 +52,7 @@ namespace Low {
             if (!i_PointLight.get_renderer_point_light().is_alive()) {
               Renderer::PointLight i_Renderer =
                   Renderer::PointLight::make(
+                      i_PointLight.get_entity().get_name(),
                       Renderer::get_global_renderscene());
               i_PointLight.set_renderer_point_light(i_Renderer);
             }

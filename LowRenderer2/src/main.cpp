@@ -315,6 +315,7 @@ void init()
 
     g_RenderScene = Low::Renderer::RenderScene::make("Default");
 
+    #if 0
     if (true) {
       g_PointLight = Low::Renderer::PointLight::make(g_RenderScene);
       g_PointLight.set_world_position(0.0f, 1.0f, -10.0f);
@@ -323,6 +324,7 @@ void init()
       Low::Math::ColorRGB l_Color(1.0f, 1.0f, 1.0f);
       g_PointLight.set_color(l_Color);
     }
+    #endif
 
     Low::Renderer::MaterialTypes &l_MaterialTypes =
         Low::Renderer::get_material_types();

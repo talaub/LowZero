@@ -473,6 +473,8 @@ types:
         return_type: PointLight
         return_handle: true
         parameters:
+          - name: name
+            type: Util::Name
           - name: renderScene
             type: Low::Renderer::RenderScene
             handle: true

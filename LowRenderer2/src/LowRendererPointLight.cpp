@@ -378,6 +378,13 @@ namespace Low {
         l_FunctionInfo.handleType = PointLight::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Name);
+          l_ParameterInfo.type = Low::Util::RTTI::PropertyType::NAME;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_RenderScene);
           l_ParameterInfo.type =
               Low::Util::RTTI::PropertyType::HANDLE;
@@ -919,11 +926,12 @@ namespace Low {
     }
 
     PointLight
-    PointLight::make(Low::Renderer::RenderScene p_RenderScene)
+    PointLight::make(Util::Name p_Name,
+                     Low::Renderer::RenderScene p_RenderScene)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
 
-      PointLight l_PointLight = PointLight::make(N(PLight));
+      PointLight l_PointLight = PointLight::make(p_Name);
 
       l_PointLight.set_render_scene_handle(p_RenderScene.get_id());
 

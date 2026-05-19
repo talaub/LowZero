@@ -176,7 +176,8 @@ namespace Low {
       void set_name(Low::Util::Name p_Value);
 
       static PointLight
-      make(Low::Renderer::RenderScene p_RenderScene);
+      make(Util::Name p_Name,
+           Low::Renderer::RenderScene p_RenderScene);
       static bool get_page_for_index(const u32 p_Index,
                                      u32 &p_PageIndex,
                                      u32 &p_SlotIndex);

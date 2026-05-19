@@ -725,20 +725,6 @@ namespace Low {
           render_menu_entry(*it);
         }
 
-        static bool show_metrics = false;
-        static bool show_id_stack = false;
-        static bool show_debug_log = false;
-
-        if (ImGui::BeginMenu("Tools")) {
-          ImGui::MenuItem("ImGui Metrics/Debugger", nullptr,
-                          &show_metrics);
-          ImGui::MenuItem("ImGui ID Stack Tool", nullptr,
-                          &show_id_stack);
-          ImGui::MenuItem("ImGui Debug Log", nullptr,
-                          &show_debug_log);
-          ImGui::EndMenu();
-        }
-
         Util::String l_MinorVersion = LOW_VERSION_MINOR;
         const Util::String l_DevSuffix = "-DEV";
         const bool l_IsDevVersion =
@@ -842,13 +828,6 @@ namespace Low {
                                  l_Viewport->WorkPos.x));
         ImGui::EndMainMenuBar();
 
-        if (show_metrics)
-          ImGui::ShowMetricsWindow(
-              &show_metrics); // main “widget debugger”
-        if (show_id_stack)
-          ImGui::ShowIDStackToolWindow(&show_id_stack);
-        if (show_debug_log)
-          ImGui::ShowDebugLogWindow(&show_debug_log);
       }
 
       if (l_CreateScene) {
@@ -1343,8 +1322,9 @@ namespace Low {
       register_editor_widget("Appearance", new AppearanceWidget,
                              false, false);
       g_ScriptWidget = new ScriptWidget;
-      register_editor_widget("Code Editor", g_ScriptWidget, false);
-      register_editor_widget("Version control",
+      register_editor_widget("Tools/Code Editor", g_ScriptWidget,
+                             false);
+      register_editor_widget("Tools/Version control",
                              new VersionControlWidget, false);
 
       register_widget("Debug/Jobs", new JobWidget(), false);
