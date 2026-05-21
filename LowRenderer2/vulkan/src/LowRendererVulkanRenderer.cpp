@@ -177,6 +177,13 @@ namespace Low {
             Convert::front_face(p_Config.frontFace));
         l_Builder.set_multismapling_none();
 
+        if (p_PipelineLayout == g_Pipelines.shadowPipelineLayout) {
+          l_Builder.rasterizer.depthBiasEnable = VK_TRUE;
+          l_Builder.rasterizer.depthBiasConstantFactor = 1.25f;
+          l_Builder.rasterizer.depthBiasClamp = 0.0f;
+          l_Builder.rasterizer.depthBiasSlopeFactor = 1.75f;
+        }
+
         if (p_Config.alphaBlending) {
           l_Builder.set_blending_alpha();
         } else {
@@ -958,9 +965,9 @@ namespace Low {
           const Math::Vector3 l_CamUp =
               glm::cross(l_CamRight, l_CamDir);
 
-          const float l_NearPlane = 1.0f;
+          const float l_NearPlane = 0.5f;
           const float l_FarPlane = 100.0f;
-          const float l_Lambda = 0.75f;
+          const float l_Lambda = 0.5f;
 
           float l_CascadeSplits[SHADOW_CSM_CASCADE_COUNT];
           float l_CascadeBegins[SHADOW_CSM_CASCADE_COUNT];
@@ -989,9 +996,19 @@ namespace Low {
               l_CascadeSplits[0], l_CascadeSplits[1],
               l_CascadeSplits[2], l_CascadeSplits[3]};
 
+          constexpr float l_CascadeBlendRange = 8.0f;
+
           for (int i = 0; i < SHADOW_CSM_CASCADE_COUNT; ++i) {
             float l_Near = l_CascadeBegins[i];
             float l_Far = l_CascadeSplits[i];
+            if (i > 0) {
+              l_Near = glm::max(l_NearPlane,
+                                l_Near - l_CascadeBlendRange);
+            }
+            if (i + 1 < SHADOW_CSM_CASCADE_COUNT) {
+              l_Far = glm::min(l_FarPlane,
+                               l_Far + l_CascadeBlendRange);
+            }
 
             float l_HalfH = tanf(l_CamFovY * 0.5f);
             float l_HalfW = l_HalfH * l_Aspect;
@@ -1048,6 +1065,15 @@ namespace Low {
             float l_ZPad = 50.0f;
             l_MinZ -= l_ZPad;
             l_MaxZ += l_ZPad;
+
+            const float l_TexelSizeX =
+                (l_MaxX - l_MinX) / (float)SHADOW_TILE_SIZE_CSM;
+            const float l_TexelSizeY =
+                (l_MaxY - l_MinY) / (float)SHADOW_TILE_SIZE_CSM;
+            l_MinX = floorf(l_MinX / l_TexelSizeX) * l_TexelSizeX;
+            l_MaxX = ceilf(l_MaxX / l_TexelSizeX) * l_TexelSizeX;
+            l_MinY = floorf(l_MinY / l_TexelSizeY) * l_TexelSizeY;
+            l_MaxY = ceilf(l_MaxY / l_TexelSizeY) * l_TexelSizeY;
 
             const float l_LightNear = glm::max(0.1f, -l_MaxZ);
             const float l_LightFar =
@@ -2037,11 +2063,11 @@ namespace Low {
               glm::radians(p_RenderView.get_camera_fov()),
               ((float)p_RenderView.get_dimensions().x) /
                   ((float)p_RenderView.get_dimensions().y),
-              1.0f, 100.0f);
+              0.1f, 100.0f);
 
           l_FrameData.projectionMatrix[1][1] *= -1.0f;
 
-          l_FrameData.nearFarPlane.x = 1.0f;
+          l_FrameData.nearFarPlane.x = 0.1f;
           l_FrameData.nearFarPlane.y = 100.0f;
 
           l_FrameData.viewMatrix =

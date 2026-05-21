@@ -1709,6 +1709,10 @@ namespace Low {
               ImageFormat::DEPTH;
           l_Handle.get_shadow_pipeline_config().depthTest = true;
           l_Handle.get_shadow_pipeline_config().alphaBlending = false;
+          l_Handle.get_shadow_pipeline_config().cullMode =
+              GraphicsPipelineCullMode::NONE;
+          l_Handle.get_shadow_pipeline_config().frontFace =
+              GraphicsPipelineFrontFace::COUNTER_CLOCKWISE;
         }
       } else if (p_Family == MaterialTypeFamily::UI) {
         l_Handle.allows_picking(false);
