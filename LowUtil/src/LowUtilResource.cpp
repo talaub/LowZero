@@ -233,6 +233,40 @@ namespace Low {
         }
       }
 
+      static uint32_t
+      parse_bone_hierarchy(const aiNode *p_AiNode, Mesh &p_Mesh,
+                           int32_t p_ParentIndex,
+                           const Math::Matrix4x4 &p_ParentTransform)
+      {
+        const Math::Matrix4x4 l_LocalTransform =
+            Assimp2Glm(p_AiNode->mTransformation);
+
+        BoneHierarchyNode l_Node;
+        l_Node.name = LOW_NAME(p_AiNode->mName.C_Str());
+        l_Node.parentIndex = p_ParentIndex;
+        l_Node.localTransform = l_LocalTransform;
+        l_Node.globalTransform = p_ParentTransform * l_LocalTransform;
+        l_Node.boneIndex = LOW_UINT32_MAX;
+
+        auto l_BoneIt = p_Mesh.bones.find(l_Node.name);
+        if (l_BoneIt != p_Mesh.bones.end()) {
+          l_Node.boneIndex = l_BoneIt->second.index;
+        }
+
+        const uint32_t l_NodeIndex =
+            static_cast<uint32_t>(p_Mesh.boneHierarchy.size());
+        p_Mesh.boneHierarchy.push_back(l_Node);
+
+        for (uint32_t i = 0u; i < p_AiNode->mNumChildren; ++i) {
+          parse_bone_hierarchy(
+              p_AiNode->mChildren[i], p_Mesh,
+              static_cast<int32_t>(l_NodeIndex),
+              p_Mesh.boneHierarchy[l_NodeIndex].globalTransform);
+        }
+
+        return l_NodeIndex;
+      }
+
       static void
       parse_animation_channel(const aiNodeAnim *p_NodeAnim,
                               AnimationChannel &p_Channel)
@@ -314,14 +348,46 @@ namespace Low {
         }
       }
 
-      void load_mesh(String p_FilePath, Mesh &p_Mesh)
+      static void reset_mesh(Mesh &p_Mesh)
       {
-
         p_Mesh.submeshes.clear();
         p_Mesh.bones.clear();
+        p_Mesh.boneHierarchy.clear();
         p_Mesh.animations.clear();
+        p_Mesh.rootNode = Node();
+        p_Mesh.rootBoneHierarchyNode = LOW_UINT32_MAX;
         p_Mesh.boneCount = 0;
+      }
 
+      void load_mesh_from_scene(const aiScene *p_AiScene, Mesh &p_Mesh)
+      {
+        reset_mesh(p_Mesh);
+
+        LOW_ASSERT(p_AiScene, "Cannot load mesh from null scene");
+        LOW_ASSERT(p_AiScene->mRootNode,
+                   "Cannot load mesh from scene without root node");
+        if (!p_AiScene || !p_AiScene->mRootNode) {
+          return;
+        }
+
+        const aiNode *l_RootNode = p_AiScene->mRootNode;
+
+        Math::Matrix4x4 l_Transformation = Math::Matrix4x4(1.0);
+
+        parse_submesh(p_AiScene, l_RootNode, p_Mesh, l_Transformation,
+                      p_Mesh.rootNode);
+
+        p_Mesh.rootBoneHierarchyNode =
+            parse_bone_hierarchy(l_RootNode, p_Mesh, -1,
+                                 Math::Matrix4x4(1.0));
+
+        if (p_AiScene->HasAnimations()) {
+          parse_animations(p_AiScene, p_Mesh);
+        }
+      }
+
+      void load_mesh(String p_FilePath, Mesh &p_Mesh)
+      {
         Assimp::Importer l_Importer;
 
         const aiScene *l_AiScene = l_Importer.ReadFile(
@@ -333,17 +399,8 @@ namespace Low {
 
         LOW_ASSERT(l_AiScene, p_FilePath.c_str());
 
-        const aiNode *l_RootNode = l_AiScene->mRootNode;
-
-        p_Mesh.boneCount = 0;
-
-        Math::Matrix4x4 l_Transformation = Math::Matrix4x4(1.0);
-
-        parse_submesh(l_AiScene, l_RootNode, p_Mesh, l_Transformation,
-                      p_Mesh.rootNode);
-
-        if (l_AiScene->HasAnimations()) {
-          parse_animations(l_AiScene, p_Mesh);
+        if (l_AiScene) {
+          load_mesh_from_scene(l_AiScene, p_Mesh);
         }
 
         l_Importer.FreeScene();

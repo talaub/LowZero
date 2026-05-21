@@ -280,6 +280,87 @@ template <> struct Converter<Math::UVector2, void>
   }
 };
 
+template <> struct Converter<Math::Matrix4x4, void>
+{
+  static Node encode(const Math::Matrix4x4 &v)
+  {
+    Node n;
+
+    for (u32 row = 0; row < 4; ++row) {
+      Node l_Row;
+      for (u32 column = 0; column < 4; ++column) {
+        l_Row.push_back(v[column][row]);
+      }
+      n.push_back(l_Row);
+    }
+
+    return n;
+  }
+
+  static bool decode(const Node &n, Math::Matrix4x4 &out)
+  {
+    if (n.is_seq()) {
+      const Node::Seq *l_Sequence = n.as_seq();
+
+      if (l_Sequence->size() == 4) {
+        for (u32 row = 0; row < 4; ++row) {
+          const Node &l_RowNode = n[row];
+          if (!l_RowNode.is_seq()) {
+            return false;
+          }
+
+          const Node::Seq *l_RowSequence = l_RowNode.as_seq();
+          if (l_RowSequence->size() != 4) {
+            return false;
+          }
+
+          for (u32 column = 0; column < 4; ++column) {
+            out[column][row] = l_RowNode[column].as<float>();
+          }
+        }
+
+        return true;
+      }
+
+      if (l_Sequence->size() == 16) {
+        for (u32 row = 0; row < 4; ++row) {
+          for (u32 column = 0; column < 4; ++column) {
+            out[column][row] = n[row * 4 + column].as<float>();
+          }
+        }
+
+        return true;
+      }
+    } else if (n.is_dict()) {
+      const char *l_RowNames[4] = {"row0", "row1", "row2", "row3"};
+
+      for (u32 row = 0; row < 4; ++row) {
+        if (!n.find(l_RowNames[row])) {
+          return false;
+        }
+
+        const Node &l_RowNode = n[l_RowNames[row]];
+        if (!l_RowNode.is_seq()) {
+          return false;
+        }
+
+        const Node::Seq *l_RowSequence = l_RowNode.as_seq();
+        if (l_RowSequence->size() != 4) {
+          return false;
+        }
+
+        for (u32 column = 0; column < 4; ++column) {
+          out[column][row] = l_RowNode[column].as<float>();
+        }
+      }
+
+      return true;
+    }
+
+    return false;
+  }
+};
+
 static void encode_scalar(const Yaml::Node &v, Node &out)
 {
   using YAML::BadConversion;

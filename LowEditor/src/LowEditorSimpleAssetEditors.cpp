@@ -10,6 +10,7 @@
 #include "LowMath.h"
 #include "LowRendererMaterialType.h"
 #include "LowRendererMesh.h"
+#include "LowRendererMeshType.h"
 #include "LowRendererTexture.h"
 #include "LowRendererFont.h"
 #include "LowRendererTextureState.h"
@@ -119,6 +120,14 @@ namespace Low {
       show_line("ID", Util::hash_to_string(
                           l_Mesh.get_resource().get_mesh_id()));
 
+      show_line("Type", Renderer::MeshTypeEnumHelper::entry_name(
+                            l_Mesh.get_type())
+                            .c_str());
+
+      if (l_Mesh.get_type() == Renderer::MeshType::SKELETAL) {
+        show_editor(N(skeleton));
+      }
+
       {
         Util::StringBuilder l_Line;
         l_Line.append(l_Mesh.get_submesh_count());
@@ -127,6 +136,12 @@ namespace Low {
 
       show_line("Source file",
                 l_Mesh.get_resource().get_source_file());
+
+      ImGui::Dummy(ImVec2{0, 5});
+
+      if (Gui::SaveButton()) {
+        Util::AssetManager::save(l_Mesh);
+      }
 
       const ImVec2 l_Avail = ImGui::GetContentRegionAvail();
 

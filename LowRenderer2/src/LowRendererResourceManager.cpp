@@ -8,6 +8,7 @@
 #include "LowRendererMaterialType.h"
 #include "LowRendererMeshResourceState.h"
 #include "LowRendererMeshState.h"
+#include "LowRendererMeshType.h"
 #include "LowRendererTextureResource.h"
 #include "LowRendererTextureState.h"
 #include "LowRendererVulkanRenderer.h"
@@ -756,6 +757,15 @@ namespace Low {
               l_MeshGeometry.set_bounding_sphere(
                   p_Result.bounding_sphere);
 
+              Skeleton l_Skeleton = Util::find_handle_by_unique_id(
+                  p_Result.skeleton_id);
+              l_Mesh.set_skeleton(l_Skeleton);
+              if (!l_Skeleton.is_alive() &&
+                  p_Result.skeleton_id != 0) {
+                Util::resolve_handle_reference_by_unique_id(
+                    l_Mesh, N(skeleton), p_Result.skeleton_id);
+              }
+
               u32 l_SubmeshCount = 0u;
               for (auto &i_Submesh : p_Result.mesh.submeshes) {
                 for (auto &i_MeshInfo : i_Submesh.meshInfos) {
@@ -769,6 +779,12 @@ namespace Low {
                       MeshState::MEMORYLOADED);
                   i_SubmeshGeometry.set_vertices(i_MeshInfo.vertices);
                   i_SubmeshGeometry.set_indices(i_MeshInfo.indices);
+                  i_SubmeshGeometry.set_transform(
+                      i_Submesh.transform);
+                  i_SubmeshGeometry.set_parent_transform(
+                      i_Submesh.parentTransform);
+                  i_SubmeshGeometry.set_local_transform(
+                      i_Submesh.localTransform);
 
                   auto i_AabbIt =
                       p_Result.submesh_aabbs.find(i_MeshInfo.name);
@@ -835,6 +851,10 @@ namespace Low {
 
           i_GpuSubmesh.set_bounding_sphere(it->get_bounding_sphere());
           i_GpuSubmesh.set_aabb(it->get_aabb());
+          i_GpuSubmesh.set_transform(it->get_transform());
+          i_GpuSubmesh.set_parent_transform(
+              it->get_parent_transform());
+          i_GpuSubmesh.set_local_transform(it->get_local_transform());
 
           l_GpuMesh.get_submeshes().push_back(i_GpuSubmesh);
 
@@ -1717,6 +1737,16 @@ namespace Low {
               Util::hash_to_string(p_Config.meshId) + ".glb";
 
           p_Config.path = p_Path;
+
+          p_Config.type = MeshType::STATIC;
+
+          if (p_Node["type"]) {
+            const Util::Name l_TypeString =
+                p_Node["type"].as<Util::Name>();
+
+            p_Config.type =
+                MeshTypeEnumHelper::entry_value(l_TypeString);
+          }
           return true;
         }
         LOW_ASSERT(false, "Unsupported mesh resource version.");
@@ -1765,6 +1795,38 @@ namespace Low {
           return true;
         }
         LOW_ASSERT(false, "Unsupported texture resource version.");
+        return true;
+      }
+
+      bool
+      parse_skeleton_resource_config(Util::String p_Path,
+                                     Util::Serial::Node &p_Node,
+                                     SkeletonResourceConfig &p_Config)
+      {
+        LOWR_ASSERT_RETURN(p_Node["version"],
+                           "Could not find version");
+        const u32 l_Version = p_Node["version"].as<u32>();
+
+        if (l_Version == 1) {
+          LOWR_ASSERT_RETURN(p_Node["skeleton_id"],
+                             "Could not find skeleton id");
+          p_Config.skeleton_id =
+              p_Node["skeleton_id"].as<Util::U64Id>().val;
+
+          p_Config.data_path =
+              Util::get_project().assetCachePath + "/" +
+              Util::hash_to_string(p_Config.skeleton_id) +
+              ".skeleton.yaml";
+
+          p_Config.path = Util::PathHelper::normalize(p_Path);
+          p_Config.bone_count = p_Node["bone_count"].as<i32>();
+
+          p_Config.name = LOW_NAME(
+              Util::PathHelper::get_base_name_no_ext(p_Path).c_str());
+
+          return true;
+        }
+        LOW_ASSERT(false, "Unsupported material resource version.");
         return true;
       }
 

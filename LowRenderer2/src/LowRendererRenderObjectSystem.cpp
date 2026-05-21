@@ -319,11 +319,10 @@ namespace Low {
               i_RenderScene.insert_draw_command(i_DrawCommand);
             }
 
-            // TODO: Take submesh transform into account
-            // Submesh can be fetched from the meshinfo of the draw
-            // command
-            i_DrawCommand.set_world_transform(
-                i_RenderObject.get_world_transform());
+            Math::Matrix4x4 i_WorldTransform =
+                i_RenderObject.get_world_transform() *
+                i_DrawCommand.get_submesh().get_transform();
+            i_DrawCommand.set_world_transform(i_WorldTransform);
 
             i_DrawCommand.set_object_id(
                 i_RenderObject.get_object_id());

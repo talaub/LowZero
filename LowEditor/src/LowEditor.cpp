@@ -975,6 +975,8 @@ namespace Low {
         g_AssetTypeColor[AssetType::File] = color_from_hex("#b2b2b2");
         g_AssetTypeColor[AssetType::UiWidget] =
             color_from_hex("#4bb3bb");
+        g_AssetTypeColor[AssetType::Skeleton] =
+            color_from_hex("#212fac");
 
         g_AssetTypeName[AssetType::File] = "File";
         g_AssetTypeName[AssetType::Texture] = "Texture";
@@ -985,6 +987,7 @@ namespace Low {
         g_AssetTypeName[AssetType::Mesh] = "Mesh";
         g_AssetTypeName[AssetType::Model] = "Model";
         g_AssetTypeName[AssetType::UiWidget] = "UI-Widget";
+        g_AssetTypeName[AssetType::Skeleton] = "Skeleton";
 
         g_AssetTypeEditorImage[AssetType::File] =
             Renderer::EditorImage::find_by_name(N(filetype_file));
@@ -1117,8 +1120,7 @@ namespace Low {
       u32 l_Suffix = 1;
       u32 l_SuffixStart = p_Name.size();
 
-      while (l_SuffixStart > 0 &&
-             p_Name[l_SuffixStart - 1] >= '0' &&
+      while (l_SuffixStart > 0 && p_Name[l_SuffixStart - 1] >= '0' &&
              p_Name[l_SuffixStart - 1] <= '9') {
         l_SuffixStart--;
       }
@@ -1127,8 +1129,7 @@ namespace Low {
         l_BaseName = p_Name.substr(0, l_SuffixStart);
         l_Suffix = 0;
         for (u32 i = l_SuffixStart; i < p_Name.size(); ++i) {
-          l_Suffix =
-              (l_Suffix * 10) + (u32)(p_Name[i] - '0');
+          l_Suffix = (l_Suffix * 10) + (u32)(p_Name[i] - '0');
         }
       }
 

@@ -50,6 +50,8 @@
 #include "LowRendererBuffer.h"
 #include "LowRendererShaderSource.h"
 #include "LowRendererShaderVariant.h"
+#include "LowRendererSkeleton.h"
+#include "LowRendererSkeletonResource.h"
 
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
@@ -136,6 +138,8 @@ namespace Low {
     {
       Buffer::initialize();
       MaterialType::initialize();
+      SkeletonResource::initialize();
+      Skeleton::initialize();
       RenderScene::initialize();
       RenderView::initialize();
       RenderObject::initialize();
@@ -176,6 +180,8 @@ namespace Low {
 
     static void cleanup_types()
     {
+      SkeletonResource::cleanup();
+      Skeleton::cleanup();
       ShaderVariant::cleanup();
       ShaderSource::cleanup();
       SS2DDrawCommand::cleanup();
@@ -519,7 +525,9 @@ namespace Low {
           .add_asset_suffix(".meshresource.yaml");
       l_Builder.add_initialize_directory(Util::get_project().dataPath,
                                          true);
-      l_Builder.add_raw_suffix(".obj");
+      l_Builder.add_raw_suffix(".obj")
+          .add_raw_suffix(".glb")
+          .add_raw_suffix(".gltf");
       l_Builder
           .add_import_directory(Util::get_project().dataPath, true,
                                 true)
@@ -543,7 +551,19 @@ namespace Low {
                   Mesh::make_from_resource_config(i_ResourceConfig));
             }
           })
-          .no_saving()
+          .saver([](Util::Handle p_Handle) {
+            Mesh l_Mesh = p_Handle.get_id();
+            MeshResource l_Resource = l_Mesh.get_resource();
+            Util::Serial::Node l_Node = Util::Serial::load_yaml_file(
+                l_Resource.get_sidecar_path().c_str());
+            l_Node["skeleton"] = 0;
+            if (l_Mesh.get_skeleton().is_alive()) {
+              l_Node["skeleton"] =
+                  Util::U64Id{l_Mesh.get_skeleton().get_unique_id()};
+            }
+            Util::Serial::write_yaml_file(
+                l_Resource.get_sidecar_path().c_str(), l_Node);
+          })
           .importer([](const Util::String p_Path) -> Util::String {
             std::filesystem::path l_FilePath(p_Path.c_str());
             const Util::String l_Output =
@@ -759,7 +779,7 @@ namespace Low {
               LOWR_ASSERT_RETURN(
                   ResourceManager::parse_material_resource_config(
                       p_Path, l_ResourceNode, l_ResourceConfig),
-                  "Failed to parse texture resource config.");
+                  "Failed to parse material resource config.");
               Material l_ExistingMaterial =
                   ResourceManager::find_asset<Material>(
                       l_ResourceConfig.material_id);
@@ -1047,6 +1067,32 @@ namespace Low {
 
     static bool tick_thumbnail_creation(float p_Delta)
     {
+      auto calculate_sphere_fit_distance =
+          [](const Math::Sphere &p_Sphere,
+             const RenderView p_View) -> float {
+        const Math::UVector2 l_Dimensions = p_View.get_dimensions();
+        const float l_Aspect =
+            l_Dimensions.y > 0u
+                ? (float)l_Dimensions.x / (float)l_Dimensions.y
+                : 1.0f;
+        const float l_VerticalFov =
+            glm::radians(p_View.get_camera_fov());
+        const float l_VerticalHalfTan =
+            glm::tan(l_VerticalFov * 0.5f);
+        const float l_HorizontalHalfTan =
+            l_VerticalHalfTan * l_Aspect;
+        const float l_Radius = glm::max(p_Sphere.radius, 0.05f);
+        constexpr float l_Margin = 1.25f;
+
+        const float l_VerticalDistance =
+            l_Radius / glm::max(l_VerticalHalfTan, 0.001f);
+        const float l_HorizontalDistance =
+            l_Radius / glm::max(l_HorizontalHalfTan, 0.001f);
+
+        return glm::max(l_VerticalDistance, l_HorizontalDistance) *
+               l_Margin;
+      };
+
       for (auto it = g_ThumbnailCreationSchedules.begin();
            it != g_ThumbnailCreationSchedules.end();) {
         if (it->state == ThumbnailCreationState::SCHEDULED) {
@@ -1074,7 +1120,8 @@ namespace Low {
           it->view.set_camera_direction(i_Direction);
           it->view.set_camera_position(
               i_Sphere.position -
-              (i_Direction * (i_Sphere.radius + 8.0f)));
+              (i_Direction *
+               calculate_sphere_fit_distance(i_Sphere, it->view)));
 
           TextureExport i_Export = TextureExport::make(N(Thumbnail));
           i_Export.set_path(it->path);

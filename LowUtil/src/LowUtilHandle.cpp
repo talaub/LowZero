@@ -317,7 +317,8 @@ namespace Low {
         return s_Buffer;
       }
 
-      TypeIdentifier l_Identifier = Handle::identifier(p_Handle.get_type());
+      TypeIdentifier l_Identifier =
+          Handle::identifier(p_Handle.get_type());
       snprintf(s_Buffer, sizeof(s_Buffer), "%s:%s",
                Name::debug_string(l_Identifier.module.m_Index),
                Name::debug_string(l_Identifier.name.m_Index));
@@ -325,7 +326,8 @@ namespace Low {
       return s_Buffer;
     }
 
-    static const char *debug_liveness_string_for_handle(Handle p_Handle)
+    static const char *
+    debug_liveness_string_for_handle(Handle p_Handle)
     {
       if (p_Handle.m_Id == Handle::DEAD) {
         return "dead";
@@ -375,8 +377,8 @@ namespace Low {
         return "<name property is not a Name>";
       }
 
-      const Name *l_Name =
-          static_cast<const Name *>(l_PropertyInfo.get_return(p_Handle));
+      const Name *l_Name = static_cast<const Name *>(
+          l_PropertyInfo.get_return(p_Handle));
       if (!l_Name) {
         return "<null name>";
       }

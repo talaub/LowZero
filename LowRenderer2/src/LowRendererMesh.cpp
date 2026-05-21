@@ -66,6 +66,12 @@ namespace Low {
                                  Low::Renderer::GpuMesh))
           Low::Renderer::GpuMesh();
       ACCESSOR_TYPE_SOA(l_Handle, Mesh, unloadable, bool) = false;
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Mesh, type,
+                                 Low::Renderer::MeshType))
+          Low::Renderer::MeshType();
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Mesh, skeleton,
+                                 Low::Renderer::Skeleton))
+          Low::Renderer::Skeleton();
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Mesh, references,
                                  Low::Util::Set<u64>))
           Low::Util::Set<u64>();
@@ -92,6 +98,8 @@ namespace Low {
 
       ResourceManager::register_asset(l_Handle.get_unique_id(),
                                       l_Handle);
+
+      l_Handle.set_type(MeshType::STATIC);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -367,6 +375,65 @@ namespace Low {
         // End property: submesh_count
       }
       {
+        // Property: type
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(type);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(Mesh::Data, type);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
+        l_PropertyInfo.handleType =
+            Low::Renderer::MeshTypeEnumHelper::get_enum_id();
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          Mesh l_Handle = p_Handle.get_id();
+          l_Handle.get_type();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, type,
+                                            Low::Renderer::MeshType);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          Mesh l_Handle = p_Handle.get_id();
+          l_Handle.set_type(*(Low::Renderer::MeshType *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Mesh l_Handle = p_Handle.get_id();
+          *((Low::Renderer::MeshType *)p_Data) = l_Handle.get_type();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: type
+      }
+      {
+        // Property: skeleton
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(skeleton);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(Mesh::Data, skeleton);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType =
+            Low::Renderer::Skeleton::IDENTIFIER;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          Mesh l_Handle = p_Handle.get_id();
+          l_Handle.get_skeleton();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, skeleton,
+                                            Low::Renderer::Skeleton);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          Mesh l_Handle = p_Handle.get_id();
+          l_Handle.set_skeleton(*(Low::Renderer::Skeleton *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Mesh l_Handle = p_Handle.get_id();
+          *((Low::Renderer::Skeleton *)p_Data) =
+              l_Handle.get_skeleton();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: skeleton
+      }
+      {
         // Property: references
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(references);
@@ -588,6 +655,10 @@ namespace Low {
       }
       l_Handle.set_unloadable(is_unloadable());
       l_Handle.set_submesh_count(get_submesh_count());
+      l_Handle.set_type(get_type());
+      if (get_skeleton().is_alive()) {
+        l_Handle.set_skeleton(get_skeleton());
+      }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
 
@@ -905,6 +976,65 @@ namespace Low {
       broadcast_observable(N(submesh_count));
     }
 
+    Low::Renderer::MeshType Mesh::get_type() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_type
+      // LOW_CODEGEN::END::CUSTOM:GETTER_type
+
+      return TYPE_SOA(Mesh, type, Low::Renderer::MeshType);
+    }
+    void Mesh::set_type(Low::Renderer::MeshType p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_type
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_type
+
+      // Set new value
+      TYPE_SOA(Mesh, type, Low::Renderer::MeshType) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_type
+      // LOW_CODEGEN::END::CUSTOM:SETTER_type
+
+      broadcast_observable(N(type));
+    }
+
+    Low::Renderer::Skeleton Mesh::get_skeleton() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_skeleton
+      // LOW_CODEGEN::END::CUSTOM:GETTER_skeleton
+
+      return TYPE_SOA(Mesh, skeleton, Low::Renderer::Skeleton);
+    }
+    void Mesh::set_skeleton(Low::Renderer::Skeleton p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_skeleton
+      if (get_skeleton() == p_Value) {
+        return;
+      }
+      if (get_skeleton().is_alive()) {
+        get_skeleton().dereference(get_id());
+      }
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_skeleton
+
+      // Set new value
+      TYPE_SOA(Mesh, skeleton, Low::Renderer::Skeleton) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_skeleton
+      if (p_Value.is_alive()) {
+        get_skeleton().reference(get_id());
+      }
+      // LOW_CODEGEN::END::CUSTOM:SETTER_skeleton
+
+      broadcast_observable(N(skeleton));
+    }
+
     Low::Util::Set<u64> &Mesh::get_references() const
     {
       _LOW_ASSERT(is_alive());
@@ -984,6 +1114,8 @@ namespace Low {
       l_Mesh.set_state(MeshState::UNLOADED);
 
       l_Mesh.set_submesh_count(p_Config.submeshCount);
+
+      l_Mesh.set_type(p_Config.type);
 
       ResourceManager::register_asset(l_Mesh.get_unique_id(), l_Mesh);
 

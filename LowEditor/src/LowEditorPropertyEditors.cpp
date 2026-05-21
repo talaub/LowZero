@@ -50,8 +50,8 @@ namespace Low {
           g_SelectedDirectoryPerType;
       Util::Map<AssetType, Util::String> g_SelectedAssetDirectory;
 
-      static bool asset_type_from_handle_type(
-          const uint16_t p_TypeId, AssetType &p_AssetType)
+      static bool asset_type_from_handle_type(const uint16_t p_TypeId,
+                                              AssetType &p_AssetType)
       {
         if (p_TypeId == Renderer::Mesh::type_id()) {
           p_AssetType = AssetType::Mesh;
@@ -84,9 +84,10 @@ namespace Low {
         return false;
       }
 
-      static Renderer::EditorImage get_editor_image_for_asset_handle(
-          const AssetType p_AssetType, const Util::Handle p_Handle,
-          bool &p_IsFallback)
+      static Renderer::EditorImage
+      get_editor_image_for_asset_handle(const AssetType p_AssetType,
+                                        const Util::Handle p_Handle,
+                                        bool &p_IsFallback)
       {
         Renderer::EditorImage l_EditorImage = Util::Handle::DEAD;
 
@@ -120,18 +121,20 @@ namespace Low {
           Renderer::ResourceManager::load_editor_image(l_EditorImage);
         }
 
-        p_IsFallback =
-            !l_EditorImage.is_alive() ||
-            l_EditorImage.get_state() != Renderer::TextureState::LOADED;
+        p_IsFallback = !l_EditorImage.is_alive() ||
+                       l_EditorImage.get_state() !=
+                           Renderer::TextureState::LOADED;
         if (p_IsFallback) {
-          l_EditorImage = get_editor_image_for_asset_type(p_AssetType);
+          l_EditorImage =
+              get_editor_image_for_asset_type(p_AssetType);
         }
 
         return l_EditorImage;
       }
 
-      static Util::String get_asset_path_for_handle(
-          const AssetType p_AssetType, const Util::Handle p_Handle)
+      static Util::String
+      get_asset_path_for_handle(const AssetType p_AssetType,
+                                const Util::Handle p_Handle)
       {
         switch (p_AssetType) {
         case AssetType::Mesh: {
@@ -166,7 +169,8 @@ namespace Low {
         }
         case AssetType::Model: {
           Renderer::Model l_Model = p_Handle.get_id();
-          if (l_Model.is_alive() && l_Model.get_resource().is_alive()) {
+          if (l_Model.is_alive() &&
+              l_Model.get_resource().is_alive()) {
             return l_Model.get_resource().get_path();
           }
           break;
@@ -190,12 +194,12 @@ namespace Low {
         return "";
       }
 
-      static Util::String get_asset_directory_for_handle(
-          const AssetType p_AssetType, const Util::Handle p_Handle)
+      static Util::String
+      get_asset_directory_for_handle(const AssetType p_AssetType,
+                                     const Util::Handle p_Handle)
       {
-        Util::String l_Path =
-            Util::PathHelper::normalize(get_asset_path_for_handle(
-                p_AssetType, p_Handle));
+        Util::String l_Path = Util::PathHelper::normalize(
+            get_asset_path_for_handle(p_AssetType, p_Handle));
 
         if (l_Path.empty()) {
           return "";
@@ -239,8 +243,9 @@ namespace Low {
                                                l_Prefix);
       }
 
-      static bool list_contains_string(const Util::List<Util::String> &p_List,
-                                       const Util::String &p_Value)
+      static bool
+      list_contains_string(const Util::List<Util::String> &p_List,
+                           const Util::String &p_Value)
       {
         for (u32 i = 0; i < p_List.size(); ++i) {
           if (p_List[i] == p_Value) {
@@ -309,7 +314,8 @@ namespace Low {
             p_Rounding);
 
         if (!l_EditorImage.is_alive() ||
-            l_EditorImage.get_state() != Renderer::TextureState::LOADED) {
+            l_EditorImage.get_state() !=
+                Renderer::TextureState::LOADED) {
           return;
         }
 
@@ -318,11 +324,11 @@ namespace Low {
           const float l_IconSize =
               LOW_MATH_MIN(l_Size.x, l_Size.y) * 0.66f;
           const ImVec2 l_IconMin =
-              p_Min + (l_Size - ImVec2(l_IconSize, l_IconSize)) * 0.5f;
+              p_Min +
+              (l_Size - ImVec2(l_IconSize, l_IconSize)) * 0.5f;
           p_DrawList->AddImage(
               l_EditorImage.get_gpu().get_imgui_texture_id(),
-              l_IconMin,
-              l_IconMin + ImVec2(l_IconSize, l_IconSize));
+              l_IconMin, l_IconMin + ImVec2(l_IconSize, l_IconSize));
         } else {
           p_DrawList->AddImageRounded(
               l_EditorImage.get_gpu().get_imgui_texture_id(), p_Min,
@@ -335,7 +341,8 @@ namespace Low {
           const Util::FileSystem::FileWatcher &p_FileWatcher,
           const AssetType p_AssetType, const bool p_Selected)
       {
-        Util::String l_DisplayName = p_FileWatcher.nameCleanPrettified;
+        Util::String l_DisplayName =
+            p_FileWatcher.nameCleanPrettified;
         if (l_DisplayName.empty()) {
           l_DisplayName = "Object";
         }
@@ -358,7 +365,7 @@ namespace Low {
         const Theme &l_Theme = theme_get_current();
 
         const ImU32 l_BackgroundColor =
-            p_Selected ? color_to_imcolor(l_Theme.headerActive)
+            p_Selected  ? color_to_imcolor(l_Theme.headerActive)
             : l_Hovered ? color_to_imcolor(l_Theme.headerHover)
                         : color_to_imcolor(l_Theme.input);
 
@@ -390,22 +397,22 @@ namespace Low {
 
         const Util::String l_TypeName = Util::StringHelper::to_upper(
             get_asset_type_name(p_AssetType));
-        ImVec4 l_TypeColor =
-            ImGui::GetStyleColorVec4(ImGuiCol_Text);
+        ImVec4 l_TypeColor = ImGui::GetStyleColorVec4(ImGuiCol_Text);
         l_TypeColor.w = 0.3f;
         ImGui::PushFont(Fonts::UI(14, Fonts::Weight::Light));
         l_DrawList->AddText(ImVec2(l_TextX, l_Pos.y + 31.0f),
-                            ImColor(l_TypeColor),
-                            l_TypeName.c_str());
+                            ImColor(l_TypeColor), l_TypeName.c_str());
         ImGui::PopFont();
 
         ImGui::PopID();
         return l_Clicked;
       }
 
-      static bool render_asset_selector_row(
-          const Util::Handle p_Handle, const Util::String &p_DisplayName,
-          const AssetType p_AssetType, const bool p_Selected)
+      static bool
+      render_asset_selector_row(const Util::Handle p_Handle,
+                                const Util::String &p_DisplayName,
+                                const AssetType p_AssetType,
+                                const bool p_Selected)
       {
         ImGui::PushID((void *)p_Handle.get_id());
 
@@ -425,7 +432,7 @@ namespace Low {
         const Theme &l_Theme = theme_get_current();
 
         const ImU32 l_BackgroundColor =
-            p_Selected ? color_to_imcolor(l_Theme.headerActive)
+            p_Selected  ? color_to_imcolor(l_Theme.headerActive)
             : l_Hovered ? color_to_imcolor(l_Theme.headerHover)
                         : color_to_imcolor(l_Theme.input);
 
@@ -443,8 +450,8 @@ namespace Low {
         const ImVec2 l_ThumbMax =
             l_ThumbMin + ImVec2(l_PreviewSize, l_PreviewSize);
         draw_asset_handle_thumbnail(l_DrawList, l_ThumbMin,
-                                    l_ThumbMax, p_AssetType,
-                                    p_Handle, 4.0f);
+                                    l_ThumbMax, p_AssetType, p_Handle,
+                                    4.0f);
 
         const float l_TextX = l_ThumbMax.x + 10.0f;
         const ImVec2 l_NamePos(l_TextX, l_Pos.y + 8.0f);
@@ -457,13 +464,11 @@ namespace Low {
 
         const Util::String l_TypeName = Util::StringHelper::to_upper(
             get_asset_type_name(p_AssetType));
-        ImVec4 l_TypeColor =
-            ImGui::GetStyleColorVec4(ImGuiCol_Text);
+        ImVec4 l_TypeColor = ImGui::GetStyleColorVec4(ImGuiCol_Text);
         l_TypeColor.w = 0.3f;
         ImGui::PushFont(Fonts::UI(14, Fonts::Weight::Light));
         l_DrawList->AddText(ImVec2(l_TextX, l_Pos.y + 31.0f),
-                            ImColor(l_TypeColor),
-                            l_TypeName.c_str());
+                            ImColor(l_TypeColor), l_TypeName.c_str());
         ImGui::PopFont();
 
         ImGui::PopID();
@@ -484,7 +489,8 @@ namespace Low {
         const float l_GrabWidth = 6.0f;
         const float l_Gap = 8.0f;
         const float l_LineThickness = 1.0f;
-        const float l_RowHeight = ASSET_SELECTOR_INLINE_HEIGHT + 10.0f;
+        const float l_RowHeight =
+            ASSET_SELECTOR_INLINE_HEIGHT + 10.0f;
 
         ImGui::PushID(p_Label.c_str());
 
@@ -505,15 +511,13 @@ namespace Low {
             l_RowTop.y + (l_RowHeight - l_TextH) * 0.5f;
         ImGui::RenderTextEllipsis(
             ImGui::GetWindowDrawList(), ImVec2(l_RowTop.x, l_LabelY),
-            ImVec2(l_RowTop.x + l_LabelW,
-                   l_RowTop.y + l_RowHeight),
+            ImVec2(l_RowTop.x + l_LabelW, l_RowTop.y + l_RowHeight),
             l_LabelW, p_Label.c_str(), nullptr, nullptr);
 
-        ImGui::SetCursorScreenPos(
-            ImVec2(l_RowTop.x + l_LabelW + l_Gap,
-                   l_RowTop.y +
-                       (l_RowHeight - ASSET_SELECTOR_INLINE_HEIGHT) *
-                           0.5f));
+        ImGui::SetCursorScreenPos(ImVec2(
+            l_RowTop.x + l_LabelW + l_Gap,
+            l_RowTop.y +
+                (l_RowHeight - ASSET_SELECTOR_INLINE_HEIGHT) * 0.5f));
         ImGui::SetNextItemWidth(l_EditorW);
         const bool l_Result = p_DrawEditor(l_EditorW);
 
@@ -564,217 +568,225 @@ namespace Low {
         return render_asset_selector_line(
             p_Label, [&p_Label, &p_TypeInfo, p_HandleId,
                       p_AssetType](float p_EditorWidth) {
-          ImVec2 l_Pos = ImGui::GetCursorScreenPos();
-          float l_ButtonWidth = 34.0f;
-          float l_FieldWidth = p_EditorWidth;
+              ImVec2 l_Pos = ImGui::GetCursorScreenPos();
+              float l_ButtonWidth = 34.0f;
+              float l_FieldWidth = p_EditorWidth;
 
-          bool l_Changed = false;
-          Util::Handle l_CurrentHandle = *p_HandleId;
-          Util::String l_PopupName =
-              Util::String("_choose_asset_element_") + p_Label;
+              bool l_Changed = false;
+              Util::Handle l_CurrentHandle = *p_HandleId;
+              Util::String l_PopupName =
+                  Util::String("_choose_asset_element_") + p_Label;
 
-          const char *l_DisplayName = "None";
-          Util::RTTI::PropertyInfo l_NameProperty;
-          bool l_HasNameProperty = false;
+              const char *l_DisplayName = "None";
+              Util::RTTI::PropertyInfo l_NameProperty;
+              bool l_HasNameProperty = false;
 
-          if (p_TypeInfo.properties.find(N(name)) !=
-              p_TypeInfo.properties.end()) {
-            l_NameProperty = p_TypeInfo.properties[N(name)];
+              if (p_TypeInfo.properties.find(N(name)) !=
+                  p_TypeInfo.properties.end()) {
+                l_NameProperty = p_TypeInfo.properties[N(name)];
 
-            if (p_TypeInfo.is_alive(l_CurrentHandle)) {
-              Util::Name l_Name;
-              l_NameProperty.get(l_CurrentHandle, &l_Name);
-              l_DisplayName = l_Name.c_str();
-            }
-            l_HasNameProperty = true;
-          }
-
-          const int l_NameLength = strlen(l_DisplayName);
-          ImVec2 l_CursorPos = ImGui::GetCursorScreenPos();
-          const float l_FieldHeight = ASSET_SELECTOR_INLINE_HEIGHT;
-          ImVec2 l_WidgetSize =
-              ImVec2(l_FieldWidth, l_FieldHeight);
-
-          ImDrawList *l_DrawList = ImGui::GetWindowDrawList();
-          const Theme &l_Theme = theme_get_current();
-          const float l_Rounding = 3.0f;
-          const ImVec2 l_FieldMax = l_CursorPos + l_WidgetSize;
-          const ImVec2 l_ButtonMin(l_FieldMax.x - l_ButtonWidth,
-                                   l_CursorPos.y);
-
-          l_DrawList->AddRectFilled(
-              l_CursorPos, l_FieldMax, color_to_imcolor(l_Theme.input),
-              l_Rounding);
-          l_DrawList->AddRect(l_CursorPos, l_FieldMax,
-                              color_to_imcolor(l_Theme.border),
-                              l_Rounding);
-          l_DrawList->AddRectFilled(
-              l_CursorPos, ImVec2(l_CursorPos.x + 3.0f, l_FieldMax.y),
-              color_to_imcolor(get_color_for_asset_type(p_AssetType)),
-              l_Rounding, ImDrawFlags_RoundCornersLeft);
-          l_DrawList->AddLine(
-              ImVec2(l_ButtonMin.x, l_CursorPos.y + 6.0f),
-              ImVec2(l_ButtonMin.x, l_FieldMax.y - 6.0f),
-              color_to_imcolor(l_Theme.button));
-
-          ImGui::InvisibleButton("##asset_handle_value",
-                                 ImVec2(l_FieldWidth, l_FieldHeight));
-          if (ImGui::IsItemClicked()) {
-            ImGui::OpenPopup(l_PopupName.c_str());
-          }
-
-          if (ImGui::BeginDragDropTarget()) {
-            if (const ImGuiPayload *l_Payload =
-                    ImGui::AcceptDragDropPayload("DG_HANDLE")) {
-              Util::Handle l_PayloadHandle =
-                  *(uint64_t *)l_Payload->Data;
-
-              if (p_TypeInfo.is_alive(l_PayloadHandle)) {
-                l_Changed = true;
-                *p_HandleId = l_PayloadHandle.get_id();
-              }
-            }
-            ImGui::EndDragDropTarget();
-          }
-
-          const ImVec2 l_ThumbnailMin =
-              l_Pos +
-              ImVec2(5.0f,
-                     (l_FieldHeight -
-                      ASSET_SELECTOR_INLINE_PREVIEW_SIZE) *
-                             0.5f +
-                         1.0f);
-          const ImVec2 l_ThumbnailMax =
-              l_ThumbnailMin +
-              ImVec2(ASSET_SELECTOR_INLINE_PREVIEW_SIZE,
-                     ASSET_SELECTOR_INLINE_PREVIEW_SIZE);
-          draw_asset_handle_thumbnail(l_DrawList, l_ThumbnailMin,
-                                      l_ThumbnailMax, p_AssetType,
-                                      l_CurrentHandle, 4.0f);
-
-          const float l_TextY =
-              l_Pos.y +
-              (l_FieldHeight - ImGui::GetTextLineHeight()) * 0.5f +
-              1.0f;
-          const float l_TextX =
-              l_Pos.x + ASSET_SELECTOR_INLINE_PREVIEW_SIZE + 14.0f;
-          ImGui::RenderTextEllipsis(
-              l_DrawList, ImVec2(l_TextX, l_TextY),
-              ImVec2(l_ButtonMin.x - 8.0f, l_Pos.y + l_FieldHeight),
-              l_ButtonMin.x - 10.0f,
-              l_DisplayName, l_DisplayName + l_NameLength, nullptr);
-
-          const ImVec2 l_IconSize =
-              ImGui::CalcTextSize(ICON_LC_CIRCLE_DOT);
-          l_DrawList->AddText(
-              ImVec2(l_ButtonMin.x +
-                         (l_ButtonWidth - l_IconSize.x) * 0.5f,
-                     l_Pos.y +
-                         (l_FieldHeight - l_IconSize.y) * 0.5f +
-                         1.0f),
-              color_to_imcolor(l_Theme.subtext), ICON_LC_CIRCLE_DOT);
-
-          if (ImGui::BeginPopup(l_PopupName.c_str())) {
-#define SEARCH_BUFFER_SIZE 255
-            static char l_SearchBuffer[SEARCH_BUFFER_SIZE] = {'\0'};
-            Gui::SearchField("##asset_search", l_SearchBuffer,
-                             SEARCH_BUFFER_SIZE, {0.0f, 4.0f});
-#undef SEARCH_BUFFER_SIZE
-            ImGui::Spacing();
-
-            Util::Handle *l_Handles =
-                p_TypeInfo.get_living_instances();
-
-            Util::List<Util::String> l_Directories;
-            for (uint32_t i = 0u; i < p_TypeInfo.get_living_count();
-                 ++i) {
-              add_asset_directory_with_parents(
-                  l_Directories,
-                  get_asset_directory_for_handle(p_AssetType,
-                                                 l_Handles[i]));
-            }
-
-            Util::String &l_SelectedDirectory =
-                g_SelectedAssetDirectory[p_AssetType];
-            if (!l_SelectedDirectory.empty() &&
-                !list_contains_string(l_Directories,
-                                      l_SelectedDirectory)) {
-              l_SelectedDirectory = "";
-            }
-
-            const bool l_ShowDirectories = !l_Directories.empty();
-            if (l_ShowDirectories) {
-              ImGui::BeginChild(
-                  "Directories",
-                  ImVec2(ASSET_SELECTOR_DIRECTORY_WIDTH,
-                         ASSET_SELECTOR_POPUP_HEIGHT),
-                  true);
-
-              if (ImGui::Selectable("All",
-                                    l_SelectedDirectory.empty())) {
-                l_SelectedDirectory = "";
-              }
-
-              for (u32 i = 0; i < l_Directories.size(); ++i) {
-                const Util::String &i_Directory = l_Directories[i];
-                Util::String i_Display =
-                    get_asset_directory_display_name(i_Directory);
-
-                if (ImGui::Selectable(
-                        i_Display.c_str(),
-                        l_SelectedDirectory == i_Directory)) {
-                  l_SelectedDirectory = i_Directory;
+                if (p_TypeInfo.is_alive(l_CurrentHandle)) {
+                  Util::Name l_Name;
+                  l_NameProperty.get(l_CurrentHandle, &l_Name);
+                  l_DisplayName = l_Name.c_str();
                 }
+                l_HasNameProperty = true;
               }
 
-              ImGui::EndChild();
-              ImGui::SameLine();
-            }
+              const int l_NameLength = strlen(l_DisplayName);
+              ImVec2 l_CursorPos = ImGui::GetCursorScreenPos();
+              const float l_FieldHeight =
+                  ASSET_SELECTOR_INLINE_HEIGHT;
+              ImVec2 l_WidgetSize =
+                  ImVec2(l_FieldWidth, l_FieldHeight);
 
-            ImGui::BeginChild(
-                "Assets",
-                ImVec2(ASSET_SELECTOR_CONTENT_WIDTH,
-                       ASSET_SELECTOR_POPUP_HEIGHT),
-                true);
+              ImDrawList *l_DrawList = ImGui::GetWindowDrawList();
+              const Theme &l_Theme = theme_get_current();
+              const float l_Rounding = 3.0f;
+              const ImVec2 l_FieldMax = l_CursorPos + l_WidgetSize;
+              const ImVec2 l_ButtonMin(l_FieldMax.x - l_ButtonWidth,
+                                       l_CursorPos.y);
 
-            for (uint32_t i = 0u; i < p_TypeInfo.get_living_count();
-                 ++i) {
-              Util::String i_DisplayName = "Object";
-              if (l_HasNameProperty) {
-                Util::Name i_Name;
-                l_NameProperty.get(l_Handles[i], &i_Name);
-                i_DisplayName = i_Name.c_str();
+              l_DrawList->AddRectFilled(
+                  l_CursorPos, l_FieldMax,
+                  color_to_imcolor(l_Theme.input), l_Rounding);
+              l_DrawList->AddRect(l_CursorPos, l_FieldMax,
+                                  color_to_imcolor(l_Theme.border),
+                                  l_Rounding);
+              l_DrawList->AddRectFilled(
+                  l_CursorPos,
+                  ImVec2(l_CursorPos.x + 3.0f, l_FieldMax.y),
+                  color_to_imcolor(
+                      get_color_for_asset_type(p_AssetType)),
+                  l_Rounding, ImDrawFlags_RoundCornersLeft);
+              l_DrawList->AddLine(
+                  ImVec2(l_ButtonMin.x, l_CursorPos.y + 6.0f),
+                  ImVec2(l_ButtonMin.x, l_FieldMax.y - 6.0f),
+                  color_to_imcolor(l_Theme.button));
+
+              ImGui::InvisibleButton(
+                  "##asset_handle_value",
+                  ImVec2(l_FieldWidth, l_FieldHeight));
+              if (ImGui::IsItemClicked()) {
+                ImGui::OpenPopup(l_PopupName.c_str());
               }
 
-              if (strlen(l_SearchBuffer) > 0 &&
-                  !strstr(i_DisplayName.c_str(), l_SearchBuffer)) {
-                continue;
+              if (ImGui::BeginDragDropTarget()) {
+                if (const ImGuiPayload *l_Payload =
+                        ImGui::AcceptDragDropPayload("DG_HANDLE")) {
+                  Util::Handle l_PayloadHandle =
+                      *(uint64_t *)l_Payload->Data;
+
+                  if (p_TypeInfo.is_alive(l_PayloadHandle)) {
+                    l_Changed = true;
+                    *p_HandleId = l_PayloadHandle.get_id();
+                  }
+                }
+                ImGui::EndDragDropTarget();
               }
 
-              if (l_ShowDirectories &&
-                  !asset_directory_matches_filter(
-                      get_asset_directory_for_handle(p_AssetType,
-                                                     l_Handles[i]),
-                      l_SelectedDirectory)) {
-                continue;
+              const ImVec2 l_ThumbnailMin =
+                  l_Pos +
+                  ImVec2(5.0f, (l_FieldHeight -
+                                ASSET_SELECTOR_INLINE_PREVIEW_SIZE) *
+                                       0.5f +
+                                   1.0f);
+              const ImVec2 l_ThumbnailMax =
+                  l_ThumbnailMin +
+                  ImVec2(ASSET_SELECTOR_INLINE_PREVIEW_SIZE,
+                         ASSET_SELECTOR_INLINE_PREVIEW_SIZE);
+              draw_asset_handle_thumbnail(l_DrawList, l_ThumbnailMin,
+                                          l_ThumbnailMax, p_AssetType,
+                                          l_CurrentHandle, 4.0f);
+
+              const float l_TextY =
+                  l_Pos.y +
+                  (l_FieldHeight - ImGui::GetTextLineHeight()) *
+                      0.5f +
+                  1.0f;
+              const float l_TextX =
+                  l_Pos.x + ASSET_SELECTOR_INLINE_PREVIEW_SIZE +
+                  14.0f;
+              ImGui::RenderTextEllipsis(
+                  l_DrawList, ImVec2(l_TextX, l_TextY),
+                  ImVec2(l_ButtonMin.x - 8.0f,
+                         l_Pos.y + l_FieldHeight),
+                  l_ButtonMin.x - 10.0f, l_DisplayName,
+                  l_DisplayName + l_NameLength, nullptr);
+
+              const ImVec2 l_IconSize =
+                  ImGui::CalcTextSize(ICON_LC_CIRCLE_DOT);
+              l_DrawList->AddText(
+                  ImVec2(l_ButtonMin.x +
+                             (l_ButtonWidth - l_IconSize.x) * 0.5f,
+                         l_Pos.y +
+                             (l_FieldHeight - l_IconSize.y) * 0.5f +
+                             1.0f),
+                  color_to_imcolor(l_Theme.subtext),
+                  ICON_LC_CIRCLE_DOT);
+
+              if (ImGui::BeginPopup(l_PopupName.c_str())) {
+#define SEARCH_BUFFER_SIZE 255
+                static char l_SearchBuffer[SEARCH_BUFFER_SIZE] = {
+                    '\0'};
+                Gui::SearchField("##asset_search", l_SearchBuffer,
+                                 SEARCH_BUFFER_SIZE, {0.0f, 4.0f});
+#undef SEARCH_BUFFER_SIZE
+                ImGui::Spacing();
+
+                Util::Handle *l_Handles =
+                    p_TypeInfo.get_living_instances();
+
+                Util::List<Util::String> l_Directories;
+                for (uint32_t i = 0u;
+                     i < p_TypeInfo.get_living_count(); ++i) {
+                  add_asset_directory_with_parents(
+                      l_Directories, get_asset_directory_for_handle(
+                                         p_AssetType, l_Handles[i]));
+                }
+
+                Util::String &l_SelectedDirectory =
+                    g_SelectedAssetDirectory[p_AssetType];
+                if (!l_SelectedDirectory.empty() &&
+                    !list_contains_string(l_Directories,
+                                          l_SelectedDirectory)) {
+                  l_SelectedDirectory = "";
+                }
+
+                const bool l_ShowDirectories = !l_Directories.empty();
+                if (l_ShowDirectories) {
+                  ImGui::BeginChild(
+                      "Directories",
+                      ImVec2(ASSET_SELECTOR_DIRECTORY_WIDTH,
+                             ASSET_SELECTOR_POPUP_HEIGHT),
+                      true);
+
+                  if (ImGui::Selectable(
+                          "All", l_SelectedDirectory.empty())) {
+                    l_SelectedDirectory = "";
+                  }
+
+                  for (u32 i = 0; i < l_Directories.size(); ++i) {
+                    const Util::String &i_Directory =
+                        l_Directories[i];
+                    Util::String i_Display =
+                        get_asset_directory_display_name(i_Directory);
+
+                    if (ImGui::Selectable(i_Display.c_str(),
+                                          l_SelectedDirectory ==
+                                              i_Directory)) {
+                      l_SelectedDirectory = i_Directory;
+                    }
+                  }
+
+                  ImGui::EndChild();
+                  ImGui::SameLine();
+                }
+
+                ImGui::BeginChild("Assets",
+                                  ImVec2(ASSET_SELECTOR_CONTENT_WIDTH,
+                                         ASSET_SELECTOR_POPUP_HEIGHT),
+                                  true);
+
+                for (uint32_t i = 0u;
+                     i < p_TypeInfo.get_living_count(); ++i) {
+                  Util::String i_DisplayName = "Object";
+                  if (l_HasNameProperty) {
+                    Util::Name i_Name;
+                    l_NameProperty.get(l_Handles[i], &i_Name);
+                    i_DisplayName = i_Name.c_str();
+                  }
+
+                  if (strlen(l_SearchBuffer) > 0 &&
+                      !strstr(i_DisplayName.c_str(),
+                              l_SearchBuffer)) {
+                    continue;
+                  }
+
+                  if (l_ShowDirectories &&
+                      !asset_directory_matches_filter(
+                          get_asset_directory_for_handle(
+                              p_AssetType, l_Handles[i]),
+                          l_SelectedDirectory)) {
+                    continue;
+                  }
+
+                  if (render_asset_selector_row(
+                          l_Handles[i], i_DisplayName, p_AssetType,
+                          l_Handles[i].get_id() == *p_HandleId)) {
+                    l_SearchBuffer[0] = '\0';
+                    *p_HandleId = l_Handles[i].get_id();
+                    l_Changed = true;
+                    ImGui::CloseCurrentPopup();
+                  }
+                }
+
+                ImGui::EndChild();
+                ImGui::EndPopup();
               }
 
-              if (render_asset_selector_row(
-                      l_Handles[i], i_DisplayName, p_AssetType,
-                      l_Handles[i].get_id() == *p_HandleId)) {
-                l_SearchBuffer[0] = '\0';
-                *p_HandleId = l_Handles[i].get_id();
-                l_Changed = true;
-                ImGui::CloseCurrentPopup();
-              }
-            }
-
-            ImGui::EndChild();
-            ImGui::EndPopup();
-          }
-
-          return l_Changed;
-        });
+              return l_Changed;
+            });
       }
 
       bool render_enum_selector(u16 p_EnumId, u8 *p_Value,
@@ -1130,11 +1142,10 @@ namespace Low {
               l_FieldMin.y +
               (l_FieldHeight - ImGui::GetTextLineHeight()) * 0.5f;
           ImGui::RenderTextEllipsis(
-              l_DrawList,
-              ImVec2(l_FieldMin.x + 6.0f, l_TextY),
+              l_DrawList, ImVec2(l_FieldMin.x + 6.0f, l_TextY),
               ImVec2(l_ButtonMin.x - 8.0f, l_FieldMax.y),
-              l_ButtonMin.x - 10.0f,
-              l_DisplayName, l_DisplayName + l_NameLength, nullptr);
+              l_ButtonMin.x - 10.0f, l_DisplayName,
+              l_DisplayName + l_NameLength, nullptr);
 
           const ImVec2 l_IconSize =
               ImGui::CalcTextSize(ICON_LC_CIRCLE_DOT);
@@ -1325,8 +1336,7 @@ namespace Low {
 
         float l_TextOffsetX = HANDLE_SELECTOR_NAME_OFFSET_X;
         if (l_IsAssetSelector) {
-          const ImVec2 l_ThumbnailMin =
-              l_Pos + ImVec2(3.0f, 2.0f);
+          const ImVec2 l_ThumbnailMin = l_Pos + ImVec2(3.0f, 2.0f);
           const ImVec2 l_ThumbnailMax =
               l_ThumbnailMin + ImVec2(ASSET_SELECTOR_PREVIEW_SIZE,
                                       ASSET_SELECTOR_PREVIEW_SIZE);
@@ -1334,8 +1344,9 @@ namespace Low {
                                       l_ThumbnailMax, l_AssetType,
                                       l_CurrentHandle, 2.0f);
           draw_list->AddRectFilled(
-              l_Pos, ImVec2(l_Pos.x + 3.0f,
-                            l_Pos.y + ImGui::GetFrameHeight()),
+              l_Pos,
+              ImVec2(l_Pos.x + 3.0f,
+                     l_Pos.y + ImGui::GetFrameHeight()),
               color_to_imcolor(get_color_for_asset_type(l_AssetType)),
               2.0f, ImDrawFlags_RoundCornersLeft);
           l_TextOffsetX = ASSET_SELECTOR_PREVIEW_SIZE + 9.0f;
@@ -1343,8 +1354,8 @@ namespace Low {
 
         ImGui::RenderTextEllipsis(
             ImGui::GetWindowDrawList(),
-            l_Pos + ImVec2(l_TextOffsetX,
-                           HANDLE_SELECTOR_NAME_OFFSET_Y),
+            l_Pos +
+                ImVec2(l_TextOffsetX, HANDLE_SELECTOR_NAME_OFFSET_Y),
             l_Pos + ImVec2(l_NameWidth, LOW_EDITOR_LABEL_HEIGHT_ABS),
             l_Pos.x + l_NameWidth - LOW_EDITOR_SPACING, l_DisplayName,
             l_DisplayName + l_NameLength, nullptr);
@@ -1386,8 +1397,9 @@ namespace Low {
 
           ImGui::BeginChild(
               "Categories",
-              ImVec2(l_IsAssetSelector ? ASSET_SELECTOR_DIRECTORY_WIDTH
-                                        : 150.0f,
+              ImVec2(l_IsAssetSelector
+                         ? ASSET_SELECTOR_DIRECTORY_WIDTH
+                         : 150.0f,
                      l_PopupHeight),
               true, 0);
           render_fs_handle_selector_directory_structure(
@@ -1564,8 +1576,7 @@ namespace Low {
           Math::ColorRGB l_Color = p_Color;
 
           if (Gui::ColorRGBInput(
-                  (Util::String("##") + p_Label).c_str(),
-                  &l_Color)) {
+                  (Util::String("##") + p_Label).c_str(), &l_Color)) {
             p_Color = l_Color;
             return true;
           }

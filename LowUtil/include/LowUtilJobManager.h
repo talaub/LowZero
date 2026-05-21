@@ -61,6 +61,7 @@ namespace Low {
           Resource::Mesh mesh;
           Math::AABB aabb;
           Math::Sphere bounding_sphere;
+          u64 skeleton_id;
           UnorderedMap<Name, Math::AABB> submesh_aabbs;
           UnorderedMap<Name, Math::Sphere> submesh_bounding_spheres;
         };

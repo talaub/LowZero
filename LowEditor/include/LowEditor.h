@@ -35,6 +35,8 @@ namespace Low {
       Texture,
       Font,
       UiWidget,
+      Skeleton,
+      AnimClip,
       VisualScript
     };
 

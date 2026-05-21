@@ -6,6 +6,8 @@ LowRenderer2:
   MaterialTypeFamily: 5
   EditorImageType: 6
   MaterialState: 7
+  SkeletonState: 10
+  MeshType: 11
 LowCore:
   ScriptAssetGenerator: 8
   AssetGenerator: 9

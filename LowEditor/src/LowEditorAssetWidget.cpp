@@ -8,6 +8,7 @@
 #include "LowRendererMaterial.h"
 #include "LowRendererMaterialResource.h"
 #include "LowRendererMeshResource.h"
+#include "LowRendererSkeletonResource.h"
 #include "LowRendererTextureState.h"
 #include "LowRendererMesh.h"
 #include "LowRendererResourceManager.h"
@@ -76,6 +77,8 @@ namespace Low {
               l_AssetType = AssetType::Model;
             } else if (p_Watcher.subtype == "texresource") {
               l_AssetType = AssetType::Texture;
+            } else if (p_Watcher.subtype == "skeletonresource") {
+              l_AssetType = AssetType::Skeleton;
             } else if (p_Watcher.subtype == "fontresource") {
               l_AssetType = AssetType::Font;
             } else if (p_Watcher.subtype == "flode" ||
@@ -125,6 +128,18 @@ namespace Low {
                 p_Watcher.assetId = l_Resource.get_material_id();
                 l_Handle = Renderer::ResourceManager::find_asset<
                     Renderer::Material>(l_Resource.get_material_id());
+              }
+
+              break;
+            }
+            case AssetType::Skeleton: {
+              Renderer::SkeletonResource l_Resource =
+                  Renderer::SkeletonResource::find_by_path(
+                      p_Watcher.path);
+              if (l_Resource.is_alive()) {
+                p_Watcher.assetId = l_Resource.get_skeleton_id();
+                l_Handle = Renderer::ResourceManager::find_asset<
+                    Renderer::Skeleton>(l_Resource.get_skeleton_id());
               }
 
               break;

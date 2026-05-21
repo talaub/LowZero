@@ -85,6 +85,11 @@ namespace Low {
           const std::filesystem::path p_DirectoryPath,
           const bool p_IncludeSubdirectories = false);
 
+      bool LOW_EXPORT is_file_in_directory(
+          const Util::String p_FilePath,
+          const Util::String p_DirectoryPath,
+          const bool p_IncludeSubdirectories = false);
+
       class LOW_EXPORT Watcher
       {
       public:

@@ -8,41 +8,36 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-
-#include "LowRendererMeshType.h"
+#include "LowRendererSkeletonState.h"
+#include "LowRendererSkeletonResource.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-
-    struct MeshResourceConfig
+    struct SkeletonBone
     {
       Util::Name name;
-      u64 meshId;
-      u64 assetHash;
-      Util::String sourceFile;
-      Util::String sidecarPath;
-      Util::String path;
-      Util::String meshPath;
-      u32 submeshCount;
-      MeshType type;
+      i32 parent_index;
+      Math::Matrix4x4 local_bind_transform;
+      Math::Matrix4x4 global_bind_transform;
+      Math::Matrix4x4 inverse_bind_matrix;
     };
-
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_RENDERER2_API MeshResource : public Low::Util::Handle
+    struct LOW_RENDERER2_API Skeleton : public Low::Util::Handle
     {
     public:
       struct Data
       {
       public:
-        Util::String path;
-        Util::String mesh_path;
-        Util::String sidecar_path;
-        Util::String source_file;
-        uint64_t mesh_id;
-        uint64_t asset_hash;
+        Low::Renderer::SkeletonState state;
+        Low::Renderer::SkeletonResource resource;
+        Util::List<SkeletonBone> bones;
+        Util::Map<Util::Name, uint32_t> bone_map;
+        uint32_t bone_count;
+        Low::Util::Set<u64> references;
+        Low::Util::UniqueId unique_id;
         Low::Util::Name name;
 
         static size_t get_size()
@@ -57,7 +52,7 @@ namespace Low {
     public:
       static Low::Util::List<Low::Util::Instances::Page *> ms_Pages;
 
-      static Low::Util::List<MeshResource> ms_LivingInstances;
+      static Low::Util::List<Skeleton> ms_LivingInstances;
 
       const static Low::Util::TypeIdentifier IDENTIFIER;
 
@@ -66,12 +61,11 @@ namespace Low {
         return ms_TypeId;
       }
 
-    private:
-      static MeshResource make(Low::Util::Name p_Name);
+      static Skeleton make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
-
-    public:
-      explicit MeshResource(const MeshResource &p_Copy)
+      static Skeleton make(Low::Util::Name p_Name,
+                           Low::Util::UniqueId p_UniqueId);
+      explicit Skeleton(const Skeleton &p_Copy)
           : Low::Util::Handle(p_Copy.m_Id)
       {
       }
@@ -81,34 +75,34 @@ namespace Low {
       static void initialize();
       static void cleanup();
 
-      MeshResource(u64 p_Id) : Low::Util::Handle(p_Id)
+      Skeleton(u64 p_Id) : Low::Util::Handle(p_Id)
       {
       }
-      MeshResource() : Low::Util::Handle()
+      Skeleton() : Low::Util::Handle()
       {
       }
-      MeshResource(Low::Util::Handle p_Handle)
+      Skeleton(Low::Util::Handle p_Handle)
           : Low::Util::Handle(p_Handle.get_id())
       {
       }
 
       using Handle::operator=;
 
-      MeshResource &operator=(const MeshResource &) = default;
-      MeshResource &operator=(MeshResource &&) noexcept = default;
+      Skeleton &operator=(const Skeleton &) = default;
+      Skeleton &operator=(Skeleton &&) noexcept = default;
 
       static uint32_t living_count()
       {
         return static_cast<uint32_t>(ms_LivingInstances.size());
       }
-      static MeshResource *living_instances()
+      static Skeleton *living_instances()
       {
         return ms_LivingInstances.data();
       }
 
-      static MeshResource create_handle_by_index(u32 p_Index);
+      static Skeleton create_handle_by_index(u32 p_Index);
 
-      static MeshResource find_by_index(uint32_t p_Index);
+      static Skeleton find_by_index(uint32_t p_Index);
       static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
       bool is_alive() const;
@@ -127,17 +121,21 @@ namespace Low {
                           Low::Util::Handle p_Observed,
                           Low::Util::Name p_Observable);
 
+      void reference(const u64 p_Id);
+      void dereference(const u64 p_Id);
+      u32 references() const;
+
       static uint32_t get_capacity();
 
       void serialize(Low::Util::Serial::Node &p_Node) const;
 
-      MeshResource duplicate(Low::Util::Name p_Name) const;
-      static MeshResource duplicate(MeshResource p_Handle,
-                                    Low::Util::Name p_Name);
+      Skeleton duplicate(Low::Util::Name p_Name) const;
+      static Skeleton duplicate(Skeleton p_Handle,
+                                Low::Util::Name p_Name);
       static Low::Util::Handle _duplicate(Low::Util::Handle p_Handle,
                                           Low::Util::Name p_Name);
 
-      static MeshResource find_by_name(Low::Util::Name p_Name);
+      static Skeleton find_by_name(Low::Util::Name p_Name);
       static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
@@ -147,37 +145,37 @@ namespace Low {
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
-        MeshResource l_Handle = p_Handle.get_id();
+        Skeleton l_Handle = p_Handle.get_id();
         return l_Handle.is_alive();
       }
 
       static void destroy(Low::Util::Handle p_Handle)
       {
         _LOW_ASSERT(is_alive(p_Handle));
-        MeshResource l_MeshResource = p_Handle.get_id();
-        l_MeshResource.destroy();
+        Skeleton l_Skeleton = p_Handle.get_id();
+        l_Skeleton.destroy();
       }
 
-      Util::String get_path() const;
+      Low::Renderer::SkeletonState get_state() const;
+      void set_state(Low::Renderer::SkeletonState p_Value);
 
-      Util::String get_mesh_path() const;
+      Low::Renderer::SkeletonResource get_resource() const;
+      void set_resource(Low::Renderer::SkeletonResource p_Value);
 
-      Util::String get_sidecar_path() const;
+      Util::List<SkeletonBone> &get_bones() const;
 
-      Util::String get_source_file() const;
+      Util::Map<Util::Name, uint32_t> &get_bone_map() const;
 
-      uint64_t get_mesh_id() const;
+      uint32_t get_bone_count() const;
 
-      uint64_t get_asset_hash() const;
-      void set_asset_hash(uint64_t p_Value);
+      Low::Util::UniqueId get_unique_id() const;
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      static MeshResource make(Util::String p_Path);
-      static MeshResource
-      make_from_config(MeshResourceConfig &p_Config);
-      static MeshResource find_by_path(Util::String p_Path);
+      static Skeleton make_from_resource_config(
+          const SkeletonResourceConfig &p_Config);
+      const SkeletonBone &find_bone_by_name(Util::Name p_Name);
       static bool get_page_for_index(const u32 p_Index,
                                      u32 &p_PageIndex,
                                      u32 &p_SlotIndex);
@@ -187,28 +185,19 @@ namespace Low {
       static u32 ms_PageSize;
       static u32 create_instance(u32 &p_PageIndex, u32 &p_SlotIndex);
       static u32 create_page();
-      void set_path(Util::String p_Value);
-      void set_path(const char *p_Value);
-      void set_mesh_path(Util::String p_Value);
-      void set_mesh_path(const char *p_Value);
-      void set_sidecar_path(Util::String p_Value);
-      void set_sidecar_path(const char *p_Value);
-      void set_source_file(Util::String p_Value);
-      void set_source_file(const char *p_Value);
-      void set_mesh_id(uint64_t p_Value);
+      void set_bone_count(uint32_t p_Value);
+      Low::Util::Set<u64> &get_references() const;
+      void set_unique_id(Low::Util::UniqueId p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
-
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
     };
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
-
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
   } // namespace Renderer
 } // namespace Low
 
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE
-
 // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_HEADER_CODE

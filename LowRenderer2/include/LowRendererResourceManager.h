@@ -4,6 +4,7 @@
 
 #include "LowRendererMesh.h"
 #include "LowRendererMaterial.h"
+#include "LowRendererSkeleton.h"
 #include "LowRendererFont.h"
 #include "LowRendererEditorImage.h"
 
@@ -37,6 +38,9 @@ namespace Low {
       bool parse_material_resource_config(
           Util::String p_Path, Util::Serial::Node &p_Node,
           MaterialResourceConfig &p_Config);
+      bool parse_skeleton_resource_config(
+          Util::String p_Path, Util::Serial::Node &p_Node,
+          SkeletonResourceConfig &p_Config);
 
       void register_asset_id(const u64 p_AssetId,
                              const u64 p_AssetHandleId);

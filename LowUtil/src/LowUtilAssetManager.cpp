@@ -8,6 +8,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilString.h"
+#include <filesystem>
 
 #define EVENT_DEBOUNCE_TIME 2.0f
 
@@ -156,6 +157,22 @@ namespace Low {
     import(const AssetManager::TypeRegistrator &p_AssetType,
            const String &p_Path)
     {
+      const bool l_IsAssetPath =
+          Util::FileSystem::is_file_in_directory(
+              p_Path, Util::project_asset_cache_path());
+      const bool l_IsManaged = Util::FileSystem::is_file_in_directory(
+          p_Path, Util::project_managed_path());
+      const bool l_IsVsOut = Util::FileSystem::is_file_in_directory(
+          p_Path, Util::project_visual_script_out_path());
+      const bool l_IsEditorImage =
+          Util::FileSystem::is_file_in_directory(
+              p_Path, Util::project_editor_images_path());
+
+      if (l_IsAssetPath || l_IsManaged || l_IsVsOut ||
+          l_IsEditorImage) {
+        return;
+      }
+
       AM_LOG_DEBUG << "Importing " << p_AssetType.name << " from '"
                    << p_Path << "'" << LOW_LOG_END;
       const Util::String l_ImportedPath =
@@ -452,17 +469,18 @@ namespace Low {
         return;
       }
 
+      if (l_AssetType.saver) {
+        l_AssetType.saver(p_Handle);
+        return;
+      }
+
       if (!l_AssetType.storeSettings.pathPropertyName.is_valid()) {
-        AM_LOG_ERROR << "Tried to load handle but asset type does "
+        AM_LOG_ERROR << "Tried to save handle but asset type does "
                         "not have a valid path property set."
                      << LOW_LOG_END;
         return;
       }
 
-      if (l_AssetType.saver) {
-        l_AssetType.saver(p_Handle);
-        return;
-      }
       RTTI::TypeInfo &l_TypeInfo =
           Handle::get_type_info(p_Handle.get_type());
       RTTI::PropertyInfo &l_PathProperty =

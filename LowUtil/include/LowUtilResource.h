@@ -7,6 +7,8 @@
 
 #include "LowMath.h"
 
+struct aiScene;
+
 namespace Low {
   namespace Util {
     namespace Resource {
@@ -72,6 +74,15 @@ namespace Low {
         Math::Matrix4x4 offset;
       };
 
+      struct BoneHierarchyNode
+      {
+        Name name;
+        uint32_t boneIndex;
+        int32_t parentIndex;
+        Math::Matrix4x4 localTransform;
+        Math::Matrix4x4 globalTransform;
+      };
+
       struct AnimationChannel
       {
         Name boneName;
@@ -122,6 +133,8 @@ namespace Low {
       {
         List<Submesh> submeshes;
         Map<Name, Bone> bones;
+        List<BoneHierarchyNode> boneHierarchy;
+        uint32_t rootBoneHierarchyNode;
         uint32_t boneCount;
         List<Animation> animations;
         Node rootNode;
@@ -135,6 +148,8 @@ namespace Low {
                                          ImageMipMaps &p_Image);
 
       LOW_EXPORT void load_mesh(String p_FilePath, Mesh &p_Mesh);
+      LOW_EXPORT void load_mesh_from_scene(const aiScene *p_AiScene,
+                                           Mesh &p_Mesh);
     } // namespace Resource
   } // namespace Util
 } // namespace Low

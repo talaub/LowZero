@@ -109,6 +109,8 @@ LowRenderer2:
   PipelineLayout: 108
   ShaderVariant: 109
   ShaderSource: 110
+  Skeleton: 111
+  SkeletonResource: 112
 LowRendjrer2:
   RenderObject: 56
   RenderView: 57

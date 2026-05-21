@@ -10,6 +10,32 @@
 
 namespace Low {
   namespace Editor {
+    static float calculate_sphere_fit_distance(
+        const Math::Sphere &p_Sphere,
+        const Renderer::RenderView p_RenderView,
+        const float p_Margin = 1.25f)
+    {
+      const Math::UVector2 l_Dimensions =
+          p_RenderView.get_dimensions();
+      const float l_Aspect =
+          l_Dimensions.y > 0u
+              ? (float)l_Dimensions.x / (float)l_Dimensions.y
+              : 1.0f;
+      const float l_VerticalFov =
+          glm::radians(p_RenderView.get_camera_fov());
+      const float l_VerticalHalfTan = glm::tan(l_VerticalFov * 0.5f);
+      const float l_HorizontalHalfTan = l_VerticalHalfTan * l_Aspect;
+      const float l_Radius = glm::max(p_Sphere.radius, 0.05f);
+
+      const float l_VerticalDistance =
+          l_Radius / glm::max(l_VerticalHalfTan, 0.001f);
+      const float l_HorizontalDistance =
+          l_Radius / glm::max(l_HorizontalHalfTan, 0.001f);
+
+      return glm::max(l_VerticalDistance, l_HorizontalDistance) *
+             p_Margin;
+    }
+
     Viewport::Viewport(const Math::UVector2 p_Dimensions)
         : m_RenderScene(Renderer::RenderScene::make(N(Viewport))),
           m_RenderView(Renderer::RenderView::make(N(Viewport))),
@@ -154,7 +180,7 @@ namespace Low {
         l_LocalMatrix *=
             glm::toMat4(Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f));
         l_LocalMatrix = glm::scale(l_LocalMatrix,
-                                   Math::Vector3(50.0f, 0.2f, 50.0f));
+                                   Math::Vector3(50.0f, 0.1f, 50.0f));
 
         m_GroundRenderObject.set_world_transform(l_LocalMatrix);
       }
@@ -169,7 +195,8 @@ namespace Low {
         const Math::Vector3 l_Direction =
             glm::normalize(Math::Vector3(0.2f, -0.1f, -1.0f));
 
-        m_CameraOrbitDistance = l_BoundingSphere.radius + 15.0f;
+        m_CameraOrbitDistance = calculate_sphere_fit_distance(
+            l_BoundingSphere, m_RenderView, 1.35f);
         set_camera_direction(l_Direction);
         set_camera_position(l_Target -
                             (l_Direction * m_CameraOrbitDistance));
@@ -266,7 +293,8 @@ namespace Low {
         const Math::Vector3 l_Direction =
             glm::normalize(Math::Vector3(0.2f, -0.1f, -1.0f));
 
-        m_CameraOrbitDistance = l_BoundingSphere.radius + 15.0f;
+        m_CameraOrbitDistance = calculate_sphere_fit_distance(
+            l_BoundingSphere, m_RenderView, 1.35f);
         set_camera_direction(l_Direction);
         set_camera_position(l_Target -
                             (l_Direction * m_CameraOrbitDistance));

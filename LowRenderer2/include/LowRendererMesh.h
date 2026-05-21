@@ -14,6 +14,7 @@
 #include "LowRendererGpuMesh.h"
 #include "LowRendererMeshState.h"
 #include "LowRendererEditorImage.h"
+#include "LowRendererSkeleton.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -34,6 +35,8 @@ namespace Low {
         Low::Renderer::GpuMesh gpu;
         bool unloadable;
         uint32_t submesh_count;
+        Low::Renderer::MeshType type;
+        Low::Renderer::Skeleton skeleton;
         Low::Util::Set<u64> references;
         Low::Util::UniqueId unique_id;
         Low::Util::Name name;
@@ -171,6 +174,12 @@ namespace Low {
 
       uint32_t get_submesh_count() const;
       void set_submesh_count(uint32_t p_Value);
+
+      Low::Renderer::MeshType get_type() const;
+      void set_type(Low::Renderer::MeshType p_Value);
+
+      Low::Renderer::Skeleton get_skeleton() const;
+      void set_skeleton(Low::Renderer::Skeleton p_Value);
 
       Low::Util::UniqueId get_unique_id() const;
 

@@ -1,6 +1,7 @@
 #include "LowEditorTypeEditor.h"
 
 #include "LowEditor.h"
+#include "LowEditorMetadata.h"
 #include "LowEditorPropertyEditors.h"
 #include "LowEditorGui.h"
 #include "LowEditorAssetWidget.h"
@@ -115,6 +116,17 @@ namespace Low {
 
     void TypeEditor::show_editor(Util::Name p_PropertyName)
     {
+      /*
+      PropertyMetadataBase l_PropBase =
+          m_Metadata.find_property_base_by_name(p_PropertyName);
+
+      show_line(l_PropBase.friendlyName.c_str(),
+                [&, p_PropertyName]() -> bool {
+                  PropertyEditors::render_editor(m_Handle,
+                                                 p_PropertyName);
+                  return false;
+                });
+                */
       PropertyEditors::render_editor(m_Handle, p_PropertyName);
     }
 

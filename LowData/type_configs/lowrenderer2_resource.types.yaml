@@ -31,6 +31,12 @@ types:
           it can be automatically unloaded by the ResourceManager
       submesh_count:
         type: uint32_t
+      type:
+        type: Low::Renderer::MeshType
+        enum: true
+      skeleton:
+        type: Low::Renderer::Skeleton
+        handle: true
     functions:
       make_from_resource_config:
         static: true
@@ -757,3 +763,75 @@ types:
         parameters:
           - name: path
             type: Util::String
+
+  Skeleton:
+    unique_id: true
+    reference_counted: true
+    properties:
+      state:
+        type: Low::Renderer::SkeletonState
+        enum: true
+      resource:
+        type: Low::Renderer::SkeletonResource
+        handle: true
+      bones:
+        type: Util::List<SkeletonBone>
+        no_setter: true
+      bone_map:
+        type: Util::Map<Util::Name, uint32_t>
+        no_setter: true
+      bone_count:
+        type: u32
+        private_setter: true
+    functions:
+      make_from_resource_config:
+        static: true
+        return_type: Skeleton
+        return_handle: true
+        parameters:
+          - name: config
+            type: SkeletonResourceConfig
+            constant: true
+            const: true
+      find_bone_by_name:
+        return_type: const SkeletonBone
+        parameters:
+          - name: name
+            type: Util::Name
+
+  SkeletonResource:
+    private_make: true
+    properties:
+      path:
+        type: Util::String
+        private_setter: true
+      data_path:
+        type: Util::String
+        private_setter: true
+      skeleton_id:
+        type: u64
+        private_setter: true
+    functions:
+      make:
+        static: true
+        return_type: SkeletonResource
+        return_handle: true
+        parameters:
+          - name: path
+            type: Util::String
+      find_by_path:
+        static: true
+        return_type: SkeletonResource
+        return_handle: true
+        parameters:
+          - name: path
+            type: Util::String
+      make_from_config:
+        static: true
+        return_type: SkeletonResource
+        return_handle: true
+        parameters:
+          - name: config
+            type: SkeletonResourceConfig
+            constant: true
+            const: true

@@ -420,6 +420,17 @@ namespace Low {
         }
         return is_direct_child_of(p_FilePath, p_DirectoryPath);
       }
+
+      bool is_file_in_directory(
+          const Util::String p_FilePath,
+          const Util::String p_DirectoryPath,
+          const bool p_IncludeSubdirectories)
+      {
+        return is_file_in_directory(
+            std::filesystem::path(p_FilePath.c_str()),
+            std::filesystem::path(p_DirectoryPath.c_str()),
+            p_IncludeSubdirectories);
+      }
     } // namespace FileSystem
 
   } // namespace Util

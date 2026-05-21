@@ -37,3 +37,14 @@ enums:
       - name: MemoryLoaded
       - name: UploadingToGpu
       - name: Loaded
+  SkeletonState:
+    options:
+      - name: Unknown
+      - name: Unloaded
+      - name: ScheduledToLoad
+      - name: LoadingToMemory
+      - name: Loaded
+  MeshType:
+    options:
+      - name: Static
+      - name: Skeletal
