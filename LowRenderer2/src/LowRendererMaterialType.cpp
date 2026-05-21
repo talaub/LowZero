@@ -1710,7 +1710,7 @@ namespace Low {
           l_Handle.get_shadow_pipeline_config().depthTest = true;
           l_Handle.get_shadow_pipeline_config().alphaBlending = false;
           l_Handle.get_shadow_pipeline_config().cullMode =
-              GraphicsPipelineCullMode::NONE;
+              GraphicsPipelineCullMode::FRONT;
           l_Handle.get_shadow_pipeline_config().frontFace =
               GraphicsPipelineFrontFace::COUNTER_CLOCKWISE;
         }

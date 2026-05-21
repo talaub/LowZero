@@ -179,9 +179,9 @@ namespace Low {
 
         if (p_PipelineLayout == g_Pipelines.shadowPipelineLayout) {
           l_Builder.rasterizer.depthBiasEnable = VK_TRUE;
-          l_Builder.rasterizer.depthBiasConstantFactor = 1.25f;
+          l_Builder.rasterizer.depthBiasConstantFactor = 0.35f;
           l_Builder.rasterizer.depthBiasClamp = 0.0f;
-          l_Builder.rasterizer.depthBiasSlopeFactor = 1.75f;
+          l_Builder.rasterizer.depthBiasSlopeFactor = 0.75f;
         }
 
         if (p_Config.alphaBlending) {
