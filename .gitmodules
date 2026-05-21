@@ -64,9 +64,6 @@
 [submodule "LowDependencies/libpng"]
 	path = LowDependencies/libpng
 	url = https://github.com/pnggroup/libpng.git
-[submodule "LowDependencies/zep"]
-	path = LowDependencies/zep
-	url = https://github.com/Rezonality/zep.git
 [submodule "LowDependencies/Cflat"]
 	path = LowDependencies/Cflat
 	url = https://github.com/arturocepeda/cflat.git
