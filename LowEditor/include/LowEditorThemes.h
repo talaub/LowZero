@@ -63,8 +63,15 @@ namespace Low {
 
     bool themes_render_menu();
 
+    LOW_EDITOR_API Util::List<Util::Name> themes_get_names();
+
     bool theme_exists(Util::Name p_Name);
     void theme_apply(Util::Name p_Name);
+    bool LOW_EDITOR_API theme_is_editable(Util::Name p_Name);
+    bool LOW_EDITOR_API theme_duplicate(Util::Name p_Source,
+                                        Util::Name p_NewName);
+    bool LOW_EDITOR_API theme_delete(Util::Name p_Name);
+    bool LOW_EDITOR_API theme_save(Util::Name p_Name);
 
     LOW_EDITOR_API Theme &theme_get_current();
     LOW_EDITOR_API Util::Name theme_get_current_name();

@@ -1,4 +1,5 @@
 #include "LowEditorMainWindow.h"
+#include "LowEditorThemeWidget.h"
 #include "LowUtilVersion.h"
 
 #include <iostream>
@@ -17,6 +18,7 @@
 #include "LowEditorProfilerWidget.h"
 #include "LowEditorEditingWidget.h"
 #include "LowEditorAssetWidget.h"
+#include "LowEditorThemeWidget.h"
 #include "LowEditorSceneWidget.h"
 #include "LowEditorChangeWidget.h"
 #include "LowEditorRegionWidget.h"
@@ -33,7 +35,6 @@
 #include "LowEditorThemes.h"
 #include "LowEditorTypeManagerWidget.h"
 #include "LowEditorScriptingErrorWidget.h"
-#include "LowEditorAppearanceWidget.h"
 #include "LowEditorScriptWidget.h"
 #include "LowEditorVersionControlWidget.h"
 #include "LowEditorEditWidget.h"
@@ -685,20 +686,6 @@ namespace Low {
           }
           ImGui::EndMenu();
         }
-        if (ImGui::BeginMenu("View")) {
-          if (ImGui::MenuItem("Appearance")) {
-            g_Widgets["Appearance"].open =
-                !g_Widgets["Appearance"].open;
-            save_user_settings();
-          }
-          if (ImGui::BeginMenu("Themes")) {
-            if (themes_render_menu()) {
-              save_user_settings();
-            }
-            ImGui::EndMenu();
-          }
-          ImGui::EndMenu();
-        }
         if (ImGui::BeginMenu("Scene")) {
           if (ImGui::MenuItem("New", NULL, nullptr)) {
             l_CreateScene = true;
@@ -827,7 +814,6 @@ namespace Low {
                 static_cast<int>(l_ControlsLeft -
                                  l_Viewport->WorkPos.x));
         ImGui::EndMainMenuBar();
-
       }
 
       if (l_CreateScene) {
@@ -1303,6 +1289,7 @@ namespace Low {
 
       LogWidget::initialize();
 
+      register_editor_widget("View/Themes", new ThemeWidget, false);
       g_MainViewportWidget = new EditingWidget();
       register_editor_widget("Viewport", g_MainViewportWidget, true);
       register_editor_widget("Log", new LogWidget(), true);
@@ -1319,8 +1306,6 @@ namespace Low {
       register_editor_widget("UI-Views", new UiWidget(), false);
       register_editor_widget("Scripting errors",
                              new ScriptingErrorWidget, false);
-      register_editor_widget("Appearance", new AppearanceWidget,
-                             false, false);
       g_ScriptWidget = new ScriptWidget;
       register_editor_widget("Tools/Code Editor", g_ScriptWidget,
                              false);

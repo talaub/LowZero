@@ -9,11 +9,154 @@
 #include "LowUtilString.h"
 #include "LowMath.h"
 
+#include <filesystem>
+#include <iomanip>
+#include <sstream>
+
 namespace Low {
   namespace Editor {
 
+    struct ThemeInfo
+    {
+      Util::String path;
+      bool editable = false;
+    };
+
     Util::Map<Util::Name, Theme> g_Themes;
+    Util::Map<Util::Name, ThemeInfo> g_ThemeInfos;
     Util::Name g_SelectedTheme;
+
+    static Util::String get_theme_directory()
+    {
+      return Util::get_project().dataPath + "/editor/themes";
+    }
+
+    static Util::String get_user_theme_directory()
+    {
+      return get_theme_directory() + "/user";
+    }
+
+    static Util::String get_theme_file_path(Util::Name p_Name)
+    {
+      return get_user_theme_directory() + "/" + p_Name.c_str() +
+             ".editortheme.yaml";
+    }
+
+    static void ensure_user_theme_directory()
+    {
+      std::filesystem::create_directories(
+          get_user_theme_directory().c_str());
+    }
+
+    static Util::String get_theme_name_from_path(Util::String p_Path)
+    {
+      Util::String l_Normalized =
+          Util::StringHelper::replace(p_Path, '\\', '/');
+      const Util::String l_Ending = ".editortheme.yaml";
+
+      size_t l_Start = l_Normalized.find_last_of('/');
+      if (l_Start == Util::String::npos) {
+        l_Start = 0;
+      } else {
+        ++l_Start;
+      }
+
+      Util::String l_FileName = l_Normalized.substr(l_Start);
+      if (Util::StringHelper::ends_with(l_FileName, l_Ending)) {
+        return l_FileName.substr(
+            0, l_FileName.length() - l_Ending.length());
+      }
+      return l_FileName;
+    }
+
+    static Util::String color_to_hex(const Math::Color &p_Color)
+    {
+      auto l_ToByte = [](float p_Value) -> int {
+        return (int)(Low::Math::Util::clamp(p_Value, 0.0f, 1.0f) *
+                         255.0f +
+                     0.5f);
+      };
+
+      std::stringstream l_Stream;
+      l_Stream << std::hex << std::setfill('0') << std::nouppercase
+               << std::setw(2) << l_ToByte(p_Color.r)
+               << std::setw(2) << l_ToByte(p_Color.g)
+               << std::setw(2) << l_ToByte(p_Color.b);
+      if (l_ToByte(p_Color.a) != 255) {
+        l_Stream << std::setw(2) << l_ToByte(p_Color.a);
+      }
+      return l_Stream.str().c_str();
+    }
+
+    static void append_color(Util::String &p_Output,
+                             const char *p_Key,
+                             const Math::Color &p_Color)
+    {
+      p_Output += p_Key;
+      p_Output += ": ";
+      p_Output += color_to_hex(p_Color);
+      p_Output += "\n";
+    }
+
+    static Util::String serialize_theme(const Theme &p_Theme)
+    {
+      Util::String l_Output;
+      append_color(l_Output, "base", p_Theme.base);
+      append_color(l_Output, "text", p_Theme.text);
+      append_color(l_Output, "subtext", p_Theme.subtext);
+      append_color(l_Output, "text_disabled", p_Theme.textDisabled);
+      append_color(l_Output, "button", p_Theme.button);
+      append_color(l_Output, "button_hover", p_Theme.buttonHover);
+      append_color(l_Output, "button_active", p_Theme.buttonActive);
+      append_color(l_Output, "button_border", p_Theme.buttonBorder);
+      append_color(l_Output, "header", p_Theme.header);
+      append_color(l_Output, "header_hover", p_Theme.headerHover);
+      append_color(l_Output, "header_active", p_Theme.headerActive);
+      append_color(l_Output, "menubar", p_Theme.menubar);
+      append_color(l_Output, "coords0", p_Theme.coords0);
+      append_color(l_Output, "coords1", p_Theme.coords1);
+      append_color(l_Output, "coords2", p_Theme.coords2);
+      append_color(l_Output, "coords3", p_Theme.coords3);
+      append_color(l_Output, "debug", p_Theme.debug);
+      append_color(l_Output, "info", p_Theme.info);
+      append_color(l_Output, "error", p_Theme.error);
+      append_color(l_Output, "warning", p_Theme.warning);
+      append_color(l_Output, "profile", p_Theme.profile);
+      append_color(l_Output, "title_background",
+                   p_Theme.titleBackground);
+      append_color(l_Output, "title_background_active",
+                   p_Theme.titleBackgroundActive);
+      append_color(l_Output, "title_background_collapsed",
+                   p_Theme.titleBackgroundCollapsed);
+      append_color(l_Output, "scrollbar_background",
+                   p_Theme.scrollbarBackground);
+      append_color(l_Output, "scrollbar", p_Theme.scrollbar);
+      append_color(l_Output, "scrollbar_hover",
+                   p_Theme.scrollbarHover);
+      append_color(l_Output, "scrollbar_active",
+                   p_Theme.scrollbarActive);
+      append_color(l_Output, "tab", p_Theme.tab);
+      append_color(l_Output, "tab_hover", p_Theme.tabHover);
+      append_color(l_Output, "tab_active", p_Theme.tabActive);
+      append_color(l_Output, "tab_unfocused", p_Theme.tabUnfocused);
+      append_color(l_Output, "tab_unfocused_active",
+                   p_Theme.tabUnfocusedActive);
+      append_color(l_Output, "input", p_Theme.input);
+      append_color(l_Output, "input_hover", p_Theme.inputHover);
+      append_color(l_Output, "input_active", p_Theme.inputActive);
+      append_color(l_Output, "popup_background",
+                   p_Theme.popupBackground);
+      append_color(l_Output, "border", p_Theme.border);
+      append_color(l_Output, "success", p_Theme.success);
+      append_color(l_Output, "save", p_Theme.save);
+      append_color(l_Output, "add", p_Theme.add);
+      append_color(l_Output, "remove", p_Theme.remove);
+      append_color(l_Output, "clear", p_Theme.clear);
+      append_color(l_Output, "edit", p_Theme.edit);
+      append_color(l_Output, "controller", p_Theme.controller);
+      append_color(l_Output, "play", p_Theme.play);
+      return l_Output;
+    }
 
     Math::Color color_from_hex(const char *p_Hex)
     {
@@ -167,24 +310,12 @@ namespace Low {
     static Math::Color parse_color(Util::Yaml::Node p_Node)
     {
       Util::String l_HexString = p_Node.as<std::string>().c_str();
-      std::string l_StdHexString = l_HexString.c_str();
-      Math::Color l_Color;
-
-      std::stringstream ss;
-      ss << std::hex << l_StdHexString;
-      unsigned int colorValue;
-      ss >> colorValue;
-      l_Color.r = ((colorValue >> 16) & 0xFF) / 255.0; // Red
-      l_Color.g = ((colorValue >> 8) & 0xFF) / 255.0;  // Green
-      l_Color.b = (colorValue & 0xFF) / 255.0;         // Blue
-
-      l_Color.a = 1.0f;
-
-      return l_Color;
+      return color_from_hex(l_HexString.c_str());
     }
 
     static void parse_theme(Util::String p_Name,
-                            Util::Yaml::Node p_Node)
+                            Util::Yaml::Node p_Node,
+                            Util::String p_Path, bool p_Editable)
     {
       Util::Name l_Name = LOW_NAME(p_Name.c_str());
 
@@ -355,30 +486,33 @@ namespace Low {
       }
 
       g_Themes[l_Name] = l_Theme;
+      g_ThemeInfos[l_Name] = {p_Path, p_Editable};
     }
 
     void themes_load()
     {
-      Util::String l_ThemeDirectory =
-          Util::get_project().dataPath + "/editor/themes";
-      Util::List<Util::String> l_FilePaths;
-      Util::FileIO::list_directory(l_ThemeDirectory.c_str(),
-                                   l_FilePaths);
+      g_Themes.clear();
+      g_ThemeInfos.clear();
+
+      Util::String l_ThemeDirectory = get_theme_directory();
+      Util::String l_UserThemeDirectory = get_user_theme_directory();
+      ensure_user_theme_directory();
+
       Util::String l_Ending = ".editortheme.yaml";
 
       bool l_First = true;
 
+      Util::List<Util::String> l_FilePaths;
+      Util::FileIO::list_directory(l_ThemeDirectory.c_str(),
+                                   l_FilePaths);
       for (Util::String &i_Path : l_FilePaths) {
         if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
-          Util::String i_Filename = i_Path.substr(
-              l_ThemeDirectory.length() + 1, i_Path.length());
-          Util::String i_Name = i_Filename.substr(
-              0, i_Filename.length() - l_Ending.length());
+          Util::String i_Name = get_theme_name_from_path(i_Path);
 
           Util::Yaml::Node i_Node =
               Util::Yaml::load_file(i_Path.c_str());
 
-          parse_theme(i_Name, i_Node);
+          parse_theme(i_Name, i_Node, i_Path, false);
 
           // Apply first theme found
           if (l_First) {
@@ -387,11 +521,101 @@ namespace Low {
           }
         }
       }
+
+      l_FilePaths.clear();
+      Util::FileIO::list_directory(l_UserThemeDirectory.c_str(),
+                                   l_FilePaths);
+      for (Util::String &i_Path : l_FilePaths) {
+        if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
+          Util::String i_Name = get_theme_name_from_path(i_Path);
+
+          Util::Yaml::Node i_Node =
+              Util::Yaml::load_file(i_Path.c_str());
+
+          parse_theme(i_Name, i_Node, i_Path, true);
+
+          if (l_First) {
+            theme_apply(LOW_NAME(i_Name.c_str()));
+            l_First = !l_First;
+          }
+        }
+      }
+    }
+
+    Util::List<Util::Name> themes_get_names()
+    {
+      Util::List<Util::Name> l_Names;
+      for (auto it = g_Themes.begin(); it != g_Themes.end(); ++it) {
+        l_Names.push_back(it->first);
+      }
+      return l_Names;
     }
 
     bool theme_exists(Util::Name p_Name)
     {
       return g_Themes.find(p_Name) != g_Themes.end();
+    }
+
+    bool theme_is_editable(Util::Name p_Name)
+    {
+      auto it = g_ThemeInfos.find(p_Name);
+      return it != g_ThemeInfos.end() && it->second.editable;
+    }
+
+    bool theme_save(Util::Name p_Name)
+    {
+      if (!theme_exists(p_Name) || !theme_is_editable(p_Name)) {
+        return false;
+      }
+
+      ensure_user_theme_directory();
+      ThemeInfo &l_Info = g_ThemeInfos[p_Name];
+      if (l_Info.path.empty()) {
+        l_Info.path = get_theme_file_path(p_Name);
+      }
+
+      Util::FileIO::File l_File =
+          Util::FileIO::open(l_Info.path.c_str(),
+                             Util::FileIO::FileMode::WRITE);
+      Util::FileIO::write_sync(l_File, serialize_theme(g_Themes[p_Name]));
+      Util::FileIO::close(l_File);
+      return true;
+    }
+
+    bool theme_duplicate(Util::Name p_Source, Util::Name p_NewName)
+    {
+      if (!theme_exists(p_Source) || !p_NewName.is_valid() ||
+          theme_exists(p_NewName)) {
+        return false;
+      }
+
+      ensure_user_theme_directory();
+      g_Themes[p_NewName] = g_Themes[p_Source];
+      g_ThemeInfos[p_NewName] = {get_theme_file_path(p_NewName), true};
+      theme_save(p_NewName);
+      theme_apply(p_NewName);
+      return true;
+    }
+
+    bool theme_delete(Util::Name p_Name)
+    {
+      if (!theme_exists(p_Name) || !theme_is_editable(p_Name)) {
+        return false;
+      }
+
+      Util::String l_Path = g_ThemeInfos[p_Name].path;
+      if (!l_Path.empty()) {
+        Util::FileIO::delete_sync(l_Path.c_str());
+      }
+
+      bool l_WasSelected = p_Name == g_SelectedTheme;
+      g_Themes.erase(p_Name);
+      g_ThemeInfos.erase(p_Name);
+
+      if (l_WasSelected && !g_Themes.empty()) {
+        theme_apply(g_Themes.begin()->first);
+      }
+      return true;
     }
 
     void theme_apply(Util::Name p_Name)

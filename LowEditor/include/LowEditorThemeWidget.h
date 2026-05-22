@@ -4,9 +4,10 @@
 
 namespace Low {
   namespace Editor {
-    struct AppearanceWidget : public Widget
+    struct ThemeWidget : public Widget
     {
-      void render(float p_Detla) override;
+      void render(float p_Delta) override;
     };
+
   } // namespace Editor
 } // namespace Low
