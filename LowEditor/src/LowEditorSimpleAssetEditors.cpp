@@ -340,5 +340,17 @@ namespace Low {
       show_line("Source file",
                 l_Font.get_resource().get_source_file());
     }
+
+    void SkeletonAssetEditor::render(const float p_Delta)
+    {
+      Renderer::Skeleton l_Skeleton = m_Handle.get_id();
+
+      draw_header(l_Skeleton.get_name().c_str(), "Skeleton",
+                  AssetType::Skeleton);
+
+      show_line("ID",
+                Util::hash_to_string(
+                    l_Skeleton.get_resource().get_skeleton_id()));
+    }
   } // namespace Editor
 } // namespace Low

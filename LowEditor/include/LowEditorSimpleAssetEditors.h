@@ -64,5 +64,20 @@ namespace Low {
         return Math::UVector2{390, 180};
       }
     };
+
+    struct SkeletonAssetEditor : public TypeEditor
+    {
+      SkeletonAssetEditor(Util::Handle p_Handle)
+          : TypeEditor(p_Handle)
+      {
+      }
+
+      void render(const float p_Delta) override;
+
+      virtual Math::UVector2 get_edit_widget_dimensions() override
+      {
+        return Math::UVector2{390, 400};
+      }
+    };
   } // namespace Editor
 } // namespace Low

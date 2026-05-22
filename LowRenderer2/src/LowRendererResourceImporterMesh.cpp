@@ -109,6 +109,37 @@ namespace Low {
           u64 exactHash;
         };
 
+        struct AnimationVectorKey
+        {
+          double time;
+          Math::Vector3 value;
+        };
+
+        struct AnimationRotationKey
+        {
+          double time;
+          Math::Quaternion value;
+        };
+
+        struct AnimationClipImportChannel
+        {
+          Util::Name targetName;
+          u32 boneIndex;
+          bool targetsSkeletonBone;
+          Util::List<AnimationVectorKey> positions;
+          Util::List<AnimationRotationKey> rotations;
+          Util::List<AnimationVectorKey> scales;
+        };
+
+        struct AnimationClipImportData
+        {
+          Util::String name;
+          double duration;
+          double ticksPerSecond;
+          Util::List<AnimationClipImportChannel> channels;
+          u64 exactHash;
+        };
+
         static Math::Matrix4x4
         assimp_matrix_to_glm(const aiMatrix4x4 &p_Matrix)
         {
@@ -633,12 +664,50 @@ namespace Low {
           p_Out += l_Buffer;
         }
 
+        static void append_u64(Util::String &p_Out, const u64 p_Value)
+        {
+          char l_Buffer[32];
+          snprintf(l_Buffer, sizeof(l_Buffer), "%llu",
+                   static_cast<unsigned long long>(p_Value));
+          p_Out += l_Buffer;
+        }
+
         static void append_quantized_float(Util::String &p_Out,
                                            const float p_Value)
         {
           constexpr float l_Quantization = 100000.0f;
           append_i64(p_Out, static_cast<i64>(std::llround(
                                 p_Value * l_Quantization)));
+        }
+
+        static void append_quantized_double(Util::String &p_Out,
+                                            const double p_Value)
+        {
+          constexpr double l_Quantization = 100000.0;
+          append_i64(p_Out, static_cast<i64>(std::llround(
+                                p_Value * l_Quantization)));
+        }
+
+        static void append_vector3(Util::String &p_Out,
+                                   const Math::Vector3 &p_Vector)
+        {
+          append_quantized_float(p_Out, p_Vector.x);
+          p_Out += ",";
+          append_quantized_float(p_Out, p_Vector.y);
+          p_Out += ",";
+          append_quantized_float(p_Out, p_Vector.z);
+        }
+
+        static void append_quaternion(Util::String &p_Out,
+                                      const Math::Quaternion &p_Quat)
+        {
+          append_quantized_float(p_Out, p_Quat.x);
+          p_Out += ",";
+          append_quantized_float(p_Out, p_Quat.y);
+          p_Out += ",";
+          append_quantized_float(p_Out, p_Quat.z);
+          p_Out += ",";
+          append_quantized_float(p_Out, p_Quat.w);
         }
 
         static void append_matrix(Util::String &p_Out,
@@ -815,6 +884,172 @@ namespace Low {
 
           return true;
         }
+
+        static u64 calculate_animation_clip_hash(
+            const AnimationClipImportData &p_ClipData)
+        {
+          if (p_ClipData.channels.empty()) {
+            return 0u;
+          }
+
+          Util::String l_CanonicalData;
+          l_CanonicalData += "LOW_ANIMATION_CLIP_HASH_V1|";
+          append_u64(l_CanonicalData,
+                     Util::fnv1a_64(p_ClipData.name.c_str(),
+                                    p_ClipData.name.size()));
+          l_CanonicalData += "|";
+          append_quantized_double(l_CanonicalData,
+                                  p_ClipData.duration);
+          l_CanonicalData += "|";
+          append_quantized_double(l_CanonicalData,
+                                  p_ClipData.ticksPerSecond);
+          l_CanonicalData += "|";
+          append_u32(l_CanonicalData, p_ClipData.channels.size());
+          l_CanonicalData += "|";
+
+          for (u32 i = 0u; i < p_ClipData.channels.size(); ++i) {
+            const AnimationClipImportChannel &i_Channel =
+                p_ClipData.channels[i];
+
+            l_CanonicalData += "channel|";
+            append_u32(l_CanonicalData, i_Channel.targetName.m_Index);
+            l_CanonicalData += "|";
+            append_u32(l_CanonicalData, i_Channel.boneIndex);
+            l_CanonicalData += "|";
+            append_u32(l_CanonicalData,
+                       i_Channel.targetsSkeletonBone ? 1u : 0u);
+            l_CanonicalData += "|positions|";
+            append_u32(l_CanonicalData, i_Channel.positions.size());
+            l_CanonicalData += "|";
+            for (u32 j = 0u; j < i_Channel.positions.size(); ++j) {
+              append_quantized_double(l_CanonicalData,
+                                      i_Channel.positions[j].time);
+              l_CanonicalData += ":";
+              append_vector3(l_CanonicalData,
+                             i_Channel.positions[j].value);
+              l_CanonicalData += "|";
+            }
+
+            l_CanonicalData += "rotations|";
+            append_u32(l_CanonicalData, i_Channel.rotations.size());
+            l_CanonicalData += "|";
+            for (u32 j = 0u; j < i_Channel.rotations.size(); ++j) {
+              append_quantized_double(l_CanonicalData,
+                                      i_Channel.rotations[j].time);
+              l_CanonicalData += ":";
+              append_quaternion(l_CanonicalData,
+                                i_Channel.rotations[j].value);
+              l_CanonicalData += "|";
+            }
+
+            l_CanonicalData += "scales|";
+            append_u32(l_CanonicalData, i_Channel.scales.size());
+            l_CanonicalData += "|";
+            for (u32 j = 0u; j < i_Channel.scales.size(); ++j) {
+              append_quantized_double(l_CanonicalData,
+                                      i_Channel.scales[j].time);
+              l_CanonicalData += ":";
+              append_vector3(l_CanonicalData,
+                             i_Channel.scales[j].value);
+              l_CanonicalData += "|";
+            }
+          }
+
+          return Util::fnv1a_64(l_CanonicalData.c_str(),
+                                l_CanonicalData.size());
+        }
+
+        static bool extract_animation_clip_import_data(
+            const aiScene *p_Scene,
+            const SkeletonImportData &p_SkeletonData,
+            Util::List<AnimationClipImportData> &p_OutClips)
+        {
+          p_OutClips.clear();
+
+          LOWR_IMP_ASSERT_RETURN(
+              p_Scene,
+              "Cannot extract animation clips from null scene.");
+
+          if (!p_Scene->HasAnimations()) {
+            return true;
+          }
+
+          p_OutClips.resize(p_Scene->mNumAnimations);
+
+          for (u32 i = 0u; i < p_Scene->mNumAnimations; ++i) {
+            aiAnimation *i_AiAnimation = p_Scene->mAnimations[i];
+            AnimationClipImportData &i_Clip = p_OutClips[i];
+
+            if (i_AiAnimation->mName.length > 0u) {
+              i_Clip.name = i_AiAnimation->mName.C_Str();
+            } else {
+              i_Clip.name = "Animation_";
+              append_u32(i_Clip.name, i);
+            }
+
+            i_Clip.duration = i_AiAnimation->mDuration;
+            i_Clip.ticksPerSecond =
+                i_AiAnimation->mTicksPerSecond > 0.0
+                    ? i_AiAnimation->mTicksPerSecond
+                    : 25.0;
+            i_Clip.channels.resize(i_AiAnimation->mNumChannels);
+
+            for (u32 j = 0u; j < i_AiAnimation->mNumChannels; ++j) {
+              aiNodeAnim *j_AiChannel = i_AiAnimation->mChannels[j];
+              AnimationClipImportChannel &j_Channel =
+                  i_Clip.channels[j];
+
+              j_Channel.targetName =
+                  LOW_NAME(j_AiChannel->mNodeName.C_Str());
+              j_Channel.boneIndex = LOW_UINT32_MAX;
+              j_Channel.targetsSkeletonBone = false;
+
+              auto j_BoneIt = p_SkeletonData.boneNameToIndex.find(
+                  j_Channel.targetName);
+              if (j_BoneIt != p_SkeletonData.boneNameToIndex.end()) {
+                j_Channel.boneIndex = j_BoneIt->second;
+                j_Channel.targetsSkeletonBone = true;
+              }
+
+              j_Channel.positions.resize(
+                  j_AiChannel->mNumPositionKeys);
+              for (u32 k = 0u; k < j_AiChannel->mNumPositionKeys;
+                   ++k) {
+                const aiVectorKey &k_Key =
+                    j_AiChannel->mPositionKeys[k];
+                j_Channel.positions[k].time = k_Key.mTime;
+                j_Channel.positions[k].value = Math::Vector3(
+                    k_Key.mValue.x, k_Key.mValue.y, k_Key.mValue.z);
+              }
+
+              j_Channel.rotations.resize(
+                  j_AiChannel->mNumRotationKeys);
+              for (u32 k = 0u; k < j_AiChannel->mNumRotationKeys;
+                   ++k) {
+                const aiQuatKey &k_Key =
+                    j_AiChannel->mRotationKeys[k];
+                j_Channel.rotations[k].time = k_Key.mTime;
+                j_Channel.rotations[k].value =
+                    Math::Quaternion(k_Key.mValue.w, k_Key.mValue.x,
+                                     k_Key.mValue.y, k_Key.mValue.z);
+              }
+
+              j_Channel.scales.resize(j_AiChannel->mNumScalingKeys);
+              for (u32 k = 0u; k < j_AiChannel->mNumScalingKeys;
+                   ++k) {
+                const aiVectorKey &k_Key =
+                    j_AiChannel->mScalingKeys[k];
+                j_Channel.scales[k].time = k_Key.mTime;
+                j_Channel.scales[k].value = Math::Vector3(
+                    k_Key.mValue.x, k_Key.mValue.y, k_Key.mValue.z);
+              }
+            }
+
+            i_Clip.exactHash = calculate_animation_clip_hash(i_Clip);
+          }
+
+          return true;
+        }
       } // namespace MeshImport
 
       static void create_thumbnail_picture(Mesh p_Mesh)
@@ -986,6 +1221,29 @@ namespace Low {
               import_skeleton(l_SkeletonData, p_ImportPath,
                               p_OutputPath, &l_SkeletonUniqueId),
               "Failed to import skeleton from mesh file.");
+        }
+
+        Util::List<AnimationClipImportData> l_AnimationClips;
+        LOWR_IMP_ASSERT_RETURN(
+            extract_animation_clip_import_data(
+                l_AiScene, l_SkeletonData, l_AnimationClips),
+            "Failed to extract animation clips from mesh file.");
+
+        if (!l_AnimationClips.empty()) {
+
+          for (u32 i = 0u; i < l_AnimationClips.size(); ++i) {
+            const AnimationClipImportData &i_Clip =
+                l_AnimationClips[i];
+
+            u32 i_UnmappedChannelCount = 0u;
+            for (u32 j = 0u; j < i_Clip.channels.size(); ++j) {
+              if (!i_Clip.channels[j].targetsSkeletonBone) {
+                i_UnmappedChannelCount++;
+              }
+            }
+
+            // TODO: Import
+          }
         }
 
         const Util::String l_FileName =

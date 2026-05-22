@@ -926,6 +926,7 @@ namespace Low {
       Skeleton l_Skeleton = make(p_Config.name, p_Config.skeleton_id);
       SkeletonResource l_Resource =
           SkeletonResource::make_from_config(p_Config);
+      l_Skeleton.set_resource(l_Resource);
       l_Skeleton.set_bone_count(p_Config.bone_count);
 
       return l_Skeleton;

@@ -1037,6 +1037,8 @@ namespace Low {
             Renderer::Texture::type_id());
         TypeEditor::register_type<FontAssetEditor>(
             Renderer::Font::type_id());
+        TypeEditor::register_type<SkeletonAssetEditor>(
+            Renderer::Skeleton::type_id());
         TypeEditor::register_type<UiWidgetEditor>(
             Core::UI::WidgetAsset::type_id());
       }
