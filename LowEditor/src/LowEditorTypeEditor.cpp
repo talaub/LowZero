@@ -14,6 +14,7 @@
 #include "LowCore.h"
 #include "LowCorePrefab.h"
 #include "LowCorePrefabInstance.h"
+#include <algorithm>
 #include <memory>
 
 #define TYPE_MANAGER_HANDLER(eventname)                              \
@@ -40,10 +41,126 @@ namespace Low {
     Util::Map<u16, TypeEditorFactory *> g_Factories;
     Util::Map<u16, TypeEventHandler *> g_EventHandlers;
 
+    Util::Map<u16, Util::List<TypeAction>> g_Actions;
+
     TYPE_MANAGER_HANDLER(after_add)
     TYPE_MANAGER_HANDLER(before_delete)
     TYPE_MANAGER_HANDLER(before_save)
     TYPE_MANAGER_HANDLER(after_save)
+
+    static inline bool has_flag(TypeActionFlags value,
+                                TypeActionFlags flag)
+    {
+      return static_cast<u32>(value & flag) != 0;
+    }
+
+    static bool
+    is_surface_compatible(const TypeActionSurface p_Surface,
+                          const TypeActionFlags p_TypeActionFlags)
+    {
+      if (p_Surface == TypeActionSurface::AssetWidgetContextMenu) {
+        return has_flag(
+            static_cast<TypeActionFlags>(p_TypeActionFlags),
+            TypeActionFlags::ContextMenu);
+      }
+
+      return false;
+    }
+
+    void TypeEditor::register_action(const u16 p_TypeId,
+                                     const TypeAction &p_TypeAction)
+    {
+      g_Actions[p_TypeId].push_back(p_TypeAction);
+    }
+
+    void
+    TypeEditor::collect_actions(Util::Handle p_Handle,
+                                const TypeActionSurface p_Surface,
+                                Util::List<TypeAction *> &p_Actions)
+    {
+      if (!p_Handle.is_registered_type()) {
+        return;
+      }
+
+      Util::RTTI::TypeInfo &l_TypeInfo =
+          Util::Handle::get_type_info(p_Handle.get_type());
+      if (!l_TypeInfo.is_alive(p_Handle)) {
+        return;
+      }
+
+      auto l_TypePos = g_Actions.find(p_Handle.get_type());
+
+      if (l_TypePos == g_Actions.end()) {
+        return;
+      }
+
+      TypeActionContext i_Context;
+      i_Context.handle = p_Handle;
+      i_Context.surface = p_Surface;
+
+      for (TypeAction &i_Action : l_TypePos->second) {
+        bool i_Display =
+            is_surface_compatible(p_Surface, i_Action.flags);
+
+        if (i_Display && i_Action.is_visible) {
+          i_Display = i_Action.is_visible(i_Context);
+        }
+
+        if (i_Display) {
+          p_Actions.push_back(&i_Action);
+        }
+      }
+    }
+
+    bool TypeEditor::render_context_menu(
+        const char *p_PopupId, Util::Handle p_Handle,
+        const TypeActionSurface p_Surface)
+    {
+      if (!ImGui::BeginPopup(p_PopupId)) {
+        return false;
+      }
+
+      TypeActionContext l_Context;
+      l_Context.handle = p_Handle;
+      l_Context.surface = p_Surface;
+
+      Util::List<TypeAction *> l_Actions;
+      collect_actions(p_Handle, p_Surface, l_Actions);
+
+      std::sort(l_Actions.begin(), l_Actions.end(),
+                [](const TypeAction *p_Left,
+                   const TypeAction *p_Right) {
+                  return p_Left->priority < p_Right->priority;
+                });
+
+      if (l_Actions.empty()) {
+        ImGui::MenuItem("No actions", nullptr, false, false);
+      }
+
+      for (TypeAction *i_Action : l_Actions) {
+        bool i_Enabled = true;
+        if (i_Action->is_enabled) {
+          i_Enabled = i_Action->is_enabled(l_Context);
+        }
+
+        Util::String i_Label;
+        if (!i_Action->icon.empty()) {
+          i_Label += i_Action->icon;
+          i_Label += " ";
+        }
+        i_Label += i_Action->label;
+
+        if (ImGui::MenuItem(i_Label.c_str(), nullptr, false,
+                            i_Enabled)) {
+          if (i_Action->execute) {
+            i_Action->execute(l_Context);
+          }
+        }
+      }
+
+      ImGui::EndPopup();
+      return true;
+    }
 
     void TypeEditor::register_factory_for_type(
         u16 p_TypeId, TypeEditorFactory *p_Factory)

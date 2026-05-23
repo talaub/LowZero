@@ -4,6 +4,7 @@
 #include "LowEditorFonts.h"
 #include "LowEditorMainWindow.h"
 #include "LowEditorThemes.h"
+#include "LowEditorTypeEditor.h"
 #include "LowMath.h"
 #include "LowRendererMaterial.h"
 #include "LowRendererMaterialResource.h"
@@ -63,7 +64,9 @@ namespace Low {
                    << "' to file." << LOW_LOG_END;
     }
 
-    AssetWidget::AssetWidget() : m_UpdateCounter(UPDATE_INTERVAL)
+    AssetWidget::AssetWidget()
+        : m_UpdateCounter(UPDATE_INTERVAL),
+          m_ContextMenuHandle(Util::Handle::DEAD)
     {
       m_DataWatcher = Util::FileSystem::watch_directory(
           Util::get_project().dataPath,
@@ -455,6 +458,10 @@ namespace Low {
             }
           }
         }
+        if (i_Result.rightClicked) {
+          m_ContextMenuHandle = i_FileWatcher.handle;
+          ImGui::OpenPopup("AssetTypeActionContextMenu");
+        }
 
         l_Column++;
         if (l_Column < l_Cols) {
@@ -464,6 +471,10 @@ namespace Low {
           ImGui::Dummy(ImVec2(0, g_Margin.y)); // vertical margin
         }
       }
+
+      TypeEditor::render_context_menu(
+          "AssetTypeActionContextMenu", m_ContextMenuHandle,
+          TypeActionSurface::AssetWidgetContextMenu);
     }
 
     void AssetWidget::render(float p_Delta)
@@ -510,7 +521,17 @@ namespace Low {
                                ImGui::GetContentRegionAvail().y),
                         true);
 
-      if (ImGui::BeginPopupContextWindow("WINDOWCONTEXT")) {
+      render_directory_content(
+          Util::FileSystem::get_directory_watcher(
+              m_SelectedDirectory));
+
+      if (ImGui::IsWindowHovered() &&
+          !ImGui::IsAnyItemHovered() &&
+          ImGui::IsMouseReleased(ImGuiMouseButton_Right)) {
+        ImGui::OpenPopup("WINDOWCONTEXT");
+      }
+
+      if (ImGui::BeginPopup("WINDOWCONTEXT")) {
         // TODO: Change this. Asset creation options should be
         // registered from outside and not harcoded here.
         if (ImGui::MenuItem("New UI-Widget")) {
@@ -529,9 +550,6 @@ namespace Low {
         }
         ImGui::EndPopup();
       }
-      render_directory_content(
-          Util::FileSystem::get_directory_watcher(
-              m_SelectedDirectory));
       ImGui::EndChild();
 
       ImGui::End();

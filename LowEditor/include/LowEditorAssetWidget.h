@@ -23,6 +23,7 @@ namespace Low {
       float m_UpdateCounter;
 
       Util::FileSystem::WatchHandle m_DataWatcher;
+      Util::Handle m_ContextMenuHandle;
 
       void
       render_directory_list(const Util::FileSystem::DirectoryWatcher

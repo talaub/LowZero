@@ -1042,6 +1042,19 @@ namespace Low {
         TypeEditor::register_type<UiWidgetEditor>(
             Core::UI::WidgetAsset::type_id());
       }
+      {
+        /*
+        TypeEditor::register_action(
+            Renderer::Skeleton::type_id(),
+            TypeAction{
+                N(skeleton_rename), "Rename",
+                LOW_EDITOR_ICON_FILE_LOCKED,
+                TypeActionFlags::ContextMenu, 100, nullptr, nullptr,
+                [](const TypeActionContext &p_Context) {
+                  Renderer::Skeleton l_Skeleton = p_Context.handle;
+                }});
+                */
+      }
     }
 
     void cleanup()

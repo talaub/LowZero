@@ -26,6 +26,56 @@ namespace Low {
     struct TypeEditorFactory;
     template <typename T> struct TypeEditorFactory_Impl;
 
+    enum class TypeActionFlags : u32
+    {
+      None = 0,
+      ContextMenu = 1 << 0,
+    };
+
+    inline TypeActionFlags operator|(TypeActionFlags a,
+                                     TypeActionFlags b)
+    {
+      return static_cast<TypeActionFlags>(static_cast<u32>(a) |
+                                          static_cast<u32>(b));
+    }
+
+    inline TypeActionFlags operator&(TypeActionFlags a,
+                                     TypeActionFlags b)
+    {
+      return static_cast<TypeActionFlags>(static_cast<u32>(a) &
+                                          static_cast<u32>(b));
+    }
+
+    inline TypeActionFlags &operator|=(TypeActionFlags &a,
+                                       TypeActionFlags b)
+    {
+      a = a | b;
+      return a;
+    }
+
+    enum class TypeActionSurface
+    {
+      AssetWidgetContextMenu,
+    };
+
+    struct TypeActionContext
+    {
+      Util::Handle handle;
+      TypeActionSurface surface;
+    };
+
+    struct TypeAction
+    {
+      Util::Name id;
+      Util::String label;
+      Util::String icon;
+      TypeActionFlags flags;
+      i32 priority;
+      Util::Function<bool(const TypeActionContext &)> is_visible;
+      Util::Function<bool(const TypeActionContext &)> is_enabled;
+      Util::Function<void(const TypeActionContext &)> execute;
+    };
+
     struct TypeEventHandler
     {
       TYPE_MANAGER_EVENT(after_add)
@@ -99,6 +149,17 @@ namespace Low {
 
         register_event_handler_for_type(p_TypeId, new H);
       }
+
+      static void register_action(const u16 p_TypeId,
+                                  const TypeAction &p_TypeAction);
+      static void
+      collect_actions(Util::Handle p_Handle,
+                      const TypeActionSurface p_Surface,
+                      Util::List<TypeAction *> &p_Actions);
+      static bool
+      render_context_menu(const char *p_PopupId,
+                          Util::Handle p_Handle,
+                          const TypeActionSurface p_Surface);
 
     protected:
       Util::Handle m_Handle;
