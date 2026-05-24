@@ -8,6 +8,7 @@ LowRenderer2:
   MaterialState: 7
   SkeletonState: 10
   MeshType: 11
+  AnimationClipState: 12
 LowCore:
   ScriptAssetGenerator: 8
   AssetGenerator: 9

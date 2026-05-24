@@ -48,3 +48,10 @@ enums:
     options:
       - name: Static
       - name: Skeletal
+  AnimationClipState:
+    options:
+      - name: Unknown
+      - name: Unloaded
+      - name: ScheduledToLoad
+      - name: LoadingToMemory
+      - name: Loaded

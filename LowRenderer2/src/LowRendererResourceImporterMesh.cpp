@@ -6,7 +6,9 @@
 #include "LowRendererMeshResource.h"
 #include "LowRendererMeshState.h"
 #include "LowRendererMeshType.h"
+#include "LowRendererAnimationClip.h"
 #include "LowRendererResourceImporter.h"
+#include "LowRendererAnimationClip.h"
 
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
@@ -18,6 +20,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cctype>
+#include <cstring>
 
 #include "LowUtil.h"
 #include "LowUtilHandle.h"
@@ -1165,6 +1168,129 @@ namespace Low {
         return true;
       }
 
+      static bool import_animation_clip(
+          const MeshImport::AnimationClipImportData &p_Clip,
+          const Util::String &p_ImportPath,
+          const Util::String &p_OutputPath,
+          const u64 p_SkeletonUniqueId)
+      {
+        const u64 l_AnimationClipId = Util::generate_unique_id();
+
+        BinSerial::AnimClipFileHeader l_Header;
+        memset(&l_Header, 0, sizeof(l_Header));
+        memcpy(l_Header.magic, "LOWANIMCLIP", 11);
+        l_Header.version = 1u;
+        l_Header.duration = static_cast<float>(p_Clip.duration);
+        l_Header.ticks_per_second =
+            static_cast<float>(p_Clip.ticksPerSecond);
+        l_Header.channel_count = 0;
+
+        Util::List<BinSerial::AnimChannelHeader> l_ChannelHeaders;
+        Util::List<BinSerial::VecKey> l_Positions;
+        Util::List<BinSerial::QuatKey> l_Rotations;
+        Util::List<BinSerial::VecKey> l_Scales;
+
+        for (u32 i = 0u; i < p_Clip.channels.size(); ++i) {
+
+          if (!p_Clip.channels[i].targetsSkeletonBone) {
+            continue;
+          }
+
+          l_Header.channel_count++;
+
+          const MeshImport::AnimationClipImportChannel &i_Channel =
+              p_Clip.channels[i];
+
+          BinSerial::AnimChannelHeader i_ChannelHeader;
+          i_ChannelHeader.bone_index = i_Channel.boneIndex;
+          i_ChannelHeader.position_count = 0;
+          i_ChannelHeader.rotation_count = 0;
+          i_ChannelHeader.scale_count = 0;
+
+          for (const MeshImport::AnimationVectorKey &i_Key :
+               i_Channel.positions) {
+            BinSerial::VecKey i_SerialKey;
+            i_SerialKey.time = i_Key.time;
+            i_SerialKey.value = i_Key.value;
+
+            l_Positions.push_back(i_SerialKey);
+            i_ChannelHeader.position_count++;
+          }
+          for (const MeshImport::AnimationRotationKey &i_Key :
+               i_Channel.rotations) {
+            BinSerial::QuatKey i_SerialKey;
+            i_SerialKey.time = i_Key.time;
+            i_SerialKey.value = i_Key.value;
+
+            l_Rotations.push_back(i_SerialKey);
+            i_ChannelHeader.rotation_count++;
+          }
+          for (const MeshImport::AnimationVectorKey &i_Key :
+               i_Channel.scales) {
+            BinSerial::VecKey i_SerialKey;
+            i_SerialKey.time = i_Key.time;
+            i_SerialKey.value = i_Key.value;
+
+            l_Scales.push_back(i_SerialKey);
+            i_ChannelHeader.scale_count++;
+          }
+
+          l_ChannelHeaders.push_back(i_ChannelHeader);
+        }
+        const Util::String l_BaseAssetPath =
+            Util::get_project().assetCachePath + "\\" +
+            Util::hash_to_string(l_AnimationClipId);
+
+        const Util::String l_DataPath = l_BaseAssetPath + ".animclip";
+
+        const Util::String l_ResourcePath =
+            l_BaseAssetPath + ".animclipresource.yaml";
+
+        Util::FileIO::File l_DataFile = Util::FileIO::open(
+            l_DataPath.c_str(), Util::FileIO::FileMode::WRITE_BYTES);
+
+        LOWR_IMP_ASSERT_RETURN(
+            l_DataFile.is_open(),
+            "Failed to open animation clip data file for writing.");
+
+        bool l_WriteSuccess = true;
+        l_WriteSuccess = l_WriteSuccess && Util::FileIO::write_value(
+                                               l_DataFile, l_Header);
+        l_WriteSuccess =
+            l_WriteSuccess &&
+            Util::FileIO::write_array(l_DataFile, l_ChannelHeaders);
+        l_WriteSuccess =
+            l_WriteSuccess &&
+            Util::FileIO::write_array(l_DataFile, l_Positions);
+        l_WriteSuccess =
+            l_WriteSuccess &&
+            Util::FileIO::write_array(l_DataFile, l_Rotations);
+        l_WriteSuccess = l_WriteSuccess && Util::FileIO::write_array(
+                                               l_DataFile, l_Scales);
+
+        Util::FileIO::close(l_DataFile);
+
+        LOWR_IMP_ASSERT_RETURN(
+            l_WriteSuccess,
+            "Failed to write animation clip binary data.");
+
+        Util::Serial::Node l_ResourceNode;
+        l_ResourceNode["version"] = 1;
+        l_ResourceNode["source_file"] = p_ImportPath;
+        l_ResourceNode["name"] = p_Clip.name;
+        l_ResourceNode["hash"] = Util::U64Id{p_Clip.exactHash};
+        l_ResourceNode["clip_id"] = Util::U64Id{l_AnimationClipId};
+        l_ResourceNode["skeleton"] = Util::U64Id{p_SkeletonUniqueId};
+        l_ResourceNode["duration"] = p_Clip.duration;
+        // l_ResourceNode["ticks_per_second"] = p_Clip.ticksPerSecond;
+        // l_ResourceNode["channel_count"] = l_Header.channel_count;
+
+        Util::Serial::write_yaml_file(l_ResourcePath.c_str(),
+                                      l_ResourceNode);
+
+        return true;
+      }
+
       bool import_mesh(Util::String p_ImportPath,
                        Util::String p_OutputPath)
       {
@@ -1229,20 +1355,14 @@ namespace Low {
                 l_AiScene, l_SkeletonData, l_AnimationClips),
             "Failed to extract animation clips from mesh file.");
 
-        if (!l_AnimationClips.empty()) {
+        if (!l_AnimationClips.empty() && l_HasBones) {
 
           for (u32 i = 0u; i < l_AnimationClips.size(); ++i) {
-            const AnimationClipImportData &i_Clip =
-                l_AnimationClips[i];
-
-            u32 i_UnmappedChannelCount = 0u;
-            for (u32 j = 0u; j < i_Clip.channels.size(); ++j) {
-              if (!i_Clip.channels[j].targetsSkeletonBone) {
-                i_UnmappedChannelCount++;
-              }
-            }
-
-            // TODO: Import
+            LOWR_IMP_ASSERT_RETURN(
+                import_animation_clip(l_AnimationClips[i],
+                                      p_ImportPath, p_OutputPath,
+                                      l_SkeletonUniqueId),
+                "Failed to import animation clip.");
           }
         }
 

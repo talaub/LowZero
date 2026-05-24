@@ -76,7 +76,7 @@ namespace Low {
 
       virtual Math::UVector2 get_edit_widget_dimensions() override
       {
-        return Math::UVector2{390, 400};
+        return Math::UVector2{500, 400};
       }
     };
   } // namespace Editor

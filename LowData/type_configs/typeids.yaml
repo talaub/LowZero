@@ -111,6 +111,8 @@ LowRenderer2:
   ShaderSource: 110
   Skeleton: 111
   SkeletonResource: 112
+  AnimationClip: 113
+  AnimationClipResource: 114
 LowRendjrer2:
   RenderObject: 56
   RenderView: 57

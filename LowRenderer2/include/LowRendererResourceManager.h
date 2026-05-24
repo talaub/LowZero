@@ -2,6 +2,7 @@
 
 #include "LowRenderer2Api.h"
 
+#include "LowRendererAnimationClipResource.h"
 #include "LowRendererMesh.h"
 #include "LowRendererMaterial.h"
 #include "LowRendererSkeleton.h"
@@ -21,6 +22,7 @@ namespace Low {
       bool LOW_RENDERER2_API
       load_editor_image(EditorImage p_EditorImage);
       bool LOW_RENDERER2_API load_material(Material p_Material);
+      bool LOW_RENDERER2_API load_skeleton(Skeleton p_Skeleton);
 
       bool LOW_RENDERER2_API
       override_loaded_texture(Texture p_Texture);
@@ -41,6 +43,9 @@ namespace Low {
       bool parse_skeleton_resource_config(
           Util::String p_Path, Util::Serial::Node &p_Node,
           SkeletonResourceConfig &p_Config);
+      bool parse_animation_clip_resource_config(
+          Util::String p_Path, Util::Serial::Node &p_Node,
+          AnimationClipResourceConfig &p_Config);
 
       void register_asset_id(const u64 p_AssetId,
                              const u64 p_AssetHandleId);

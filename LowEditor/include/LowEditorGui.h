@@ -5,6 +5,8 @@
 #include "LowEditorWidget.h"
 #include "LowEditorFonts.h"
 #include "LowUtilName.h"
+#include "LowUtilFileSystem.h"
+#include "LowEditor.h"
 
 #include <imgui.h>
 
@@ -17,7 +19,19 @@
 
 namespace Low {
   namespace Editor {
+
+    struct AssetCardResult
+    {
+      bool clicked = false;
+      bool doubleClicked = false;
+      bool rightClicked = false;
+      bool hovered = false;
+    };
+
     namespace Gui {
+
+      extern const ImVec2 g_AssetCardSize;
+
       bool Vector2Edit(Math::Vector2 &p_Vector,
                        float p_MaxWidth = -1.0f);
       bool Vector3Edit(Math::Vector3 &p_Vector,
@@ -47,12 +61,12 @@ namespace Low {
           float min = 0.0f, float max = 0.0f,
           const char *format = "%.3f", float p_Scale = 1.0f);
 
-      bool LOW_EDITOR_API ColorRGBInput(
-          const char *label, Math::ColorRGB *value,
-          float p_Scale = 1.0f);
-      bool LOW_EDITOR_API ColorRGBAInput(
-          const char *label, Math::Color *value,
-          float p_Scale = 1.0f);
+      bool LOW_EDITOR_API ColorRGBInput(const char *label,
+                                        Math::ColorRGB *value,
+                                        float p_Scale = 1.0f);
+      bool LOW_EDITOR_API ColorRGBAInput(const char *label,
+                                         Math::Color *value,
+                                         float p_Scale = 1.0f);
 
       bool LOW_EDITOR_API DragIntWithButtons(const char *label,
                                              int *value,
@@ -118,6 +132,14 @@ namespace Low {
                                     int p_Length = 256,
                                     ImGuiInputTextFlags p_Flags = 0,
                                     float p_Scale = 1.0f);
+
+      AssetCardResult
+      asset_card(const Util::FileSystem::FileWatcher &p_FileWatcher);
+
+      AssetCardResult asset_card(const u64 p_Id,
+                                 const AssetType p_AssetType,
+                                 const Util::Handle p_Handle,
+                                 const Util::String &p_DisplayName);
 
       struct ToolbarState
       {

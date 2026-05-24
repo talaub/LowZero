@@ -13,6 +13,7 @@
 #include "LowRendererMeshType.h"
 #include "LowRendererTexture.h"
 #include "LowRendererFont.h"
+#include "LowRendererAnimationClip.h"
 #include "LowRendererTextureState.h"
 #include "LowRendererResourceManager.h"
 #include "LowEditorPropertyEditors.h"
@@ -351,6 +352,88 @@ namespace Low {
       show_line("ID",
                 Util::hash_to_string(
                     l_Skeleton.get_resource().get_skeleton_id()));
+
+      ImGui::Dummy(ImVec2(0, 10));
+
+      const u64 l_SkeletonId =
+          l_Skeleton.get_resource().get_skeleton_id();
+      u32 l_LinkedClipCount = 0u;
+
+      for (u32 i = 0u; i < Renderer::AnimationClip::living_count();
+           ++i) {
+        Renderer::AnimationClip i_Clip =
+            Renderer::AnimationClip::living_instances()[i];
+        if (!i_Clip.is_alive()) {
+          continue;
+        }
+
+        Renderer::Skeleton i_ClipSkeleton = i_Clip.get_skeleton();
+        if (!i_ClipSkeleton.is_alive() ||
+            i_ClipSkeleton.get_resource().get_skeleton_id() !=
+                l_SkeletonId) {
+          continue;
+        }
+
+        ++l_LinkedClipCount;
+      }
+
+      Util::StringBuilder l_Header;
+      l_Header.append("Animation clips (");
+      l_Header.append(l_LinkedClipCount);
+      l_Header.append(")");
+
+      if (!Gui::CollapsibleHeader(
+              l_Header.get().c_str(), nullptr,
+              get_color_for_asset_type(AssetType::AnimClip), true)) {
+        return;
+      }
+
+      if (l_LinkedClipCount == 0u) {
+        ImGui::TextDisabled("No linked animation clips.");
+        return;
+      }
+
+      const float l_CardWidth = 140.0f;
+      const float l_CardSpacing = 14.0f;
+      const float l_AvailableWidth =
+          ImGui::GetContentRegionAvail().x;
+      const int l_Columns = LOW_MATH_MAX(
+          1, (int)Math::Util::floor((l_AvailableWidth +
+                                     l_CardSpacing) /
+                                    (l_CardWidth + l_CardSpacing)));
+      int l_Column = 0;
+
+      for (u32 i = 0u; i < Renderer::AnimationClip::living_count();
+           ++i) {
+        Renderer::AnimationClip i_Clip =
+            Renderer::AnimationClip::living_instances()[i];
+        if (!i_Clip.is_alive()) {
+          continue;
+        }
+
+        Renderer::Skeleton i_ClipSkeleton = i_Clip.get_skeleton();
+        if (!i_ClipSkeleton.is_alive() ||
+            i_ClipSkeleton.get_resource().get_skeleton_id() !=
+                l_SkeletonId) {
+          continue;
+        }
+
+        AssetCardResult i_Result = Gui::asset_card(
+            i_Clip.get_id(), AssetType::AnimClip, i_Clip,
+            i_Clip.get_name().c_str());
+
+        if (i_Result.clicked) {
+          set_selected_handle(i_Clip);
+        }
+
+        ++l_Column;
+        if (l_Column < l_Columns) {
+          ImGui::SameLine(0.0f, l_CardSpacing);
+        } else {
+          l_Column = 0;
+          ImGui::Dummy(ImVec2(0, 8.0f));
+        }
+      }
     }
   } // namespace Editor
 } // namespace Low

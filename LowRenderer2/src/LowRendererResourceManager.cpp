@@ -2,6 +2,7 @@
 
 #include "LowMath.h"
 #include "LowRenderer.h"
+#include "LowRendererAnimationClipState.h"
 #include "LowRendererEditorImageGpu.h"
 #include "LowRendererEditorImageStaging.h"
 #include "LowRendererMaterialState.h"
@@ -9,6 +10,7 @@
 #include "LowRendererMeshResourceState.h"
 #include "LowRendererMeshState.h"
 #include "LowRendererMeshType.h"
+#include "LowRendererSkeletonState.h"
 #include "LowRendererTextureResource.h"
 #include "LowRendererTextureState.h"
 #include "LowRendererVulkanRenderer.h"
@@ -23,6 +25,7 @@
 #include "LowRendererTextureStaging.h"
 #include "LowRendererBase.h"
 #include "LowRendererVulkanBuffer.h"
+#include "LowRendererAnimationClip.h"
 
 #include "LowUtil.h"
 #include "LowUtilContainers.h"
@@ -35,6 +38,7 @@
 #include "LowUtilHashing.h"
 #include "LowUtilString.h"
 
+#include <cstring>
 #include <iostream>
 #include <vulkan/vulkan_core.h>
 
@@ -88,6 +92,8 @@ namespace Low {
         Util::Set<Font> fonts;
         Util::Set<EditorImage> editorImages;
         Util::Set<Material> materials;
+        Util::Set<Skeleton> skeletons;
+        Util::Set<AnimationClip> animation_clips;
       } g_LoadSchedules;
 
       struct UploadEntry
@@ -149,6 +155,30 @@ namespace Low {
           g_UploadSchedules(g_UploadEntryComparator,
                             g_UploadSchedulesContainer);
 
+      bool load_animation_clip(AnimationClip p_Clip)
+      {
+        if (p_Clip.get_state() != AnimationClipState::UNLOADED) {
+          return false;
+        }
+
+        p_Clip.set_state(AnimationClipState::SCHEDULEDTOLOAD);
+        g_LoadSchedules.animation_clips.insert(p_Clip);
+
+        return true;
+      }
+
+      bool load_skeleton(Skeleton p_Skeleton)
+      {
+        if (p_Skeleton.get_state() != SkeletonState::UNLOADED) {
+          return false;
+        }
+
+        p_Skeleton.set_state(SkeletonState::SCHEDULEDTOLOAD);
+        g_LoadSchedules.skeletons.insert(p_Skeleton);
+
+        return true;
+      }
+
       static bool texture_can_load(Texture p_Texture)
       {
         return p_Texture.get_state() == TextureState::UNLOADED &&
@@ -195,6 +225,144 @@ namespace Low {
 
         g_LoadSchedules.textures.insert(p_Texture);
 
+        return true;
+      }
+
+      static bool skeleton_schedule_memory_load(Skeleton p_Skeleton)
+      {
+        p_Skeleton.set_state(SkeletonState::LOADINGTOMEMORY);
+        const u64 l_SkeletonId = p_Skeleton.get_id();
+        Util::JobManager::IO::schedule_read_yaml(
+            p_Skeleton.get_resource().get_data_path().c_str(),
+            [l_SkeletonId](bool p_Success,
+                           Util::Serial::Node &p_Node) {
+              Skeleton l_Skeleton = l_SkeletonId;
+              LOW_ASSERT(p_Success,
+                         "Failed to load skeleton data yaml.");
+
+              l_Skeleton.get_bones().clear();
+              l_Skeleton.get_bone_map().clear();
+
+              if (p_Node["bones"]) {
+                Util::Serial::Node &l_BonesNode = p_Node["bones"];
+                l_Skeleton.get_bones().reserve(l_BonesNode.size());
+
+                for (u32 i = 0u; i < l_BonesNode.size(); ++i) {
+                  Util::Serial::Node &i_BoneNode = l_BonesNode[i];
+
+                  SkeletonBone i_Bone;
+                  i_Bone.name = i_BoneNode["name"].as<Util::Name>();
+                  i_Bone.parent_index =
+                      i_BoneNode["parent_index"].as<i32>();
+                  i_Bone.local_bind_transform =
+                      i_BoneNode["local_bind_transform"]
+                          .as<Math::Matrix4x4>();
+                  i_Bone.global_bind_transform =
+                      i_BoneNode["global_bind_transform"]
+                          .as<Math::Matrix4x4>();
+                  i_Bone.inverse_bind_matrix =
+                      i_BoneNode["inverse_bind_matrix"]
+                          .as<Math::Matrix4x4>();
+
+                  l_Skeleton.get_bone_map()[i_Bone.name] = i;
+                  l_Skeleton.get_bones().push_back(i_Bone);
+                }
+              }
+
+              l_Skeleton.set_state(SkeletonState::LOADED);
+            });
+        return true;
+      }
+
+      static bool
+      animation_clip_schedule_memory_load(AnimationClip p_Clip)
+      {
+        p_Clip.set_state(AnimationClipState::LOADINGTOMEMORY);
+        const u64 l_ClipId = p_Clip.get_id();
+        Util::JobManager::IO::schedule_read_raw(
+            p_Clip.get_resource().get_data_path(),
+            [l_ClipId](bool p_Success, Util::List<uint8_t> &p_Data) {
+              AnimationClip l_Clip = l_ClipId;
+              LOW_ASSERT(p_Success,
+                         "Failed to load animation clip data.");
+
+              u32 l_ReadOffset = 0u;
+              auto l_Read = [&p_Data, &l_ReadOffset](void *p_Target,
+                                                     u32 p_Size) {
+                LOW_ASSERT(l_ReadOffset + p_Size <= p_Data.size(),
+                           "Animation clip data is truncated.");
+                memcpy(p_Target, p_Data.data() + l_ReadOffset,
+                       p_Size);
+                l_ReadOffset += p_Size;
+              };
+
+              BinSerial::AnimClipFileHeader l_Header;
+              l_Read(&l_Header, sizeof(l_Header));
+
+              LOW_ASSERT(memcmp(l_Header.magic, "LOWANIMCLIP", 11) ==
+                             0,
+                         "Invalid animation clip file magic.");
+              LOW_ASSERT(l_Header.version == 1,
+                         "Unsupported animation clip file version.");
+
+              Util::List<BinSerial::AnimChannelHeader>
+                  l_ChannelHeaders;
+              l_ChannelHeaders.resize(l_Header.channel_count);
+              if (l_Header.channel_count > 0) {
+                l_Read(l_ChannelHeaders.data(),
+                       sizeof(BinSerial::AnimChannelHeader) *
+                           l_Header.channel_count);
+              }
+
+              l_Clip.set_duration(l_Header.duration);
+              l_Clip.set_ticks_per_second(l_Header.ticks_per_second);
+              l_Clip.get_channels().clear();
+              l_Clip.get_channels().resize(l_Header.channel_count);
+
+              for (u32 i = 0u; i < l_Header.channel_count; ++i) {
+                AnimationChannel &i_Channel =
+                    l_Clip.get_channels()[i];
+                i_Channel.bone_index = l_ChannelHeaders[i].bone_index;
+                i_Channel.positions.resize(
+                    l_ChannelHeaders[i].position_count);
+                i_Channel.rotations.resize(
+                    l_ChannelHeaders[i].rotation_count);
+                i_Channel.scales.resize(
+                    l_ChannelHeaders[i].scale_count);
+              }
+
+              for (u32 i = 0u; i < l_Header.channel_count; ++i) {
+                AnimationChannel &i_Channel =
+                    l_Clip.get_channels()[i];
+                if (!i_Channel.positions.empty()) {
+                  l_Read(i_Channel.positions.data(),
+                         sizeof(BinSerial::VecKey) *
+                             i_Channel.positions.size());
+                }
+              }
+
+              for (u32 i = 0u; i < l_Header.channel_count; ++i) {
+                AnimationChannel &i_Channel =
+                    l_Clip.get_channels()[i];
+                if (!i_Channel.rotations.empty()) {
+                  l_Read(i_Channel.rotations.data(),
+                         sizeof(BinSerial::QuatKey) *
+                             i_Channel.rotations.size());
+                }
+              }
+
+              for (u32 i = 0u; i < l_Header.channel_count; ++i) {
+                AnimationChannel &i_Channel =
+                    l_Clip.get_channels()[i];
+                if (!i_Channel.scales.empty()) {
+                  l_Read(i_Channel.scales.data(),
+                         sizeof(BinSerial::VecKey) *
+                             i_Channel.scales.size());
+                }
+              }
+
+              l_Clip.set_state(AnimationClipState::LOADED);
+            });
         return true;
       }
 
@@ -407,7 +575,8 @@ namespace Low {
           LOW_ASSERT_ERROR_RETURN_FALSE(
               mesh_schedule_gpu_upload(p_Mesh),
               "Failed to schedule mesh for GPU upload. Mesh was "
-              "submitted for load to resource manager but is already "
+              "submitted for load to resource manager but is "
+              "already "
               "marked as memoryloaded.");
 
           return true;
@@ -890,7 +1059,8 @@ namespace Low {
             "loaded.");
         LOW_ASSERT_ERROR_RETURN_FALSE(
             !p_Material.get_gpu().is_alive(),
-            "Cannot gpu load material that already has a GPUMaterial "
+            "Cannot gpu load material that already has a "
+            "GPUMaterial "
             "assigned.");
 
         if (GpuMaterial::living_count() >=
@@ -975,6 +1145,35 @@ namespace Low {
           }
         }
 
+        return true;
+      }
+
+      static bool skeletons_tick(const float p_Delta)
+      {
+        for (auto it = g_LoadSchedules.skeletons.begin();
+             it != g_LoadSchedules.skeletons.end();) {
+          const SkeletonState i_State = it->get_state();
+          if (it->get_state() == SkeletonState::SCHEDULEDTOLOAD) {
+            skeleton_schedule_memory_load(it->get_id());
+          }
+
+          it = g_LoadSchedules.skeletons.erase(it);
+        }
+        return true;
+      }
+
+      static bool animation_clips_tick(const float p_Delta)
+      {
+        for (auto it = g_LoadSchedules.animation_clips.begin();
+             it != g_LoadSchedules.animation_clips.end();) {
+          const AnimationClipState i_State = it->get_state();
+          if (it->get_state() ==
+              AnimationClipState::SCHEDULEDTOLOAD) {
+            animation_clip_schedule_memory_load(it->get_id());
+          }
+
+          it = g_LoadSchedules.animation_clips.erase(it);
+        }
         return true;
       }
 
@@ -1186,8 +1385,8 @@ namespace Low {
                ((float)l_FrameUploadSpace)) /
               ((float)l_FullSize);
           // Calculate the progress as percent. We divide it by 2
-          // because we upload the vertices first and we still need to
-          // upload the indices after that.
+          // because we upload the vertices first and we still need
+          // to upload the indices after that.
           const u8 l_UploadProgressPercent =
               Math::Util::floor(l_UploadProgress * 100.0f) / 2.0f;
 
@@ -1253,8 +1452,8 @@ namespace Low {
               ((float)l_FullSize);
           // Calculate the progress as percent.
           // This calculation takes into account that the vertices
-          // have already been uploaded at this point which is why we
-          // divide it by 2 and add 50% to it to account for the
+          // have already been uploaded at this point which is why
+          // we divide it by 2 and add 50% to it to account for the
           // vertices.
           const u8 l_UploadProgressPercent =
               (Math::Util::floor(l_UploadProgress * 100.0f) / 2.0f) +
@@ -1557,12 +1756,13 @@ namespace Low {
           TextureStaging l_Staging = l_Texture.get_staging();
 
           // We can set it to laoded even though we might load some
-          // miplevels later, because it allows us to use the texture
-          // already even though not all miplevels may be loaded yet
+          // miplevels later, because it allows us to use the
+          // texture already even though not all miplevels may be
+          // loaded yet
           l_Texture.set_state(TextureState::LOADED);
 
-          // We can safely destroy the texturepixels of this mip level
-          // because it will not be needed any longer
+          // We can safely destroy the texturepixels of this mip
+          // level because it will not be needed any longer
           l_Staging.get_pixels_for_miplevel(p_UploadEntry.lodPriority)
               .destroy();
 
@@ -1632,8 +1832,8 @@ namespace Low {
           l_Mesh.get_gpu().set_uploaded_submesh_count(
               l_Mesh.get_gpu().get_uploaded_submesh_count() + 1);
 
-          // We can now safely destroy the submesh geometry because it
-          // is now longer needed
+          // We can now safely destroy the submesh geometry because
+          // it is now longer needed
           l_SubmeshGeometry.destroy();
 
           if (l_Mesh.get_gpu().get_uploaded_submesh_count() >=
@@ -1673,8 +1873,8 @@ namespace Low {
           l_ContinueUploading =
               upload_resource((UploadEntry &)g_UploadSchedules.top());
 
-          // If the top most resource ahs been fully uploaded, pop it
-          // from the list and move on to the next
+          // If the top most resource ahs been fully uploaded, pop
+          // it from the list and move on to the next
           if (g_UploadSchedules.top().progressPriority >= 100) {
             conclude_resource_upload(
                 (UploadEntry &)g_UploadSchedules.top());
@@ -1694,6 +1894,8 @@ namespace Low {
         _LOW_ASSERT(meshes_tick(p_Delta));
         _LOW_ASSERT(textures_tick(p_Delta));
         _LOW_ASSERT(materials_tick(p_Delta));
+        _LOW_ASSERT(skeletons_tick(p_Delta));
+        _LOW_ASSERT(animation_clips_tick(p_Delta));
         _LOW_ASSERT(editor_images_tick(p_Delta));
         _LOW_ASSERT(uploads_tick(p_Delta));
       }
@@ -1826,7 +2028,48 @@ namespace Low {
 
           return true;
         }
-        LOW_ASSERT(false, "Unsupported material resource version.");
+        LOW_ASSERT(false, "Unsupported skeleton resource version.");
+        return true;
+      }
+
+      bool parse_animation_clip_resource_config(
+          Util::String p_Path, Util::Serial::Node &p_Node,
+          AnimationClipResourceConfig &p_Config)
+      {
+        LOWR_ASSERT_RETURN(p_Node["version"],
+                           "Could not find version");
+        const u32 l_Version = p_Node["version"].as<u32>();
+
+        if (l_Version == 1) {
+          LOWR_ASSERT_RETURN(p_Node["clip_id"],
+                             "Could not find animation clip id");
+          p_Config.animationclip_id =
+              p_Node["clip_id"].as<Util::U64Id>().val;
+
+          p_Config.skeleton_id = 0u;
+          if (p_Node["skeleton"]) {
+            p_Config.skeleton_id =
+                p_Node["skeleton"].as<Util::U64Id>().val;
+          } else if (p_Node["skeleton_id"]) {
+            p_Config.skeleton_id =
+                p_Node["skeleton_id"].as<Util::U64Id>().val;
+          }
+
+          p_Config.data_path =
+              Util::get_project().assetCachePath + "/" +
+              Util::hash_to_string(p_Config.animationclip_id) +
+              ".animclip";
+
+          p_Config.path = Util::PathHelper::normalize(p_Path);
+
+          LOWR_ASSERT_RETURN(p_Node["name"],
+                             "Could not find animation clip name");
+          p_Config.name = p_Node["name"].as<Util::Name>();
+
+          return true;
+        }
+        LOW_ASSERT(false,
+                   "Unsupported animation clip resource version.");
         return true;
       }
 

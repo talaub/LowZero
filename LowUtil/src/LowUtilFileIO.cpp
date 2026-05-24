@@ -27,8 +27,12 @@ namespace Low {
           return "rb";
         case FileMode::APPEND:
           return "a";
+        case FileMode::APPEND_BYTES:
+          return "ab";
         case FileMode::WRITE:
           return "w";
+        case FileMode::WRITE_BYTES:
+          return "wb";
         default:
           LOW_ASSERT(false, "Unknown file mode");
         }
@@ -93,6 +97,21 @@ namespace Low {
         write_sync(p_File.m_FilePointer, p_Content.c_str(), p_Content.size());
       }
 
+      bool write_bytes(File &p_File, const void *p_Data,
+                       uint32_t p_Length)
+      {
+        if (p_Length == 0u) {
+          return true;
+        }
+
+        if (!p_File.m_FilePointer || !p_Data) {
+          return false;
+        }
+
+        return std::fwrite(p_Data, 1, p_Length,
+                           p_File.m_FilePointer) == p_Length;
+      }
+
       void delete_sync(const char *p_Path)
       {
         std::remove(p_Path);
@@ -118,7 +137,12 @@ namespace Low {
 
       void close(File &p_File)
       {
+        if (!p_File.m_FilePointer) {
+          return;
+        }
+
         fclose(p_File.m_FilePointer);
+        p_File.m_FilePointer = nullptr;
       }
 
       void list_directory(const char *p_Path, List<String> &p_ContentPaths)

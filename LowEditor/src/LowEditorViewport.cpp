@@ -283,8 +283,14 @@ namespace Low {
         return true;
       }
 
-      const Math::Sphere l_BoundingSphere =
+      Math::Sphere l_BoundingSphere =
           m_RenderObject.get_mesh().get_gpu().get_bounding_sphere();
+
+      if (l_BoundingSphere.radius < 0.5f) {
+        l_BoundingSphere.position = Math::Vector3(0.0f);
+        l_BoundingSphere.radius = 1.0f;
+      }
+
       const Math::Vector3 l_Target = l_BoundingSphere.position;
 
       if (!m_InitialCameraSetup) {

@@ -977,6 +977,8 @@ namespace Low {
             color_from_hex("#4bb3bb");
         g_AssetTypeColor[AssetType::Skeleton] =
             color_from_hex("#212fac");
+        g_AssetTypeColor[AssetType::AnimClip] =
+            color_from_hex("#AC212F");
 
         g_AssetTypeName[AssetType::File] = "File";
         g_AssetTypeName[AssetType::Texture] = "Texture";
@@ -988,6 +990,7 @@ namespace Low {
         g_AssetTypeName[AssetType::Model] = "Model";
         g_AssetTypeName[AssetType::UiWidget] = "UI-Widget";
         g_AssetTypeName[AssetType::Skeleton] = "Skeleton";
+        g_AssetTypeName[AssetType::AnimClip] = "Animation Clip";
 
         g_AssetTypeEditorImage[AssetType::File] =
             Renderer::EditorImage::find_by_name(N(filetype_file));
@@ -1003,6 +1006,12 @@ namespace Low {
             Renderer::EditorImage::find_by_name(N(filetype_uiwidget));
         g_AssetTypeEditorImage[AssetType::Font] =
             Renderer::EditorImage::find_by_name(N(filetype_font));
+        g_AssetTypeEditorImage[AssetType::AnimClip] =
+            Renderer::EditorImage::find_by_name(N(filetype_animclip));
+        g_AssetTypeEditorImage[AssetType::Flode] =
+            Renderer::EditorImage::find_by_name(N(filetype_flode));
+        g_AssetTypeEditorImage[AssetType::Skeleton] =
+            Renderer::EditorImage::find_by_name(N(filetype_skeleton));
 
         // Load all of them
         for (auto it = g_AssetTypeEditorImage.begin();

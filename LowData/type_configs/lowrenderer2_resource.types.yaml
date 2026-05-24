@@ -835,3 +835,74 @@ types:
             type: SkeletonResourceConfig
             constant: true
             const: true
+
+  AnimationClip:
+    unique_id: true
+    reference_counted: true
+    properties:
+      state:
+        type: Low::Renderer::AnimationClipState
+        enum: true
+      resource:
+        type: Low::Renderer::AnimationClipResource
+        handle: true
+      skeleton:
+        type: Low::Renderer::Skeleton
+        handle: true
+      channels:
+        type: Util::List<AnimationChannel>
+        no_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+      duration:
+        type: float
+        skip_serialization: true
+        skip_deserialization: true
+      ticks_per_second:
+        type: float
+        skip_serialization: true
+        skip_deserialization: true
+    functions:
+      make_from_resource_config:
+        static: true
+        return_type: AnimationClip
+        return_handle: true
+        parameters:
+          - name: config
+            type: AnimationClipResourceConfig
+            constant: true
+            const: true
+
+  AnimationClipResource:
+    private_make: true
+    properties:
+      path:
+        type: Util::String
+        private_setter: true
+      data_path:
+        type: Util::String
+        private_setter: true
+    functions:
+      make:
+        static: true
+        return_type: AnimationClipResource
+        return_handle: true
+        parameters:
+          - name: path
+            type: Util::String
+      find_by_path:
+        static: true
+        return_type: AnimationClipResource
+        return_handle: true
+        parameters:
+          - name: path
+            type: Util::String
+      make_from_config:
+        static: true
+        return_type: AnimationClipResource
+        return_handle: true
+        parameters:
+          - name: config
+            type: AnimationClipResourceConfig
+            constant: true
+            const: true

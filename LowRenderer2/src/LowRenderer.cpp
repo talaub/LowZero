@@ -52,6 +52,8 @@
 #include "LowRendererShaderVariant.h"
 #include "LowRendererSkeleton.h"
 #include "LowRendererSkeletonResource.h"
+#include "LowRendererAnimationClip.h"
+#include "LowRendererAnimationClipResource.h"
 
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
@@ -140,6 +142,8 @@ namespace Low {
       MaterialType::initialize();
       SkeletonResource::initialize();
       Skeleton::initialize();
+      AnimationClipResource::initialize();
+      AnimationClip::initialize();
       RenderScene::initialize();
       RenderView::initialize();
       RenderObject::initialize();
@@ -182,6 +186,8 @@ namespace Low {
     {
       SkeletonResource::cleanup();
       Skeleton::cleanup();
+      AnimationClipResource::cleanup();
+      AnimationClip::cleanup();
       ShaderVariant::cleanup();
       ShaderSource::cleanup();
       SS2DDrawCommand::cleanup();

@@ -14,6 +14,9 @@
 #include <string.h>
 #include "LowEditorIcons.h"
 
+#include "LowRenderer.h"
+#include "LowRendererResourceManager.h"
+
 #include <algorithm>
 
 #define DRAG_BUTTON_WIDTH 27.0f
@@ -295,9 +298,9 @@ namespace Low {
           l_PadY = (l_TargetFrameHeight - l_TextLineHeight) * 0.5f;
         }
 
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,
-                            ImVec2(l_Style.FramePadding.x * l_Scale,
-                                   l_PadY));
+        ImGui::PushStyleVar(
+            ImGuiStyleVar_FramePadding,
+            ImVec2(l_Style.FramePadding.x * l_Scale, l_PadY));
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing,
@@ -323,16 +326,14 @@ namespace Low {
                           l_FrameMin.y + l_FrameHeight);
         ImDrawList *l_DrawList = ImGui::GetWindowDrawList();
         const ImU32 l_InputColor = color_to_imcolor(l_Theme.input);
-        const ImU32 l_BorderColor =
-            color_to_imcolor(l_Theme.button);
+        const ImU32 l_BorderColor = color_to_imcolor(l_Theme.button);
         const ImU32 l_DividerColor =
             color_to_imcolor(l_Theme.subtext);
         const ImU32 l_ChannelColors[3] = {
             color_to_imcolor(l_Theme.coords0),
             color_to_imcolor(l_Theme.coords1),
             color_to_imcolor(l_Theme.coords2)};
-        float *l_Values[3] = {&p_Vector.x, &p_Vector.y,
-                              &p_Vector.z};
+        float *l_Values[3] = {&p_Vector.x, &p_Vector.y, &p_Vector.z};
         const char *l_Ids[3] = {"##X", "##Y", "##Z"};
 
         l_DrawList->AddRectFilled(l_FrameMin, l_FrameMax,
@@ -355,8 +356,7 @@ namespace Low {
               l_ItemMin.x + (i > 0 ? l_BorderSize : 0.0f);
           l_DrawList->PushClipRect(l_ItemMin, l_ItemMax, true);
           l_DrawList->AddRectFilled(
-              ImVec2(l_StripMinX,
-                     l_ItemMin.y + (3.0f * l_Scale)),
+              ImVec2(l_StripMinX, l_ItemMin.y + (3.0f * l_Scale)),
               ImVec2(l_ItemMin.x + (4.0f * l_Scale),
                      l_ItemMax.y - (3.0f * l_Scale)),
               l_ChannelColors[i], 2.0f * l_Scale,
@@ -763,9 +763,9 @@ namespace Low {
           l_PadY = (l_TargetFrameHeight - l_TextLineHeight) * 0.5f;
         }
 
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,
-                            ImVec2(l_Style.FramePadding.x * l_Scale,
-                                   l_PadY));
+        ImGui::PushStyleVar(
+            ImGuiStyleVar_FramePadding,
+            ImVec2(l_Style.FramePadding.x * l_Scale, l_PadY));
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, l_Rounding);
         ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize,
                             l_BorderSize);
@@ -807,8 +807,7 @@ namespace Low {
         const ImVec2 l_FrameMax(l_FrameMin.x + l_FrameWidth,
                                 l_FrameMin.y + l_FrameHeight);
         ImDrawList *l_DrawList = ImGui::GetWindowDrawList();
-        const ImU32 l_BorderColor =
-            color_to_imcolor(l_Theme.button);
+        const ImU32 l_BorderColor = color_to_imcolor(l_Theme.button);
         const float l_DividerX0 = l_FrameMin.x + l_DragWidth;
         const float l_DividerX1 =
             l_FrameMin.x + l_DragWidth + l_ButtonWidth;
@@ -896,9 +895,9 @@ namespace Low {
           l_PadY = (l_TargetFrameHeight - l_TextLineHeight) * 0.5f;
         }
 
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,
-                            ImVec2(l_Style.FramePadding.x * l_Scale,
-                                   l_PadY));
+        ImGui::PushStyleVar(
+            ImGuiStyleVar_FramePadding,
+            ImVec2(l_Style.FramePadding.x * l_Scale, l_PadY));
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing,
@@ -918,9 +917,8 @@ namespace Low {
         const float l_SwatchWidth = 36.0f * l_Scale;
         const float l_FrameHeight = l_TargetFrameHeight;
         const float l_ChannelWidth = LOW_MATH_MAX(
-            38.0f * l_Scale,
-            (l_FullWidth - l_SwatchWidth) /
-                LOW_MATH_MAX(1, p_ComponentCount));
+            38.0f * l_Scale, (l_FullWidth - l_SwatchWidth) /
+                                 LOW_MATH_MAX(1, p_ComponentCount));
         const float l_FrameWidth =
             l_SwatchWidth + (l_ChannelWidth * p_ComponentCount);
 
@@ -929,17 +927,15 @@ namespace Low {
                           l_FrameMin.y + l_FrameHeight);
         ImDrawList *l_DrawList = ImGui::GetWindowDrawList();
         const ImU32 l_InputColor = color_to_imcolor(l_Theme.input);
-        const ImU32 l_BorderColor =
-            color_to_imcolor(l_Theme.button);
+        const ImU32 l_BorderColor = color_to_imcolor(l_Theme.button);
         const ImU32 l_TextMutedColor =
             color_to_imcolor(l_Theme.subtext);
 
         l_DrawList->AddRectFilled(l_FrameMin, l_FrameMax,
                                   l_InputColor, l_Rounding);
 
-        if (ImGui::InvisibleButton("##swatch",
-                                   ImVec2(l_SwatchWidth,
-                                          l_FrameHeight))) {
+        if (ImGui::InvisibleButton(
+                "##swatch", ImVec2(l_SwatchWidth, l_FrameHeight))) {
           ImGui::OpenPopup("picker");
         }
 
@@ -949,16 +945,15 @@ namespace Low {
                          l_SwatchMin.y + (5.0f * l_Scale));
         ImVec2 l_ChipMax(l_SwatchMax.x - (7.0f * l_Scale),
                          l_SwatchMax.y - (5.0f * l_Scale));
-        ImU32 l_Color = ImGui::ColorConvertFloat4ToU32(ImVec4(
-            p_Values[0], p_Values[1], p_Values[2],
-            p_ComponentCount == 4 ? p_Values[3] : 1.0f));
+        ImU32 l_Color = ImGui::ColorConvertFloat4ToU32(
+            ImVec4(p_Values[0], p_Values[1], p_Values[2],
+                   p_ComponentCount == 4 ? p_Values[3] : 1.0f));
         l_DrawList->AddRectFilled(l_ChipMin, l_ChipMax, l_Color,
                                   3.0f * l_Scale);
         l_DrawList->AddRect(l_ChipMin, l_ChipMax, l_BorderColor,
                             3.0f * l_Scale, 0, l_BorderSize);
 
-        const char *l_Labels[4] = {"%.2f", "%.2f", "%.2f",
-                                   "%.2f"};
+        const char *l_Labels[4] = {"%.2f", "%.2f", "%.2f", "%.2f"};
         const char *l_Ids[4] = {"##R", "##G", "##B", "##A"};
         const ImU32 l_ChannelColors[4] = {
             color_to_imcolor(l_Theme.coords0),
@@ -981,8 +976,7 @@ namespace Low {
               l_ItemMin.x + (i > 0 ? l_BorderSize : 0.0f);
           l_DrawList->PushClipRect(l_ItemMin, l_ItemMax, true);
           l_DrawList->AddRectFilled(
-              ImVec2(l_StripMinX,
-                     l_ItemMin.y + (3.0f * l_Scale)),
+              ImVec2(l_StripMinX, l_ItemMin.y + (3.0f * l_Scale)),
               ImVec2(l_ItemMin.x + (4.0f * l_Scale),
                      l_ItemMax.y - (3.0f * l_Scale)),
               l_ChannelColors[i], 2.0f * l_Scale,
@@ -996,13 +990,11 @@ namespace Low {
               ImGuiColorEditFlags_NoSmallPreview;
           if (p_ComponentCount == 4) {
             l_Flags |= ImGuiColorEditFlags_AlphaBar;
-            if (ImGui::ColorPicker4("##picker", p_Values,
-                                    l_Flags)) {
+            if (ImGui::ColorPicker4("##picker", p_Values, l_Flags)) {
               l_Edited = true;
             }
           } else {
-            if (ImGui::ColorPicker3("##picker", p_Values,
-                                    l_Flags)) {
+            if (ImGui::ColorPicker3("##picker", p_Values, l_Flags)) {
               l_Edited = true;
             }
           }
@@ -1016,9 +1008,8 @@ namespace Low {
         l_DrawList->AddRect(l_FrameMin, l_FrameMax, l_BorderColor,
                             l_Rounding, 0, l_BorderSize);
         for (int i = 0; i < p_ComponentCount; ++i) {
-          float l_DividerX =
-              l_FrameMin.x + l_SwatchWidth +
-              (l_ChannelWidth * static_cast<float>(i));
+          float l_DividerX = l_FrameMin.x + l_SwatchWidth +
+                             (l_ChannelWidth * static_cast<float>(i));
           l_DrawList->AddLine(
               ImVec2(l_DividerX, l_FrameMin.y + (3.0f * l_Scale)),
               ImVec2(l_DividerX, l_FrameMax.y - (3.0f * l_Scale)),
@@ -1035,8 +1026,8 @@ namespace Low {
         return l_Edited;
       }
 
-      bool ColorRGBInput(const char *p_Label,
-                         Math::ColorRGB *p_Value, float p_Scale)
+      bool ColorRGBInput(const char *p_Label, Math::ColorRGB *p_Value,
+                         float p_Scale)
       {
         float l_Values[3] = {p_Value->r, p_Value->g, p_Value->b};
         if (!color_input_internal(p_Label, l_Values, 3, p_Scale)) {
@@ -1453,14 +1444,13 @@ namespace Low {
           l_ActionBounds = ImRect(
               ImVec2(l_ChevronPos.x - l_ActionSize - 8.0f,
                      l_Bounds.Min.y + 3.0f),
-              ImVec2(l_ChevronPos.x - 8.0f,
-                     l_Bounds.Max.y - 3.0f));
+              ImVec2(l_ChevronPos.x - 8.0f, l_Bounds.Max.y - 3.0f));
         }
 
         ImRect l_HeaderBounds = l_Bounds;
-        l_HeaderBounds.Max.x =
-            l_HasAction ? l_ActionBounds.Min.x - 4.0f
-                        : l_ChevronPos.x - 4.0f;
+        l_HeaderBounds.Max.x = l_HasAction
+                                   ? l_ActionBounds.Min.x - 4.0f
+                                   : l_ChevronPos.x - 4.0f;
 
         bool l_Hovered = false;
         bool l_Held = false;
@@ -1476,9 +1466,8 @@ namespace Low {
         if (l_HasAction) {
           l_ActionHovered = ImGui::IsMouseHoveringRect(
               l_ActionBounds.Min, l_ActionBounds.Max, true);
-          l_ActionHeld =
-              l_ActionHovered &&
-              ImGui::IsMouseDown(ImGuiMouseButton_Left);
+          l_ActionHeld = l_ActionHovered &&
+                         ImGui::IsMouseDown(ImGuiMouseButton_Left);
           l_ActionPressed =
               l_ActionHovered &&
               ImGui::IsMouseClicked(ImGuiMouseButton_Left);
@@ -1535,14 +1524,13 @@ namespace Low {
                 ImGui::GetColorU32(color_to_imvec4(l_Theme.text));
           }
           window->DrawList->AddText(
-              ImVec2(l_ActionBounds.Min.x +
-                         (l_ActionBounds.GetWidth() -
-                          l_ActionIconSize.x) *
-                             0.5f,
-                     l_ActionBounds.Min.y +
-                         (l_ActionBounds.GetHeight() -
-                          l_ActionIconSize.y) *
-                             0.5f),
+              ImVec2(
+                  l_ActionBounds.Min.x + (l_ActionBounds.GetWidth() -
+                                          l_ActionIconSize.x) *
+                                             0.5f,
+                  l_ActionBounds.Min.y + (l_ActionBounds.GetHeight() -
+                                          l_ActionIconSize.y) *
+                                             0.5f),
               l_ActionIconColor, p_ActionIcon);
         }
 
@@ -1556,9 +1544,9 @@ namespace Low {
                              Math::Color p_AccentColor,
                              bool p_DefaultOpen)
       {
-        return collapsible_header_internal(
-            p_Label, p_Icon, p_AccentColor, nullptr, nullptr,
-            p_DefaultOpen);
+        return collapsible_header_internal(p_Label, p_Icon,
+                                           p_AccentColor, nullptr,
+                                           nullptr, p_DefaultOpen);
       }
 
       bool CollapsibleHeader(const char *p_Label, const char *p_Icon,
@@ -1942,6 +1930,200 @@ namespace Low {
         }
 
         return l_Accepted;
+      }
+
+      AssetCardResult
+      asset_card(const Util::FileSystem::FileWatcher &p_FileWatcher)
+      {
+        return asset_card(
+            p_FileWatcher.watchHandle,
+            static_cast<AssetType>(p_FileWatcher.typeEnum),
+            p_FileWatcher.handle, p_FileWatcher.nameCleanPrettified);
+      }
+
+      const ImVec2 g_AssetCardSize(140, 180);
+
+      AssetCardResult asset_card(const u64 p_Id,
+                                 const AssetType p_AssetType,
+                                 const Util::Handle p_Handle,
+                                 const Util::String &p_DisplayName)
+      {
+
+        ImGui::PushID(p_Id);
+
+        const float l_Rounding = 6.0f;
+
+        const ImVec2 l_Padding(8.0f, 8.0f);
+
+        AssetCardResult result{};
+        ImGuiStyle &style = ImGui::GetStyle();
+
+        // Sizes
+        float thumb_h = g_AssetCardSize.y * 0.65f;
+        float text_h = g_AssetCardSize.y - thumb_h;
+
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+        ImVec2 card_max = pos + g_AssetCardSize;
+
+        // Whole card is one button region
+        ImGui::InvisibleButton("asset_card_btn", g_AssetCardSize);
+        result.hovered = ImGui::IsItemHovered();
+        result.clicked = ImGui::IsItemClicked(ImGuiMouseButton_Left);
+        result.doubleClicked =
+            ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) &&
+            result.hovered;
+        result.rightClicked =
+            ImGui::IsItemClicked(ImGuiMouseButton_Right);
+
+        ImDrawList *dl = ImGui::GetWindowDrawList();
+
+        {
+          // Parameters (tweak as you like)
+          const float stripe_h = 8.0f; // thickness of the stripe
+          const ImU32 stripe_col =
+              color_to_imcolor(get_color_for_asset_type(p_AssetType));
+
+          // Stripe rect (bottom of the card)
+          ImVec2 stripe_min(pos.x, card_max.y - stripe_h);
+          ImVec2 stripe_max(card_max.x, card_max.y);
+
+          // Draw AFTER card background, BEFORE the border so the
+          // border outlines it
+          dl->AddRectFilled(stripe_min, stripe_max, stripe_col,
+                            l_Rounding,
+                            ImDrawFlags_RoundCornersBottom);
+        }
+
+        // Background
+        ImU32 col_bg =
+            result.hovered
+                ? ImGui::GetColorU32(ImGuiCol_HeaderHovered)
+                : ImGui::GetColorU32(ImGuiCol_FrameBg);
+        dl->AddRectFilled(pos, card_max - ImVec2(0.0f, 3.0f), col_bg,
+                          l_Rounding);
+        dl->AddRect(pos, card_max,
+                    ImGui::GetColorU32(ImGuiCol_Border), l_Rounding);
+
+        // Thumbnail
+        ImVec2 thumb_min = pos;
+        ImVec2 thumb_max =
+            ImVec2(pos.x + g_AssetCardSize.x, pos.y + thumb_h);
+        ImVec2 img_max = ImVec2(pos.x + thumb_h, pos.y + thumb_h);
+
+        Renderer::EditorImage l_EditorImage = Util::Handle::DEAD;
+
+        const float l_FallbackSize = thumb_h * 0.7f;
+
+        switch (p_AssetType) {
+        case AssetType::Mesh: {
+          Renderer::Mesh l_Mesh = p_Handle.get_id();
+
+          if (l_Mesh.is_alive()) {
+            l_EditorImage = l_Mesh.get_editor_image();
+          }
+          break;
+        }
+        case AssetType::Texture: {
+          Renderer::Texture l_Texture = p_Handle.get_id();
+
+          if (l_Texture.is_alive()) {
+            l_EditorImage = l_Texture.get_editor_image();
+          }
+          break;
+        }
+        }
+
+        if (l_EditorImage.is_alive() &&
+            l_EditorImage.get_state() ==
+                Renderer::TextureState::UNLOADED) {
+          Renderer::ResourceManager::load_editor_image(l_EditorImage);
+        }
+
+        const bool l_IsFallbackEditorImage =
+            (!l_EditorImage.is_alive() ||
+             l_EditorImage.get_state() !=
+                 Renderer::TextureState::LOADED);
+        if (l_IsFallbackEditorImage) {
+          l_EditorImage =
+              get_editor_image_for_asset_type(p_AssetType);
+        }
+
+        const ImVec2 l_FallbackMin =
+            pos +
+            ImVec2(((thumb_max.x - thumb_min.x) - l_FallbackSize) /
+                       2.0f,
+                   ((thumb_max.y - thumb_min.y) - l_FallbackSize) /
+                       2.0f);
+
+        if (l_EditorImage.is_alive() &&
+            l_EditorImage.get_state() ==
+                Renderer::TextureState::LOADED) {
+
+          if (l_IsFallbackEditorImage) {
+            dl->AddRectFilled(
+                thumb_min, thumb_max, make_imcolor(0.66f, 0.66, 0.66),
+                // ImGui::GetColorU32(ImGuiCol_WindowBg),
+                l_Rounding, ImDrawFlags_RoundCornersTop);
+
+            dl->AddImage(
+                l_EditorImage.get_gpu().get_imgui_texture_id(),
+                l_FallbackMin,
+                l_FallbackMin +
+                    ImVec2(l_FallbackSize, l_FallbackSize));
+          } else {
+            dl->AddImageRounded(
+                l_EditorImage.get_gpu().get_imgui_texture_id(),
+                thumb_min, thumb_max, ImVec2(0, 0), ImVec2(1, 1),
+                IM_COL32_WHITE, l_Rounding,
+                ImDrawFlags_RoundCornersTop);
+          }
+        }
+
+        // Filename
+        float text_y = thumb_max.y + l_Padding.y;
+        {
+          const char *name_str = p_DisplayName.c_str();
+          ImVec2 name_pos =
+              ImVec2(pos.x + l_Padding.x, thumb_max.y + l_Padding.y);
+
+          // Available width for text inside the card
+          float name_w = g_AssetCardSize.x - l_Padding.x * 2.0f;
+
+          // Clipping rect (only text inside this box will be visible)
+          ImVec2 clip_min = name_pos;
+          ImVec2 clip_max =
+              ImVec2(pos.x + g_AssetCardSize.x - l_Padding.x,
+                     name_pos.y + ImGui::GetTextLineHeight());
+
+          // Draw with ellipsis
+          ImGui::RenderTextEllipsis(
+              dl,                // draw list
+              name_pos,          // top-left pos
+              clip_max,          // max pos (text won't go beyond)
+              clip_max.x,        // ellipsis max x
+              name_str, nullptr, // text
+              nullptr            // wrap width
+          );
+        }
+
+        {
+          const char *type_str = Util::StringHelper::to_upper(
+                                     get_asset_type_name(p_AssetType))
+                                     .c_str();
+          ImVec2 type_size = ImGui::CalcTextSize(type_str);
+          ImVec2 type_pos(pos.x + l_Padding.x,
+                          card_max.y - style.FramePadding.y -
+                              type_size.y - 6.0f);
+          ImVec4 l_Color = ImGui::GetStyleColorVec4(ImGuiCol_Text);
+          l_Color.w = 0.3f;
+          ImGui::PushFont(Fonts::UI(14, Fonts::Weight::Light));
+          dl->AddText(type_pos, ImColor(l_Color), type_str);
+          ImGui::PopFont();
+        }
+
+        ImGui::PopID();
+
+        return result;
       }
     } // namespace Gui
   } // namespace Editor

@@ -2,6 +2,7 @@
 
 #include "LowCoreUiWidgetAsset.h"
 #include "LowEditorFonts.h"
+#include "LowEditorGui.h"
 #include "LowEditorMainWindow.h"
 #include "LowEditorThemes.h"
 #include "LowEditorTypeEditor.h"
@@ -31,15 +32,7 @@
 
 namespace Low {
   namespace Editor {
-    struct AssetCardResult
-    {
-      bool clicked = false;
-      bool doubleClicked = false;
-      bool rightClicked = false;
-      bool hovered = false;
-    };
 
-    const ImVec2 g_CardSize(140, 180);
     const ImVec2 g_Margin(14.0f, 8.0f);
 
     void AssetWidget::save_prefab_asset(Util::Handle p_Handle)
@@ -226,184 +219,6 @@ namespace Low {
       ImGui::PopID();
     }
 
-    AssetCardResult draw_asset_card(
-        const Util::FileSystem::FileWatcher &p_FileWatcher)
-    {
-      ImGui::PushID(p_FileWatcher.watchHandle);
-
-      const float l_Rounding = 6.0f;
-
-      const ImVec2 l_Padding(8.0f, 8.0f);
-
-      AssetCardResult result{};
-      ImGuiStyle &style = ImGui::GetStyle();
-
-      const AssetType l_AssetType = (AssetType)p_FileWatcher.typeEnum;
-
-      // Sizes
-      float thumb_h = g_CardSize.y * 0.65f;
-      float text_h = g_CardSize.y - thumb_h;
-
-      ImVec2 pos = ImGui::GetCursorScreenPos();
-      ImVec2 card_max = pos + g_CardSize;
-
-      // Whole card is one button region
-      ImGui::InvisibleButton("asset_card_btn", g_CardSize);
-      result.hovered = ImGui::IsItemHovered();
-      result.clicked = ImGui::IsItemClicked(ImGuiMouseButton_Left);
-      result.doubleClicked =
-          ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) &&
-          result.hovered;
-      result.rightClicked =
-          ImGui::IsItemClicked(ImGuiMouseButton_Right);
-
-      ImDrawList *dl = ImGui::GetWindowDrawList();
-
-      {
-        // Parameters (tweak as you like)
-        const float stripe_h = 8.0f; // thickness of the stripe
-        const ImU32 stripe_col =
-            color_to_imcolor(get_color_for_asset_type(l_AssetType));
-
-        // Stripe rect (bottom of the card)
-        ImVec2 stripe_min(pos.x, card_max.y - stripe_h);
-        ImVec2 stripe_max(card_max.x, card_max.y);
-
-        // Draw AFTER card background, BEFORE the border so the border
-        // outlines it
-        dl->AddRectFilled(stripe_min, stripe_max, stripe_col,
-                          l_Rounding, ImDrawFlags_RoundCornersBottom);
-      }
-
-      // Background
-      ImU32 col_bg = result.hovered
-                         ? ImGui::GetColorU32(ImGuiCol_HeaderHovered)
-                         : ImGui::GetColorU32(ImGuiCol_FrameBg);
-      dl->AddRectFilled(pos, card_max - ImVec2(0.0f, 3.0f), col_bg,
-                        l_Rounding);
-      dl->AddRect(pos, card_max, ImGui::GetColorU32(ImGuiCol_Border),
-                  l_Rounding);
-
-      // Thumbnail
-      ImVec2 thumb_min = pos;
-      ImVec2 thumb_max =
-          ImVec2(pos.x + g_CardSize.x, pos.y + thumb_h);
-      ImVec2 img_max = ImVec2(pos.x + thumb_h, pos.y + thumb_h);
-
-      Renderer::EditorImage l_EditorImage = Util::Handle::DEAD;
-
-      const float l_FallbackSize = thumb_h * 0.7f;
-
-      switch (l_AssetType) {
-      case AssetType::Mesh: {
-        Renderer::Mesh l_Mesh = p_FileWatcher.handle.get_id();
-
-        if (l_Mesh.is_alive()) {
-          l_EditorImage = l_Mesh.get_editor_image();
-        }
-        break;
-      }
-      case AssetType::Texture: {
-        Renderer::Texture l_Texture = p_FileWatcher.handle.get_id();
-
-        if (l_Texture.is_alive()) {
-          l_EditorImage = l_Texture.get_editor_image();
-        }
-        break;
-      }
-      }
-
-      if (l_EditorImage.is_alive() &&
-          l_EditorImage.get_state() ==
-              Renderer::TextureState::UNLOADED) {
-        Renderer::ResourceManager::load_editor_image(l_EditorImage);
-      }
-
-      const bool l_IsFallbackEditorImage =
-          (!l_EditorImage.is_alive() ||
-           l_EditorImage.get_state() !=
-               Renderer::TextureState::LOADED);
-      if (l_IsFallbackEditorImage) {
-        l_EditorImage = get_editor_image_for_asset_type(l_AssetType);
-      }
-
-      const ImVec2 l_FallbackMin =
-          pos +
-          ImVec2(
-              ((thumb_max.x - thumb_min.x) - l_FallbackSize) / 2.0f,
-              ((thumb_max.y - thumb_min.y) - l_FallbackSize) / 2.0f);
-
-      if (l_EditorImage.is_alive() &&
-          l_EditorImage.get_state() ==
-              Renderer::TextureState::LOADED) {
-
-        if (l_IsFallbackEditorImage) {
-          dl->AddRectFilled(thumb_min, thumb_max,
-                            make_imcolor(0.66f, 0.66, 0.66),
-                            // ImGui::GetColorU32(ImGuiCol_WindowBg),
-                            l_Rounding, ImDrawFlags_RoundCornersTop);
-
-          dl->AddImage(l_EditorImage.get_gpu().get_imgui_texture_id(),
-                       l_FallbackMin,
-                       l_FallbackMin +
-                           ImVec2(l_FallbackSize, l_FallbackSize));
-        } else {
-          dl->AddImageRounded(
-              l_EditorImage.get_gpu().get_imgui_texture_id(),
-              thumb_min, thumb_max, ImVec2(0, 0), ImVec2(1, 1),
-              IM_COL32_WHITE, l_Rounding,
-              ImDrawFlags_RoundCornersTop);
-        }
-      }
-
-      // Filename
-      float text_y = thumb_max.y + l_Padding.y;
-      {
-        const char *name_str =
-            p_FileWatcher.nameCleanPrettified.c_str();
-        ImVec2 name_pos =
-            ImVec2(pos.x + l_Padding.x, thumb_max.y + l_Padding.y);
-
-        // Available width for text inside the card
-        float name_w = g_CardSize.x - l_Padding.x * 2.0f;
-
-        // Clipping rect (only text inside this box will be visible)
-        ImVec2 clip_min = name_pos;
-        ImVec2 clip_max =
-            ImVec2(pos.x + g_CardSize.x - l_Padding.x,
-                   name_pos.y + ImGui::GetTextLineHeight());
-
-        // Draw with ellipsis
-        ImGui::RenderTextEllipsis(
-            dl,                // draw list
-            name_pos,          // top-left pos
-            clip_max,          // max pos (text won't go beyond)
-            clip_max.x,        // ellipsis max x
-            name_str, nullptr, // text
-            nullptr            // wrap width
-        );
-      }
-
-      {
-        const char *type_str = Util::StringHelper::to_upper(
-                                   get_asset_type_name(l_AssetType))
-                                   .c_str();
-        ImVec2 type_size = ImGui::CalcTextSize(type_str);
-        ImVec2 type_pos(pos.x + l_Padding.x,
-                        card_max.y - style.FramePadding.y -
-                            type_size.y - 6.0f);
-        ImVec4 l_Color = ImGui::GetStyleColorVec4(ImGuiCol_Text);
-        l_Color.w = 0.3f;
-        ImGui::PushFont(Fonts::UI(14, Fonts::Weight::Light));
-        dl->AddText(type_pos, ImColor(l_Color), type_str);
-        ImGui::PopFont();
-      }
-
-      ImGui::PopID();
-
-      return result;
-    }
-
     void AssetWidget::render_directory_content(
         const Util::FileSystem::DirectoryWatcher &p_DirectoryWatcher)
     {
@@ -412,7 +227,7 @@ namespace Low {
         return;
       }
 
-      float l_TotalWidth = g_CardSize.x + g_Margin.x;
+      float l_TotalWidth = Gui::g_AssetCardSize.x + g_Margin.x;
       const int l_Cols = LOW_MATH_MAX(
           1, (int)Math::Util::floor((l_AvailableWidth + g_Margin.x) /
                                     l_TotalWidth));
@@ -436,7 +251,8 @@ namespace Low {
           continue;
         }
 
-        AssetCardResult i_Result = draw_asset_card(i_FileWatcher);
+        const AssetCardResult i_Result =
+            Gui::asset_card(i_FileWatcher);
 
         if (i_Result.clicked) {
         }
@@ -525,8 +341,7 @@ namespace Low {
           Util::FileSystem::get_directory_watcher(
               m_SelectedDirectory));
 
-      if (ImGui::IsWindowHovered() &&
-          !ImGui::IsAnyItemHovered() &&
+      if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemHovered() &&
           ImGui::IsMouseReleased(ImGuiMouseButton_Right)) {
         ImGui::OpenPopup("WINDOWCONTEXT");
       }
