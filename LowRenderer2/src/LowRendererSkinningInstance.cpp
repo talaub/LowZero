@@ -18,6 +18,8 @@
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    Low::Util::Set<Low::Renderer::SkinningInstance>
+        Low::Renderer::SkinningInstance::ms_NeedInitialization;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     u16 SkinningInstance::ms_TypeId = 0;
@@ -64,6 +66,7 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+      l_Handle.mark_needs_initialization();
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -75,6 +78,17 @@ namespace Low {
 
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        for (SkinningCommand i_Command : get_skinning_commands()) {
+          if (i_Command.is_alive()) {
+            i_Command.destroy();
+          }
+        }
+
+        get_skinning_commands().clear();
+
+        if (get_pose().is_alive()) {
+          get_pose().dereference(get_id());
+        }
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 
@@ -194,10 +208,7 @@ namespace Low {
               p_Handle, SkinningInstance, mesh, Mesh);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          SkinningInstance l_Handle = p_Handle.get_id();
-          l_Handle.set_mesh(*(Mesh *)p_Data);
-        };
+                                const void *p_Data) -> void {};
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SkinningInstance l_Handle = p_Handle.get_id();
@@ -205,66 +216,6 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: mesh
-      }
-      {
-        // Property: skinned_vertex_offset
-        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(skinned_vertex_offset);
-        l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset =
-            offsetof(SkinningInstance::Data, skinned_vertex_offset);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
-        l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get_return =
-            [](Low::Util::Handle p_Handle) -> void const * {
-          SkinningInstance l_Handle = p_Handle.get_id();
-          l_Handle.get_skinned_vertex_offset();
-          return (void *)&ACCESSOR_TYPE_SOA(
-              p_Handle, SkinningInstance, skinned_vertex_offset,
-              uint32_t);
-        };
-        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          SkinningInstance l_Handle = p_Handle.get_id();
-          l_Handle.set_skinned_vertex_offset(*(uint32_t *)p_Data);
-        };
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
-                                void *p_Data) {
-          SkinningInstance l_Handle = p_Handle.get_id();
-          *((uint32_t *)p_Data) =
-              l_Handle.get_skinned_vertex_offset();
-        };
-        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-        // End property: skinned_vertex_offset
-      }
-      {
-        // Property: vertex_count
-        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(vertex_count);
-        l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset =
-            offsetof(SkinningInstance::Data, vertex_count);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
-        l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get_return =
-            [](Low::Util::Handle p_Handle) -> void const * {
-          SkinningInstance l_Handle = p_Handle.get_id();
-          l_Handle.get_vertex_count();
-          return (void *)&ACCESSOR_TYPE_SOA(
-              p_Handle, SkinningInstance, vertex_count, uint32_t);
-        };
-        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          SkinningInstance l_Handle = p_Handle.get_id();
-          l_Handle.set_vertex_count(*(uint32_t *)p_Data);
-        };
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
-                                void *p_Data) {
-          SkinningInstance l_Handle = p_Handle.get_id();
-          *((uint32_t *)p_Data) = l_Handle.get_vertex_count();
-        };
-        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-        // End property: vertex_count
       }
       {
         // Property: skinning_commands
@@ -322,6 +273,39 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: name
+      }
+      {
+        // Function: make
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(make);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = SkinningInstance::type_id();
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Name);
+          l_ParameterInfo.type = Low::Util::RTTI::PropertyType::NAME;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Mesh);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::HANDLE;
+          l_ParameterInfo.handleType = Renderer::Mesh::type_id();
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: make
+      }
+      {
+        // Function: mark_needs_initialization
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(mark_needs_initialization);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: mark_needs_initialization
       }
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
@@ -445,8 +429,6 @@ namespace Low {
       if (get_mesh().is_alive()) {
         l_Handle.set_mesh(get_mesh());
       }
-      l_Handle.set_skinned_vertex_offset(get_skinned_vertex_offset());
-      l_Handle.set_vertex_count(get_vertex_count());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -556,12 +538,20 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_pose
+      if (get_pose().is_alive()) {
+        get_pose().dereference(get_id());
+      }
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_pose
 
       // Set new value
       TYPE_SOA(SkinningInstance, pose, SkinningPose) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pose
+      if (p_Value.is_alive()) {
+        p_Value.reference(get_id());
+      }
+
+      mark_needs_initialization();
       // LOW_CODEGEN::END::CUSTOM:SETTER_pose
 
       broadcast_observable(N(pose));
@@ -590,58 +580,6 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_mesh
 
       broadcast_observable(N(mesh));
-    }
-
-    uint32_t SkinningInstance::get_skinned_vertex_offset() const
-    {
-      _LOW_ASSERT(is_alive());
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_skinned_vertex_offset
-      // LOW_CODEGEN::END::CUSTOM:GETTER_skinned_vertex_offset
-
-      return TYPE_SOA(SkinningInstance, skinned_vertex_offset,
-                      uint32_t);
-    }
-    void SkinningInstance::set_skinned_vertex_offset(uint32_t p_Value)
-    {
-      _LOW_ASSERT(is_alive());
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_skinned_vertex_offset
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_skinned_vertex_offset
-
-      // Set new value
-      TYPE_SOA(SkinningInstance, skinned_vertex_offset, uint32_t) =
-          p_Value;
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_skinned_vertex_offset
-      // LOW_CODEGEN::END::CUSTOM:SETTER_skinned_vertex_offset
-
-      broadcast_observable(N(skinned_vertex_offset));
-    }
-
-    uint32_t SkinningInstance::get_vertex_count() const
-    {
-      _LOW_ASSERT(is_alive());
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_vertex_count
-      // LOW_CODEGEN::END::CUSTOM:GETTER_vertex_count
-
-      return TYPE_SOA(SkinningInstance, vertex_count, uint32_t);
-    }
-    void SkinningInstance::set_vertex_count(uint32_t p_Value)
-    {
-      _LOW_ASSERT(is_alive());
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_vertex_count
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_vertex_count
-
-      // Set new value
-      TYPE_SOA(SkinningInstance, vertex_count, uint32_t) = p_Value;
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_vertex_count
-      // LOW_CODEGEN::END::CUSTOM:SETTER_vertex_count
-
-      broadcast_observable(N(vertex_count));
     }
 
     Low::Util::List<SkinningCommand> &
@@ -679,6 +617,28 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
+    }
+
+    SkinningInstance SkinningInstance::make(Util::Name p_Name,
+                                            Renderer::Mesh p_Mesh)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+      LOW_ASSERT(p_Mesh.is_alive(),
+                 "Cannot create skinning instance with dead mesh.");
+      SkinningInstance l_Instance = make(p_Name);
+      l_Instance.set_mesh(p_Mesh);
+
+      l_Instance.mark_needs_initialization();
+
+      return l_Instance;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
+    }
+
+    void SkinningInstance::mark_needs_initialization()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_mark_needs_initialization
+      ms_NeedInitialization.insert(get_id());
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_mark_needs_initialization
     }
 
     uint32_t SkinningInstance::create_instance(u32 &p_PageIndex,

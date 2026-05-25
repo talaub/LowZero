@@ -12,6 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+#include "LowRendererVulkan.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -78,6 +79,10 @@ namespace Low {
 
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        if (is_uploaded()) {
+          Vulkan::Global::get_pose_palette_buffer().free(
+              get_pose_palette_offset(), get_matrices().size());
+        }
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 

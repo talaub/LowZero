@@ -27,8 +27,8 @@ namespace Low {
         SkinningInstance instance;
         GpuSubmesh submesh;
         uint32_t weights_start;
-        uint32_t skinned_vertex_start_a;
-        uint32_t skinned_vertex_start_b;
+        uint32_t skinned_vertex_start;
+        uint32_t vertex_count;
         Low::Util::Name name;
 
         static size_t get_size()
@@ -52,8 +52,11 @@ namespace Low {
         return ms_TypeId;
       }
 
+    private:
       static SkinningCommand make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
+
+    public:
       explicit SkinningCommand(const SkinningCommand &p_Copy)
           : Low::Util::Handle(p_Copy.m_Id)
       {
@@ -143,23 +146,22 @@ namespace Low {
       }
 
       SkinningInstance get_instance() const;
-      void set_instance(SkinningInstance p_Value);
 
       GpuSubmesh get_submesh() const;
-      void set_submesh(GpuSubmesh p_Value);
 
       uint32_t get_weights_start() const;
       void set_weights_start(uint32_t p_Value);
 
-      uint32_t get_skinned_vertex_start_a() const;
-      void set_skinned_vertex_start_a(uint32_t p_Value);
+      uint32_t get_skinned_vertex_start() const;
+      void set_skinned_vertex_start(uint32_t p_Value);
 
-      uint32_t get_skinned_vertex_start_b() const;
-      void set_skinned_vertex_start_b(uint32_t p_Value);
+      uint32_t get_vertex_count() const;
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
+      static SkinningCommand make(SkinningInstance p_Instance,
+                                  GpuSubmesh p_Submesh);
       static bool get_page_for_index(const u32 p_Index,
                                      u32 &p_PageIndex,
                                      u32 &p_SlotIndex);
@@ -169,6 +171,9 @@ namespace Low {
       static u32 ms_PageSize;
       static u32 create_instance(u32 &p_PageIndex, u32 &p_SlotIndex);
       static u32 create_page();
+      void set_instance(SkinningInstance p_Value);
+      void set_submesh(GpuSubmesh p_Value);
+      void set_vertex_count(uint32_t p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE

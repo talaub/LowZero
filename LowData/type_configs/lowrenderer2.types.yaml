@@ -910,6 +910,7 @@ types:
   SkinningInstance:
     no_auto_serialize: true
     no_auto_deserialize: true
+    private_make: true
     properties:
       pose:
         type: SkinningPose
@@ -917,26 +918,52 @@ types:
       mesh:
         type: Mesh
         handle: true
-      skinned_vertex_offset:
-        type: u32
-      vertex_count:
-        type: u32
+        private_setter: true
       skinning_commands:
         type: Low::Util::List<SkinningCommand>
         no_setter: true
+    functions:
+      make:
+        static: true
+        return_type: SkinningInstance
+        return_handle: true
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: mesh
+            type: Renderer::Mesh
+            handle: true
+      mark_needs_initialization:
+        return_type: void
   SkinningCommand:
     no_auto_serialize: true
     no_auto_deserialize: true
+    private_make: true
     properties:
       instance:
         type: SkinningInstance
         handle: true
+        private_setter: true
       submesh:
         type: GpuSubmesh
         handle: true
+        private_setter: true
       weights_start:
         type: u32
-      skinned_vertex_start_a:
+      skinned_vertex_start:
         type: u32
-      skinned_vertex_start_b:
+      vertex_count:
         type: u32
+        private_setter: true
+    functions:
+      make:
+        static: true
+        return_type: SkinningCommand
+        return_handle: true
+        parameters:
+          - name: instance
+            type: SkinningInstance
+            handle: true
+          - name: submesh
+            type: GpuSubmesh
+            handle: true

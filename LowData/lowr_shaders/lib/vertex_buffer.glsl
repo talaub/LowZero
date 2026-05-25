@@ -11,4 +11,14 @@ layout(std140, set = 0, binding = 0) readonly buffer VertexBufferWrapper
   Vertex g_Vertices[];
 };
 
+layout(std140, set = 0, binding = 4) buffer SkinnedVertexBufferAWrapper
+{
+  Vertex g_SkinnedVerticesA[];
+};
+
+layout(std140, set = 0, binding = 5) buffer SkinnedVertexBufferBWrapper
+{
+  Vertex g_SkinnedVerticesB[];
+};
+
 #define VERTEX g_Vertices[gl_VertexIndex]

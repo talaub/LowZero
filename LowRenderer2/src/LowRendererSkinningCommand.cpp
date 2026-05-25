@@ -12,6 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+#include "LowRendererVulkan.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -52,6 +53,12 @@ namespace Low {
           SkinningInstance();
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, SkinningCommand, submesh,
                                  GpuSubmesh)) GpuSubmesh();
+      ACCESSOR_TYPE_SOA(l_Handle, SkinningCommand, weights_start,
+                        uint32_t) = 0u;
+      ACCESSOR_TYPE_SOA(l_Handle, SkinningCommand,
+                        skinned_vertex_start, uint32_t) = 0u;
+      ACCESSOR_TYPE_SOA(l_Handle, SkinningCommand, vertex_count,
+                        uint32_t) = 0u;
       ACCESSOR_TYPE_SOA(l_Handle, SkinningCommand, name,
                         Low::Util::Name) = Low::Util::Name(0u);
 
@@ -71,6 +78,10 @@ namespace Low {
 
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        if (get_vertex_count() > 0u) {
+          Vulkan::Global::get_skinned_vertex_output_buffer().free(
+              get_skinned_vertex_start(), get_vertex_count());
+        }
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 
@@ -160,10 +171,7 @@ namespace Low {
               p_Handle, SkinningCommand, instance, SkinningInstance);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          SkinningCommand l_Handle = p_Handle.get_id();
-          l_Handle.set_instance(*(SkinningInstance *)p_Data);
-        };
+                                const void *p_Data) -> void {};
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SkinningCommand l_Handle = p_Handle.get_id();
@@ -189,10 +197,7 @@ namespace Low {
                                             submesh, GpuSubmesh);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          SkinningCommand l_Handle = p_Handle.get_id();
-          l_Handle.set_submesh(*(GpuSubmesh *)p_Data);
-        };
+                                const void *p_Data) -> void {};
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SkinningCommand l_Handle = p_Handle.get_id();
@@ -231,66 +236,60 @@ namespace Low {
         // End property: weights_start
       }
       {
-        // Property: skinned_vertex_start_a
+        // Property: skinned_vertex_start
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(skinned_vertex_start_a);
+        l_PropertyInfo.name = N(skinned_vertex_start);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(SkinningCommand::Data, skinned_vertex_start_a);
+            offsetof(SkinningCommand::Data, skinned_vertex_start);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           SkinningCommand l_Handle = p_Handle.get_id();
-          l_Handle.get_skinned_vertex_start_a();
+          l_Handle.get_skinned_vertex_start();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SkinningCommand,
-                                            skinned_vertex_start_a,
+                                            skinned_vertex_start,
                                             uint32_t);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
           SkinningCommand l_Handle = p_Handle.get_id();
-          l_Handle.set_skinned_vertex_start_a(*(uint32_t *)p_Data);
+          l_Handle.set_skinned_vertex_start(*(uint32_t *)p_Data);
         };
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SkinningCommand l_Handle = p_Handle.get_id();
-          *((uint32_t *)p_Data) =
-              l_Handle.get_skinned_vertex_start_a();
+          *((uint32_t *)p_Data) = l_Handle.get_skinned_vertex_start();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-        // End property: skinned_vertex_start_a
+        // End property: skinned_vertex_start
       }
       {
-        // Property: skinned_vertex_start_b
+        // Property: vertex_count
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(skinned_vertex_start_b);
+        l_PropertyInfo.name = N(vertex_count);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(SkinningCommand::Data, skinned_vertex_start_b);
+            offsetof(SkinningCommand::Data, vertex_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           SkinningCommand l_Handle = p_Handle.get_id();
-          l_Handle.get_skinned_vertex_start_b();
+          l_Handle.get_vertex_count();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SkinningCommand,
-                                            skinned_vertex_start_b,
-                                            uint32_t);
+                                            vertex_count, uint32_t);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          SkinningCommand l_Handle = p_Handle.get_id();
-          l_Handle.set_skinned_vertex_start_b(*(uint32_t *)p_Data);
-        };
+                                const void *p_Data) -> void {};
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SkinningCommand l_Handle = p_Handle.get_id();
-          *((uint32_t *)p_Data) =
-              l_Handle.get_skinned_vertex_start_b();
+          *((uint32_t *)p_Data) = l_Handle.get_vertex_count();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-        // End property: skinned_vertex_start_b
+        // End property: vertex_count
       }
       {
         // Property: name
@@ -320,6 +319,31 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: name
+      }
+      {
+        // Function: make
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(make);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = SkinningCommand::type_id();
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Instance);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::HANDLE;
+          l_ParameterInfo.handleType = SkinningInstance::type_id();
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Submesh);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::HANDLE;
+          l_ParameterInfo.handleType = GpuSubmesh::type_id();
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: make
       }
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
@@ -444,10 +468,7 @@ namespace Low {
         l_Handle.set_submesh(get_submesh());
       }
       l_Handle.set_weights_start(get_weights_start());
-      l_Handle.set_skinned_vertex_start_a(
-          get_skinned_vertex_start_a());
-      l_Handle.set_skinned_vertex_start_b(
-          get_skinned_vertex_start_b());
+      l_Handle.set_vertex_count(get_vertex_count());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -588,6 +609,32 @@ namespace Low {
       TYPE_SOA(SkinningCommand, submesh, GpuSubmesh) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_submesh
+      if (get_vertex_count() > 0u) {
+        Vulkan::Global::get_skinned_vertex_output_buffer().free(
+            get_skinned_vertex_start(), get_vertex_count());
+      }
+
+      set_vertex_count(0);
+      set_weights_start(0);
+      set_skinned_vertex_start(0);
+
+      if (p_Value.is_alive()) {
+        LOW_ASSERT(p_Value.get_bone_weight_count() ==
+                       p_Value.get_vertex_count(),
+                   "Skinning command needs one bone weight entry per "
+                   "vertex.");
+
+        u32 l_SkinnedVertexStart = 0u;
+        LOW_ASSERT(
+            Vulkan::Global::get_skinned_vertex_output_buffer()
+                .reserve(p_Value.get_vertex_count(),
+                         &l_SkinnedVertexStart),
+            "Failed to reserve skinned vertex output buffer range.");
+
+        set_vertex_count(p_Value.get_vertex_count());
+        set_weights_start(p_Value.get_bone_weight_start());
+        set_skinned_vertex_start(l_SkinnedVertexStart);
+      }
       // LOW_CODEGEN::END::CUSTOM:SETTER_submesh
 
       broadcast_observable(N(submesh));
@@ -618,58 +665,56 @@ namespace Low {
       broadcast_observable(N(weights_start));
     }
 
-    uint32_t SkinningCommand::get_skinned_vertex_start_a() const
+    uint32_t SkinningCommand::get_skinned_vertex_start() const
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_skinned_vertex_start_a
-      // LOW_CODEGEN::END::CUSTOM:GETTER_skinned_vertex_start_a
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_skinned_vertex_start
+      // LOW_CODEGEN::END::CUSTOM:GETTER_skinned_vertex_start
 
-      return TYPE_SOA(SkinningCommand, skinned_vertex_start_a,
+      return TYPE_SOA(SkinningCommand, skinned_vertex_start,
                       uint32_t);
     }
-    void SkinningCommand::set_skinned_vertex_start_a(uint32_t p_Value)
+    void SkinningCommand::set_skinned_vertex_start(uint32_t p_Value)
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_skinned_vertex_start_a
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_skinned_vertex_start_a
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_skinned_vertex_start
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_skinned_vertex_start
 
       // Set new value
-      TYPE_SOA(SkinningCommand, skinned_vertex_start_a, uint32_t) =
+      TYPE_SOA(SkinningCommand, skinned_vertex_start, uint32_t) =
           p_Value;
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_skinned_vertex_start_a
-      // LOW_CODEGEN::END::CUSTOM:SETTER_skinned_vertex_start_a
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_skinned_vertex_start
+      // LOW_CODEGEN::END::CUSTOM:SETTER_skinned_vertex_start
 
-      broadcast_observable(N(skinned_vertex_start_a));
+      broadcast_observable(N(skinned_vertex_start));
     }
 
-    uint32_t SkinningCommand::get_skinned_vertex_start_b() const
+    uint32_t SkinningCommand::get_vertex_count() const
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_skinned_vertex_start_b
-      // LOW_CODEGEN::END::CUSTOM:GETTER_skinned_vertex_start_b
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_vertex_count
+      // LOW_CODEGEN::END::CUSTOM:GETTER_vertex_count
 
-      return TYPE_SOA(SkinningCommand, skinned_vertex_start_b,
-                      uint32_t);
+      return TYPE_SOA(SkinningCommand, vertex_count, uint32_t);
     }
-    void SkinningCommand::set_skinned_vertex_start_b(uint32_t p_Value)
+    void SkinningCommand::set_vertex_count(uint32_t p_Value)
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_skinned_vertex_start_b
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_skinned_vertex_start_b
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_vertex_count
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_vertex_count
 
       // Set new value
-      TYPE_SOA(SkinningCommand, skinned_vertex_start_b, uint32_t) =
-          p_Value;
+      TYPE_SOA(SkinningCommand, vertex_count, uint32_t) = p_Value;
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_skinned_vertex_start_b
-      // LOW_CODEGEN::END::CUSTOM:SETTER_skinned_vertex_start_b
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_vertex_count
+      // LOW_CODEGEN::END::CUSTOM:SETTER_vertex_count
 
-      broadcast_observable(N(skinned_vertex_start_b));
+      broadcast_observable(N(vertex_count));
     }
 
     Low::Util::Name SkinningCommand::get_name() const
@@ -695,6 +740,26 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
+    }
+
+    SkinningCommand SkinningCommand::make(SkinningInstance p_Instance,
+                                          GpuSubmesh p_Submesh)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+      LOW_ASSERT(
+          p_Instance.is_alive(),
+          "Failed to create skinning command - instance dead.");
+      LOW_ASSERT(p_Submesh.is_alive(),
+                 "Failed to create skinning command - submesh dead.");
+
+      SkinningCommand l_Command = make(p_Submesh.get_name());
+      l_Command.set_submesh(p_Submesh);
+      l_Command.set_instance(p_Instance);
+
+      p_Instance.get_skinning_commands().push_back(l_Command);
+
+      return l_Command;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
     }
 
     uint32_t SkinningCommand::create_instance(u32 &p_PageIndex,

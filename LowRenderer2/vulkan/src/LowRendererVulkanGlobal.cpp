@@ -198,6 +198,9 @@ namespace Low {
         VkDescriptorSetLayout g_GlobalDescriptorSetLayout;
         VkDescriptorSet g_GlobalDescriptorSet;
 
+        VkDescriptorSetLayout g_SkinningDescriptorSetLayout;
+        VkDescriptorSet g_SkinningDescriptorSet;
+
         VkDescriptorSetLayout g_TextureDescriptorSetLayout;
         VkDescriptorSet *g_TextureDescriptorSets;
 
@@ -274,6 +277,16 @@ namespace Low {
         VkDescriptorSet get_global_descriptor_set()
         {
           return g_GlobalDescriptorSet;
+        }
+
+        VkDescriptorSetLayout get_skinning_descriptor_set_layout()
+        {
+          return g_SkinningDescriptorSetLayout;
+        }
+
+        VkDescriptorSet get_skinning_descriptor_set()
+        {
+          return g_SkinningDescriptorSet;
         }
 
         VkDescriptorSetLayout get_texture_descriptor_set_layout()
@@ -444,9 +457,15 @@ namespace Low {
                                   VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
             l_Builder.add_binding(3,
                                   VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            l_Builder.add_binding(4,
+                                  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            l_Builder.add_binding(5,
+                                  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
             g_GlobalDescriptorSetLayout = l_Builder.build(
-                Global::get_device(), VK_SHADER_STAGE_ALL_GRAPHICS);
+                Global::get_device(),
+                VK_SHADER_STAGE_ALL_GRAPHICS |
+                    VK_SHADER_STAGE_COMPUTE_BIT);
           }
 
           g_GlobalDescriptorSet =
@@ -477,12 +496,71 @@ namespace Low {
                 3,
                 Global::get_ui_drawcommand_buffer().m_Buffer.buffer,
                 Global::get_ui_drawcommand_buffer().m_ElementSize *
-                    Global::get_ui_drawcommand_buffer()
+                Global::get_ui_drawcommand_buffer()
+                        .m_ElementCount,
+                0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+            l_Writer.write_buffer(
+                4,
+                Global::get_skinned_vertex_output_buffer()
+                    .m_Buffers[0]
+                    .buffer,
+                Global::get_skinned_vertex_output_buffer()
+                        .m_ElementSize *
+                    Global::get_skinned_vertex_output_buffer()
+                        .m_ElementCount,
+                0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+            l_Writer.write_buffer(
+                5,
+                Global::get_skinned_vertex_output_buffer()
+                    .m_Buffers[1]
+                    .buffer,
+                Global::get_skinned_vertex_output_buffer()
+                        .m_ElementSize *
+                    Global::get_skinned_vertex_output_buffer()
                         .m_ElementCount,
                 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
             l_Writer.update_set(Global::get_device(),
                                 get_global_descriptor_set());
+          }
+
+          {
+            DescriptorUtil::DescriptorLayoutBuilder l_Builder;
+            l_Builder.add_binding(0,
+                                  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            l_Builder.add_binding(1,
+                                  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+            g_SkinningDescriptorSetLayout = l_Builder.build(
+                Global::get_device(), VK_SHADER_STAGE_COMPUTE_BIT);
+          }
+
+          g_SkinningDescriptorSet =
+              Global::get_global_descriptor_allocator().allocate(
+                  Global::get_device(),
+                  get_skinning_descriptor_set_layout());
+
+          {
+            DescriptorUtil::DescriptorWriter l_Writer;
+            l_Writer.write_buffer(
+                0,
+                Global::get_mesh_bone_weight_buffer().m_Buffer.buffer,
+                Global::get_mesh_bone_weight_buffer().m_ElementSize *
+                    Global::get_mesh_bone_weight_buffer()
+                        .m_ElementCount,
+                0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+            l_Writer.write_buffer(
+                1,
+                Global::get_pose_palette_buffer().m_Buffer.buffer,
+                Global::get_pose_palette_buffer().m_ElementSize *
+                    Global::get_pose_palette_buffer().m_ElementCount,
+                0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+            l_Writer.update_set(Global::get_device(),
+                                get_skinning_descriptor_set());
           }
 
           {
@@ -1318,7 +1396,7 @@ namespace Low {
         {
           get_drawcommand_buffer().destroy();
           get_ui_drawcommand_buffer().destroy();
-          get_pose_palette_bufer().destroy();
+          get_pose_palette_buffer().destroy();
           BufferUtil::destroy_buffer(get_material_data_buffer());
           BufferUtil::destroy_buffer(get_ss2d_drawcommand_buffer());
           BufferUtil::destroy_buffer(get_sampler_map_buffer());
@@ -1342,6 +1420,9 @@ namespace Low {
           vkDestroyDescriptorSetLayout(
               Global::get_device(),
               Global::get_global_descriptor_set_layout(), nullptr);
+          vkDestroyDescriptorSetLayout(
+              Global::get_device(),
+              Global::get_skinning_descriptor_set_layout(), nullptr);
 
           return true;
         }

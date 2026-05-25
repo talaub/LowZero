@@ -27,8 +27,6 @@ namespace Low {
       public:
         SkinningPose pose;
         Mesh mesh;
-        uint32_t skinned_vertex_offset;
-        uint32_t vertex_count;
         Low::Util::List<SkinningCommand> skinning_commands;
         Low::Util::Name name;
 
@@ -53,8 +51,11 @@ namespace Low {
         return ms_TypeId;
       }
 
+    private:
       static SkinningInstance make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
+
+    public:
       explicit SkinningInstance(const SkinningInstance &p_Copy)
           : Low::Util::Handle(p_Copy.m_Id)
       {
@@ -147,19 +148,15 @@ namespace Low {
       void set_pose(SkinningPose p_Value);
 
       Mesh get_mesh() const;
-      void set_mesh(Mesh p_Value);
-
-      uint32_t get_skinned_vertex_offset() const;
-      void set_skinned_vertex_offset(uint32_t p_Value);
-
-      uint32_t get_vertex_count() const;
-      void set_vertex_count(uint32_t p_Value);
 
       Low::Util::List<SkinningCommand> &get_skinning_commands() const;
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
+      static SkinningInstance make(Util::Name p_Name,
+                                   Renderer::Mesh p_Mesh);
+      void mark_needs_initialization();
       static bool get_page_for_index(const u32 p_Index,
                                      u32 &p_PageIndex,
                                      u32 &p_SlotIndex);
@@ -169,8 +166,12 @@ namespace Low {
       static u32 ms_PageSize;
       static u32 create_instance(u32 &p_PageIndex, u32 &p_SlotIndex);
       static u32 create_page();
+      void set_mesh(Mesh p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+    public:
+      static Low::Util::Set<Low::Renderer::SkinningInstance>
+          ms_NeedInitialization;
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
     };
 

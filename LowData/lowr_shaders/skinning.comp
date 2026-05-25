@@ -1,0 +1,95 @@
+#version 450
+
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+#include "vertex_buffer.glsl"
+
+struct VertexSkinningWeights {
+  uvec4 boneIndices;
+  vec4 weights;
+};
+
+layout(std140, set = 1, binding = 0) readonly buffer SkinningWeightsWrapper
+{
+  VertexSkinningWeights g_SkinningWeights[];
+};
+
+layout(std140, set = 1, binding = 1) readonly buffer PosePaletteWrapper
+{
+  mat4 g_PosePalette[];
+};
+
+layout(push_constant) uniform constants
+{
+  uint sourceVertexStart;
+  uint weightsStart;
+  uint posePaletteStart;
+  uint outputVertexStart;
+  uint vertexCount;
+  uint outputBufferIndex;
+} c_Skinning;
+
+mat4 get_skin_matrix(VertexSkinningWeights p_Weights)
+{
+  mat4 skinMatrix = mat4(0.0);
+
+  skinMatrix += g_PosePalette[c_Skinning.posePaletteStart +
+                              p_Weights.boneIndices.x] *
+                p_Weights.weights.x;
+  skinMatrix += g_PosePalette[c_Skinning.posePaletteStart +
+                              p_Weights.boneIndices.y] *
+                p_Weights.weights.y;
+  skinMatrix += g_PosePalette[c_Skinning.posePaletteStart +
+                              p_Weights.boneIndices.z] *
+                p_Weights.weights.z;
+  skinMatrix += g_PosePalette[c_Skinning.posePaletteStart +
+                              p_Weights.boneIndices.w] *
+                p_Weights.weights.w;
+
+  return skinMatrix;
+}
+
+void write_skinned_vertex(uint p_Index, Vertex p_Vertex)
+{
+  if (c_Skinning.outputBufferIndex == 0) {
+    g_SkinnedVerticesA[p_Index] = p_Vertex;
+  } else {
+    g_SkinnedVerticesB[p_Index] = p_Vertex;
+  }
+}
+
+void main()
+{
+  uint localVertexIndex = gl_GlobalInvocationID.x;
+  if (localVertexIndex >= c_Skinning.vertexCount) {
+    return;
+  }
+
+  uint sourceVertexIndex = c_Skinning.sourceVertexStart + localVertexIndex;
+  uint weightsIndex = c_Skinning.weightsStart + localVertexIndex;
+  uint outputVertexIndex = c_Skinning.outputVertexStart + localVertexIndex;
+
+  Vertex sourceVertex = g_Vertices[sourceVertexIndex];
+  VertexSkinningWeights skinningWeights = g_SkinningWeights[weightsIndex];
+
+  float totalWeight = skinningWeights.weights.x + skinningWeights.weights.y +
+                      skinningWeights.weights.z + skinningWeights.weights.w;
+
+  if (totalWeight <= 0.0) {
+    write_skinned_vertex(outputVertexIndex, sourceVertex);
+    return;
+  }
+
+  mat4 skinMatrix = get_skin_matrix(skinningWeights);
+  mat3 normalMatrix = mat3(skinMatrix);
+
+  Vertex skinnedVertex = sourceVertex;
+  skinnedVertex.position =
+      (skinMatrix * vec4(sourceVertex.position, 1.0)).xyz;
+  skinnedVertex.normal = normalize(normalMatrix * sourceVertex.normal);
+  skinnedVertex.tangent = normalize(normalMatrix * sourceVertex.tangent);
+  skinnedVertex.bitangent =
+      normalize(normalMatrix * sourceVertex.bitangent);
+
+  write_skinned_vertex(outputVertexIndex, skinnedVertex);
+}

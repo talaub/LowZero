@@ -1,8 +1,10 @@
 #include "LowRendererSkinningSystem.h"
 
 #include "LowMath.h"
+#include "LowRendererSkinningInstance.h"
 #include "LowRendererSkinningPose.h"
 #include "LowRendererVulkan.h"
+#include "LowRendererSkinningCommand.h"
 
 namespace Low {
   namespace Renderer {
@@ -101,9 +103,62 @@ namespace Low {
         }
       }
 
+      static void skinning_instances_tick(const float p_Delta)
+      {
+        Util::Set<SkinningInstance> l_Reschedules;
+
+        for (SkinningInstance i_Instance :
+             SkinningInstance::ms_NeedInitialization) {
+          Mesh i_Mesh = i_Instance.get_mesh();
+
+          if (!i_Mesh.is_alive()) {
+            LOW_LOG_WARN << "Wanted to initialize skinning instance "
+                            "with dead mesh. Will destroy instance."
+                         << LOW_LOG_END;
+            i_Instance.destroy();
+            continue;
+          }
+
+          if (i_Mesh.get_state() != MeshState::LOADED) {
+            l_Reschedules.insert(i_Instance);
+            continue;
+          }
+
+          for (SkinningCommand i_Command :
+               i_Instance.get_skinning_commands()) {
+            if (i_Command.is_alive()) {
+              i_Command.destroy();
+            }
+          }
+
+          i_Instance.get_skinning_commands().clear();
+
+          if (!i_Instance.get_pose().is_alive()) {
+            continue;
+          }
+
+          GpuMesh i_GpuMesh = i_Mesh.get_gpu();
+
+          for (auto sit = i_GpuMesh.get_submeshes().begin();
+               sit != i_GpuMesh.get_submeshes().end(); ++sit) {
+            GpuSubmesh i_GpuSubmesh = *sit;
+
+            SkinningCommand::make(i_Instance, i_GpuSubmesh);
+          }
+        }
+
+        SkinningInstance::ms_NeedInitialization.clear();
+
+        for (SkinningInstance i_Instance : l_Reschedules) {
+          i_Instance.mark_needs_initialization();
+        }
+      }
+
       void tick(const float p_Delta)
       {
         poses_tick(p_Delta);
+
+        skinning_instances_tick(p_Delta);
       }
     } // namespace SkinningSystem
   } // namespace Renderer

@@ -278,6 +278,9 @@ namespace Low {
         VkDescriptorSetLayout get_global_descriptor_set_layout();
         VkDescriptorSet get_global_descriptor_set();
 
+        VkDescriptorSetLayout get_skinning_descriptor_set_layout();
+        VkDescriptorSet get_skinning_descriptor_set();
+
         VkDescriptorSetLayout get_texture_descriptor_set_layout();
         VkDescriptorSet get_texture_descriptor_set(u32 p_FrameIndex);
         VkDescriptorSet get_current_texture_descriptor_set();
