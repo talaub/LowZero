@@ -1219,6 +1219,11 @@ namespace Low {
       return get_references().size();
     }
 
+    bool Material::is_referenced() const
+    {
+      return !get_references().empty();
+    }
+
     MaterialState Material::get_state() const
     {
       _LOW_ASSERT(is_alive());

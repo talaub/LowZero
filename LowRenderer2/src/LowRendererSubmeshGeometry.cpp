@@ -72,6 +72,10 @@ namespace Low {
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, SubmeshGeometry,
                                  bounding_sphere, Low::Math::Sphere))
           Low::Math::Sphere();
+      new (ACCESSOR_TYPE_SOA_PTR(
+          l_Handle, SubmeshGeometry, bone_weights,
+          Low::Util::List<Low::Util::Resource::BoneVertexWeight>))
+          Low::Util::List<Low::Util::Resource::BoneVertexWeight>();
       ACCESSOR_TYPE_SOA(l_Handle, SubmeshGeometry, name,
                         Low::Util::Name) = Low::Util::Name(0u);
 
@@ -479,6 +483,39 @@ namespace Low {
         // End property: bounding_sphere
       }
       {
+        // Property: bone_weights
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(bone_weights);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(SubmeshGeometry::Data, bone_weights);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          SubmeshGeometry l_Handle = p_Handle.get_id();
+          l_Handle.get_bone_weights();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, SubmeshGeometry, bone_weights,
+              Low::Util::List<Low::Util::Resource::BoneVertexWeight>);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          SubmeshGeometry l_Handle = p_Handle.get_id();
+          l_Handle.set_bone_weights(
+              *(Low::Util::List<Low::Util::Resource::BoneVertexWeight>
+                    *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          SubmeshGeometry l_Handle = p_Handle.get_id();
+          *((Low::Util::List<Low::Util::Resource::BoneVertexWeight> *)
+                p_Data) = l_Handle.get_bone_weights();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: bone_weights
+      }
+      {
         // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
@@ -635,6 +672,7 @@ namespace Low {
       l_Handle.set_local_transform(get_local_transform());
       l_Handle.set_aabb(get_aabb());
       l_Handle.set_bounding_sphere(get_bounding_sphere());
+      l_Handle.set_bone_weights(get_bone_weights());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
 
@@ -1032,6 +1070,39 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_bounding_sphere
 
       broadcast_observable(N(bounding_sphere));
+    }
+
+    Low::Util::List<Low::Util::Resource::BoneVertexWeight> &
+    SubmeshGeometry::get_bone_weights() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_bone_weights
+      // LOW_CODEGEN::END::CUSTOM:GETTER_bone_weights
+
+      return TYPE_SOA(
+          SubmeshGeometry, bone_weights,
+          Low::Util::List<Low::Util::Resource::BoneVertexWeight>);
+    }
+    void SubmeshGeometry::set_bone_weights(
+        Low::Util::List<Low::Util::Resource::BoneVertexWeight>
+            &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_bone_weights
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_bone_weights
+
+      // Set new value
+      TYPE_SOA(
+          SubmeshGeometry, bone_weights,
+          Low::Util::List<Low::Util::Resource::BoneVertexWeight>) =
+          p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_bone_weights
+      // LOW_CODEGEN::END::CUSTOM:SETTER_bone_weights
+
+      broadcast_observable(N(bone_weights));
     }
 
     Low::Util::Name SubmeshGeometry::get_name() const

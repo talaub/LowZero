@@ -907,6 +907,10 @@ namespace Low {
       // Set new value
       TYPE_SOA(RenderScene, directional_light_dirty, bool) = p_Value;
 
+      if (p_Value) {
+        mark_directional_light_dirty();
+      }
+
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_directional_light_dirty
       // LOW_CODEGEN::END::CUSTOM:SETTER_directional_light_dirty
 

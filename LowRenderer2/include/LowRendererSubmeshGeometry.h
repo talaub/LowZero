@@ -36,6 +36,8 @@ namespace Low {
         Low::Math::Matrix4x4 local_transform;
         Low::Math::AABB aabb;
         Low::Math::Sphere bounding_sphere;
+        Low::Util::List<Low::Util::Resource::BoneVertexWeight>
+            bone_weights;
         Low::Util::Name name;
 
         static size_t get_size()
@@ -180,6 +182,12 @@ namespace Low {
 
       Low::Math::Sphere &get_bounding_sphere() const;
       void set_bounding_sphere(Low::Math::Sphere &p_Value);
+
+      Low::Util::List<Low::Util::Resource::BoneVertexWeight> &
+      get_bone_weights() const;
+      void set_bone_weights(
+          Low::Util::List<Low::Util::Resource::BoneVertexWeight>
+              &p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

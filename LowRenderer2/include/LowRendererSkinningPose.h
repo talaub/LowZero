@@ -25,6 +25,8 @@ namespace Low {
         Util::List<Math::Matrix4x4> matrices;
         Skeleton skeleton;
         uint32_t pose_palette_offset;
+        bool uploaded;
+        Low::Util::Set<u64> references;
         bool dirty;
         Low::Util::Name name;
 
@@ -107,6 +109,11 @@ namespace Low {
                           Low::Util::Handle p_Observed,
                           Low::Util::Name p_Observable);
 
+      void reference(const u64 p_Id);
+      void dereference(const u64 p_Id);
+      u32 references() const;
+      bool is_referenced() const;
+
       static uint32_t get_capacity();
 
       void serialize(Low::Util::Serial::Node &p_Node) const;
@@ -146,6 +153,10 @@ namespace Low {
       uint32_t get_pose_palette_offset() const;
       void set_pose_palette_offset(uint32_t p_Value);
 
+      bool is_uploaded() const;
+      void set_uploaded(bool p_Value);
+      void toggle_uploaded();
+
       bool is_dirty() const;
       void set_dirty(bool p_Value);
       void toggle_dirty();
@@ -163,8 +174,11 @@ namespace Low {
       static u32 ms_PageSize;
       static u32 create_instance(u32 &p_PageIndex, u32 &p_SlotIndex);
       static u32 create_page();
+      Low::Util::Set<u64> &get_references() const;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+    public:
+      static Low::Util::Set<Low::Renderer::SkinningPose> ms_Dirty;
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
     };
 

@@ -247,6 +247,38 @@ namespace Low {
         // End property: uploaded_index_count
       }
       {
+        // Property: uploaded_bone_weight_count
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(uploaded_bone_weight_count);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(GpuSubmesh::Data, uploaded_bone_weight_count);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          GpuSubmesh l_Handle = p_Handle.get_id();
+          l_Handle.get_uploaded_bone_weight_count();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, GpuSubmesh, uploaded_bone_weight_count,
+              uint32_t);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          GpuSubmesh l_Handle = p_Handle.get_id();
+          l_Handle.set_uploaded_bone_weight_count(
+              *(uint32_t *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          GpuSubmesh l_Handle = p_Handle.get_id();
+          *((uint32_t *)p_Data) =
+              l_Handle.get_uploaded_bone_weight_count();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: uploaded_bone_weight_count
+      }
+      {
         // Property: vertex_count
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(vertex_count);
@@ -305,6 +337,35 @@ namespace Low {
         // End property: index_count
       }
       {
+        // Property: bone_weight_count
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(bone_weight_count);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(GpuSubmesh::Data, bone_weight_count);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          GpuSubmesh l_Handle = p_Handle.get_id();
+          l_Handle.get_bone_weight_count();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, GpuSubmesh, bone_weight_count, uint32_t);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          GpuSubmesh l_Handle = p_Handle.get_id();
+          l_Handle.set_bone_weight_count(*(uint32_t *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          GpuSubmesh l_Handle = p_Handle.get_id();
+          *((uint32_t *)p_Data) = l_Handle.get_bone_weight_count();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: bone_weight_count
+      }
+      {
         // Property: vertex_start
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(vertex_start);
@@ -361,6 +422,35 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: index_start
+      }
+      {
+        // Property: bone_weight_start
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(bone_weight_start);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(GpuSubmesh::Data, bone_weight_start);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          GpuSubmesh l_Handle = p_Handle.get_id();
+          l_Handle.get_bone_weight_start();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, GpuSubmesh, bone_weight_start, uint32_t);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          GpuSubmesh l_Handle = p_Handle.get_id();
+          l_Handle.set_bone_weight_start(*(uint32_t *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          GpuSubmesh l_Handle = p_Handle.get_id();
+          *((uint32_t *)p_Data) = l_Handle.get_bone_weight_start();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: bone_weight_start
       }
       {
         // Property: transform
@@ -659,10 +749,14 @@ namespace Low {
       l_Handle.set_state(get_state());
       l_Handle.set_uploaded_vertex_count(get_uploaded_vertex_count());
       l_Handle.set_uploaded_index_count(get_uploaded_index_count());
+      l_Handle.set_uploaded_bone_weight_count(
+          get_uploaded_bone_weight_count());
       l_Handle.set_vertex_count(get_vertex_count());
       l_Handle.set_index_count(get_index_count());
+      l_Handle.set_bone_weight_count(get_bone_weight_count());
       l_Handle.set_vertex_start(get_vertex_start());
       l_Handle.set_index_start(get_index_start());
+      l_Handle.set_bone_weight_start(get_bone_weight_start());
       l_Handle.set_transform(get_transform());
       l_Handle.set_parent_transform(get_parent_transform());
       l_Handle.set_local_transform(get_local_transform());
@@ -849,6 +943,33 @@ namespace Low {
       broadcast_observable(N(uploaded_index_count));
     }
 
+    uint32_t GpuSubmesh::get_uploaded_bone_weight_count() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_uploaded_bone_weight_count
+      // LOW_CODEGEN::END::CUSTOM:GETTER_uploaded_bone_weight_count
+
+      return TYPE_SOA(GpuSubmesh, uploaded_bone_weight_count,
+                      uint32_t);
+    }
+    void GpuSubmesh::set_uploaded_bone_weight_count(uint32_t p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_uploaded_bone_weight_count
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_uploaded_bone_weight_count
+
+      // Set new value
+      TYPE_SOA(GpuSubmesh, uploaded_bone_weight_count, uint32_t) =
+          p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_uploaded_bone_weight_count
+      // LOW_CODEGEN::END::CUSTOM:SETTER_uploaded_bone_weight_count
+
+      broadcast_observable(N(uploaded_bone_weight_count));
+    }
+
     uint32_t GpuSubmesh::get_vertex_count() const
     {
       _LOW_ASSERT(is_alive());
@@ -905,6 +1026,31 @@ namespace Low {
       broadcast_observable(N(index_count));
     }
 
+    uint32_t GpuSubmesh::get_bone_weight_count() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_bone_weight_count
+      // LOW_CODEGEN::END::CUSTOM:GETTER_bone_weight_count
+
+      return TYPE_SOA(GpuSubmesh, bone_weight_count, uint32_t);
+    }
+    void GpuSubmesh::set_bone_weight_count(uint32_t p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_bone_weight_count
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_bone_weight_count
+
+      // Set new value
+      TYPE_SOA(GpuSubmesh, bone_weight_count, uint32_t) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_bone_weight_count
+      // LOW_CODEGEN::END::CUSTOM:SETTER_bone_weight_count
+
+      broadcast_observable(N(bone_weight_count));
+    }
+
     uint32_t GpuSubmesh::get_vertex_start() const
     {
       _LOW_ASSERT(is_alive());
@@ -959,6 +1105,31 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_index_start
 
       broadcast_observable(N(index_start));
+    }
+
+    uint32_t GpuSubmesh::get_bone_weight_start() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_bone_weight_start
+      // LOW_CODEGEN::END::CUSTOM:GETTER_bone_weight_start
+
+      return TYPE_SOA(GpuSubmesh, bone_weight_start, uint32_t);
+    }
+    void GpuSubmesh::set_bone_weight_start(uint32_t p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_bone_weight_start
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_bone_weight_start
+
+      // Set new value
+      TYPE_SOA(GpuSubmesh, bone_weight_start, uint32_t) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_bone_weight_start
+      // LOW_CODEGEN::END::CUSTOM:SETTER_bone_weight_start
+
+      broadcast_observable(N(bone_weight_start));
     }
 
     Low::Math::Matrix4x4 &GpuSubmesh::get_transform() const

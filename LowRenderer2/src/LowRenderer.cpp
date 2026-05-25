@@ -57,6 +57,7 @@
 #include "LowRendererSkinningCommand.h"
 #include "LowRendererSkinningInstance.h"
 #include "LowRendererSkinningPose.h"
+#include "LowRendererSkinningSystem.h"
 
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
@@ -1178,6 +1179,7 @@ namespace Low {
       */
 
       ResourceManager::tick(p_Delta);
+      SkinningSystem::tick(p_Delta);
       RenderObjectSystem::tick(p_Delta);
       tick_materials(p_Delta);
 

@@ -801,6 +801,11 @@ namespace Low {
       return get_references().size();
     }
 
+    bool AnimationClip::is_referenced() const
+    {
+      return !get_references().empty();
+    }
+
     Low::Renderer::AnimationClipState AnimationClip::get_state() const
     {
       _LOW_ASSERT(is_alive());

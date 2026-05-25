@@ -759,6 +759,11 @@ namespace Low {
       return get_references().size();
     }
 
+    bool Skeleton::is_referenced() const
+    {
+      return !get_references().empty();
+    }
+
     Low::Renderer::SkeletonState Skeleton::get_state() const
     {
       _LOW_ASSERT(is_alive());

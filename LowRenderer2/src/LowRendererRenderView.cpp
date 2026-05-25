@@ -2784,6 +2784,10 @@ namespace Low {
       // Set new value
       TYPE_SOA(RenderView, camera_dirty, bool) = p_Value;
 
+      if (p_Value) {
+        mark_camera_dirty();
+      }
+
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_dirty
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_camera_dirty
@@ -2826,6 +2830,10 @@ namespace Low {
 
       // Set new value
       TYPE_SOA(RenderView, dimensions_dirty, bool) = p_Value;
+
+      if (p_Value) {
+        mark_dimensions_dirty();
+      }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dimensions_dirty
 

@@ -1518,6 +1518,10 @@ namespace Low {
           // Set new value
           TYPE_SOA(Display, dirty, bool) = p_Value;
 
+          if (p_Value) {
+            mark_dirty();
+          }
+
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
 
           // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
@@ -1575,6 +1579,10 @@ namespace Low {
 
           // Set new value
           TYPE_SOA(Display, world_dirty, bool) = p_Value;
+
+          if (p_Value) {
+            mark_world_dirty();
+          }
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_dirty
 

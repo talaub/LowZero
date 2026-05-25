@@ -27,10 +27,13 @@ namespace Low {
         MeshState state;
         uint32_t uploaded_vertex_count;
         uint32_t uploaded_index_count;
+        uint32_t uploaded_bone_weight_count;
         uint32_t vertex_count;
         uint32_t index_count;
+        uint32_t bone_weight_count;
         uint32_t vertex_start;
         uint32_t index_start;
+        uint32_t bone_weight_start;
         Low::Math::Matrix4x4 transform;
         Low::Math::Matrix4x4 parent_transform;
         Low::Math::Matrix4x4 local_transform;
@@ -157,17 +160,26 @@ namespace Low {
       uint32_t get_uploaded_index_count() const;
       void set_uploaded_index_count(uint32_t p_Value);
 
+      uint32_t get_uploaded_bone_weight_count() const;
+      void set_uploaded_bone_weight_count(uint32_t p_Value);
+
       uint32_t get_vertex_count() const;
       void set_vertex_count(uint32_t p_Value);
 
       uint32_t get_index_count() const;
       void set_index_count(uint32_t p_Value);
 
+      uint32_t get_bone_weight_count() const;
+      void set_bone_weight_count(uint32_t p_Value);
+
       uint32_t get_vertex_start() const;
       void set_vertex_start(uint32_t p_Value);
 
       uint32_t get_index_start() const;
       void set_index_start(uint32_t p_Value);
+
+      uint32_t get_bone_weight_start() const;
+      void set_bone_weight_start(uint32_t p_Value);
 
       Low::Math::Matrix4x4 &get_transform() const;
       void set_transform(Low::Math::Matrix4x4 &p_Value);

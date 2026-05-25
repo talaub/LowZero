@@ -122,6 +122,9 @@ namespace Low {
             SubmeshGeometry submeshGeometry;
             GpuSubmesh gpuSubmesh;
             u32 submeshIndex;
+            u64 uploadedVertexSize = 0u;
+            u64 uploadedIndexSize = 0u;
+            u64 uploadedBoneWeightSize = 0u;
           } mesh;
           struct
           {
@@ -541,6 +544,11 @@ namespace Low {
           Vulkan::Global::get_mesh_vertex_buffer().free(
               i_Submesh.get_vertex_start(),
               i_Submesh.get_vertex_count());
+          if (i_Submesh.get_bone_weight_count() > 0u) {
+            Vulkan::Global::get_mesh_bone_weight_buffer().free(
+                i_Submesh.get_bone_weight_start(),
+                i_Submesh.get_bone_weight_count());
+          }
           Vulkan::Global::get_mesh_index_buffer().free(
               i_Submesh.get_index_start(),
               i_Submesh.get_index_count());
@@ -948,6 +956,8 @@ namespace Low {
                       MeshState::MEMORYLOADED);
                   i_SubmeshGeometry.set_vertices(i_MeshInfo.vertices);
                   i_SubmeshGeometry.set_indices(i_MeshInfo.indices);
+                  i_SubmeshGeometry.set_bone_weights(
+                      i_MeshInfo.boneInfluences);
                   i_SubmeshGeometry.set_transform(
                       i_Submesh.transform);
                   i_SubmeshGeometry.set_parent_transform(
@@ -1015,8 +1025,12 @@ namespace Low {
           i_GpuSubmesh.set_state(MeshState::MEMORYLOADED);
           i_GpuSubmesh.set_vertex_count(it->get_vertex_count());
           i_GpuSubmesh.set_index_count(it->get_index_count());
+          i_GpuSubmesh.set_bone_weight_count(
+              it->get_bone_weights().empty() ? 0u
+                                             : it->get_vertex_count());
           i_GpuSubmesh.set_uploaded_vertex_count(0);
           i_GpuSubmesh.set_uploaded_index_count(0);
+          i_GpuSubmesh.set_uploaded_bone_weight_count(0);
 
           i_GpuSubmesh.set_bounding_sphere(it->get_bounding_sphere());
           i_GpuSubmesh.set_aabb(it->get_aabb());
@@ -1302,8 +1316,10 @@ namespace Low {
       static bool
       request_mesh_buffer_space(UploadEntry &p_UploadEntry,
                                 u32 p_VertexCount, u32 p_IndexCount,
+                                u32 p_BoneWeightCount,
                                 u32 *p_OutVertexStart,
-                                u32 *p_OutIndexStart)
+                                u32 *p_OutIndexStart,
+                                u32 *p_OutBoneWeightStart)
       {
         MeshEntry l_MeshEntry;
         l_MeshEntry.lodPriority = p_UploadEntry.lodPriority;
@@ -1319,10 +1335,88 @@ namespace Low {
                 Vulkan::Global::get_mesh_index_buffer(),
                 l_MeshEntry.priority, p_IndexCount,
                 p_OutIndexStart)) {
+          Vulkan::Global::get_mesh_vertex_buffer().free(
+              *p_OutVertexStart, p_VertexCount);
           return false;
         }
 
+        *p_OutBoneWeightStart = 0u;
+        if (p_BoneWeightCount > 0u) {
+          if (!request_mesh_buffer_space(
+                  Vulkan::Global::get_mesh_bone_weight_buffer(),
+                  l_MeshEntry.priority, p_BoneWeightCount,
+                  p_OutBoneWeightStart)) {
+            Vulkan::Global::get_mesh_vertex_buffer().free(
+                *p_OutVertexStart, p_VertexCount);
+            Vulkan::Global::get_mesh_index_buffer().free(
+                *p_OutIndexStart, p_IndexCount);
+            return false;
+          }
+        }
+
         return true;
+      }
+
+      static Util::List<VertexSkinningWeights>
+      build_vertex_skinning_weights(SubmeshGeometry p_SubmeshGeometry)
+      {
+        Util::List<VertexSkinningWeights> l_SkinningWeights;
+        l_SkinningWeights.resize(p_SubmeshGeometry.get_vertex_count());
+
+        for (VertexSkinningWeights &i_Weights : l_SkinningWeights) {
+          i_Weights.bone_indices = Math::UVector4(0u);
+          i_Weights.weights = Math::Vector4(0.0f);
+        }
+
+        for (const Util::Resource::BoneVertexWeight &i_Influence :
+             p_SubmeshGeometry.get_bone_weights()) {
+          if (i_Influence.vertexIndex >= l_SkinningWeights.size() ||
+              i_Influence.weight <= 0.0f) {
+            continue;
+          }
+
+          VertexSkinningWeights &i_VertexWeights =
+              l_SkinningWeights[i_Influence.vertexIndex];
+
+          u32 i_InsertSlot = 4u;
+          for (u32 i = 0u; i < 4u; ++i) {
+            if (i_VertexWeights.weights[i] == 0.0f) {
+              i_InsertSlot = i;
+              break;
+            }
+          }
+
+          if (i_InsertSlot == 4u) {
+            float i_LowestWeight = i_VertexWeights.weights[0];
+            i_InsertSlot = 0u;
+            for (u32 i = 1u; i < 4u; ++i) {
+              if (i_VertexWeights.weights[i] < i_LowestWeight) {
+                i_LowestWeight = i_VertexWeights.weights[i];
+                i_InsertSlot = i;
+              }
+            }
+
+            if (i_Influence.weight <= i_LowestWeight) {
+              continue;
+            }
+          }
+
+          i_VertexWeights.bone_indices[i_InsertSlot] =
+              i_Influence.boneIndex;
+          i_VertexWeights.weights[i_InsertSlot] = i_Influence.weight;
+        }
+
+        for (VertexSkinningWeights &i_Weights : l_SkinningWeights) {
+          const float i_TotalWeight = i_Weights.weights.x +
+                                      i_Weights.weights.y +
+                                      i_Weights.weights.z +
+                                      i_Weights.weights.w;
+          if (i_TotalWeight > 0.0f) {
+            i_Weights.weights /= i_TotalWeight;
+          }
+        }
+
+        return l_SkinningWeights;
       }
 
       static bool mesh_upload(UploadEntry &p_UploadEntry)
@@ -1338,11 +1432,14 @@ namespace Low {
 
             u32 l_VertexStart;
             u32 l_IndexStart;
+            u32 l_BoneWeightStart;
             if (!request_mesh_buffer_space(
                     p_UploadEntry,
                     l_SubmeshGeometry.get_vertex_count(),
                     l_SubmeshGeometry.get_index_count(),
-                    &l_VertexStart, &l_IndexStart)) {
+                    l_GpuSubmesh.get_bone_weight_count(),
+                    &l_VertexStart, &l_IndexStart,
+                    &l_BoneWeightStart)) {
               LOW_LOG_WARN << "Could not load mesh since mesh buffer "
                               "space could not be reserved"
                            << LOW_LOG_END;
@@ -1353,6 +1450,7 @@ namespace Low {
 
             l_GpuSubmesh.set_vertex_start(l_VertexStart);
             l_GpuSubmesh.set_index_start(l_IndexStart);
+            l_GpuSubmesh.set_bone_weight_start(l_BoneWeightStart);
           }
         }
 
@@ -1363,11 +1461,19 @@ namespace Low {
             sizeof(Low::Util::Resource::Vertex);
         const u64 l_IndexDataSize =
             l_SubmeshGeometry.get_index_count() * MESH_INDEX_SIZE;
+        const bool l_HasBoneWeights =
+            l_GpuSubmesh.get_bone_weight_count() > 0u;
+        const u64 l_BoneWeightDataSize =
+            l_HasBoneWeights
+                ? (l_SubmeshGeometry.get_vertex_count() *
+                   sizeof(VertexSkinningWeights))
+                : 0u;
 
         if (l_GpuSubmesh.get_uploaded_vertex_count() <
             l_GpuSubmesh.get_vertex_count()) {
           const u64 l_FullSize = l_VertexDataSize;
-          const u64 l_UploadedSize = p_UploadEntry.uploadedSize;
+          const u64 l_UploadedSize =
+              p_UploadEntry.data.mesh.uploadedVertexSize;
 
           u8 *l_Data = (u8 *)l_SubmeshGeometry.get_vertices().data();
 
@@ -1388,7 +1494,11 @@ namespace Low {
           // because we upload the vertices first and we still need
           // to upload the indices after that.
           const u8 l_UploadProgressPercent =
-              Math::Util::floor(l_UploadProgress * 100.0f) / 2.0f;
+              l_HasBoneWeights
+                  ? (Math::Util::floor(l_UploadProgress * 100.0f) /
+                     3.0f)
+                  : (Math::Util::floor(l_UploadProgress * 100.0f) /
+                     2.0f);
 
           // Upload data to staging buffer
           LOW_ASSERT(
@@ -1420,10 +1530,11 @@ namespace Low {
               VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT,
               VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT);
 
-          p_UploadEntry.uploadedSize += l_FrameUploadSpace;
+          p_UploadEntry.data.mesh.uploadedVertexSize +=
+              l_FrameUploadSpace;
           p_UploadEntry.data.mesh.gpuSubmesh
               .set_uploaded_vertex_count(
-                  p_UploadEntry.uploadedSize /
+                  p_UploadEntry.data.mesh.uploadedVertexSize /
                   sizeof(Util::Resource::Vertex));
           p_UploadEntry.progressPriority = l_UploadProgressPercent;
 
@@ -1432,8 +1543,7 @@ namespace Low {
                    l_GpuSubmesh.get_index_count()) {
           const u64 l_FullSize = l_IndexDataSize;
           const u64 l_UploadedSize =
-              l_GpuSubmesh.get_uploaded_index_count() *
-              MESH_INDEX_SIZE;
+              p_UploadEntry.data.mesh.uploadedIndexSize;
 
           u8 *l_Data = (u8 *)l_SubmeshGeometry.get_indices().data();
 
@@ -1456,8 +1566,13 @@ namespace Low {
           // we divide it by 2 and add 50% to it to account for the
           // vertices.
           const u8 l_UploadProgressPercent =
-              (Math::Util::floor(l_UploadProgress * 100.0f) / 2.0f) +
-              50;
+              l_HasBoneWeights
+                  ? ((Math::Util::floor(l_UploadProgress * 100.0f) /
+                      3.0f) +
+                     33)
+                  : ((Math::Util::floor(l_UploadProgress * 100.0f) /
+                      2.0f) +
+                     50);
 
           // Upload data to staging buffer
           LOW_ASSERT(
@@ -1488,17 +1603,87 @@ namespace Low {
               VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,
               VK_ACCESS_2_INDEX_READ_BIT);
 
-          p_UploadEntry.uploadedSize += l_FrameUploadSpace;
+          p_UploadEntry.data.mesh.uploadedIndexSize +=
+              l_FrameUploadSpace;
           p_UploadEntry.data.mesh.gpuSubmesh.set_uploaded_index_count(
-              p_UploadEntry.uploadedSize / MESH_INDEX_SIZE);
+              p_UploadEntry.data.mesh.uploadedIndexSize /
+              MESH_INDEX_SIZE);
+          p_UploadEntry.progressPriority = l_UploadProgressPercent;
+
+          return l_FrameUploadSpace > 0.0f;
+        } else if (l_HasBoneWeights &&
+                   p_UploadEntry.data.mesh.uploadedBoneWeightSize <
+                       l_BoneWeightDataSize) {
+          Util::List<VertexSkinningWeights> l_SkinningWeights =
+              build_vertex_skinning_weights(l_SubmeshGeometry);
+
+          const u64 l_FullSize = l_BoneWeightDataSize;
+          const u64 l_UploadedSize =
+              p_UploadEntry.data.mesh.uploadedBoneWeightSize;
+
+          u8 *l_Data = (u8 *)l_SkinningWeights.data();
+
+          const u64 l_SpaceRequired = l_FullSize - l_UploadedSize;
+
+          size_t l_StagingOffset = 0;
+
+          const u64 l_FrameUploadSpace =
+              Vulkan::request_resource_staging_buffer_space(
+                  l_SpaceRequired, &l_StagingOffset);
+
+          const float l_UploadProgress =
+              (((float)l_UploadedSize) +
+               ((float)l_FrameUploadSpace)) /
+              ((float)l_FullSize);
+          const u8 l_UploadProgressPercent =
+              (Math::Util::floor(l_UploadProgress * 100.0f) / 3.0f) +
+              66;
+
+          LOW_ASSERT(
+              Vulkan::resource_staging_buffer_write(
+                  &l_Data[l_UploadedSize], l_FrameUploadSpace,
+                  l_StagingOffset),
+              "Failed to write mesh bone weight data to staging "
+              "buffer");
+
+          VkBufferCopy l_CopyRegion{};
+          l_CopyRegion.srcOffset = l_StagingOffset;
+          l_CopyRegion.dstOffset =
+              (l_GpuSubmesh.get_bone_weight_start() *
+               sizeof(VertexSkinningWeights)) +
+              l_UploadedSize;
+          l_CopyRegion.size = l_FrameUploadSpace;
+
+          vkCmdCopyBuffer(
+              Vulkan::Global::get_current_command_buffer(),
+              Vulkan::Global::get_current_resource_staging_buffer()
+                  .buffer.buffer,
+              Vulkan::Global::get_mesh_bone_weight_buffer()
+                  .m_Buffer.buffer,
+              1, &l_CopyRegion);
+
+          Vulkan::BufferUtil::cmd_buffer_barrier(
+              Vulkan::Global::get_current_command_buffer(),
+              Vulkan::Global::get_mesh_bone_weight_buffer(),
+              l_CopyRegion, VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+              VK_ACCESS_2_TRANSFER_WRITE_BIT,
+              VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT |
+                  VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+              VK_ACCESS_2_SHADER_STORAGE_READ_BIT);
+
+          p_UploadEntry.data.mesh.uploadedBoneWeightSize +=
+              l_FrameUploadSpace;
+          p_UploadEntry.data.mesh.gpuSubmesh
+              .set_uploaded_bone_weight_count(
+                  p_UploadEntry.data.mesh.uploadedBoneWeightSize /
+                  sizeof(VertexSkinningWeights));
           p_UploadEntry.progressPriority = l_UploadProgressPercent;
 
           return l_FrameUploadSpace > 0.0f;
         }
 
-        LOW_ASSERT(false, "Unknown situation, mesh is most likely "
-                          "already fully uploaded");
-        return false;
+        p_UploadEntry.progressPriority = 100;
+        return true;
       }
 
       static bool texture_upload(UploadEntry &p_UploadEntry)

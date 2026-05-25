@@ -554,6 +554,10 @@ namespace Low {
       // Set new value
       TYPE_SOA(UiCanvas, z_dirty, bool) = p_Value;
 
+      if (p_Value) {
+        mark_z_dirty();
+      }
+
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_z_dirty
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_z_dirty

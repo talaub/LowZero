@@ -701,6 +701,11 @@ namespace Low {
       return get_references().size();
     }
 
+    bool Texture::is_referenced() const
+    {
+      return !get_references().empty();
+    }
+
     GpuTexture Texture::get_gpu() const
     {
       _LOW_ASSERT(is_alive());

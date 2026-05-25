@@ -1039,6 +1039,10 @@ namespace Low {
           // Set new value
           TYPE_SOA(Text, full_dirty, bool) = p_Value;
 
+          if (p_Value) {
+            mark_full_dirty();
+          }
+
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_full_dirty
 
           // LOW_CODEGEN::END::CUSTOM:SETTER_full_dirty
@@ -1081,6 +1085,10 @@ namespace Low {
 
           // Set new value
           TYPE_SOA(Text, dirty, bool) = p_Value;
+
+          if (p_Value) {
+            mark_dirty();
+          }
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
 

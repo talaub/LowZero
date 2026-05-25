@@ -17,6 +17,8 @@
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    Low::Util::Set<Low::Renderer::SkinningPose>
+        Low::Renderer::SkinningPose::ms_Dirty;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     u16 SkinningPose::ms_TypeId = 0;
@@ -51,6 +53,11 @@ namespace Low {
           Util::List<Math::Matrix4x4>();
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, SkinningPose, skeleton,
                                  Skeleton)) Skeleton();
+      ACCESSOR_TYPE_SOA(l_Handle, SkinningPose, uploaded, bool) =
+          false;
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, SkinningPose, references,
+                                 Low::Util::Set<u64>))
+          Low::Util::Set<u64>();
       ACCESSOR_TYPE_SOA(l_Handle, SkinningPose, dirty, bool) = false;
       ACCESSOR_TYPE_SOA(l_Handle, SkinningPose, name,
                         Low::Util::Name) = Low::Util::Name(0u);
@@ -230,6 +237,55 @@ namespace Low {
         // End property: pose_palette_offset
       }
       {
+        // Property: uploaded
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(uploaded);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(SkinningPose::Data, uploaded);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          SkinningPose l_Handle = p_Handle.get_id();
+          l_Handle.is_uploaded();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SkinningPose,
+                                            uploaded, bool);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          SkinningPose l_Handle = p_Handle.get_id();
+          l_Handle.set_uploaded(*(bool *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          SkinningPose l_Handle = p_Handle.get_id();
+          *((bool *)p_Data) = l_Handle.is_uploaded();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: uploaded
+      }
+      {
+        // Property: references
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(references);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(SkinningPose::Data, references);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          return nullptr;
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {};
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: references
+      }
+      {
         // Property: dirty
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(dirty);
@@ -402,6 +458,7 @@ namespace Low {
         l_Handle.set_skeleton(get_skeleton());
       }
       l_Handle.set_pose_palette_offset(get_pose_palette_offset());
+      l_Handle.set_uploaded(is_uploaded());
       l_Handle.set_dirty(is_dirty());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
@@ -446,6 +503,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+      return Util::Handle::DEAD;
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
     }
 
@@ -494,6 +552,60 @@ namespace Low {
     {
       SkinningPose l_SkinningPose = p_Observer.get_id();
       l_SkinningPose.notify(p_Observed, p_Observable);
+    }
+
+    void SkinningPose::reference(const u64 p_Id)
+    {
+      _LOW_ASSERT(is_alive());
+
+      const u32 l_OldReferences =
+          (TYPE_SOA(SkinningPose, references, Low::Util::Set<u64>))
+              .size();
+
+      (TYPE_SOA(SkinningPose, references, Low::Util::Set<u64>))
+          .insert(p_Id);
+
+      const u32 l_References =
+          (TYPE_SOA(SkinningPose, references, Low::Util::Set<u64>))
+              .size();
+
+      if (l_OldReferences != l_References) {
+        // LOW_CODEGEN:BEGIN:CUSTOM:NEW_REFERENCE
+        mark_dirty();
+        // LOW_CODEGEN::END::CUSTOM:NEW_REFERENCE
+      }
+    }
+
+    void SkinningPose::dereference(const u64 p_Id)
+    {
+      _LOW_ASSERT(is_alive());
+
+      const u32 l_OldReferences =
+          (TYPE_SOA(SkinningPose, references, Low::Util::Set<u64>))
+              .size();
+
+      (TYPE_SOA(SkinningPose, references, Low::Util::Set<u64>))
+          .erase(p_Id);
+
+      const u32 l_References =
+          (TYPE_SOA(SkinningPose, references, Low::Util::Set<u64>))
+              .size();
+
+      if (l_OldReferences != l_References) {
+        // LOW_CODEGEN:BEGIN:CUSTOM:REFERENCE_REMOVED
+        mark_dirty();
+        // LOW_CODEGEN::END::CUSTOM:REFERENCE_REMOVED
+      }
+    }
+
+    u32 SkinningPose::references() const
+    {
+      return get_references().size();
+    }
+
+    bool SkinningPose::is_referenced() const
+    {
+      return !get_references().empty();
     }
 
     Util::List<Math::Matrix4x4> &SkinningPose::get_matrices() const
@@ -557,6 +669,46 @@ namespace Low {
       broadcast_observable(N(pose_palette_offset));
     }
 
+    bool SkinningPose::is_uploaded() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_uploaded
+      // LOW_CODEGEN::END::CUSTOM:GETTER_uploaded
+
+      return TYPE_SOA(SkinningPose, uploaded, bool);
+    }
+    void SkinningPose::toggle_uploaded()
+    {
+      set_uploaded(!is_uploaded());
+    }
+
+    void SkinningPose::set_uploaded(bool p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_uploaded
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_uploaded
+
+      // Set new value
+      TYPE_SOA(SkinningPose, uploaded, bool) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_uploaded
+      // LOW_CODEGEN::END::CUSTOM:SETTER_uploaded
+
+      broadcast_observable(N(uploaded));
+    }
+
+    Low::Util::Set<u64> &SkinningPose::get_references() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_references
+      // LOW_CODEGEN::END::CUSTOM:GETTER_references
+
+      return TYPE_SOA(SkinningPose, references, Low::Util::Set<u64>);
+    }
+
     bool SkinningPose::is_dirty() const
     {
       _LOW_ASSERT(is_alive());
@@ -581,6 +733,10 @@ namespace Low {
       // Set new value
       TYPE_SOA(SkinningPose, dirty, bool) = p_Value;
 
+      if (p_Value) {
+        mark_dirty();
+      }
+
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
       // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
 
@@ -592,6 +748,7 @@ namespace Low {
       if (!is_dirty()) {
         TYPE_SOA(SkinningPose, dirty, bool) = true;
         // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+        ms_Dirty.insert(get_id());
         // LOW_CODEGEN::END::CUSTOM:MARK_dirty
       }
     }

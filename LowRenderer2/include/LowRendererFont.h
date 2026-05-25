@@ -131,6 +131,7 @@ namespace Low {
       void reference(const u64 p_Id);
       void dereference(const u64 p_Id);
       u32 references() const;
+      bool is_referenced() const;
 
       static uint32_t get_capacity();
 

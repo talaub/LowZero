@@ -853,6 +853,10 @@ namespace Low {
       // Set new value
       TYPE_SOA(AdaptiveRenderObject, dirty, bool) = p_Value;
 
+      if (p_Value) {
+        mark_dirty();
+      }
+
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_dirty

@@ -891,6 +891,7 @@ types:
   SkinningPose:
     no_auto_serialize: true
     no_auto_deserialize: true
+    reference_counted: true
     dirty_flags:
       dirty:
         no_data: false
@@ -903,6 +904,8 @@ types:
         handle: true
       pose_palette_offset:
         type: u32
+      uploaded:
+        type: bool
 
   SkinningInstance:
     no_auto_serialize: true

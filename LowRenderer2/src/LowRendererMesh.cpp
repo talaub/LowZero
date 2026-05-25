@@ -800,6 +800,11 @@ namespace Low {
       return get_references().size();
     }
 
+    bool Mesh::is_referenced() const
+    {
+      return !get_references().empty();
+    }
+
     Low::Renderer::MeshResource Mesh::get_resource() const
     {
       _LOW_ASSERT(is_alive());

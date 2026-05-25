@@ -111,7 +111,7 @@ function get_property_type(p_Type) {
   return "UNKNOWN";
 }
 
-function write_header_imports(p_Imports) { }
+function write_header_imports(p_Imports) {}
 
 const g_EnumType = "uint8_t";
 
@@ -391,9 +391,9 @@ function generate_header(p_Type) {
     n,
   );
   t += line("{", n++);
-  t += line('public:');
+  t += line("public:");
   l_DataContent += line("{", n++);
-  l_DataContent += line('public:');
+  l_DataContent += line("public:");
 
   for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
     if (!i_Prop.static && !i_Prop.no_data) {
@@ -409,16 +409,15 @@ function generate_header(p_Type) {
   l_DataContent += line("}", --n);
 
   l_DataContent += line("};", --n);
-  if (p_Type.delay_data_define){
+  if (p_Type.delay_data_define) {
     t += line(`struct Data;`, n);
-  }
-  else {
+  } else {
     t += line(`struct Data`, n);
     t += l_DataContent;
   }
   t += empty();
   t += empty();
-  t += line(`private:`)
+  t += line(`private:`);
   t += line("static u16 ms_TypeId;", n);
   t += line("public:", --n);
   n++;
@@ -431,7 +430,7 @@ function generate_header(p_Type) {
   t += empty();
   t += line(`[[nodiscard]]static u16 type_id() {
 return ms_TypeId;
-}`)
+}`);
   t += empty();
   //t += line(`${p_Type.name}();`);
   //t += line(`${p_Type.name}(uint64_t p_Id);`);
@@ -484,9 +483,11 @@ return ms_TypeId;
   t += empty();
   t += line(`${p_Type.name}(u64 p_Id): Low::Util::Handle(p_Id){}`);
   t += line(`${p_Type.name}(): Low::Util::Handle(){}`);
-  t += line(`${p_Type.name}(Low::Util::Handle p_Handle): Low::Util::Handle(p_Handle.get_id()){}`);
+  t += line(
+    `${p_Type.name}(Low::Util::Handle p_Handle): Low::Util::Handle(p_Handle.get_id()){}`,
+  );
   t += empty();
-  t += line('using Handle::operator=;');
+  t += line("using Handle::operator=;");
   t += empty();
   t += line(`${p_Type.name} &operator=(const ${p_Type.name}&) = default;`);
   t += line(`${p_Type.name} &operator=(${p_Type.name}&&) noexcept = default;`);
@@ -533,6 +534,7 @@ return ms_TypeId;
     t += line(`void reference(const u64 p_Id);`);
     t += line(`void dereference(const u64 p_Id);`);
     t += line(`u32 references() const;`);
+    t += line(`bool is_referenced() const;`);
     t += empty();
   }
   t += line(`static uint32_t get_capacity();`);
@@ -586,8 +588,8 @@ return ms_TypeId;
     n,
   );
   t += line("static bool is_alive(Low::Util::Handle p_Handle) {");
-  t += line(`${p_Type.name} l_Handle = p_Handle.get_id();`)
-  t += line(`return l_Handle.is_alive();`)
+  t += line(`${p_Type.name} l_Handle = p_Handle.get_id();`);
+  t += line(`return l_Handle.is_alive();`);
   t += line("}");
   t += empty();
   t += line("static void destroy(Low::Util::Handle p_Handle) {");
@@ -596,10 +598,12 @@ return ms_TypeId;
   t += line(`l_${p_Type.name}.destroy();`);
   t += line("}");
   t += empty();
-  if (p_Type.post_load){
+  if (p_Type.post_load) {
     t += line("void post_load(Low::Util::Serial::Node &p_Node);");
-    t += line("static void _post_load(Low::Util::Handle p_Handle, Low::Util::Serial::Node &p_Node){");
-    t += line("_LOW_ASSERT(is_alive(p_Handle));")
+    t += line(
+      "static void _post_load(Low::Util::Handle p_Handle, Low::Util::Serial::Node &p_Node){",
+    );
+    t += line("_LOW_ASSERT(is_alive(p_Handle));");
     t += line(`${p_Type.name} l_${p_Type.name} = p_Handle.get_id();`);
     t += line(`l_${p_Type.name}.post_load(p_Node);`);
     t += line("}");
@@ -634,8 +638,10 @@ return ms_TypeId;
         l_SetterLines.push(`void ${i_Prop.setter_name}(float p_X, float p_Y);`);
         l_SetterLines.push(`void ${i_Prop.setter_name}_x(float p_Value);`);
         l_SetterLines.push(`void ${i_Prop.setter_name}_y(float p_Value);`);
-      } else if (i_Prop.plain_type.endsWith("Math::Vector3")
-        || i_Prop.plain_type.endsWith("Math::ColorRGB")) {
+      } else if (
+        i_Prop.plain_type.endsWith("Math::Vector3") ||
+        i_Prop.plain_type.endsWith("Math::ColorRGB")
+      ) {
         l_SetterLines.push(
           `void ${i_Prop.setter_name}(float p_X, float p_Y, float p_Z);`,
         );
@@ -665,9 +671,9 @@ return ms_TypeId;
     for (let [i_FuncName, i_Func] of Object.entries(p_Type.functions)) {
       let func_line = "";
       if (i_Func.description) {
-        func_line += line('/*!')
-        func_line += line(i_Func.description)
-        func_line += line('*/')
+        func_line += line("/*!");
+        func_line += line(i_Func.description);
+        func_line += line("*/");
       }
       if (i_Func.static) {
         func_line += write("static ");
@@ -699,7 +705,9 @@ return ms_TypeId;
     }
   }
 
-  t += line(`static bool get_page_for_index(const u32 p_Index, u32& p_PageIndex, u32& p_SlotIndex);`);
+  t += line(
+    `static bool get_page_for_index(const u32 p_Index, u32& p_PageIndex, u32& p_SlotIndex);`,
+  );
 
   t += line("private:");
   t += line(`static u32 ms_Capacity;`);
@@ -736,11 +744,11 @@ return ms_TypeId;
 
   t += line("};", --n);
 
-  if (p_Type.delay_data_define){
-    t += empty()
+  if (p_Type.delay_data_define) {
+    t += empty();
     t += line(`struct ${p_Type.name}::Data`, n);
     t += l_DataContent;
-    t += empty()
+    t += empty();
   }
 
   if (true) {
@@ -881,7 +889,10 @@ function generate_source(p_Type) {
   }
 
   t += line(`u16 ${p_Type.name}::ms_TypeId = 0;`, n);
-  t += line(`const Low::Util::TypeIdentifier ${p_Type.name}::IDENTIFIER(LOW_NAME(${hash_name(p_Type.module)}), LOW_NAME(${hash_name(p_Type.name)}));`, n);
+  t += line(
+    `const Low::Util::TypeIdentifier ${p_Type.name}::IDENTIFIER(LOW_NAME(${hash_name(p_Type.module)}), LOW_NAME(${hash_name(p_Type.name)}));`,
+    n,
+  );
   t += line(`uint32_t ${p_Type.name}::ms_Capacity = 0u;`, n);
   t += line(`uint32_t ${p_Type.name}::ms_PageSize = 0u;`, n);
   t += line(
@@ -977,7 +988,9 @@ function generate_source(p_Type) {
   t += empty();
   t += line(`${p_Type.name} l_Handle;`);
   t += line(`l_Handle.m_Data.m_Index = l_Index;`);
-  t += line(`l_Handle.m_Data.m_Generation = ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;`);
+  t += line(
+    `l_Handle.m_Data.m_Generation = ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;`,
+  );
   t += line(`l_Handle.m_Data.m_Type = ${p_Type.name}::ms_TypeId;`);
   t += empty();
   for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
@@ -1077,11 +1090,11 @@ function generate_source(p_Type) {
     l_CustomCode = l_OldCode.substring(l_BeginMarkerIndex, l_EndMarkerIndex);
   }
 
-  t += line('{');
+  t += line("{");
   t += line(l_DestroyBeginMarker);
   t += l_CustomCode;
   t += line(l_DestroyEndMarker);
-  t += line('}');
+  t += line("}");
   t += empty();
   t += line(`broadcast_observable(OBSERVABLE_DESTROY);`);
   t += empty();
@@ -1090,10 +1103,12 @@ function generate_source(p_Type) {
     t += empty();
   }
 
-  t += line(`u32 l_PageIndex = 0;`)
-  t += line(`u32 l_SlotIndex = 0;`)
-  t += line(`_LOW_ASSERT(get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));`)
-  t += line(`Low::Util::Instances::Page* l_Page = ms_Pages[l_PageIndex];`)
+  t += line(`u32 l_PageIndex = 0;`);
+  t += line(`u32 l_SlotIndex = 0;`);
+  t += line(
+    `_LOW_ASSERT(get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));`,
+  );
+  t += line(`Low::Util::Instances::Page* l_Page = ms_Pages[l_PageIndex];`);
   t += empty();
   t += line("l_Page->slots[l_SlotIndex].m_Occupied = false;");
   t += line("l_Page->slots[l_SlotIndex].m_Generation++;");
@@ -1123,7 +1138,9 @@ function generate_source(p_Type) {
   t += line("}");
   t += empty();
   t += line(`void ${p_Type.name}::initialize() {`);
-  t += line(`const Low::Util::TypeIdentifier l_IdentifierNames(N(${p_Type.module}), N(${p_Type.name}));`);
+  t += line(
+    `const Low::Util::TypeIdentifier l_IdentifierNames(N(${p_Type.module}), N(${p_Type.name}));`,
+  );
   t += empty();
   if (true) {
     const l_MarkerName = `CUSTOM:PREINITIALIZE`;
@@ -1151,23 +1168,31 @@ function generate_source(p_Type) {
   t += empty();
   if (!p_Type.dynamic_increase) {
     t += line(`ms_PageSize = ms_Capacity;`);
-    t += line(`Low::Util::Instances::Page* l_Page = new Low::Util::Instances::Page;`)
-    t += line(`Low::Util::Instances::initialize_page(l_Page, ${p_Type.name}::Data::get_size(), ms_PageSize);`)
-    t += line(`ms_Pages.push_back(l_Page);`);
-  }
-  else {
     t += line(
-      `ms_PageSize = Low::Math::Util::clamp(Low::Math::Util::next_power_of_two(ms_Capacity), 8, 32);`)
-    t += line(`{`)
-    t += line(`u32 l_Capacity = 0u;`)
+      `Low::Util::Instances::Page* l_Page = new Low::Util::Instances::Page;`,
+    );
+    t += line(
+      `Low::Util::Instances::initialize_page(l_Page, ${p_Type.name}::Data::get_size(), ms_PageSize);`,
+    );
+    t += line(`ms_Pages.push_back(l_Page);`);
+  } else {
+    t += line(
+      `ms_PageSize = Low::Math::Util::clamp(Low::Math::Util::next_power_of_two(ms_Capacity), 8, 32);`,
+    );
+    t += line(`{`);
+    t += line(`u32 l_Capacity = 0u;`);
     t += line(`while (l_Capacity < ms_Capacity){`);
-    t += line(`Low::Util::Instances::Page* i_Page = new Low::Util::Instances::Page;`)
-    t += line(`Low::Util::Instances::initialize_page(i_Page, ${p_Type.name}::Data::get_size(), ms_PageSize);`)
+    t += line(
+      `Low::Util::Instances::Page* i_Page = new Low::Util::Instances::Page;`,
+    );
+    t += line(
+      `Low::Util::Instances::initialize_page(i_Page, ${p_Type.name}::Data::get_size(), ms_PageSize);`,
+    );
     t += line(`ms_Pages.push_back(i_Page);`);
     t += line(`l_Capacity += ms_PageSize;`);
-    t += line(`}`)
+    t += line(`}`);
     t += line(`ms_Capacity = l_Capacity;`);
-    t += line(`}`)
+    t += line(`}`);
   }
   /*
   t += line(`initialize_buffer(`);
@@ -1187,10 +1212,9 @@ function generate_source(p_Type) {
   t += line(`l_TypeInfo.deserialize = &${p_Type.name}::deserialize;`);
   t += line(`l_TypeInfo.find_by_index = &${p_Type.name}::_find_by_index;`);
   t += line(`l_TypeInfo.notify = &${p_Type.name}::_notify;`);
-  if (p_Type.post_load){
+  if (p_Type.post_load) {
     t += line(`l_TypeInfo.post_load = &${p_Type.name}::_post_load;`);
-  }
-  else {
+  } else {
     t += line(`l_TypeInfo.post_load = nullptr;`);
   }
   if (p_Type.component) {
@@ -1241,7 +1265,9 @@ function generate_source(p_Type) {
     );
     if (i_Prop.handle) {
       t += line(`l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;`);
-      t += line(`l_PropertyInfo.handleType = ${i_Prop.plain_type}::IDENTIFIER;`);
+      t += line(
+        `l_PropertyInfo.handleType = ${i_Prop.plain_type}::IDENTIFIER;`,
+      );
     } else if (i_Prop.enum) {
       t += line(`l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;`);
       t += line(
@@ -1420,7 +1446,9 @@ function generate_source(p_Type) {
       t += line("}");
     }
   }
-  t += line(`ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER, l_TypeInfo);`);
+  t += line(
+    `ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER, l_TypeInfo);`,
+  );
   if (true) {
     const l_MarkerName = `CUSTOM:POSTINITIALIZE`;
 
@@ -1450,8 +1478,8 @@ function generate_source(p_Type) {
   t += line(`for (uint32_t i = 0u; i < l_Instances.size(); ++i) {`);
   t += line(`l_Instances[i].destroy();`);
   t += line("}");
-  t += line(`for (auto it = ms_Pages.begin(); it != ms_Pages.end();){`)
-  t += line(`Low::Util::Instances::Page* i_Page = *it;`)
+  t += line(`for (auto it = ms_Pages.begin(); it != ms_Pages.end();){`);
+  t += line(`Low::Util::Instances::Page* i_Page = *it;`);
   t += line(`free(i_Page->buffer);`);
   t += line(`free(i_Page->slots);`);
   t += line(`delete i_Page;`);
@@ -1478,11 +1506,15 @@ function generate_source(p_Type) {
   t += line(`l_Handle.m_Data.m_Type = ${p_Type.name}::ms_TypeId;`);
   t += empty();
 
-  t += line(`u32 l_PageIndex = 0;`)
-  t += line(`u32 l_SlotIndex = 0;`)
-  t += line(`if (!get_page_for_index(p_Index, l_PageIndex, l_SlotIndex)){l_Handle.m_Data.m_Generation = 0;}`)
-  t += line(`Low::Util::Instances::Page* l_Page = ms_Pages[l_PageIndex];`)
-  t += line(`l_Handle.m_Data.m_Generation = l_Page->slots[l_SlotIndex].m_Generation;`);
+  t += line(`u32 l_PageIndex = 0;`);
+  t += line(`u32 l_SlotIndex = 0;`);
+  t += line(
+    `if (!get_page_for_index(p_Index, l_PageIndex, l_SlotIndex)){l_Handle.m_Data.m_Generation = 0;}`,
+  );
+  t += line(`Low::Util::Instances::Page* l_Page = ms_Pages[l_PageIndex];`);
+  t += line(
+    `l_Handle.m_Data.m_Generation = l_Page->slots[l_SlotIndex].m_Generation;`,
+  );
   t += empty();
   t += line("return l_Handle;");
   t += line("}");
@@ -1505,11 +1537,13 @@ function generate_source(p_Type) {
   t += empty();
 
   t += line(`bool ${p_Type.name}::is_alive() const {`);
-  t += line(`if (m_Data.m_Type != ${p_Type.name}::ms_TypeId) {return false;}`)
-  t += line(`u32 l_PageIndex = 0;`)
-  t += line(`u32 l_SlotIndex = 0;`)
-  t += line(`if (!get_page_for_index(get_index(), l_PageIndex, l_SlotIndex)){return false;}`)
-  t += line(`Low::Util::Instances::Page* l_Page = ms_Pages[l_PageIndex];`)
+  t += line(`if (m_Data.m_Type != ${p_Type.name}::ms_TypeId) {return false;}`);
+  t += line(`u32 l_PageIndex = 0;`);
+  t += line(`u32 l_SlotIndex = 0;`);
+  t += line(
+    `if (!get_page_for_index(get_index(), l_PageIndex, l_SlotIndex)){return false;}`,
+  );
+  t += line(`Low::Util::Instances::Page* l_Page = ms_Pages[l_PageIndex];`);
   t += line(
     `return m_Data.m_Type == ${p_Type.name}::ms_TypeId && l_Page->slots[l_SlotIndex].m_Occupied && l_Page->slots[l_SlotIndex].m_Generation == m_Data.m_Generation;`,
   );
@@ -1549,7 +1583,10 @@ function generate_source(p_Type) {
       if (l_BeginMarkerIndex >= 0) {
         const l_EndMarkerIndex = find_end_marker_start(l_OldCode, l_MarkerName);
 
-        l_CustomCode = l_OldCode.substring(l_BeginMarkerIndex, l_EndMarkerIndex);
+        l_CustomCode = l_OldCode.substring(
+          l_BeginMarkerIndex,
+          l_EndMarkerIndex,
+        );
       }
       t += line(l_CustomBeginMarker);
       t += l_CustomCode;
@@ -1734,7 +1771,9 @@ function generate_source(p_Type) {
       }
 
       if (i_PropName == "unique_id" && p_Type.unique_id) {
-        t += line(`p_Node["_unique_id"] = Low::Util::U64Id{${i_Prop.getter_name}()};`)
+        t += line(
+          `p_Node["_unique_id"] = Low::Util::U64Id{${i_Prop.getter_name}()};`,
+        );
 
         continue;
       }
@@ -1755,7 +1794,9 @@ function generate_source(p_Type) {
         i_Prop.plain_type.endsWith("Util::UniqueId")
       ) {
         if (i_Prop.hash) {
-          t += line(`p_Node["${i_PropName}"] = Low::Util::U64Id{${i_Prop.getter_name}()};`)
+          t += line(
+            `p_Node["${i_PropName}"] = Low::Util::U64Id{${i_Prop.getter_name}()};`,
+          );
         } else {
           t += line(`p_Node["${i_PropName}"] = ${i_Prop.getter_name}();`);
         }
@@ -1828,7 +1869,9 @@ function generate_source(p_Type) {
       t += line(`l_HandleUniqueId = p_Node["unique_id"].as<uint64_t>();`);
       t += line("}");
       t += line(`else if (p_Node["_unique_id"]) {`);
-      t += line(`l_HandleUniqueId = Low::Util::string_to_hash(p_Node["_unique_id"].as<Low::Util::String>());`);
+      t += line(
+        `l_HandleUniqueId = Low::Util::string_to_hash(p_Node["_unique_id"].as<Low::Util::String>());`,
+      );
       t += line("}");
       t += empty();
     }
@@ -1837,8 +1880,7 @@ function generate_source(p_Type) {
         t += line(
           `${p_Type.name} l_Handle = ${p_Type.name}::make(p_Creator.get_id(), l_HandleUniqueId);`,
         );
-      }
-      else {
+      } else {
         t += line(
           `${p_Type.name} l_Handle = ${p_Type.name}::make(p_Creator.get_id());`,
         );
@@ -1848,8 +1890,7 @@ function generate_source(p_Type) {
         t += line(
           `${p_Type.name} l_Handle = ${p_Type.name}::make(p_Creator.get_id(), l_HandleUniqueId);`,
         );
-      }
-      else {
+      } else {
         t += line(
           `${p_Type.name} l_Handle = ${p_Type.name}::make(p_Creator.get_id());`,
         );
@@ -1859,15 +1900,13 @@ function generate_source(p_Type) {
         t += line(
           `${p_Type.name} l_Handle = ${p_Type.name}::make(N(${p_Type.name}), l_HandleUniqueId);`,
         );
-      }
-      else {
+      } else {
         t += line(
           `${p_Type.name} l_Handle = ${p_Type.name}::make(N(${p_Type.name}));`,
         );
       }
     }
     t += empty();
-
 
     for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
       if (i_Prop.skip_deserialization) {
@@ -1877,10 +1916,10 @@ function generate_source(p_Type) {
       t += line(`if (p_Node["${i_PropName}"]) {`);
 
       if (i_Prop.plain_type.endsWith("Variant")) {
-        t += line(`Low::Util::Variant l_Variant = Low::Util::Serial::deserialize_variant(p_Node["${i_PropName}"]);`);
         t += line(
-          `l_Handle.${i_Prop.setter_name}(l_Variant);`,
+          `Low::Util::Variant l_Variant = Low::Util::Serial::deserialize_variant(p_Node["${i_PropName}"]);`,
         );
+        t += line(`l_Handle.${i_Prop.setter_name}(l_Variant);`);
       } else if (is_name_type(i_Prop.plain_type)) {
         t += line(
           `l_Handle.${i_Prop.setter_name}(p_Node["${i_PropName}"].as<Low::Util::Name>());`,
@@ -1895,12 +1934,12 @@ function generate_source(p_Type) {
           `l_Handle.${i_Prop.setter_name}(${get_deserializer_method_for_math_type(i_Prop.plain_type)}(p_Node["${i_PropName}"]));`,
         );
         */
-        if (i_Prop.plain_type.endsWith('Shape')) {
-          t += line(`Low::Math::Shape l_Shape = p_Node["${i_PropName}"].as<${i_Prop.plain_type}>();`);
+        if (i_Prop.plain_type.endsWith("Shape")) {
           t += line(
-            `l_Handle.${i_Prop.setter_name}(l_Shape);`);
-        }
-        else {
+            `Low::Math::Shape l_Shape = p_Node["${i_PropName}"].as<${i_Prop.plain_type}>();`,
+          );
+          t += line(`l_Handle.${i_Prop.setter_name}(l_Shape);`);
+        } else {
           t += line(
             `l_Handle.${i_Prop.setter_name}(p_Node["${i_PropName}"].as<${i_Prop.plain_type}>());`,
           );
@@ -1922,9 +1961,10 @@ function generate_source(p_Type) {
           t += line(
             `l_Handle.${i_Prop.setter_name}(Low::Util::string_to_hash(LOW_YAML_AS_STRING(p_Node["${i_PropName}"])));`,
           );
-          t += line(`l_Handle.${i_Prop.setter_name}(p_Node["${i_PropName}"].as<Low::Util::U64Id>().val);`);
-        }
-        else {
+          t += line(
+            `l_Handle.${i_Prop.setter_name}(p_Node["${i_PropName}"].as<Low::Util::U64Id>().val);`,
+          );
+        } else {
           t += line(
             `l_Handle.${i_Prop.setter_name}(p_Node["${i_PropName}"].as<${i_Prop.plain_type}>());`,
           );
@@ -2034,7 +2074,9 @@ function generate_source(p_Type) {
   t += line("}");
   t += empty();
   if (p_Type.post_load) {
-    t += line(`void ${p_Type.name}::post_load(Low::Util::Serial::Node &p_Node) {`);
+    t += line(
+      `void ${p_Type.name}::post_load(Low::Util::Serial::Node &p_Node) {`,
+    );
     if (true) {
       const l_MarkerName = `CUSTOM:POST_LOAD`;
 
@@ -2048,7 +2090,10 @@ function generate_source(p_Type) {
       if (l_BeginMarkerIndex >= 0) {
         const l_EndMarkerIndex = find_end_marker_start(l_OldCode, l_MarkerName);
 
-        l_CustomCode = l_OldCode.substring(l_BeginMarkerIndex, l_EndMarkerIndex);
+        l_CustomCode = l_OldCode.substring(
+          l_BeginMarkerIndex,
+          l_EndMarkerIndex,
+        );
       }
       t += line(l_CustomBeginMarker);
       t += l_CustomCode;
@@ -2134,6 +2179,11 @@ function generate_source(p_Type) {
 
     t += line(`u32 ${p_Type.name}::references() const {`);
     t += line("return get_references().size();");
+    t += line(`}`);
+    t += empty();
+
+    t += line(`bool ${p_Type.name}::is_referenced() const {`);
+    t += line("return !get_references().empty();");
     t += line(`}`);
     t += empty();
   }
@@ -2249,8 +2299,10 @@ function generate_source(p_Type) {
           t += line("}");
           t += empty();
         }
-      } else if (i_Prop.plain_type.endsWith("Math::Vector3")
-        || i_Prop.plain_type.endsWith("Math::ColorRGB")) {
+      } else if (
+        i_Prop.plain_type.endsWith("Math::Vector3") ||
+        i_Prop.plain_type.endsWith("Math::ColorRGB")
+      ) {
         t += line(
           `void ${p_Type.name}::${i_Prop.setter_name}(float p_X, float p_Y, float p_Z){`,
           n,
@@ -2335,6 +2387,12 @@ function generate_source(p_Type) {
         `TYPE_SOA(${p_Type.name}, ${i_Prop.name}, ${i_Prop.soa_type}) = p_Value;`,
         n,
       );
+      if (i_Prop.is_dirty_flag) {
+        t += empty();
+        t += line("if (p_Value) {");
+        t += line(`mark_${i_PropName}();`);
+        t += line("}");
+      }
       if (i_Prop.editor_editable) {
         if (p_Type.component && p_Type.name !== "PrefabInstance") {
           t += line("{");
@@ -2461,22 +2519,27 @@ function generate_source(p_Type) {
     }
   }
 
-  t += line(`uint32_t ${p_Type.name}::create_instance(u32& p_PageIndex, u32&p_SlotIndex){`);
+  t += line(
+    `uint32_t ${p_Type.name}::create_instance(u32& p_PageIndex, u32&p_SlotIndex){`,
+  );
   t += line(`u32 l_Index = 0;`);
-  t += line(`u32 l_PageIndex = 0;`)
-  t += line(`u32 l_SlotIndex = 0;`)
+  t += line(`u32 l_PageIndex = 0;`);
+  t += line(`u32 l_SlotIndex = 0;`);
   t += line(`bool l_FoundIndex = false;`);
   t += empty();
-  t += line(`for (;!l_FoundIndex && l_PageIndex<ms_Pages.size();++l_PageIndex){`);
   t += line(
-    `for (l_SlotIndex=0; l_SlotIndex < ms_Pages[l_PageIndex]->size; ++l_SlotIndex) {`);
+    `for (;!l_FoundIndex && l_PageIndex<ms_Pages.size();++l_PageIndex){`,
+  );
+  t += line(
+    `for (l_SlotIndex=0; l_SlotIndex < ms_Pages[l_PageIndex]->size; ++l_SlotIndex) {`,
+  );
   t += line(`if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied){`);
   t += line(`l_FoundIndex = true;`);
   t += line(`break;`);
   t += line("}");
   t += line(`l_Index++;`);
   t += line("}");
-  t += line(`if (l_FoundIndex) {break;}`)
+  t += line(`if (l_FoundIndex) {break;}`);
   t += line("}");
   if (p_Type.dynamic_increase) {
     t += line(`if (!l_FoundIndex) {`);
@@ -2497,24 +2560,32 @@ function generate_source(p_Type) {
 
   t += line(`u32 ${p_Type.name}::create_page(){`);
   t += line(`const u32 l_Capacity = get_capacity();`);
-  t += line(`LOW_ASSERT((l_Capacity + ms_PageSize) < LOW_UINT32_MAX, "Could not increase capacity for ${p_Type.name}.");`);
+  t += line(
+    `LOW_ASSERT((l_Capacity + ms_PageSize) < LOW_UINT32_MAX, "Could not increase capacity for ${p_Type.name}.");`,
+  );
   t += empty();
-  t += line(`Low::Util::Instances::Page *l_Page = new Low::Util::Instances::Page;`);
-  t += line(`Low::Util::Instances::initialize_page(l_Page, ${p_Type.name}::Data::get_size(), ms_PageSize);`);
-  t += line(`ms_Pages.push_back(l_Page);`)
+  t += line(
+    `Low::Util::Instances::Page *l_Page = new Low::Util::Instances::Page;`,
+  );
+  t += line(
+    `Low::Util::Instances::initialize_page(l_Page, ${p_Type.name}::Data::get_size(), ms_PageSize);`,
+  );
+  t += line(`ms_Pages.push_back(l_Page);`);
   t += empty();
-  t += line(`ms_Capacity = l_Capacity + l_Page->size;`)
+  t += line(`ms_Capacity = l_Capacity + l_Page->size;`);
   t += line(`return ms_Pages.size()-1;`);
   t += line("}");
   t += empty();
-  t += line(`bool ${p_Type.name}::get_page_for_index(const u32 p_Index, u32& p_PageIndex, u32& p_SlotIndex){`);
+  t += line(
+    `bool ${p_Type.name}::get_page_for_index(const u32 p_Index, u32& p_PageIndex, u32& p_SlotIndex){`,
+  );
   t += line(`if (p_Index >= get_capacity()){`);
-  t += line(`p_PageIndex = LOW_UINT32_MAX;`)
-  t += line(`p_SlotIndex = LOW_UINT32_MAX;`)
+  t += line(`p_PageIndex = LOW_UINT32_MAX;`);
+  t += line(`p_SlotIndex = LOW_UINT32_MAX;`);
   t += line(`return false;`);
   t += line("}");
   t += line(`p_PageIndex = p_Index / ms_PageSize;`);
-  t += line(`if (p_PageIndex > (ms_Pages.size() - 1)){return false;}`)
+  t += line(`if (p_PageIndex > (ms_Pages.size() - 1)){return false;}`);
   t += line(`p_SlotIndex = p_Index - (ms_PageSize * p_PageIndex);`);
   t += line(`return true;`);
   t += line("}");

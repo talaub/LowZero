@@ -825,6 +825,11 @@ namespace Low {
       return get_references().size();
     }
 
+    bool Font::is_referenced() const
+    {
+      return !get_references().empty();
+    }
+
     Low::Renderer::Texture Font::get_texture() const
     {
       _LOW_ASSERT(is_alive());

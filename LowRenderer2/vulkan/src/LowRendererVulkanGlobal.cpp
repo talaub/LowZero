@@ -163,9 +163,12 @@ namespace Low {
         DynamicBuffer g_MeshVertexBuffer;
         DynamicBuffer g_MeshIndexBuffer;
         DynamicBuffer g_MeshBoneWeightsBuffer;
+        DoubleBufferedDynamicBuffer g_SkinnedVertexOutputBuffer;
 
         DynamicBuffer g_DrawCommandBuffer;
         DynamicBuffer g_UiDrawCommandBuffer;
+
+        DynamicBuffer g_PosePaletteBuffer;
 
         AllocatedBuffer g_SS2DDrawcCommandBuffer;
 
@@ -341,6 +344,11 @@ namespace Low {
         {
           return g_MeshBoneWeightsBuffer;
         }
+        DoubleBufferedDynamicBuffer &
+        get_skinned_vertex_output_buffer()
+        {
+          return g_SkinnedVertexOutputBuffer;
+        }
         VkFormat get_swapchain_format()
         {
           return VK_FORMAT_B8G8R8A8_UNORM;
@@ -352,6 +360,10 @@ namespace Low {
         DynamicBuffer &get_ui_drawcommand_buffer()
         {
           return g_UiDrawCommandBuffer;
+        }
+        DynamicBuffer &get_pose_palette_buffer()
+        {
+          return g_PosePaletteBuffer;
         }
         AllocatedBuffer get_material_data_buffer()
         {
@@ -596,6 +608,28 @@ namespace Low {
           return true;
         }
 
+        static bool double_buffered_dynamic_buffer_init(
+            DoubleBufferedDynamicBuffer &p_DynamicBuffer,
+            u32 p_ElementSize, u32 p_ElementCount,
+            VkBufferUsageFlags p_Usage, VmaMemoryUsage p_MemoryUsage)
+        {
+          p_DynamicBuffer.m_ElementSize = p_ElementSize;
+          p_DynamicBuffer.m_ElementCount = p_ElementCount;
+          p_DynamicBuffer.m_CurrentBufferIndex = 0u;
+
+          DynamicBufferFreeSlot l_Slot;
+          l_Slot.start = 0;
+          l_Slot.length = p_ElementCount;
+          p_DynamicBuffer.m_FreeSlots.push_back(l_Slot);
+
+          p_DynamicBuffer.m_Buffers[0] = BufferUtil::create_buffer(
+              p_ElementSize * p_ElementCount, p_Usage, p_MemoryUsage);
+          p_DynamicBuffer.m_Buffers[1] = BufferUtil::create_buffer(
+              p_ElementSize * p_ElementCount, p_Usage, p_MemoryUsage);
+
+          return true;
+        }
+
         static bool resource_buffers_init()
         {
           LOW_ASSERT_ERROR_RETURN_FALSE(
@@ -635,6 +669,23 @@ namespace Low {
           BufferUtil::set_name(g_MeshBoneWeightsBuffer,
                                "global mesh bone weights buffer");
 
+          LOW_ASSERT_ERROR_RETURN_FALSE(
+              double_buffered_dynamic_buffer_init(
+                  g_SkinnedVertexOutputBuffer,
+                  sizeof(Util::Resource::Vertex), 125000,
+                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                      VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+                      VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                      VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                  VMA_MEMORY_USAGE_GPU_ONLY),
+              "Could not initialize skinned vertex output buffer");
+          BufferUtil::set_name(
+              g_SkinnedVertexOutputBuffer.m_Buffers[0],
+              "global skinned vertex output buffer 0");
+          BufferUtil::set_name(
+              g_SkinnedVertexOutputBuffer.m_Buffers[1],
+              "global skinned vertex output buffer 1");
+
           return true;
         }
 
@@ -663,6 +714,17 @@ namespace Low {
               "Could not initialize ui draw command buffer");
           BufferUtil::set_name(g_UiDrawCommandBuffer,
                                "global ui draw command buffer");
+
+          LOW_ASSERT_ERROR_RETURN_FALSE(
+              dynamic_buffer_init(
+                  g_PosePaletteBuffer, sizeof(Math::Matrix4x4), 5000,
+                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                      VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                      VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                  VMA_MEMORY_USAGE_GPU_ONLY),
+              "Could not initialize pose palette buffer");
+          BufferUtil::set_name(g_PosePaletteBuffer,
+                               "global pose palette buffer");
 
           g_MaterialDataBuffer = BufferUtil::create_buffer(
               MATERIAL_DATA_SIZE * 1000,
@@ -1256,6 +1318,7 @@ namespace Low {
         {
           get_drawcommand_buffer().destroy();
           get_ui_drawcommand_buffer().destroy();
+          get_pose_palette_bufer().destroy();
           BufferUtil::destroy_buffer(get_material_data_buffer());
           BufferUtil::destroy_buffer(get_ss2d_drawcommand_buffer());
           BufferUtil::destroy_buffer(get_sampler_map_buffer());
@@ -1287,6 +1350,8 @@ namespace Low {
         {
           get_mesh_vertex_buffer().destroy();
           get_mesh_index_buffer().destroy();
+          get_mesh_bone_weight_buffer().destroy();
+          get_skinned_vertex_output_buffer().destroy();
 
           return true;
         }

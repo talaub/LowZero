@@ -1384,6 +1384,10 @@ namespace Low {
       // Set new value
       TYPE_SOA(UiRenderObject, dirty, bool) = p_Value;
 
+      if (p_Value) {
+        mark_dirty();
+      }
+
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
 
       if (p_Value) {
@@ -1430,6 +1434,10 @@ namespace Low {
 
       // Set new value
       TYPE_SOA(UiRenderObject, z_dirty, bool) = p_Value;
+
+      if (p_Value) {
+        mark_z_dirty();
+      }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_z_dirty
 

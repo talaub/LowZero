@@ -1279,6 +1279,10 @@ namespace Low {
         // Set new value
         TYPE_SOA(View, transform_dirty, bool) = p_Value;
 
+        if (p_Value) {
+          mark_transform_dirty();
+        }
+
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_transform_dirty
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_transform_dirty

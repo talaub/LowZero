@@ -145,6 +145,36 @@ namespace Low {
         Util::List<DynamicBufferFreeSlot> m_FreeSlots;
       };
 
+      struct DoubleBufferedDynamicBuffer
+      {
+        bool reserve(u32 p_ElementCount, u32 *p_StartOut);
+
+        void free(u32 p_Position, u32 p_ElementCount);
+
+        void clear();
+
+        void destroy();
+
+        void swap();
+
+        AllocatedBuffer &current();
+
+        AllocatedBuffer &previous();
+
+        u32 get_current_buffer_index() const;
+
+        u32 get_previous_buffer_index() const;
+
+        u32 get_used_elements() const;
+
+        AllocatedBuffer m_Buffers[2];
+
+        u32 m_ElementSize;
+        u32 m_ElementCount;
+        u32 m_CurrentBufferIndex;
+        Util::List<DynamicBufferFreeSlot> m_FreeSlots;
+      };
+
       struct Samplers
       {
         VkSampler no_lod_nearest_repeat_black;
@@ -208,6 +238,11 @@ namespace Low {
         DynamicBuffer &get_mesh_index_buffer();
 
         DynamicBuffer &get_mesh_bone_weight_buffer();
+
+        DynamicBuffer &get_pose_palette_buffer();
+
+        DoubleBufferedDynamicBuffer &
+        get_skinned_vertex_output_buffer();
 
         DynamicBuffer &get_drawcommand_buffer();
         DynamicBuffer &get_ui_drawcommand_buffer();
