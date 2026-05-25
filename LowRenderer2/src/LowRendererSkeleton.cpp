@@ -87,6 +87,7 @@ namespace Low {
                                     l_Handle.get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+      l_Handle.set_state(SkeletonState::UNLOADED);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;

@@ -13,6 +13,7 @@
 #include "LowRendererMaterial.h"
 #include "LowRendererRenderObject.h"
 #include "LowRendererSkinningCommand.h"
+#include "LowRendererGlobals.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -186,6 +187,8 @@ namespace Low {
            Low::Renderer::RenderScene p_RenderScene,
            Low::Renderer::GpuSubmesh p_Submesh);
       uint64_t get_sort_index() const;
+      VertexBuffer get_active_vertex_buffer() const;
+      uint64_t get_active_vertex_offset() const;
       static bool get_page_for_index(const u32 p_Index,
                                      u32 &p_PageIndex,
                                      u32 &p_SlotIndex);

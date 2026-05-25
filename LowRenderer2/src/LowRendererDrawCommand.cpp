@@ -504,6 +504,24 @@ namespace Low {
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: get_sort_index
       }
+      {
+        // Function: get_active_vertex_buffer
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(get_active_vertex_buffer);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: get_active_vertex_buffer
+      }
+      {
+        // Function: get_active_vertex_offset
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(get_active_vertex_offset);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: get_active_vertex_offset
+      }
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
       // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
@@ -1084,6 +1102,28 @@ namespace Low {
 
       return l_SortIndexAssembler.sortIndex;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_sort_index
+    }
+
+    VertexBuffer DrawCommand::get_active_vertex_buffer() const
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_active_vertex_buffer
+      if (get_skinning_command().is_alive()) {
+        return get_skinning_command().get_active_vertex_buffer();
+      }
+
+      return VertexBuffer::Static;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_active_vertex_buffer
+    }
+
+    uint64_t DrawCommand::get_active_vertex_offset() const
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_active_vertex_offset
+      if (get_skinning_command().is_alive()) {
+        return get_skinning_command().get_skinned_vertex_start();
+      }
+
+      return get_submesh().get_vertex_start();
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_active_vertex_offset
     }
 
     uint32_t DrawCommand::create_instance(u32 &p_PageIndex,

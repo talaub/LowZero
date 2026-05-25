@@ -320,8 +320,11 @@ namespace Low {
             }
 
             Math::Matrix4x4 i_WorldTransform =
-                i_RenderObject.get_world_transform() *
-                i_DrawCommand.get_submesh().get_transform();
+                i_RenderObject.get_world_transform();
+            if (!i_DrawCommand.get_skinning_command().is_alive()) {
+              i_WorldTransform *=
+                  i_DrawCommand.get_submesh().get_transform();
+            }
             i_DrawCommand.set_world_transform(i_WorldTransform);
 
             i_DrawCommand.set_object_id(

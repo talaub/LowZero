@@ -238,7 +238,7 @@ namespace Low {
                      MaterialTypeInputType p_Type);
       bool has_input(Low::Util::Name p_Name);
       uint32_t get_input_offset(Low::Util::Name p_Name);
-      MaterialTypeInputType &get_input_type(Low::Util::Name p_Name);
+      MaterialTypeInputType get_input_type(Low::Util::Name p_Name);
       uint32_t fill_input_names(
           Low::Util::List<Low::Util::Name> &p_InputNames);
       void set_draw_vertex_shader_path(Low::Util::String p_Path);

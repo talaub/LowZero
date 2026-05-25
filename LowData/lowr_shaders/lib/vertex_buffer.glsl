@@ -11,12 +11,12 @@ layout(std140, set = 0, binding = 0) readonly buffer VertexBufferWrapper
   Vertex g_Vertices[];
 };
 
-layout(std140, set = 0, binding = 4) buffer SkinnedVertexBufferAWrapper
+layout(std140, set = 0, binding = 4) readonly buffer SkinnedVertexBufferAWrapper
 {
   Vertex g_SkinnedVerticesA[];
 };
 
-layout(std140, set = 0, binding = 5) buffer SkinnedVertexBufferBWrapper
+layout(std140, set = 0, binding = 5) readonly buffer SkinnedVertexBufferBWrapper
 {
   Vertex g_SkinnedVerticesB[];
 };

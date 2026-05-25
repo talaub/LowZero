@@ -142,19 +142,24 @@ namespace Low {
           Pipeline i_Pipeline =
               l_CurrentMaterialType.get_highlight_pipeline_handle();
 
-          RenderEntryHighlightPushConstant i_PushConstants;
+          RenderEntryHighlightPushConstant i_PushConstants{};
           i_PushConstants.renderObjectSlot =
               i_Draw.drawCommand.get_slot();
           i_PushConstants.highlightType = (u32)i_Draw.highlightType;
+          i_PushConstants.activeVertexBuffer =
+              (u32)i_Draw.drawCommand.get_active_vertex_buffer();
 
           vkCmdPushConstants(p_Cmd, i_Pipeline.get_layout().get(),
                              VK_SHADER_STAGE_ALL_GRAPHICS, 0,
                              sizeof(RenderEntryHighlightPushConstant),
                              &i_PushConstants);
 
-          vkCmdDrawIndexed(p_Cmd, i_GpuSubmesh.get_index_count(), 1,
-                           i_GpuSubmesh.get_index_start(),
-                           i_GpuSubmesh.get_vertex_start(), 0);
+          vkCmdDrawIndexed(
+              p_Cmd, i_GpuSubmesh.get_index_count(), 1,
+              i_GpuSubmesh.get_index_start(),
+              static_cast<int32_t>(
+                  i_Draw.drawCommand.get_active_vertex_offset()),
+              0);
         }
 
         return true;
@@ -508,8 +513,10 @@ namespace Low {
           }
 
           // TODO: Change to custom Debug geometry push constant
-          RenderEntryPushConstant i_PushConstants;
+          RenderEntryPushConstant i_PushConstants{};
           i_PushConstants.renderObjectSlot = i;
+          i_PushConstants.activeVertexBuffer =
+              (u32)VertexBuffer::Static;
 
           vkCmdPushConstants(p_Cmd, i_Pipeline.get_layout().get(),
                              VK_SHADER_STAGE_ALL_GRAPHICS, 0,
@@ -632,17 +639,21 @@ namespace Low {
           Pipeline i_Pipeline =
               l_CurrentMaterialType.get_pick_pipeline_handle();
 
-          RenderEntryPushConstant i_PushConstants;
+          RenderEntryPushConstant i_PushConstants{};
           i_PushConstants.renderObjectSlot = it->get_slot();
+          i_PushConstants.activeVertexBuffer =
+              (u32)it->get_active_vertex_buffer();
 
           vkCmdPushConstants(p_Cmd, i_Pipeline.get_layout().get(),
                              VK_SHADER_STAGE_ALL_GRAPHICS, 0,
                              sizeof(RenderEntryPushConstant),
                              &i_PushConstants);
 
-          vkCmdDrawIndexed(p_Cmd, i_GpuSubmesh.get_index_count(), 1,
-                           i_GpuSubmesh.get_index_start(),
-                           i_GpuSubmesh.get_vertex_start(), 0);
+          vkCmdDrawIndexed(
+              p_Cmd, i_GpuSubmesh.get_index_count(), 1,
+              i_GpuSubmesh.get_index_start(),
+              static_cast<int32_t>(it->get_active_vertex_offset()),
+              0);
 
           it++;
         }
@@ -1039,17 +1050,21 @@ namespace Low {
             Pipeline i_Pipeline =
                 l_CurrentMaterialType.get_draw_pipeline_handle();
 
-            RenderEntryPushConstant i_PushConstants;
+            RenderEntryPushConstant i_PushConstants{};
             i_PushConstants.renderObjectSlot = it->get_slot();
+            i_PushConstants.activeVertexBuffer =
+                (u32)it->get_active_vertex_buffer();
 
             vkCmdPushConstants(l_Cmd, i_Pipeline.get_layout().get(),
                                VK_SHADER_STAGE_ALL_GRAPHICS, 0,
                                sizeof(RenderEntryPushConstant),
                                &i_PushConstants);
 
-            vkCmdDrawIndexed(l_Cmd, i_GpuSubmesh.get_index_count(), 1,
-                             i_GpuSubmesh.get_index_start(),
-                             i_GpuSubmesh.get_vertex_start(), 0);
+            vkCmdDrawIndexed(
+                l_Cmd, i_GpuSubmesh.get_index_count(), 1,
+                i_GpuSubmesh.get_index_start(),
+                static_cast<int32_t>(it->get_active_vertex_offset()),
+                0);
 
             it++;
           }
@@ -2740,8 +2755,10 @@ namespace Low {
             }
 
             // TODO: Change to custom Debug geometry push constant
-            RenderEntryPushConstant i_PushConstants;
+            RenderEntryPushConstant i_PushConstants{};
             i_PushConstants.renderObjectSlot = i;
+            i_PushConstants.activeVertexBuffer =
+                (u32)VertexBuffer::Static;
 
             vkCmdPushConstants(l_Cmd, i_Pipeline.get_layout().get(),
                                VK_SHADER_STAGE_ALL_GRAPHICS, 0,
@@ -3316,6 +3333,8 @@ namespace Low {
 
               ShadowPassPushConstants l_Push{};
               l_Push.renderObjectSlot = it->get_slot();
+              l_Push.activeVertexBuffer =
+                  (u32)it->get_active_vertex_buffer();
               l_Push.lightSpaceMatrix = p_LightSpace;
 
               vkCmdPushConstants(
@@ -3325,7 +3344,9 @@ namespace Low {
 
               vkCmdDrawIndexed(l_Cmd, i_GpuSubmesh.get_index_count(),
                                1, i_GpuSubmesh.get_index_start(),
-                               i_GpuSubmesh.get_vertex_start(), 0);
+                               static_cast<int32_t>(
+                                   it->get_active_vertex_offset()),
+                               0);
             }
           };
 

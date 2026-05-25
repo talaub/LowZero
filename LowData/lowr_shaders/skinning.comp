@@ -2,7 +2,28 @@
 
 layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
-#include "vertex_buffer.glsl"
+struct Vertex {
+  vec3 position;
+  vec2 textureCoordinates;
+  vec3 normal;
+  vec3 tangent;
+  vec3 bitangent;
+};
+
+layout(std140, set = 0, binding = 0) readonly buffer VertexBufferWrapper
+{
+  Vertex g_Vertices[];
+};
+
+layout(std140, set = 0, binding = 4) buffer SkinnedVertexBufferAWrapper
+{
+  Vertex g_SkinnedVerticesA[];
+};
+
+layout(std140, set = 0, binding = 5) buffer SkinnedVertexBufferBWrapper
+{
+  Vertex g_SkinnedVerticesB[];
+};
 
 struct VertexSkinningWeights {
   uvec4 boneIndices;

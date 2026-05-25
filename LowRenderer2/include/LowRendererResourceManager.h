@@ -8,6 +8,7 @@
 #include "LowRendererSkeleton.h"
 #include "LowRendererFont.h"
 #include "LowRendererEditorImage.h"
+#include "LowRendererAnimationClip.h"
 
 namespace Low {
   namespace Renderer {
@@ -23,6 +24,8 @@ namespace Low {
       load_editor_image(EditorImage p_EditorImage);
       bool LOW_RENDERER2_API load_material(Material p_Material);
       bool LOW_RENDERER2_API load_skeleton(Skeleton p_Skeleton);
+      bool LOW_RENDERER2_API
+      load_animation_clip(AnimationClip p_Clip);
 
       bool LOW_RENDERER2_API
       override_loaded_texture(Texture p_Texture);

@@ -1899,7 +1899,7 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_input_offset
     }
 
-    MaterialTypeInputType &
+    MaterialTypeInputType
     MaterialType::get_input_type(Low::Util::Name p_Name)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_input_type

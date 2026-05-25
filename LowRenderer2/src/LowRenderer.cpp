@@ -543,7 +543,7 @@ namespace Low {
                                          true);
       l_Builder.add_raw_suffix(".obj")
           .add_raw_suffix(".glb")
-          .add_raw_suffix(".gltf");
+          .add_raw_suffix(".fbx");
       l_Builder
           .add_import_directory(Util::get_project().dataPath, true,
                                 true)

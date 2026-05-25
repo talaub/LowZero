@@ -59,18 +59,22 @@ namespace Low {
       struct ShadowPassPushConstants
       {
         u32 renderObjectSlot;
-        u32 _padding[3];
+        u32 activeVertexBuffer;
+        u32 _padding[2];
         Math::Matrix4x4 lightSpaceMatrix;
       };
 
       struct RenderEntryPushConstant
       {
         u32 renderObjectSlot;
+        u32 activeVertexBuffer;
       };
       struct RenderEntryHighlightPushConstant
       {
         u32 renderObjectSlot;
         u32 highlightType;
+        u32 activeVertexBuffer;
+        u32 _padding;
       };
 
       struct AllocatedBuffer

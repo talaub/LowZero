@@ -1383,6 +1383,10 @@ namespace Low {
             l_Importer.ApplyCustomizedPostProcessing(l_TexPP, false);
         delete l_TexPP;
 
+        LOWR_IMP_ASSERT_RETURN(l_AiScene,
+                               "Scene became null after texture "
+                               "coordinate post-processing.");
+
         const Util::String l_BaseAssetPath =
             Util::get_project().assetCachePath + "\\" +
             Util::hash_to_string(l_MeshId);
@@ -1414,16 +1418,24 @@ namespace Low {
         }
 
         Assimp::Exporter l_Exporter;
-        l_Exporter.Export(
+        const aiReturn l_ExportResult = l_Exporter.Export(
             l_AiScene, "glb2", l_GlbPath.c_str(),
             aiProcess_Triangulate | aiProcess_JoinIdenticalVertices |
                 aiProcess_GenNormals | aiProcess_GenUVCoords |
-                aiProcess_CalcTangentSpace | // Tangents and
-                                             // bitangents
+                aiProcess_CalcTangentSpace |
                 aiProcess_ImproveCacheLocality |
                 aiProcess_RemoveRedundantMaterials |
                 aiProcess_FindInvalidData | aiProcess_OptimizeMeshes |
                 aiProcess_SortByPType);
+
+        if (l_ExportResult != aiReturn_SUCCESS) {
+          LOW_LOG_ERROR << "[IMPORTER] Failed to export GLB to '"
+                        << l_GlbPath
+                        << "': " << l_Exporter.GetErrorString()
+                        << LOW_LOG_END;
+          l_Importer.FreeScene();
+          return false;
+        }
 
         l_Importer.FreeScene();
 

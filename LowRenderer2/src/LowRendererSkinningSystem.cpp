@@ -1,14 +1,75 @@
 #include "LowRendererSkinningSystem.h"
 
 #include "LowMath.h"
+#include "LowRendererRenderObject.h"
 #include "LowRendererSkinningInstance.h"
 #include "LowRendererSkinningPose.h"
 #include "LowRendererVulkan.h"
 #include "LowRendererSkinningCommand.h"
+#include "LowRendererVulkanPipeline.h"
+#include "LowRendererDrawCommand.h"
 
 namespace Low {
   namespace Renderer {
     namespace SkinningSystem {
+      struct SkinningPushConstants
+      {
+        u32 sourceVertexStart;
+        u32 weightsStart;
+        u32 posePaletteStart;
+        u32 outputVertexStart;
+        u32 vertexCount;
+        u32 outputBufferIndex;
+      };
+
+      struct SkinningPipelineState
+      {
+        bool initialized = false;
+        Vulkan::PipelineLayout pipelineLayout;
+        Vulkan::Pipeline pipeline;
+      };
+
+      static SkinningPipelineState g_SkinningPipelineState;
+
+      static void initialize_skinning_pipeline()
+      {
+        if (g_SkinningPipelineState.initialized) {
+          return;
+        }
+
+        Util::List<VkDescriptorSetLayout> l_DescriptorSetLayouts;
+        l_DescriptorSetLayouts.push_back(
+            Vulkan::Global::get_global_descriptor_set_layout());
+        l_DescriptorSetLayouts.push_back(
+            Vulkan::Global::get_skinning_descriptor_set_layout());
+
+        VkPushConstantRange l_PushConstant{};
+        l_PushConstant.offset = 0;
+        l_PushConstant.size = sizeof(SkinningPushConstants);
+        l_PushConstant.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        VkPipelineLayoutCreateInfo l_LayoutInfo{};
+        l_LayoutInfo.sType =
+            VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        l_LayoutInfo.pSetLayouts = l_DescriptorSetLayouts.data();
+        l_LayoutInfo.setLayoutCount = l_DescriptorSetLayouts.size();
+        l_LayoutInfo.pPushConstantRanges = &l_PushConstant;
+        l_LayoutInfo.pushConstantRangeCount = 1;
+
+        g_SkinningPipelineState.pipelineLayout =
+            Vulkan::PipelineUtil::create_layout(N(Skinning),
+                                                l_LayoutInfo);
+
+        Vulkan::PipelineUtil::ComputePipelineBuilder l_Builder;
+        l_Builder.set_shader("skinning.comp");
+        l_Builder.set_pipeline_layout(
+            g_SkinningPipelineState.pipelineLayout);
+        g_SkinningPipelineState.pipeline =
+            l_Builder.register_pipeline();
+
+        g_SkinningPipelineState.initialized = true;
+      }
+
       static bool upload_pose(SkinningPose p_Pose)
       {
         const size_t l_NeededUploadSize =
@@ -75,6 +136,7 @@ namespace Low {
             Vulkan::Global::get_pose_palette_buffer().free(
                 i_Pose.get_pose_palette_offset(),
                 i_Pose.get_matrices().size());
+            i_Pose.set_uploaded(false);
 
             continue;
           }
@@ -87,6 +149,7 @@ namespace Low {
                 "Failed to allocate pose buffer space.");
 
             i_Pose.set_pose_palette_offset(l_PoseStart);
+            i_Pose.set_uploaded(true);
           }
 
           if (!upload_pose(i_Pose)) {
@@ -139,11 +202,40 @@ namespace Low {
 
           GpuMesh i_GpuMesh = i_Mesh.get_gpu();
 
+          // TODO: CLEAN UP THIS IS SUPER UGLY AND JUST A TEST
+          RenderObject i_RenderObject = Util::Handle::DEAD;
+
+          for (u32 i = 0; i < RenderObject::living_count(); ++i) {
+            if (RenderObject::living_instances()[i]
+                    .get_skinning_instance() == i_Instance) {
+              i_RenderObject = RenderObject::living_instances()[i];
+
+              break;
+            }
+          }
+
+          u32 i = 0;
           for (auto sit = i_GpuMesh.get_submeshes().begin();
                sit != i_GpuMesh.get_submeshes().end(); ++sit) {
             GpuSubmesh i_GpuSubmesh = *sit;
 
-            SkinningCommand::make(i_Instance, i_GpuSubmesh);
+            SkinningCommand i_Command =
+                SkinningCommand::make(i_Instance, i_GpuSubmesh);
+
+            // TODO: AGAIN, JUST A HACK PLEASE CLEAN UP SOON
+            if (i_RenderObject.is_alive()) {
+              for (DrawCommand i_DrawCommand :
+                   i_RenderObject.get_draw_commands()) {
+                if (i_DrawCommand.get_submesh() == i_GpuSubmesh) {
+                  i_DrawCommand.set_skinning_command(i_Command);
+
+                  break;
+                }
+              }
+              i_RenderObject.mark_dirty();
+            }
+
+            i++;
           }
         }
 
@@ -154,11 +246,184 @@ namespace Low {
         }
       }
 
+      static void execute_skinning_commands(const float p_Delta)
+      {
+        bool l_HasCommands = false;
+        for (SkinningInstance i_Instance :
+             SkinningInstance::ms_LivingInstances) {
+          if (!i_Instance.is_alive() ||
+              !i_Instance.get_pose().is_alive()) {
+            continue;
+          }
+
+          for (SkinningCommand i_Command :
+               i_Instance.get_skinning_commands()) {
+            if (i_Command.is_alive() &&
+                i_Command.get_submesh().is_alive() &&
+                i_Command.get_vertex_count() > 0u) {
+              l_HasCommands = true;
+              break;
+            }
+          }
+
+          if (l_HasCommands) {
+            break;
+          }
+        }
+
+        if (!l_HasCommands) {
+          return;
+        }
+
+        initialize_skinning_pipeline();
+
+        VkCommandBuffer l_Cmd =
+            Vulkan::Global::get_current_command_buffer();
+
+        {
+          VkBufferMemoryBarrier l_Barriers[3]{};
+
+          l_Barriers[0].sType =
+              VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+          l_Barriers[0].srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+          l_Barriers[0].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+          l_Barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+          l_Barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+          l_Barriers[0].buffer =
+              Vulkan::Global::get_mesh_vertex_buffer()
+                  .m_Buffer.buffer;
+          l_Barriers[0].offset = 0;
+          l_Barriers[0].size = VK_WHOLE_SIZE;
+
+          l_Barriers[1].sType =
+              VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+          l_Barriers[1].srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+          l_Barriers[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+          l_Barriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+          l_Barriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+          l_Barriers[1].buffer =
+              Vulkan::Global::get_mesh_bone_weight_buffer()
+                  .m_Buffer.buffer;
+          l_Barriers[1].offset = 0;
+          l_Barriers[1].size = VK_WHOLE_SIZE;
+
+          l_Barriers[2].sType =
+              VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+          l_Barriers[2].srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+          l_Barriers[2].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+          l_Barriers[2].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+          l_Barriers[2].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+          l_Barriers[2].buffer =
+              Vulkan::Global::get_pose_palette_buffer()
+                  .m_Buffer.buffer;
+          l_Barriers[2].offset = 0;
+          l_Barriers[2].size = VK_WHOLE_SIZE;
+
+          vkCmdPipelineBarrier(l_Cmd, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                               0, 0, nullptr, 3, l_Barriers, 0,
+                               nullptr);
+        }
+
+        vkCmdBindPipeline(l_Cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
+                          g_SkinningPipelineState.pipeline.get());
+
+        {
+          VkDescriptorSet l_GlobalSet =
+              Vulkan::Global::get_global_descriptor_set();
+          vkCmdBindDescriptorSets(
+              l_Cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
+              g_SkinningPipelineState.pipelineLayout.get(), 0, 1,
+              &l_GlobalSet, 0, nullptr);
+        }
+
+        {
+          VkDescriptorSet l_SkinningSet =
+              Vulkan::Global::get_skinning_descriptor_set();
+          vkCmdBindDescriptorSets(
+              l_Cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
+              g_SkinningPipelineState.pipelineLayout.get(), 1, 1,
+              &l_SkinningSet, 0, nullptr);
+        }
+
+        for (SkinningInstance i_Instance :
+             SkinningInstance::ms_LivingInstances) {
+          if (!i_Instance.is_alive() ||
+              !i_Instance.get_pose().is_alive()) {
+            continue;
+          }
+
+          SkinningPose i_Pose = i_Instance.get_pose();
+
+          for (SkinningCommand i_Command :
+               i_Instance.get_skinning_commands()) {
+            if (!i_Command.is_alive() ||
+                !i_Command.get_submesh().is_alive() ||
+                i_Command.get_vertex_count() == 0u) {
+              continue;
+            }
+
+            GpuSubmesh i_Submesh = i_Command.get_submesh();
+
+            SkinningPushConstants l_PushConstants{};
+            l_PushConstants.sourceVertexStart =
+                i_Submesh.get_vertex_start();
+            l_PushConstants.weightsStart =
+                i_Command.get_weights_start();
+            l_PushConstants.posePaletteStart =
+                i_Pose.get_pose_palette_offset();
+            l_PushConstants.outputVertexStart =
+                i_Command.get_skinned_vertex_start();
+            l_PushConstants.vertexCount =
+                i_Command.get_vertex_count();
+            const u32 l_OutputBufferIndex =
+                Vulkan::Global::get_skinned_vertex_output_buffer()
+                    .get_current_buffer_index();
+            l_PushConstants.outputBufferIndex = l_OutputBufferIndex;
+
+            i_Command.set_active_vertex_buffer(
+                l_OutputBufferIndex == 0u ? VertexBuffer::SkinnedA
+                                          : VertexBuffer::SkinnedB);
+
+            vkCmdPushConstants(
+                l_Cmd, g_SkinningPipelineState.pipelineLayout.get(),
+                VK_SHADER_STAGE_COMPUTE_BIT, 0,
+                sizeof(SkinningPushConstants), &l_PushConstants);
+
+            const u32 l_WorkgroupCount =
+                (i_Command.get_vertex_count() + 63u) / 64u;
+            vkCmdDispatch(l_Cmd, l_WorkgroupCount, 1, 1);
+          }
+        }
+
+        {
+          VkBufferMemoryBarrier l_Barrier{};
+          l_Barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+          l_Barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+          l_Barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+          l_Barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+          l_Barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+          l_Barrier.buffer =
+              Vulkan::Global::get_skinned_vertex_output_buffer()
+                  .current()
+                  .buffer;
+          l_Barrier.offset = 0;
+          l_Barrier.size = VK_WHOLE_SIZE;
+
+          vkCmdPipelineBarrier(l_Cmd,
+                               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                               VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0,
+                               0, nullptr, 1, &l_Barrier, 0, nullptr);
+        }
+      }
+
       void tick(const float p_Delta)
       {
         poses_tick(p_Delta);
 
         skinning_instances_tick(p_Delta);
+
+        execute_skinning_commands(p_Delta);
       }
     } // namespace SkinningSystem
   } // namespace Renderer

@@ -103,17 +103,36 @@ namespace Low {
         load_mipmap(p_Image, l_Texture, p_MipLevel);
       }
 
-      static void parse_mesh(const aiMesh *p_AiMesh,
+      static bool parse_mesh(const aiMesh *p_AiMesh,
                              MeshInfo &p_MeshInfo, Mesh &p_Mesh)
       {
-        LOW_ASSERT(p_AiMesh->HasPositions(),
-                   "Mesh has no position information");
-        LOW_ASSERT(p_AiMesh->HasNormals(),
-                   "Mesh has no normal information");
-        LOW_ASSERT(p_AiMesh->HasTextureCoords(0),
-                   "Mesh has no texture coordinates");
-        LOW_ASSERT(p_AiMesh->HasTangentsAndBitangents(),
-                   "Mesh has no tangent/bitangent information");
+        if (!p_AiMesh->HasPositions() || !p_AiMesh->HasFaces()) {
+          LOW_LOG_WARN << "Skipping submesh '"
+                       << p_AiMesh->mName.C_Str()
+                       << "': missing positions or faces" << LOW_LOG_END;
+          return false;
+        }
+
+        if (!p_AiMesh->HasNormals()) {
+          LOW_LOG_WARN << "Skipping submesh '"
+                       << p_AiMesh->mName.C_Str()
+                       << "': missing normals" << LOW_LOG_END;
+          return false;
+        }
+
+        const bool l_HasUVs = p_AiMesh->HasTextureCoords(0);
+        const bool l_HasTangents = p_AiMesh->HasTangentsAndBitangents();
+
+        if (!l_HasUVs) {
+          LOW_LOG_WARN << "Submesh '" << p_AiMesh->mName.C_Str()
+                       << "' has no texture coordinates — filling with zeros"
+                       << LOW_LOG_END;
+        }
+        if (!l_HasTangents) {
+          LOW_LOG_WARN << "Submesh '" << p_AiMesh->mName.C_Str()
+                       << "' has no tangents/bitangents — filling with zeros"
+                       << LOW_LOG_END;
+        }
 
         p_MeshInfo.name = LOW_NAME(p_AiMesh->mName.C_Str());
 
@@ -123,24 +142,29 @@ namespace Low {
               p_AiMesh->mVertices[i].x, p_AiMesh->mVertices[i].y,
               p_AiMesh->mVertices[i].z};
 
-          p_MeshInfo.vertices[i].texture_coordinates = {
-              p_AiMesh->mTextureCoords[0][i].x,
-              p_AiMesh->mTextureCoords[0][i].y};
+          p_MeshInfo.vertices[i].texture_coordinates =
+              l_HasUVs ? Math::Vector2{p_AiMesh->mTextureCoords[0][i].x,
+                                       p_AiMesh->mTextureCoords[0][i].y}
+                       : Math::Vector2{0.0f, 0.0f};
 
           p_MeshInfo.vertices[i].normal = {p_AiMesh->mNormals[i].x,
                                            p_AiMesh->mNormals[i].y,
                                            p_AiMesh->mNormals[i].z};
 
-          p_MeshInfo.vertices[i].tangent = {p_AiMesh->mTangents[i].x,
-                                            p_AiMesh->mTangents[i].y,
-                                            p_AiMesh->mTangents[i].z};
-          p_MeshInfo.vertices[i].bitangent = {
-              p_AiMesh->mBitangents[i].x, p_AiMesh->mBitangents[i].y,
-              p_AiMesh->mBitangents[i].z};
+          p_MeshInfo.vertices[i].tangent =
+              l_HasTangents
+                  ? Math::Vector3{p_AiMesh->mTangents[i].x,
+                                   p_AiMesh->mTangents[i].y,
+                                   p_AiMesh->mTangents[i].z}
+                  : Math::Vector3{1.0f, 0.0f, 0.0f};
+          p_MeshInfo.vertices[i].bitangent =
+              l_HasTangents
+                  ? Math::Vector3{p_AiMesh->mBitangents[i].x,
+                                   p_AiMesh->mBitangents[i].y,
+                                   p_AiMesh->mBitangents[i].z}
+                  : Math::Vector3{0.0f, 1.0f, 0.0f};
         }
 
-        LOW_ASSERT(p_AiMesh->HasFaces(),
-                   "Mesh has no index information");
         for (uint32_t i = 0u; i < p_AiMesh->mNumFaces; ++i) {
           for (uint32_t j = 0u; j < p_AiMesh->mFaces[i].mNumIndices;
                ++j) {
@@ -181,6 +205,8 @@ namespace Low {
             }
           }
         }
+
+        return true;
       }
 
       static void parse_submesh(const aiScene *p_AiScene,
@@ -200,11 +226,12 @@ namespace Low {
         l_Submesh.transform =
             p_Transformation * l_Submesh.localTransform;
 
-        l_Submesh.meshInfos.resize(p_AiNode->mNumMeshes);
-
-        for (uint32_t i = 0; i < l_Submesh.meshInfos.size(); ++i) {
-          parse_mesh(p_AiScene->mMeshes[p_AiNode->mMeshes[i]],
-                     l_Submesh.meshInfos[i], p_Mesh);
+        for (uint32_t i = 0; i < p_AiNode->mNumMeshes; ++i) {
+          MeshInfo i_MeshInfo;
+          if (parse_mesh(p_AiScene->mMeshes[p_AiNode->mMeshes[i]],
+                         i_MeshInfo, p_Mesh)) {
+            l_Submesh.meshInfos.push_back(std::move(i_MeshInfo));
+          }
         }
         // printf("SIZE: %s = %d\n", l_Submesh.name.c_str(),
         // p_Mesh.bones.size());

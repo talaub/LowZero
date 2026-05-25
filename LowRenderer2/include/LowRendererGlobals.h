@@ -22,6 +22,13 @@
 
 namespace Low {
   namespace Renderer {
+    enum class VertexBuffer
+    {
+      Static,
+      SkinnedA,
+      SkinnedB
+    };
+
     struct DrawCommandUpload
     {
       alignas(16) Low::Math::Matrix4x4 worldTransform;

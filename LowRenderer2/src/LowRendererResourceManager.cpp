@@ -277,6 +277,99 @@ namespace Low {
         return true;
       }
 
+      static void build_mesh_bone_to_skeleton_bone_map(
+          const Util::Resource::Mesh &p_Mesh,
+          Util::Map<u32, u32> &p_OutBoneIndexRemap)
+      {
+        p_OutBoneIndexRemap.clear();
+
+        Util::Set<u32> l_UsedMeshBoneIndices;
+        for (const Util::Resource::Submesh &i_Submesh :
+             p_Mesh.submeshes) {
+          for (const Util::Resource::MeshInfo &i_MeshInfo :
+               i_Submesh.meshInfos) {
+            for (const Util::Resource::BoneVertexWeight &i_Weight :
+                 i_MeshInfo.boneInfluences) {
+              l_UsedMeshBoneIndices.insert(i_Weight.boneIndex);
+            }
+          }
+        }
+
+        Util::Set<Util::Name> l_RelevantNodes;
+
+        for (const Util::Resource::BoneHierarchyNode &i_Node :
+             p_Mesh.boneHierarchy) {
+          if (i_Node.boneIndex == LOW_UINT32_MAX ||
+              l_UsedMeshBoneIndices.find(i_Node.boneIndex) ==
+                  l_UsedMeshBoneIndices.end()) {
+            continue;
+          }
+
+          l_RelevantNodes.insert(i_Node.name);
+
+          i32 i_ParentIndex = i_Node.parentIndex;
+          while (i_ParentIndex >= 0) {
+            const Util::Resource::BoneHierarchyNode &i_Parent =
+                p_Mesh.boneHierarchy[i_ParentIndex];
+            l_RelevantNodes.insert(i_Parent.name);
+            i_ParentIndex = i_Parent.parentIndex;
+          }
+        }
+
+        Util::Map<Util::Name, u32> l_SkeletonBoneIndices;
+        for (const Util::Resource::BoneHierarchyNode &i_Node :
+             p_Mesh.boneHierarchy) {
+          if (l_RelevantNodes.find(i_Node.name) ==
+              l_RelevantNodes.end()) {
+            continue;
+          }
+
+          l_SkeletonBoneIndices[i_Node.name] =
+              static_cast<u32>(l_SkeletonBoneIndices.size());
+        }
+
+        for (auto it = p_Mesh.bones.begin(); it != p_Mesh.bones.end();
+             ++it) {
+          if (l_UsedMeshBoneIndices.find(it->second.index) ==
+              l_UsedMeshBoneIndices.end()) {
+            continue;
+          }
+
+          auto i_SkeletonBoneIt = l_SkeletonBoneIndices.find(it->first);
+          if (i_SkeletonBoneIt == l_SkeletonBoneIndices.end()) {
+            continue;
+          }
+
+          p_OutBoneIndexRemap[it->second.index] =
+              i_SkeletonBoneIt->second;
+        }
+      }
+
+      static void remap_bone_weights_to_skeleton_order(
+          const Util::List<Util::Resource::BoneVertexWeight>
+              &p_BoneWeights,
+          const Util::Map<u32, u32> &p_BoneIndexRemap,
+          Util::List<Util::Resource::BoneVertexWeight>
+              &p_OutBoneWeights)
+      {
+        p_OutBoneWeights.clear();
+        p_OutBoneWeights.reserve(p_BoneWeights.size());
+
+        for (const Util::Resource::BoneVertexWeight &i_Weight :
+             p_BoneWeights) {
+          auto i_RemappedBoneIt =
+              p_BoneIndexRemap.find(i_Weight.boneIndex);
+          if (i_RemappedBoneIt == p_BoneIndexRemap.end()) {
+            continue;
+          }
+
+          Util::Resource::BoneVertexWeight i_RemappedWeight =
+              i_Weight;
+          i_RemappedWeight.boneIndex = i_RemappedBoneIt->second;
+          p_OutBoneWeights.push_back(i_RemappedWeight);
+        }
+      }
+
       static bool
       animation_clip_schedule_memory_load(AnimationClip p_Clip)
       {
@@ -943,6 +1036,10 @@ namespace Low {
                     l_Mesh, N(skeleton), p_Result.skeleton_id);
               }
 
+              Util::Map<u32, u32> l_BoneIndexRemap;
+              build_mesh_bone_to_skeleton_bone_map(
+                  p_Result.mesh, l_BoneIndexRemap);
+
               u32 l_SubmeshCount = 0u;
               for (auto &i_Submesh : p_Result.mesh.submeshes) {
                 for (auto &i_MeshInfo : i_Submesh.meshInfos) {
@@ -956,8 +1053,13 @@ namespace Low {
                       MeshState::MEMORYLOADED);
                   i_SubmeshGeometry.set_vertices(i_MeshInfo.vertices);
                   i_SubmeshGeometry.set_indices(i_MeshInfo.indices);
+                  Util::List<Util::Resource::BoneVertexWeight>
+                      i_RemappedBoneWeights;
+                  remap_bone_weights_to_skeleton_order(
+                      i_MeshInfo.boneInfluences, l_BoneIndexRemap,
+                      i_RemappedBoneWeights);
                   i_SubmeshGeometry.set_bone_weights(
-                      i_MeshInfo.boneInfluences);
+                      i_RemappedBoneWeights);
                   i_SubmeshGeometry.set_transform(
                       i_Submesh.transform);
                   i_SubmeshGeometry.set_parent_transform(

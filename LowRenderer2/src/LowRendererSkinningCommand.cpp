@@ -53,12 +53,9 @@ namespace Low {
           SkinningInstance();
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, SkinningCommand, submesh,
                                  GpuSubmesh)) GpuSubmesh();
-      ACCESSOR_TYPE_SOA(l_Handle, SkinningCommand, weights_start,
-                        uint32_t) = 0u;
-      ACCESSOR_TYPE_SOA(l_Handle, SkinningCommand,
-                        skinned_vertex_start, uint32_t) = 0u;
-      ACCESSOR_TYPE_SOA(l_Handle, SkinningCommand, vertex_count,
-                        uint32_t) = 0u;
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, SkinningCommand,
+                                 active_vertex_buffer, VertexBuffer))
+          VertexBuffer();
       ACCESSOR_TYPE_SOA(l_Handle, SkinningCommand, name,
                         Low::Util::Name) = Low::Util::Name(0u);
 
@@ -292,6 +289,37 @@ namespace Low {
         // End property: vertex_count
       }
       {
+        // Property: active_vertex_buffer
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(active_vertex_buffer);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(SkinningCommand::Data, active_vertex_buffer);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          SkinningCommand l_Handle = p_Handle.get_id();
+          l_Handle.get_active_vertex_buffer();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SkinningCommand,
+                                            active_vertex_buffer,
+                                            VertexBuffer);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          SkinningCommand l_Handle = p_Handle.get_id();
+          l_Handle.set_active_vertex_buffer(*(VertexBuffer *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          SkinningCommand l_Handle = p_Handle.get_id();
+          *((VertexBuffer *)p_Data) =
+              l_Handle.get_active_vertex_buffer();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: active_vertex_buffer
+      }
+      {
         // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
@@ -468,7 +496,9 @@ namespace Low {
         l_Handle.set_submesh(get_submesh());
       }
       l_Handle.set_weights_start(get_weights_start());
+      l_Handle.set_skinned_vertex_start(get_skinned_vertex_start());
       l_Handle.set_vertex_count(get_vertex_count());
+      l_Handle.set_active_vertex_buffer(get_active_vertex_buffer());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -715,6 +745,34 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_vertex_count
 
       broadcast_observable(N(vertex_count));
+    }
+
+    VertexBuffer SkinningCommand::get_active_vertex_buffer() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_active_vertex_buffer
+      // LOW_CODEGEN::END::CUSTOM:GETTER_active_vertex_buffer
+
+      return TYPE_SOA(SkinningCommand, active_vertex_buffer,
+                      VertexBuffer);
+    }
+    void
+    SkinningCommand::set_active_vertex_buffer(VertexBuffer p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_active_vertex_buffer
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_active_vertex_buffer
+
+      // Set new value
+      TYPE_SOA(SkinningCommand, active_vertex_buffer, VertexBuffer) =
+          p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_active_vertex_buffer
+      // LOW_CODEGEN::END::CUSTOM:SETTER_active_vertex_buffer
+
+      broadcast_observable(N(active_vertex_buffer));
     }
 
     Low::Util::Name SkinningCommand::get_name() const

@@ -56,6 +56,13 @@ types:
       get_sort_index:
         constant: true
         return_type: uint64_t
+      get_active_vertex_buffer:
+        return_type: VertexBuffer
+        constant: true
+        no_ref: true
+      get_active_vertex_offset:
+        constant: true
+        return_type: uint64_t
 
   RenderObject:
     skip_name_serialization: true
@@ -955,6 +962,9 @@ types:
       vertex_count:
         type: u32
         private_setter: true
+      active_vertex_buffer:
+        type: VertexBuffer
+        no_ref: true
     functions:
       make:
         static: true

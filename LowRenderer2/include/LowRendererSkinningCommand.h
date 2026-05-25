@@ -10,6 +10,7 @@
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 #include "LowRendererGpuSubmesh.h"
 #include "LowRendererSkinningInstance.h"
+#include "LowRendererGlobals.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -29,6 +30,7 @@ namespace Low {
         uint32_t weights_start;
         uint32_t skinned_vertex_start;
         uint32_t vertex_count;
+        VertexBuffer active_vertex_buffer;
         Low::Util::Name name;
 
         static size_t get_size()
@@ -156,6 +158,9 @@ namespace Low {
       void set_skinned_vertex_start(uint32_t p_Value);
 
       uint32_t get_vertex_count() const;
+
+      VertexBuffer get_active_vertex_buffer() const;
+      void set_active_vertex_buffer(VertexBuffer p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

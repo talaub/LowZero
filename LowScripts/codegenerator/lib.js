@@ -512,6 +512,9 @@ function process_file(p_Path, p_FileName, p_Project = false) {
           i_Func.return_type,
           i_Func.return_handle,
         );
+        if (i_Func.no_ref) {
+          i_Func.accessor_type = i_Func.return_type;
+        }
         i_Func.name = i_FuncName;
         if (i_Func.parameters) {
           for (let i_Param of i_Func.parameters) {
