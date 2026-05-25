@@ -65,6 +65,9 @@ namespace Low {
           Low::Renderer::Material();
       ACCESSOR_TYPE_SOA(l_Handle, DrawCommand, uploaded, bool) =
           false;
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, DrawCommand,
+                                 skinning_command, SkinningCommand))
+          SkinningCommand();
       ACCESSOR_TYPE_SOA(l_Handle, DrawCommand, name,
                         Low::Util::Name) = Low::Util::Name(0u);
 
@@ -398,6 +401,37 @@ namespace Low {
         // End property: object_id
       }
       {
+        // Property: skinning_command
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(skinning_command);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(DrawCommand::Data, skinning_command);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType = SkinningCommand::IDENTIFIER;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          DrawCommand l_Handle = p_Handle.get_id();
+          l_Handle.get_skinning_command();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, DrawCommand,
+                                            skinning_command,
+                                            SkinningCommand);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          DrawCommand l_Handle = p_Handle.get_id();
+          l_Handle.set_skinning_command(*(SkinningCommand *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          DrawCommand l_Handle = p_Handle.get_id();
+          *((SkinningCommand *)p_Data) =
+              l_Handle.get_skinning_command();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: skinning_command
+      }
+      {
         // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
@@ -597,6 +631,9 @@ namespace Low {
       l_Handle.set_uploaded(is_uploaded());
       l_Handle.set_render_scene_handle(get_render_scene_handle());
       l_Handle.set_object_id(get_object_id());
+      if (get_skinning_command().is_alive()) {
+        l_Handle.set_skinning_command(get_skinning_command());
+      }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
 
@@ -942,6 +979,32 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_object_id
 
       broadcast_observable(N(object_id));
+    }
+
+    SkinningCommand DrawCommand::get_skinning_command() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_skinning_command
+      // LOW_CODEGEN::END::CUSTOM:GETTER_skinning_command
+
+      return TYPE_SOA(DrawCommand, skinning_command, SkinningCommand);
+    }
+    void DrawCommand::set_skinning_command(SkinningCommand p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_skinning_command
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_skinning_command
+
+      // Set new value
+      TYPE_SOA(DrawCommand, skinning_command, SkinningCommand) =
+          p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_skinning_command
+      // LOW_CODEGEN::END::CUSTOM:SETTER_skinning_command
+
+      broadcast_observable(N(skinning_command));
     }
 
     Low::Util::Name DrawCommand::get_name() const

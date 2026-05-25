@@ -113,6 +113,9 @@ LowRenderer2:
   SkeletonResource: 112
   AnimationClip: 113
   AnimationClipResource: 114
+  SkinningPose: 115
+  SkinningInstance: 116
+  SkinningCommand: 117
 LowRendjrer2:
   RenderObject: 56
   RenderView: 57

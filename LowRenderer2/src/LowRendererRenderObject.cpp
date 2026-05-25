@@ -68,6 +68,9 @@ namespace Low {
                                  draw_commands,
                                  Low::Util::List<DrawCommand>))
           Low::Util::List<DrawCommand>();
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderObject,
+                                 skinning_instance, SkinningInstance))
+          SkinningInstance();
       ACCESSOR_TYPE_SOA(l_Handle, RenderObject, dirty, bool) = false;
       ACCESSOR_TYPE_SOA(l_Handle, RenderObject, name,
                         Low::Util::Name) = Low::Util::Name(0u);
@@ -448,6 +451,37 @@ namespace Low {
         // End property: object_id
       }
       {
+        // Property: skinning_instance
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(skinning_instance);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderObject::Data, skinning_instance);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType = SkinningInstance::IDENTIFIER;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderObject l_Handle = p_Handle.get_id();
+          l_Handle.get_skinning_instance();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderObject,
+                                            skinning_instance,
+                                            SkinningInstance);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderObject l_Handle = p_Handle.get_id();
+          l_Handle.set_skinning_instance(*(SkinningInstance *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderObject l_Handle = p_Handle.get_id();
+          *((SkinningInstance *)p_Data) =
+              l_Handle.get_skinning_instance();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: skinning_instance
+      }
+      {
         // Property: dirty
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(dirty);
@@ -656,6 +690,9 @@ namespace Low {
         l_Handle.set_material(get_material());
       }
       l_Handle.set_object_id(get_object_id());
+      if (get_skinning_instance().is_alive()) {
+        l_Handle.set_skinning_instance(get_skinning_instance());
+      }
       l_Handle.set_dirty(is_dirty());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
@@ -1032,6 +1069,33 @@ namespace Low {
 
         broadcast_observable(N(object_id));
       }
+    }
+
+    SkinningInstance RenderObject::get_skinning_instance() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_skinning_instance
+      // LOW_CODEGEN::END::CUSTOM:GETTER_skinning_instance
+
+      return TYPE_SOA(RenderObject, skinning_instance,
+                      SkinningInstance);
+    }
+    void RenderObject::set_skinning_instance(SkinningInstance p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_skinning_instance
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_skinning_instance
+
+      // Set new value
+      TYPE_SOA(RenderObject, skinning_instance, SkinningInstance) =
+          p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_skinning_instance
+      // LOW_CODEGEN::END::CUSTOM:SETTER_skinning_instance
+
+      broadcast_observable(N(skinning_instance));
     }
 
     bool RenderObject::is_dirty() const

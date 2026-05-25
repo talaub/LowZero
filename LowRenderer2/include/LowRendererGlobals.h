@@ -86,5 +86,11 @@ namespace Low {
       u32 slot;
     };
 
+    struct VertexSkinningWeights
+    {
+      Math::UVector4 bone_indices;
+      Math::Vector4 weights;
+    };
+
   } // namespace Renderer
 } // namespace Low

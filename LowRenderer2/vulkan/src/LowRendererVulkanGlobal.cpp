@@ -162,6 +162,7 @@ namespace Low {
 
         DynamicBuffer g_MeshVertexBuffer;
         DynamicBuffer g_MeshIndexBuffer;
+        DynamicBuffer g_MeshBoneWeightsBuffer;
 
         DynamicBuffer g_DrawCommandBuffer;
         DynamicBuffer g_UiDrawCommandBuffer;
@@ -335,6 +336,10 @@ namespace Low {
         DynamicBuffer &get_mesh_index_buffer()
         {
           return g_MeshIndexBuffer;
+        }
+        DynamicBuffer &get_mesh_bone_weight_buffer()
+        {
+          return g_MeshBoneWeightsBuffer;
         }
         VkFormat get_swapchain_format()
         {
@@ -616,6 +621,19 @@ namespace Low {
               "Could not initialize mesh index resource buffer");
           BufferUtil::set_name(g_MeshIndexBuffer,
                                "global mesh index buffer");
+
+          LOW_ASSERT_ERROR_RETURN_FALSE(
+              dynamic_buffer_init(
+                  g_MeshBoneWeightsBuffer,
+                  sizeof(VertexSkinningWeights), 15000,
+                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                      VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                      VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                  VMA_MEMORY_USAGE_GPU_ONLY),
+              "Could not initialize mesh bone weight resource "
+              "buffer");
+          BufferUtil::set_name(g_MeshBoneWeightsBuffer,
+                               "global mesh bone weights buffer");
 
           return true;
         }

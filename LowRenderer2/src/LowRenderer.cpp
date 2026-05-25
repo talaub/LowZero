@@ -54,6 +54,9 @@
 #include "LowRendererSkeletonResource.h"
 #include "LowRendererAnimationClip.h"
 #include "LowRendererAnimationClipResource.h"
+#include "LowRendererSkinningCommand.h"
+#include "LowRendererSkinningInstance.h"
+#include "LowRendererSkinningPose.h"
 
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
@@ -180,10 +183,16 @@ namespace Low {
       SS2DDrawCommand::initialize();
       ShaderVariant::initialize();
       ShaderSource::initialize();
+      SkinningInstance::initialize();
+      SkinningCommand::initialize();
+      SkinningPose::initialize();
     }
 
     static void cleanup_types()
     {
+      SkinningPose::cleanup();
+      SkinningCommand::cleanup();
+      SkinningInstance::cleanup();
       SkeletonResource::cleanup();
       Skeleton::cleanup();
       AnimationClipResource::cleanup();

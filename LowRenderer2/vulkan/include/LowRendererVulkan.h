@@ -207,6 +207,8 @@ namespace Low {
         DynamicBuffer &get_mesh_vertex_buffer();
         DynamicBuffer &get_mesh_index_buffer();
 
+        DynamicBuffer &get_mesh_bone_weight_buffer();
+
         DynamicBuffer &get_drawcommand_buffer();
         DynamicBuffer &get_ui_drawcommand_buffer();
 

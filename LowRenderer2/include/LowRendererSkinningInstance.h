@@ -8,35 +8,28 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-
-#include "LowRendererGpuSubmesh.h"
-#include "LowRendererMaterial.h"
-#include "LowRendererRenderObject.h"
-#include "LowRendererSkinningCommand.h"
+#include "LowRendererSkinningPose.h"
+#include "LowRendererMesh.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-
-    struct RenderScene;
+    struct SkinningCommand;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_RENDERER2_API DrawCommand : public Low::Util::Handle
+    struct LOW_RENDERER2_API SkinningInstance
+        : public Low::Util::Handle
     {
     public:
       struct Data
       {
       public:
-        Low::Math::Matrix4x4 world_transform;
-        Low::Renderer::GpuSubmesh submesh;
-        uint32_t slot;
-        Low::Renderer::RenderObject render_object;
-        Low::Renderer::Material material;
-        bool uploaded;
-        uint64_t render_scene_handle;
-        uint32_t object_id;
-        SkinningCommand skinning_command;
+        SkinningPose pose;
+        Mesh mesh;
+        uint32_t skinned_vertex_offset;
+        uint32_t vertex_count;
+        Low::Util::List<SkinningCommand> skinning_commands;
         Low::Util::Name name;
 
         static size_t get_size()
@@ -51,7 +44,7 @@ namespace Low {
     public:
       static Low::Util::List<Low::Util::Instances::Page *> ms_Pages;
 
-      static Low::Util::List<DrawCommand> ms_LivingInstances;
+      static Low::Util::List<SkinningInstance> ms_LivingInstances;
 
       const static Low::Util::TypeIdentifier IDENTIFIER;
 
@@ -60,12 +53,9 @@ namespace Low {
         return ms_TypeId;
       }
 
-    private:
-      static DrawCommand make(Low::Util::Name p_Name);
+      static SkinningInstance make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
-
-    public:
-      explicit DrawCommand(const DrawCommand &p_Copy)
+      explicit SkinningInstance(const SkinningInstance &p_Copy)
           : Low::Util::Handle(p_Copy.m_Id)
       {
       }
@@ -75,34 +65,35 @@ namespace Low {
       static void initialize();
       static void cleanup();
 
-      DrawCommand(u64 p_Id) : Low::Util::Handle(p_Id)
+      SkinningInstance(u64 p_Id) : Low::Util::Handle(p_Id)
       {
       }
-      DrawCommand() : Low::Util::Handle()
+      SkinningInstance() : Low::Util::Handle()
       {
       }
-      DrawCommand(Low::Util::Handle p_Handle)
+      SkinningInstance(Low::Util::Handle p_Handle)
           : Low::Util::Handle(p_Handle.get_id())
       {
       }
 
       using Handle::operator=;
 
-      DrawCommand &operator=(const DrawCommand &) = default;
-      DrawCommand &operator=(DrawCommand &&) noexcept = default;
+      SkinningInstance &operator=(const SkinningInstance &) = default;
+      SkinningInstance &
+      operator=(SkinningInstance &&) noexcept = default;
 
       static uint32_t living_count()
       {
         return static_cast<uint32_t>(ms_LivingInstances.size());
       }
-      static DrawCommand *living_instances()
+      static SkinningInstance *living_instances()
       {
         return ms_LivingInstances.data();
       }
 
-      static DrawCommand create_handle_by_index(u32 p_Index);
+      static SkinningInstance create_handle_by_index(u32 p_Index);
 
-      static DrawCommand find_by_index(uint32_t p_Index);
+      static SkinningInstance find_by_index(uint32_t p_Index);
       static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
       bool is_alive() const;
@@ -125,13 +116,13 @@ namespace Low {
 
       void serialize(Low::Util::Serial::Node &p_Node) const;
 
-      DrawCommand duplicate(Low::Util::Name p_Name) const;
-      static DrawCommand duplicate(DrawCommand p_Handle,
-                                   Low::Util::Name p_Name);
+      SkinningInstance duplicate(Low::Util::Name p_Name) const;
+      static SkinningInstance duplicate(SkinningInstance p_Handle,
+                                        Low::Util::Name p_Name);
       static Low::Util::Handle _duplicate(Low::Util::Handle p_Handle,
                                           Low::Util::Name p_Name);
 
-      static DrawCommand find_by_name(Low::Util::Name p_Name);
+      static SkinningInstance find_by_name(Low::Util::Name p_Name);
       static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
@@ -141,51 +132,34 @@ namespace Low {
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
-        DrawCommand l_Handle = p_Handle.get_id();
+        SkinningInstance l_Handle = p_Handle.get_id();
         return l_Handle.is_alive();
       }
 
       static void destroy(Low::Util::Handle p_Handle)
       {
         _LOW_ASSERT(is_alive(p_Handle));
-        DrawCommand l_DrawCommand = p_Handle.get_id();
-        l_DrawCommand.destroy();
+        SkinningInstance l_SkinningInstance = p_Handle.get_id();
+        l_SkinningInstance.destroy();
       }
 
-      Low::Math::Matrix4x4 &get_world_transform() const;
-      void set_world_transform(Low::Math::Matrix4x4 &p_Value);
+      SkinningPose get_pose() const;
+      void set_pose(SkinningPose p_Value);
 
-      Low::Renderer::GpuSubmesh get_submesh() const;
+      Mesh get_mesh() const;
+      void set_mesh(Mesh p_Value);
 
-      uint32_t get_slot() const;
-      void set_slot(uint32_t p_Value);
+      uint32_t get_skinned_vertex_offset() const;
+      void set_skinned_vertex_offset(uint32_t p_Value);
 
-      Low::Renderer::RenderObject get_render_object() const;
+      uint32_t get_vertex_count() const;
+      void set_vertex_count(uint32_t p_Value);
 
-      Low::Renderer::Material get_material() const;
-      void set_material(Low::Renderer::Material p_Value);
-
-      bool is_uploaded() const;
-      void set_uploaded(bool p_Value);
-      void toggle_uploaded();
-
-      uint64_t get_render_scene_handle() const;
-      void set_render_scene_handle(uint64_t p_Value);
-
-      uint32_t get_object_id() const;
-      void set_object_id(uint32_t p_Value);
-
-      SkinningCommand get_skinning_command() const;
-      void set_skinning_command(SkinningCommand p_Value);
+      Low::Util::List<SkinningCommand> &get_skinning_commands() const;
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      static DrawCommand
-      make(Low::Renderer::RenderObject p_RenderObject,
-           Low::Renderer::RenderScene p_RenderScene,
-           Low::Renderer::GpuSubmesh p_Submesh);
-      uint64_t get_sort_index() const;
       static bool get_page_for_index(const u32 p_Index,
                                      u32 &p_PageIndex,
                                      u32 &p_SlotIndex);
@@ -195,23 +169,16 @@ namespace Low {
       static u32 ms_PageSize;
       static u32 create_instance(u32 &p_PageIndex, u32 &p_SlotIndex);
       static u32 create_page();
-      void set_submesh(Low::Renderer::GpuSubmesh p_Value);
-      void set_render_object(Low::Renderer::RenderObject p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
-
-    public:
-      static Low::Util::Set<Low::Renderer::DrawCommand> ms_Dirty;
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
     };
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
-
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
   } // namespace Renderer
 } // namespace Low
 
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE
-
 // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_HEADER_CODE

@@ -35,6 +35,9 @@ types:
         type: uint64_t
       object_id:
         type: uint32_t
+      skinning_command:
+        type: SkinningCommand
+        handle: true
     functions:
       make:
         static: true
@@ -87,6 +90,9 @@ types:
       object_id:
         type: uint32_t
         dirty_flag: dirty
+      skinning_instance:
+        type: SkinningInstance
+        handle: true
     functions:
       make:
         static: true
@@ -881,3 +887,53 @@ types:
       get_empty_variant:
         return_type: Low::Renderer::ShaderVariant
         return_handle: true
+
+  SkinningPose:
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    dirty_flags:
+      dirty:
+        no_data: false
+    properties:
+      matrices:
+        type: Util::List<Math::Matrix4x4>
+        no_setter: true
+      skeleton:
+        type: Skeleton
+        handle: true
+      pose_palette_offset:
+        type: u32
+
+  SkinningInstance:
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    properties:
+      pose:
+        type: SkinningPose
+        handle: true
+      mesh:
+        type: Mesh
+        handle: true
+      skinned_vertex_offset:
+        type: u32
+      vertex_count:
+        type: u32
+      skinning_commands:
+        type: Low::Util::List<SkinningCommand>
+        no_setter: true
+  SkinningCommand:
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    properties:
+      instance:
+        type: SkinningInstance
+        handle: true
+      submesh:
+        type: GpuSubmesh
+        handle: true
+      weights_start:
+        type: u32
+      skinned_vertex_start_a:
+        type: u32
+      skinned_vertex_start_b:
+        type: u32

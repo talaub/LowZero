@@ -11,6 +11,7 @@
 
 #include "LowRendererMesh.h"
 #include "LowRendererMaterial.h"
+#include "LowRendererSkinningInstance.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -36,6 +37,7 @@ namespace Low {
         Low::Renderer::Material material;
         Low::Util::List<DrawCommand> draw_commands;
         uint32_t object_id;
+        SkinningInstance skinning_instance;
         bool dirty;
         Low::Util::Name name;
 
@@ -176,6 +178,9 @@ namespace Low {
 
       uint32_t get_object_id() const;
       void set_object_id(uint32_t p_Value);
+
+      SkinningInstance get_skinning_instance() const;
+      void set_skinning_instance(SkinningInstance p_Value);
 
       bool is_dirty() const;
       void set_dirty(bool p_Value);
