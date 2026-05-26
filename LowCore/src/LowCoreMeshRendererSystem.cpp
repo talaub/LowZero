@@ -178,15 +178,6 @@ namespace Low {
                 i_LocalTransform;
           }
 
-          Math::Matrix4x4 l_InverseRootTransform(1.0f);
-          for (u32 i = 0u; i < l_Skeleton.get_bone_count(); ++i) {
-            if (l_Skeleton.get_bones()[i].parent_index < 0) {
-              l_InverseRootTransform = glm::inverse(
-                  l_Skeleton.get_bones()[i].global_bind_transform);
-              break;
-            }
-          }
-
           for (u32 i = 0u; i < l_Skeleton.get_bone_count(); ++i) {
             const Renderer::SkeletonBone &i_Bone =
                 l_Skeleton.get_bones()[i];
@@ -199,16 +190,15 @@ namespace Low {
               l_GlobalTransforms[i] = l_LocalTransforms[i];
             }
 
-            g_Pose.get_matrices()[i] = l_InverseRootTransform *
-                                       l_GlobalTransforms[i] *
-                                       i_Bone.inverse_bind_matrix;
+            g_Pose.get_matrices()[i] =
+                l_GlobalTransforms[i] * i_Bone.inverse_bind_matrix;
           }
 
           g_Pose.mark_dirty();
         }
 
         static void
-        test_handle_wolf(const float p_Delta,
+        test_handle_anim(const float p_Delta,
                          Component::MeshRenderer p_MeshRenderer)
         {
           if (p_MeshRenderer.get_mesh().get_state() !=
@@ -220,7 +210,7 @@ namespace Low {
             g_Instance = Renderer::SkinningInstance::make(
                 N(TestInstance), p_MeshRenderer.get_mesh());
             g_Instance.set_pose(g_Pose);
-            g_Clip = Renderer::AnimationClip::find_by_index(0);
+            g_Clip = Renderer::AnimationClip::find_by_index(1);
             Renderer::ResourceManager::load_skeleton(
                 p_MeshRenderer.get_mesh().get_skeleton());
             Renderer::ResourceManager::load_animation_clip(g_Clip);
@@ -280,8 +270,8 @@ namespace Low {
               continue;
             }
 
-            if (i_MeshRenderer.get_mesh().get_name() == N(wolf)) {
-              test_handle_wolf(p_Delta, i_MeshRenderer);
+            if (i_MeshRenderer.get_mesh().get_name() == N(hero)) {
+              test_handle_anim(p_Delta, i_MeshRenderer);
             }
 
             Renderer::Material l_Material =

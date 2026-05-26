@@ -108,6 +108,27 @@ namespace Low {
         return true;
       }
 
+      static void mark_render_objects_using_pose_dirty(
+          SkinningPose p_Pose)
+      {
+        for (SkinningInstance i_Instance :
+             SkinningInstance::ms_LivingInstances) {
+          if (!i_Instance.is_alive() ||
+              i_Instance.get_pose() != p_Pose) {
+            continue;
+          }
+
+          for (u32 i = 0; i < RenderObject::living_count(); ++i) {
+            RenderObject i_RenderObject =
+                RenderObject::living_instances()[i];
+            if (i_RenderObject.is_alive() &&
+                i_RenderObject.get_skinning_instance() == i_Instance) {
+              i_RenderObject.mark_dirty();
+            }
+          }
+        }
+      }
+
       static void poses_tick(const float p_Delta)
       {
         Util::Set<SkinningPose> l_Reschedules;
@@ -154,6 +175,8 @@ namespace Low {
 
           if (!upload_pose(i_Pose)) {
             l_Reschedules.insert(i_Pose);
+          } else {
+            mark_render_objects_using_pose_dirty(i_Pose);
           }
 
           i_Pose.set_dirty(false);
@@ -214,10 +237,20 @@ namespace Low {
             }
           }
 
-          u32 i = 0;
+          if (i_RenderObject.is_alive() &&
+              i_RenderObject.get_draw_commands().empty()) {
+            l_Reschedules.insert(i_Instance);
+            continue;
+          }
+
+          bool l_AttachedSkinningCommand = false;
           for (auto sit = i_GpuMesh.get_submeshes().begin();
                sit != i_GpuMesh.get_submeshes().end(); ++sit) {
             GpuSubmesh i_GpuSubmesh = *sit;
+
+            if (i_GpuSubmesh.get_bone_weight_count() == 0u) {
+              continue;
+            }
 
             SkinningCommand i_Command =
                 SkinningCommand::make(i_Instance, i_GpuSubmesh);
@@ -228,14 +261,16 @@ namespace Low {
                    i_RenderObject.get_draw_commands()) {
                 if (i_DrawCommand.get_submesh() == i_GpuSubmesh) {
                   i_DrawCommand.set_skinning_command(i_Command);
+                  l_AttachedSkinningCommand = true;
 
                   break;
                 }
               }
-              i_RenderObject.mark_dirty();
             }
+          }
 
-            i++;
+          if (l_AttachedSkinningCommand) {
+            i_RenderObject.mark_dirty();
           }
         }
 

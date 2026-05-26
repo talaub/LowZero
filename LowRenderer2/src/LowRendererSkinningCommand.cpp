@@ -64,6 +64,9 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+      l_Handle.set_vertex_count(0);
+      l_Handle.set_weights_start(0);
+      l_Handle.set_skinned_vertex_start(0);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -633,17 +636,17 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_submesh
+      if (get_vertex_count() > 0u && get_submesh().is_alive()) {
+        Vulkan::Global::get_skinned_vertex_output_buffer().free(
+            get_skinned_vertex_start(), get_vertex_count());
+      }
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_submesh
 
       // Set new value
       TYPE_SOA(SkinningCommand, submesh, GpuSubmesh) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_submesh
-      if (get_vertex_count() > 0u) {
-        Vulkan::Global::get_skinned_vertex_output_buffer().free(
-            get_skinned_vertex_start(), get_vertex_count());
-      }
-
       set_vertex_count(0);
       set_weights_start(0);
       set_skinned_vertex_start(0);

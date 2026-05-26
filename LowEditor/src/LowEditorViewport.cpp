@@ -4,6 +4,10 @@
 #include "LowRendererRenderObject.h"
 #include "LowRendererRenderScene.h"
 #include "LowRendererRenderStep.h"
+#include "LowRendererResourceManager.h"
+#include "LowRendererMeshType.h"
+#include "LowRendererSkeleton.h"
+#include "LowRendererSkeletonState.h"
 #include "LowRendererTextureState.h"
 #include "LowEditorGui.h"
 #include <imgui.h>
@@ -34,6 +38,20 @@ namespace Low {
 
       return glm::max(l_VerticalDistance, l_HorizontalDistance) *
              p_Margin;
+    }
+
+    static void build_bind_pose_palette(
+        Renderer::Skeleton p_Skeleton,
+        Util::List<Math::Matrix4x4> &p_Matrices)
+    {
+      p_Matrices.resize(p_Skeleton.get_bone_count());
+
+      for (u32 i = 0u; i < p_Skeleton.get_bone_count(); ++i) {
+        const Renderer::SkeletonBone &i_Bone =
+            p_Skeleton.get_bones()[i];
+        p_Matrices[i] = i_Bone.global_bind_transform *
+                        i_Bone.inverse_bind_matrix;
+      }
     }
 
     Viewport::Viewport(const Math::UVector2 p_Dimensions)
@@ -153,6 +171,64 @@ namespace Low {
       return true;
     }
 
+    MeshViewer::~MeshViewer()
+    {
+      if (m_RenderObject.is_alive()) {
+        m_RenderObject.set_skinning_instance(
+            Renderer::SkinningInstance());
+      }
+
+      if (m_SkinningInstance.is_alive()) {
+        m_SkinningInstance.destroy();
+      }
+
+      if (m_BindPose.is_alive()) {
+        m_BindPose.destroy();
+      }
+    }
+
+    void MeshViewer::ensure_bind_pose_skinning()
+    {
+      if (m_BindPoseReady || !m_RenderObject.is_alive()) {
+        return;
+      }
+
+      Renderer::Mesh l_Mesh = m_RenderObject.get_mesh();
+      if (!l_Mesh.is_alive() ||
+          l_Mesh.get_type() != Renderer::MeshType::SKELETAL) {
+        return;
+      }
+
+      Renderer::Skeleton l_Skeleton = l_Mesh.get_skeleton();
+      if (!l_Skeleton.is_alive()) {
+        return;
+      }
+
+      if (l_Skeleton.get_state() !=
+          Renderer::SkeletonState::LOADED) {
+        Renderer::ResourceManager::load_skeleton(l_Skeleton);
+        return;
+      }
+
+      if (!m_BindPose.is_alive()) {
+        m_BindPose = Renderer::SkinningPose::make(
+            N(MeshViewerBindPose));
+      }
+
+      m_BindPose.set_skeleton(l_Skeleton);
+      build_bind_pose_palette(l_Skeleton, m_BindPose.get_matrices());
+      m_BindPose.mark_dirty();
+
+      if (!m_SkinningInstance.is_alive()) {
+        m_SkinningInstance = Renderer::SkinningInstance::make(
+            N(MeshViewerSkinningInstance), l_Mesh);
+      }
+
+      m_SkinningInstance.set_pose(m_BindPose);
+      m_RenderObject.set_skinning_instance(m_SkinningInstance);
+      m_BindPoseReady = true;
+    }
+
     bool MeshViewer::tick(const float p_Delta)
     {
       if (!Viewport::tick(p_Delta)) {
@@ -163,6 +239,8 @@ namespace Low {
           Renderer::MeshState::LOADED) {
         return true;
       }
+
+      ensure_bind_pose_skinning();
 
       if (!m_LowSpotCalculated) {
         m_LowSpotCalculated = true;

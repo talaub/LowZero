@@ -6,6 +6,9 @@
 #include "LowRendererRenderObject.h"
 #include "LowRendererAdaptiveRenderObject.h"
 #include "LowRendererRenderScene.h"
+#include "LowRendererSkeleton.h"
+#include "LowRendererSkinningInstance.h"
+#include "LowRendererSkinningPose.h"
 #include "LowRendererTextureState.h"
 #include "LowRendererUiDrawCommand.h"
 #include "LowRendererUiRenderObject.h"
@@ -21,6 +24,95 @@
 namespace Low {
   namespace Renderer {
     namespace RenderObjectSystem {
+      static Util::Map<u64, i32> g_RigidSubmeshBoneCache;
+
+      static u64 rigid_submesh_bone_cache_key(
+          Skeleton p_Skeleton, GpuSubmesh p_Submesh)
+      {
+        const u64 l_SkeletonId = p_Skeleton.get_id();
+        const u64 l_SubmeshId = p_Submesh.get_id();
+        return l_SkeletonId ^
+               (l_SubmeshId + 0x9e3779b97f4a7c15ull +
+                (l_SkeletonId << 6u) + (l_SkeletonId >> 2u));
+      }
+
+      static bool matrix_nearly_equal(const Math::Matrix4x4 &p_A,
+                                      const Math::Matrix4x4 &p_B,
+                                      const float p_Epsilon = 0.0001f)
+      {
+        for (u32 i_Column = 0u; i_Column < 4u; ++i_Column) {
+          for (u32 i_Row = 0u; i_Row < 4u; ++i_Row) {
+            if (glm::abs(p_A[i_Column][i_Row] -
+                         p_B[i_Column][i_Row]) > p_Epsilon) {
+              return false;
+            }
+          }
+        }
+
+        return true;
+      }
+
+      static i32 resolve_rigid_submesh_bone_index(
+          Skeleton p_Skeleton, GpuSubmesh p_Submesh)
+      {
+        const u64 l_CacheKey =
+            rigid_submesh_bone_cache_key(p_Skeleton, p_Submesh);
+        auto l_CacheIt =
+            g_RigidSubmeshBoneCache.find(l_CacheKey);
+        if (l_CacheIt != g_RigidSubmeshBoneCache.end()) {
+          return l_CacheIt->second;
+        }
+
+        i32 l_BoneIndex = -1;
+        for (u32 i = 0u; i < p_Skeleton.get_bone_count(); ++i) {
+          const SkeletonBone &i_Bone = p_Skeleton.get_bones()[i];
+          if (matrix_nearly_equal(i_Bone.global_bind_transform,
+                                  p_Submesh.get_parent_transform())) {
+            l_BoneIndex = static_cast<i32>(i);
+            break;
+          }
+        }
+
+        g_RigidSubmeshBoneCache[l_CacheKey] = l_BoneIndex;
+        return l_BoneIndex;
+      }
+
+      static bool get_rigid_skeletal_submesh_transform(
+          RenderObject p_RenderObject, GpuSubmesh p_Submesh,
+          Math::Matrix4x4 &p_OutTransform)
+      {
+        if (p_Submesh.get_bone_weight_count() > 0u) {
+          return false;
+        }
+
+        SkinningInstance l_SkinningInstance =
+            p_RenderObject.get_skinning_instance();
+        if (!l_SkinningInstance.is_alive()) {
+          return false;
+        }
+
+        SkinningPose l_Pose = l_SkinningInstance.get_pose();
+        if (!l_Pose.is_alive() || !l_Pose.get_skeleton().is_alive()) {
+          return false;
+        }
+
+        Skeleton l_Skeleton = l_Pose.get_skeleton();
+        if (l_Skeleton.get_bone_count() !=
+            l_Pose.get_matrices().size()) {
+          return false;
+        }
+
+        const i32 l_BoneIndex =
+            resolve_rigid_submesh_bone_index(l_Skeleton, p_Submesh);
+        if (l_BoneIndex < 0) {
+          return false;
+        }
+
+        p_OutTransform = l_Pose.get_matrices()[l_BoneIndex] *
+                         p_Submesh.get_transform();
+        return true;
+      }
+
       static void cmd_prepare_storage_buffer_upload(
           VkCommandBuffer p_Cmd, Vulkan::DynamicBuffer &p_Buffer,
           const VkBufferCopy &p_CopyRegion)
@@ -322,8 +414,14 @@ namespace Low {
             Math::Matrix4x4 i_WorldTransform =
                 i_RenderObject.get_world_transform();
             if (!i_DrawCommand.get_skinning_command().is_alive()) {
-              i_WorldTransform *=
-                  i_DrawCommand.get_submesh().get_transform();
+              Math::Matrix4x4 i_SubmeshTransform(1.0f);
+              if (!get_rigid_skeletal_submesh_transform(
+                      i_RenderObject, i_DrawCommand.get_submesh(),
+                      i_SubmeshTransform)) {
+                i_SubmeshTransform =
+                    i_DrawCommand.get_submesh().get_transform();
+              }
+              i_WorldTransform *= i_SubmeshTransform;
             }
             i_DrawCommand.set_world_transform(i_WorldTransform);
 
