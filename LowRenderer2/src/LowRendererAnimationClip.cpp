@@ -482,10 +482,10 @@ namespace Low {
               ResourceManager::find_asset<AnimationClip>(
                   l_ResourceConfig.animationclip_id);
           if (!l_Existing.is_alive()) {
+            l_Existing = AnimationClip::make_from_resource_config(
+                l_ResourceConfig);
             ResourceManager::register_asset(
-                l_ResourceConfig.animationclip_id,
-                AnimationClip::make_from_resource_config(
-                    l_ResourceConfig));
+                l_ResourceConfig.animationclip_id, l_Existing);
           }
         });
 
@@ -772,6 +772,7 @@ namespace Low {
 
       if (l_OldReferences != l_References) {
         // LOW_CODEGEN:BEGIN:CUSTOM:NEW_REFERENCE
+        ResourceManager::load_animation_clip(get_id());
         // LOW_CODEGEN::END::CUSTOM:NEW_REFERENCE
       }
     }

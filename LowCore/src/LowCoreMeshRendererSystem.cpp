@@ -2,17 +2,22 @@
 
 #include "LowRendererAnimationClipState.h"
 #include "LowRendererMeshState.h"
+#include "LowRendererMeshType.h"
+#include "LowRendererSkeletalRenderObject.h"
 #include "LowRendererSkeletonState.h"
 #include "LowRendererSkinningInstance.h"
+#include "LowRendererSkinningPose.h"
+#include "LowRendererSkinningSystem.h"
 #include "LowUtilAssert.h"
+#include "LowUtilContainers.h"
 #include "LowUtilHandle.h"
-#include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 
 #include "LowCoreMeshRenderer.h"
 #include "LowCoreTransform.h"
 #include "LowCoreTaskScheduler.h"
+#include "LowCoreAnimator.h"
 
 #include "LowRenderer.h"
 #include "LowRendererAnimationClip.h"
@@ -28,10 +33,8 @@ namespace Low {
   namespace Core {
     namespace System {
       namespace MeshRenderer {
-        float g_TestProgress = 0.0f;
-        Renderer::SkinningPose g_Pose;
-        Renderer::SkinningInstance g_Instance;
-        Renderer::AnimationClip g_Clip;
+        static Util::List<Math::Matrix4x4> g_LocalPoseScratch;
+        static Util::List<Math::Matrix4x4> g_GlobalPoseScratch;
 
         static Math::Vector3 sample_vector_keys(
             const Util::List<Renderer::BinSerial::VecKey> &p_Keys,
@@ -97,137 +100,245 @@ namespace Low {
           return glm::normalize(p_Keys[p_Keys.size() - 1u].value);
         }
 
-        static void test_posing(const float p_Delta)
+        static void extract_transform_components(
+            const Math::Matrix4x4 &p_Transform,
+            Math::Vector3 &p_Position, Math::Quaternion &p_Rotation,
+            Math::Vector3 &p_Scale)
         {
-          if (!g_Pose.is_alive() || !g_Clip.is_alive() ||
-              g_Clip.get_state() !=
-                  Renderer::AnimationClipState::LOADED) {
-            return;
-          }
-
-          Renderer::Skeleton l_Skeleton = g_Clip.get_skeleton();
-          if (!l_Skeleton.is_alive()) {
-            l_Skeleton = g_Instance.get_mesh().get_skeleton();
-          }
-          if (!l_Skeleton.is_alive() ||
-              l_Skeleton.get_state() !=
-                  Renderer::SkeletonState::LOADED) {
-            return;
-          }
-
-          const float l_Duration = g_Clip.get_duration();
-          if (l_Duration <= 0.0f || l_Skeleton.get_bones().empty()) {
-            return;
-          }
-
-          const float l_TicksPerSecond =
-              g_Clip.get_ticks_per_second() > 0.0f
-                  ? g_Clip.get_ticks_per_second()
-                  : 25.0f;
-          g_TestProgress += p_Delta * l_TicksPerSecond;
-          g_TestProgress = std::fmod(g_TestProgress, l_Duration);
-          if (g_TestProgress < 0.0f) {
-            g_TestProgress += l_Duration;
-          }
-
-          g_Pose.set_skeleton(l_Skeleton);
-          g_Pose.get_matrices().resize(l_Skeleton.get_bone_count());
-
-          Util::List<Math::Matrix4x4> l_LocalTransforms;
-          Util::List<Math::Matrix4x4> l_GlobalTransforms;
-          l_LocalTransforms.resize(l_Skeleton.get_bone_count());
-          l_GlobalTransforms.resize(l_Skeleton.get_bone_count());
-
-          for (u32 i = 0u; i < l_Skeleton.get_bone_count(); ++i) {
-            l_LocalTransforms[i] =
-                l_Skeleton.get_bones()[i].local_bind_transform;
-          }
-
-          for (Renderer::AnimationChannel &i_Channel :
-               g_Clip.get_channels()) {
-            if (i_Channel.bone_index >= l_LocalTransforms.size()) {
-              continue;
-            }
-
-            Math::Vector3 i_BindScale(1.0f);
-            Math::Quaternion i_BindRotation(1.0f, 0.0f, 0.0f, 0.0f);
-            Math::Vector3 i_BindPosition(0.0f);
-            Math::Vector3 i_BindSkew(0.0f);
-            Math::Vector4 i_BindPerspective(0.0f);
-            glm::decompose(
-                l_Skeleton.get_bones()[i_Channel.bone_index]
-                    .local_bind_transform,
-                i_BindScale, i_BindRotation, i_BindPosition,
-                i_BindSkew, i_BindPerspective);
-            i_BindRotation = glm::normalize(i_BindRotation);
-
-            const Math::Vector3 i_Position = sample_vector_keys(
-                i_Channel.positions, g_TestProgress, i_BindPosition);
-            const Math::Quaternion i_Rotation = sample_quat_keys(
-                i_Channel.rotations, g_TestProgress, i_BindRotation);
-            const Math::Vector3 i_Scale = sample_vector_keys(
-                i_Channel.scales, g_TestProgress, i_BindScale);
-
-            Math::Matrix4x4 i_LocalTransform(1.0f);
-            i_LocalTransform =
-                glm::translate(i_LocalTransform, i_Position);
-            i_LocalTransform *= glm::toMat4(i_Rotation);
-            i_LocalTransform = glm::scale(i_LocalTransform, i_Scale);
-
-            l_LocalTransforms[i_Channel.bone_index] =
-                i_LocalTransform;
-          }
-
-          for (u32 i = 0u; i < l_Skeleton.get_bone_count(); ++i) {
-            const Renderer::SkeletonBone &i_Bone =
-                l_Skeleton.get_bones()[i];
-
-            if (i_Bone.parent_index >= 0) {
-              l_GlobalTransforms[i] =
-                  l_GlobalTransforms[i_Bone.parent_index] *
-                  l_LocalTransforms[i];
-            } else {
-              l_GlobalTransforms[i] = l_LocalTransforms[i];
-            }
-
-            g_Pose.get_matrices()[i] =
-                l_GlobalTransforms[i] * i_Bone.inverse_bind_matrix;
-          }
-
-          g_Pose.mark_dirty();
+          Math::Vector3 l_Skew;
+          Math::Vector4 l_Perspective;
+          glm::decompose(p_Transform, p_Scale, p_Rotation, p_Position,
+                         l_Skew, l_Perspective);
+          p_Rotation = glm::normalize(p_Rotation);
         }
 
         static void
-        test_handle_anim(const float p_Delta,
-                         Component::MeshRenderer p_MeshRenderer)
+        tick_animator(const float p_Delta,
+                      Component::MeshRenderer p_MeshRenderer)
         {
-          if (p_MeshRenderer.get_mesh().get_state() !=
-              Renderer::MeshState::LOADED) {
-            return;
+          Entity l_Entity = p_MeshRenderer.get_entity();
+
+          Component::Transform l_Transform = l_Entity.get_transform();
+
+          Component::Animator l_Animator =
+              l_Entity.get_component(Component::Animator::type_id());
+
+          if (p_MeshRenderer.get_render_object().is_alive()) {
+            p_MeshRenderer.get_render_object().destroy();
           }
-          if (!g_Pose.is_alive() && !g_Instance.is_alive()) {
-            g_Pose = Renderer::SkinningPose::make(N(TestPose));
-            g_Instance = Renderer::SkinningInstance::make(
-                N(TestInstance), p_MeshRenderer.get_mesh());
-            g_Instance.set_pose(g_Pose);
-            g_Clip = Renderer::AnimationClip::find_by_index(1);
-            Renderer::ResourceManager::load_skeleton(
+
+          if (p_MeshRenderer.is_dirty()) {
+            if (l_Animator.get_render_object().is_alive()) {
+              l_Animator.get_render_object().destroy();
+            }
+            if (l_Animator.get_pose().is_alive()) {
+              // TODO: make poses reusable at some point
+              l_Animator.get_pose().destroy();
+            }
+            if (l_Animator.get_skinning_instance().is_alive()) {
+              // TODO: Potentially reuse skinning instances across
+              // entities
+              l_Animator.get_skinning_instance().destroy();
+            }
+
+            l_Animator.set_skeleton(Util::Handle::DEAD);
+            l_Animator.set_animation_progress(0);
+          }
+
+          p_MeshRenderer.set_dirty(false);
+
+          if (!l_Animator.get_render_object().is_alive() &&
+              p_MeshRenderer.get_mesh().is_alive() &&
+              p_MeshRenderer.get_mesh().get_skeleton().is_alive()) {
+            l_Animator.set_render_object(
+                Renderer::SkeletalRenderObject::make(
+                    Renderer::get_global_renderscene(),
+                    p_MeshRenderer.get_mesh()));
+            l_Animator.get_render_object().set_object_id(
+                l_Entity.get_index());
+
+            l_Animator.set_animation_progress(0);
+            l_Animator.set_skeleton(
                 p_MeshRenderer.get_mesh().get_skeleton());
-            Renderer::ResourceManager::load_animation_clip(g_Clip);
 
-            p_MeshRenderer.get_render_object().set_skinning_instance(
-                g_Instance);
+            l_Animator.set_pose(
+                Renderer::SkinningPose::make(l_Entity.get_name()));
+            l_Animator.get_pose().set_skeleton(
+                l_Animator.get_skeleton());
+
+            l_Animator.set_skinning_instance(
+                Renderer::SkinningInstance::make(
+                    l_Entity.get_name(), p_MeshRenderer.get_mesh()));
+            l_Animator.get_skinning_instance().set_pose(
+                l_Animator.get_pose());
+            l_Animator.get_skinning_instance().set_render_object_id(
+                l_Animator.get_render_object().get_id());
+            l_Animator.get_render_object().set_skinning_instance(
+                l_Animator.get_skinning_instance());
+
+            {
+              // TODO: THIS IS TEST CODE
+              l_Animator.set_active_clip(
+                  Renderer::AnimationClip::find_by_index(1));
+            }
           }
 
-          if (p_MeshRenderer.get_mesh().get_skeleton().get_state() !=
-              Renderer::SkeletonState::LOADED) {
+          Renderer::SkeletalRenderObject l_RenderObject =
+              l_Animator.get_render_object();
+
+          if (!l_RenderObject.is_alive()) {
             return;
           }
-          if (g_Clip.get_state() !=
+
+          Renderer::Material l_Material =
+              Renderer::get_default_material_texture();
+
+          if (p_MeshRenderer.get_material().is_alive()) {
+            l_Material = p_MeshRenderer.get_material();
+          }
+
+          l_RenderObject.set_material(l_Material);
+          l_RenderObject.set_world_transform(
+              l_Transform.get_world_matrix());
+
+          if (!l_Animator.get_active_clip().is_alive()) {
+            return;
+          }
+          if (l_Animator.get_active_clip().get_state() !=
               Renderer::AnimationClipState::LOADED) {
             return;
           }
-          test_posing(p_Delta);
+          if (!l_Animator.get_skeleton().is_alive()) {
+            return;
+          }
+          if (l_Animator.get_skeleton().get_state() !=
+              Renderer::SkeletonState::LOADED) {
+            return;
+          }
+
+          Renderer::AnimationClip l_Clip =
+              l_Animator.get_active_clip();
+          Renderer::Skeleton l_Skeleton = l_Animator.get_skeleton();
+          Renderer::SkinningPose l_Pose = l_Animator.get_pose();
+
+          const float l_NewProgress =
+              std::fmod(l_Animator.get_animation_progress() +
+                            p_Delta * l_Clip.get_ticks_per_second(),
+                        l_Clip.get_duration());
+          l_Animator.set_animation_progress(l_NewProgress);
+
+          Util::List<Renderer::SkeletonBone> &l_Bones =
+              l_Skeleton.get_bones();
+          const u32 l_BoneCount = (u32)l_Bones.size();
+
+          Util::List<Math::Matrix4x4> &l_PoseMatrices =
+              l_Pose.get_matrices();
+          if (l_PoseMatrices.size() != l_BoneCount) {
+            l_PoseMatrices.resize(l_BoneCount);
+          }
+
+          Util::List<Math::Matrix4x4> &l_LocalPose =
+              g_LocalPoseScratch;
+          l_LocalPose.resize(l_BoneCount);
+          for (u32 i = 0u; i < l_BoneCount; ++i) {
+            l_LocalPose[i] = l_Bones[i].local_bind_transform;
+          }
+
+          for (const Renderer::AnimationChannel &i_Channel :
+               l_Clip.get_channels()) {
+            if (i_Channel.bone_index >= l_BoneCount) {
+              continue;
+            }
+
+            Math::Vector3 i_DefaultPos(0.f);
+            Math::Quaternion i_DefaultRot(1.f, 0.f, 0.f, 0.f);
+            Math::Vector3 i_DefaultScale(1.f);
+            if (i_Channel.positions.empty() ||
+                i_Channel.rotations.empty() ||
+                i_Channel.scales.empty()) {
+              extract_transform_components(
+                  l_Bones[i_Channel.bone_index].local_bind_transform,
+                  i_DefaultPos, i_DefaultRot, i_DefaultScale);
+            }
+
+            const Math::Vector3 i_Pos = sample_vector_keys(
+                i_Channel.positions, l_NewProgress, i_DefaultPos);
+            const Math::Quaternion i_Rot = sample_quat_keys(
+                i_Channel.rotations, l_NewProgress, i_DefaultRot);
+            const Math::Vector3 i_Scale = sample_vector_keys(
+                i_Channel.scales, l_NewProgress, i_DefaultScale);
+
+            l_LocalPose[i_Channel.bone_index] =
+                glm::translate(Math::Matrix4x4(1.f), i_Pos) *
+                glm::mat4_cast(i_Rot) *
+                glm::scale(Math::Matrix4x4(1.f), i_Scale);
+          }
+
+          Util::List<Math::Matrix4x4> &l_GlobalPose =
+              g_GlobalPoseScratch;
+          l_GlobalPose.resize(l_BoneCount);
+          for (u32 i = 0u; i < l_BoneCount; ++i) {
+            if (l_Bones[i].parent_index < 0) {
+              l_GlobalPose[i] = l_LocalPose[i];
+            } else {
+              l_GlobalPose[i] =
+                  l_GlobalPose[(u32)l_Bones[i].parent_index] *
+                  l_LocalPose[i];
+            }
+            l_PoseMatrices[i] =
+                l_GlobalPose[i] * l_Bones[i].inverse_bind_matrix;
+          }
+
+          Renderer::SkinningSystem::
+              evaluate_global_pose_for_skeletal_renderobject(
+                  l_RenderObject, l_Skeleton, l_GlobalPose);
+
+          l_Pose.mark_dirty();
+        }
+
+        static void
+        tick_mesh_renderer(const float p_Delta,
+                           Component::MeshRenderer p_MeshRenderer)
+        {
+          Entity l_Entity = p_MeshRenderer.get_entity();
+
+          Component::Transform l_Transform = l_Entity.get_transform();
+
+          if (p_MeshRenderer.is_dirty()) {
+            if (p_MeshRenderer.get_render_object().is_alive()) {
+              p_MeshRenderer.get_render_object().destroy();
+            }
+          }
+
+          p_MeshRenderer.set_dirty(false);
+
+          if (!p_MeshRenderer.get_render_object().is_alive() &&
+              p_MeshRenderer.get_mesh().is_alive()) {
+            p_MeshRenderer.set_render_object(
+                Renderer::RenderObject::make(
+                    Renderer::get_global_renderscene(),
+                    p_MeshRenderer.get_mesh()));
+            p_MeshRenderer.get_render_object().set_object_id(
+                l_Entity.get_index());
+          }
+
+          Renderer::RenderObject l_RenderObject =
+              p_MeshRenderer.get_render_object();
+
+          if (!l_RenderObject.is_alive()) {
+            return;
+          }
+
+          Renderer::Material l_Material =
+              Renderer::get_default_material_texture();
+
+          if (p_MeshRenderer.get_material().is_alive()) {
+            l_Material = p_MeshRenderer.get_material();
+          }
+
+          l_RenderObject.set_material(l_Material);
+          l_RenderObject.set_world_transform(
+              l_Transform.get_world_matrix());
         }
 
         void tick(float p_Delta, Util::EngineState p_State)
@@ -242,48 +353,15 @@ namespace Low {
 
             Entity i_Entity = i_MeshRenderer.get_entity();
 
-            Component::Transform i_Transform =
-                i_MeshRenderer.get_entity().get_transform();
-
-            if (i_MeshRenderer.is_dirty()) {
-              if (i_MeshRenderer.get_render_object().is_alive()) {
-                i_MeshRenderer.get_render_object().destroy();
-              }
+            if (i_MeshRenderer.get_mesh().is_alive() &&
+                i_MeshRenderer.get_mesh().get_type() ==
+                    Renderer::MeshType::SKELETAL &&
+                i_Entity.has_component(
+                    Component::Animator::type_id())) {
+              tick_animator(p_Delta, i_MeshRenderer);
+            } else {
+              tick_mesh_renderer(p_Delta, i_MeshRenderer);
             }
-
-            i_MeshRenderer.set_dirty(false);
-
-            if (!i_MeshRenderer.get_render_object().is_alive() &&
-                i_MeshRenderer.get_mesh().is_alive()) {
-              i_MeshRenderer.set_render_object(
-                  Renderer::RenderObject::make(
-                      Renderer::get_global_renderscene(),
-                      i_MeshRenderer.get_mesh()));
-              i_MeshRenderer.get_render_object().set_object_id(
-                  i_Entity.get_index());
-            }
-
-            Renderer::RenderObject i_RenderObject =
-                i_MeshRenderer.get_render_object();
-
-            if (!i_RenderObject.is_alive()) {
-              continue;
-            }
-
-            if (i_MeshRenderer.get_mesh().get_name() == N(hero)) {
-              test_handle_anim(p_Delta, i_MeshRenderer);
-            }
-
-            Renderer::Material l_Material =
-                Renderer::get_default_material_texture();
-
-            if (i_MeshRenderer.get_material().is_alive()) {
-              l_Material = i_MeshRenderer.get_material();
-            }
-
-            i_RenderObject.set_material(l_Material);
-            i_RenderObject.set_world_transform(
-                i_Transform.get_world_matrix());
           }
         }
       } // namespace MeshRenderer

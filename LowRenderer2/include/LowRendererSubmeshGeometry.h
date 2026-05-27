@@ -38,6 +38,7 @@ namespace Low {
         Low::Math::Sphere bounding_sphere;
         Low::Util::List<Low::Util::Resource::BoneVertexWeight>
             bone_weights;
+        int32_t node_index;
         Low::Util::Name name;
 
         static size_t get_size()
@@ -188,6 +189,9 @@ namespace Low {
       void set_bone_weights(
           Low::Util::List<Low::Util::Resource::BoneVertexWeight>
               &p_Value);
+
+      int32_t get_node_index() const;
+      void set_node_index(int32_t p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

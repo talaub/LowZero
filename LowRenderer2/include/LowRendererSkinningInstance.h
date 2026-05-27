@@ -28,6 +28,7 @@ namespace Low {
         SkinningPose pose;
         Mesh mesh;
         Low::Util::List<SkinningCommand> skinning_commands;
+        uint64_t render_object_id;
         Low::Util::Name name;
 
         static size_t get_size()
@@ -150,6 +151,9 @@ namespace Low {
       Mesh get_mesh() const;
 
       Low::Util::List<SkinningCommand> &get_skinning_commands() const;
+
+      uint64_t get_render_object_id() const;
+      void set_render_object_id(uint64_t p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

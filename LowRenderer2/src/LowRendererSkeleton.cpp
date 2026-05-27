@@ -451,10 +451,10 @@ namespace Low {
                   ResourceManager::find_asset<Skeleton>(
                       l_ResourceConfig.skeleton_id);
               if (!l_Existing.is_alive()) {
+                l_Existing = Skeleton::make_from_resource_config(
+                    l_ResourceConfig);
                 ResourceManager::register_asset(
-                    l_ResourceConfig.skeleton_id,
-                    Skeleton::make_from_resource_config(
-                        l_ResourceConfig));
+                    l_ResourceConfig.skeleton_id, l_Existing);
               }
             });
 
@@ -730,6 +730,7 @@ namespace Low {
 
       if (l_OldReferences != l_References) {
         // LOW_CODEGEN:BEGIN:CUSTOM:NEW_REFERENCE
+        ResourceManager::load_skeleton(get_id());
         // LOW_CODEGEN::END::CUSTOM:NEW_REFERENCE
       }
     }

@@ -138,6 +138,47 @@ types:
         skip_deserialization: true
         skip_serialization: true
 
+  Animator:
+    component: true
+    editor:
+      icon: skeleton
+    properties:
+      render_object:
+        editor_editable: false
+        type: Low::Renderer::SkeletalRenderObject
+        handle: true
+        skip_deserialization: true
+        skip_serialization: true
+      pose:
+        editor_editable: false
+        type: Low::Renderer::SkinningPose
+        handle: true
+        skip_deserialization: true
+        skip_serialization: true
+      skinning_instance:
+        editor_editable: false
+        type: Low::Renderer::SkinningInstance
+        handle: true
+        skip_deserialization: true
+        skip_serialization: true
+      active_clip:
+        editor_editable: false
+        type: Low::Renderer::AnimationClip
+        handle: true
+        skip_deserialization: true
+        skip_serialization: true
+      animation_progress:
+        editor_editable: false
+        type: float
+        skip_deserialization: true
+        skip_serialization: true
+      skeleton:
+        editor_editable: false
+        type: Low::Renderer::Skeleton
+        handle: true
+        skip_deserialization: true
+        skip_serialization: true
+
   DirectionalLight:
     component: true
     scripting_expose: false
@@ -258,7 +299,7 @@ types:
             type: Util::Name
           - name: isOverride
             type: bool
-        
+
   NavmeshAgent:
     component: true
     scripting_expose: false

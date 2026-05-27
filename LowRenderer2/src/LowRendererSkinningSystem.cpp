@@ -1,13 +1,17 @@
 #include "LowRendererSkinningSystem.h"
 
 #include "LowMath.h"
-#include "LowRendererRenderObject.h"
+#include "LowRendererSkeletalRenderObject.h"
+#include "LowRendererMeshInstanceNode.h"
+#include "LowRendererMeshGeometry.h"
+#include "LowRendererSkeleton.h"
 #include "LowRendererSkinningInstance.h"
 #include "LowRendererSkinningPose.h"
 #include "LowRendererVulkan.h"
 #include "LowRendererSkinningCommand.h"
 #include "LowRendererVulkanPipeline.h"
 #include "LowRendererDrawCommand.h"
+#include "LowUtilLogger.h"
 
 namespace Low {
   namespace Renderer {
@@ -30,6 +34,8 @@ namespace Low {
       };
 
       static SkinningPipelineState g_SkinningPipelineState;
+      static Util::List<bool> g_NodeUpdateScratch;
+      static Util::List<SkinningCommand> g_ExecutableSkinningCommands;
 
       static void initialize_skinning_pipeline()
       {
@@ -108,25 +114,95 @@ namespace Low {
         return true;
       }
 
-      static void mark_render_objects_using_pose_dirty(
-          SkinningPose p_Pose)
+      bool evaluate_global_pose_for_skeletal_renderobject(
+          SkeletalRenderObject p_SRO, Skeleton p_Skeleton,
+          const Util::List<Math::Matrix4x4> &p_GlobalPose)
       {
-        for (SkinningInstance i_Instance :
-             SkinningInstance::ms_LivingInstances) {
-          if (!i_Instance.is_alive() ||
-              i_Instance.get_pose() != p_Pose) {
+        if (!p_SRO.is_alive() || !p_Skeleton.is_alive()) {
+          return false;
+        }
+
+        Mesh l_Mesh = p_SRO.get_mesh();
+        if (!l_Mesh.is_alive()) {
+          return false;
+        }
+
+        MeshGeometry l_MeshGeometry = l_Mesh.get_geometry();
+        if (!l_MeshGeometry.is_alive()) {
+          return false;
+        }
+
+        Util::List<MeshNode> &l_MeshNodes =
+            l_MeshGeometry.get_nodes();
+        Util::List<MeshInstanceNode> &l_InstanceNodes =
+            p_SRO.get_nodes();
+
+        if (l_MeshNodes.size() != l_InstanceNodes.size()) {
+          return false;
+        }
+
+        Util::List<SkeletonBone> &l_Bones = p_Skeleton.get_bones();
+        if (l_Bones.size() != p_GlobalPose.size()) {
+          return false;
+        }
+
+        const Math::Matrix4x4 &l_SROWorld =
+            p_SRO.get_world_transform();
+
+        const u32 l_NodeCount = (u32)l_MeshNodes.size();
+        Util::List<bool> &l_Updated = g_NodeUpdateScratch;
+        l_Updated.resize(l_NodeCount);
+        for (u32 i = 0u; i < l_NodeCount; ++i) {
+          l_Updated[i] = false;
+        }
+
+        for (u32 i = 0u; i < l_NodeCount; ++i) {
+          const MeshNode &i_MeshNode = l_MeshNodes[i];
+          MeshInstanceNode i_InstanceNode = l_InstanceNodes[i];
+
+          if (!i_InstanceNode.is_alive()) {
             continue;
           }
 
-          for (u32 i = 0; i < RenderObject::living_count(); ++i) {
-            RenderObject i_RenderObject =
-                RenderObject::living_instances()[i];
-            if (i_RenderObject.is_alive() &&
-                i_RenderObject.get_skinning_instance() == i_Instance) {
-              i_RenderObject.mark_dirty();
+          Math::Matrix4x4 i_WorldTransform;
+
+          DrawCommand i_DrawCommand =
+              i_InstanceNode.get_draw_command();
+
+          if (i_MeshNode.bone_index >= 0) {
+            const u32 i_BoneIdx = (u32)i_MeshNode.bone_index;
+            if (i_BoneIdx < (u32)p_GlobalPose.size()) {
+              i_WorldTransform = l_SROWorld * p_GlobalPose[i_BoneIdx];
+              l_Updated[i] = true;
+            }
+          } else if (i_MeshNode.parent_index >= 0) {
+            const u32 i_ParentIdx = (u32)i_MeshNode.parent_index;
+            if (l_Updated[i_ParentIdx]) {
+              MeshInstanceNode i_ParentNode =
+                  l_InstanceNodes[i_ParentIdx];
+              if (i_ParentNode.is_alive()) {
+                i_WorldTransform =
+                    i_ParentNode.get_world_transform() *
+                    i_MeshNode.local_transform;
+                l_Updated[i] = true;
+              }
             }
           }
+
+          if (!l_Updated[i]) {
+            continue;
+          }
+
+          i_InstanceNode.set_world_transform(i_WorldTransform);
+
+          if (i_DrawCommand.is_alive() &&
+              i_DrawCommand.get_submesh().get_bone_weight_count() ==
+                  0u) {
+            i_DrawCommand.set_world_transform(i_WorldTransform);
+          }
         }
+
+        return true;
       }
 
       static void poses_tick(const float p_Delta)
@@ -175,8 +251,6 @@ namespace Low {
 
           if (!upload_pose(i_Pose)) {
             l_Reschedules.insert(i_Pose);
-          } else {
-            mark_render_objects_using_pose_dirty(i_Pose);
           }
 
           i_Pose.set_dirty(false);
@@ -210,6 +284,17 @@ namespace Low {
             continue;
           }
 
+          SkeletalRenderObject i_SRO(
+              i_Instance.get_render_object_id());
+          if (!i_SRO.is_alive()) {
+            continue;
+          }
+
+          if (i_SRO.get_draw_commands().empty()) {
+            l_Reschedules.insert(i_Instance);
+            continue;
+          }
+
           for (SkinningCommand i_Command :
                i_Instance.get_skinning_commands()) {
             if (i_Command.is_alive()) {
@@ -225,24 +310,6 @@ namespace Low {
 
           GpuMesh i_GpuMesh = i_Mesh.get_gpu();
 
-          // TODO: CLEAN UP THIS IS SUPER UGLY AND JUST A TEST
-          RenderObject i_RenderObject = Util::Handle::DEAD;
-
-          for (u32 i = 0; i < RenderObject::living_count(); ++i) {
-            if (RenderObject::living_instances()[i]
-                    .get_skinning_instance() == i_Instance) {
-              i_RenderObject = RenderObject::living_instances()[i];
-
-              break;
-            }
-          }
-
-          if (i_RenderObject.is_alive() &&
-              i_RenderObject.get_draw_commands().empty()) {
-            l_Reschedules.insert(i_Instance);
-            continue;
-          }
-
           bool l_AttachedSkinningCommand = false;
           for (auto sit = i_GpuMesh.get_submeshes().begin();
                sit != i_GpuMesh.get_submeshes().end(); ++sit) {
@@ -255,22 +322,19 @@ namespace Low {
             SkinningCommand i_Command =
                 SkinningCommand::make(i_Instance, i_GpuSubmesh);
 
-            // TODO: AGAIN, JUST A HACK PLEASE CLEAN UP SOON
-            if (i_RenderObject.is_alive()) {
-              for (DrawCommand i_DrawCommand :
-                   i_RenderObject.get_draw_commands()) {
-                if (i_DrawCommand.get_submesh() == i_GpuSubmesh) {
-                  i_DrawCommand.set_skinning_command(i_Command);
-                  l_AttachedSkinningCommand = true;
+            for (DrawCommand i_DrawCommand :
+                 i_SRO.get_draw_commands()) {
+              if (i_DrawCommand.get_submesh() == i_GpuSubmesh) {
+                i_DrawCommand.set_skinning_command(i_Command);
+                l_AttachedSkinningCommand = true;
 
-                  break;
-                }
+                break;
               }
             }
           }
 
           if (l_AttachedSkinningCommand) {
-            i_RenderObject.mark_dirty();
+            i_SRO.mark_dirty();
           }
         }
 
@@ -283,7 +347,7 @@ namespace Low {
 
       static void execute_skinning_commands(const float p_Delta)
       {
-        bool l_HasCommands = false;
+        g_ExecutableSkinningCommands.clear();
         for (SkinningInstance i_Instance :
              SkinningInstance::ms_LivingInstances) {
           if (!i_Instance.is_alive() ||
@@ -296,17 +360,12 @@ namespace Low {
             if (i_Command.is_alive() &&
                 i_Command.get_submesh().is_alive() &&
                 i_Command.get_vertex_count() > 0u) {
-              l_HasCommands = true;
-              break;
+              g_ExecutableSkinningCommands.push_back(i_Command);
             }
-          }
-
-          if (l_HasCommands) {
-            break;
           }
         }
 
-        if (!l_HasCommands) {
+        if (g_ExecutableSkinningCommands.empty()) {
           return;
         }
 
@@ -381,54 +440,40 @@ namespace Low {
               &l_SkinningSet, 0, nullptr);
         }
 
-        for (SkinningInstance i_Instance :
-             SkinningInstance::ms_LivingInstances) {
-          if (!i_Instance.is_alive() ||
-              !i_Instance.get_pose().is_alive()) {
-            continue;
-          }
-
+        for (SkinningCommand i_Command :
+             g_ExecutableSkinningCommands) {
+          SkinningInstance i_Instance = i_Command.get_instance();
           SkinningPose i_Pose = i_Instance.get_pose();
 
-          for (SkinningCommand i_Command :
-               i_Instance.get_skinning_commands()) {
-            if (!i_Command.is_alive() ||
-                !i_Command.get_submesh().is_alive() ||
-                i_Command.get_vertex_count() == 0u) {
-              continue;
-            }
+          GpuSubmesh i_Submesh = i_Command.get_submesh();
 
-            GpuSubmesh i_Submesh = i_Command.get_submesh();
+          SkinningPushConstants l_PushConstants{};
+          l_PushConstants.sourceVertexStart =
+              i_Submesh.get_vertex_start();
+          l_PushConstants.weightsStart =
+              i_Command.get_weights_start();
+          l_PushConstants.posePaletteStart =
+              i_Pose.get_pose_palette_offset();
+          l_PushConstants.outputVertexStart =
+              i_Command.get_skinned_vertex_start();
+          l_PushConstants.vertexCount = i_Command.get_vertex_count();
+          const u32 l_OutputBufferIndex =
+              Vulkan::Global::get_skinned_vertex_output_buffer()
+                  .get_current_buffer_index();
+          l_PushConstants.outputBufferIndex = l_OutputBufferIndex;
 
-            SkinningPushConstants l_PushConstants{};
-            l_PushConstants.sourceVertexStart =
-                i_Submesh.get_vertex_start();
-            l_PushConstants.weightsStart =
-                i_Command.get_weights_start();
-            l_PushConstants.posePaletteStart =
-                i_Pose.get_pose_palette_offset();
-            l_PushConstants.outputVertexStart =
-                i_Command.get_skinned_vertex_start();
-            l_PushConstants.vertexCount =
-                i_Command.get_vertex_count();
-            const u32 l_OutputBufferIndex =
-                Vulkan::Global::get_skinned_vertex_output_buffer()
-                    .get_current_buffer_index();
-            l_PushConstants.outputBufferIndex = l_OutputBufferIndex;
+          i_Command.set_active_vertex_buffer(
+              l_OutputBufferIndex == 0u ? VertexBuffer::SkinnedA
+                                        : VertexBuffer::SkinnedB);
 
-            i_Command.set_active_vertex_buffer(
-                l_OutputBufferIndex == 0u ? VertexBuffer::SkinnedA
-                                          : VertexBuffer::SkinnedB);
+          vkCmdPushConstants(
+              l_Cmd, g_SkinningPipelineState.pipelineLayout.get(),
+              VK_SHADER_STAGE_COMPUTE_BIT, 0,
+              sizeof(SkinningPushConstants), &l_PushConstants);
 
-            vkCmdPushConstants(
-                l_Cmd, g_SkinningPipelineState.pipelineLayout.get(),
-                VK_SHADER_STAGE_COMPUTE_BIT, 0,
-                sizeof(SkinningPushConstants), &l_PushConstants);
-
-            const u32 l_WorkgroupCount =
-                (i_Command.get_vertex_count() + 63u) / 64u;
-            vkCmdDispatch(l_Cmd, l_WorkgroupCount, 1, 1);
-          }
+          const u32 l_WorkgroupCount =
+              (i_Command.get_vertex_count() + 63u) / 64u;
+          vkCmdDispatch(l_Cmd, l_WorkgroupCount, 1, 1);
         }
 
         {

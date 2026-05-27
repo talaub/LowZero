@@ -70,12 +70,11 @@ namespace Low {
           if (!i_Draw.drawCommand.is_alive()) {
             continue;
           }
-          if (!i_Draw.drawCommand.get_render_object().is_alive()) {
+          if (!i_Draw.drawCommand.has_any_render_object()) {
             continue;
           }
 
-          if (i_Draw.drawCommand.get_render_object()
-                  .get_mesh()
+          if (i_Draw.drawCommand.get_any_render_object_mesh()
                   .get_state() != MeshState::LOADED) {
             continue;
           }
@@ -92,7 +91,7 @@ namespace Low {
           Material i_Material = i_Draw.drawCommand.get_material();
           if (!i_Material.is_alive()) {
             i_Material =
-                i_Draw.drawCommand.get_render_object().get_material();
+                i_Draw.drawCommand.get_any_render_object_material();
           }
 
           LOW_ASSERT(i_Material.is_alive(),
@@ -550,25 +549,24 @@ namespace Low {
                      .erase(it);
             continue;
           }
-          if (!it->get_render_object().is_alive()) {
+          if (!it->has_any_render_object()) {
             it = p_RenderView.get_render_scene()
                      .get_draw_commands()
                      .erase(it);
             continue;
           }
 
-          if (it->get_render_object().get_mesh().get_state() !=
+          if (it->get_any_render_object_mesh().get_state() !=
               MeshState::LOADED) {
             it++;
             continue;
           }
 
           // Mesh was refreshed since last time we rendered this
-          if (it->get_render_object().is_uploaded() &&
-              it->get_render_object().get_mesh().get_gpu().get_id() !=
-                  it->get_render_object()
-                      .get_last_uploaded_mesh_gpu_id()) {
-            it->get_render_object().mark_dirty();
+          if (it->is_any_render_object_uploaded() &&
+              it->get_any_render_object_mesh().get_gpu().get_id() !=
+                  it->get_any_render_object_last_uploaded_mesh_gpu_id()) {
+            it->mark_any_render_object_dirty();
             it++;
             continue;
           }
@@ -583,13 +581,8 @@ namespace Low {
                      "Submesh is not loaded to GPU. Cannot render.");
 
           Material i_Material = it->get_material();
-          /*
           if (!i_Material.is_alive()) {
-            i_Material = i_MeshInfo.get_material();
-          }
-          */
-          if (!i_Material.is_alive()) {
-            i_Material = it->get_render_object().get_material();
+            i_Material = it->get_any_render_object_material();
           }
 
           LOW_ASSERT(i_Material.is_alive(),
@@ -956,28 +949,24 @@ namespace Low {
                        .erase(it);
               continue;
             }
-            if (!it->get_render_object().is_alive()) {
+            if (!it->has_any_render_object()) {
               it = p_RenderView.get_render_scene()
                        .get_draw_commands()
                        .erase(it);
               continue;
             }
 
-            if (it->get_render_object().get_mesh().get_state() !=
+            if (it->get_any_render_object_mesh().get_state() !=
                 MeshState::LOADED) {
               it++;
               continue;
             }
 
             // Mesh was refreshed since last time we rendered this
-            if (it->get_render_object().is_uploaded() &&
-                it->get_render_object()
-                        .get_mesh()
-                        .get_gpu()
-                        .get_id() !=
-                    it->get_render_object()
-                        .get_last_uploaded_mesh_gpu_id()) {
-              it->get_render_object().mark_dirty();
+            if (it->is_any_render_object_uploaded() &&
+                it->get_any_render_object_mesh().get_gpu().get_id() !=
+                    it->get_any_render_object_last_uploaded_mesh_gpu_id()) {
+              it->mark_any_render_object_dirty();
               it++;
               continue;
             }
@@ -999,7 +988,7 @@ namespace Low {
             }
             */
             if (!i_Material.is_alive()) {
-              i_Material = it->get_render_object().get_material();
+              i_Material = it->get_any_render_object_material();
             }
 
             LOW_ASSERT(i_Material.is_alive(),
@@ -3239,116 +3228,117 @@ namespace Low {
               l_Cmd, Global::get_mesh_index_buffer().m_Buffer.buffer,
               0, VK_INDEX_TYPE_UINT32);
 
-          auto draw_scene_depth = [&](const Math::Matrix4x4
-                                          &p_LightSpace,
-                                      u32 p_TileX, u32 p_TileY,
-                                      u32 p_TileW, u32 p_TileH) {
-            VkClearAttachment l_Clear{};
-            l_Clear.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-            l_Clear.clearValue = l_DepthClear;
+          auto draw_scene_depth =
+              [&](const Math::Matrix4x4 &p_LightSpace, u32 p_TileX,
+                  u32 p_TileY, u32 p_TileW, u32 p_TileH) {
+                VkClearAttachment l_Clear{};
+                l_Clear.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+                l_Clear.clearValue = l_DepthClear;
 
-            VkClearRect l_ClearRect{};
-            l_ClearRect.rect.offset = {(int32_t)p_TileX,
-                                       (int32_t)p_TileY};
-            l_ClearRect.rect.extent = {p_TileW, p_TileH};
-            l_ClearRect.baseArrayLayer = 0;
-            l_ClearRect.layerCount = 1;
+                VkClearRect l_ClearRect{};
+                l_ClearRect.rect.offset = {(int32_t)p_TileX,
+                                           (int32_t)p_TileY};
+                l_ClearRect.rect.extent = {p_TileW, p_TileH};
+                l_ClearRect.baseArrayLayer = 0;
+                l_ClearRect.layerCount = 1;
 
-            vkCmdClearAttachments(l_Cmd, 1, &l_Clear, 1,
-                                  &l_ClearRect);
+                vkCmdClearAttachments(l_Cmd, 1, &l_Clear, 1,
+                                      &l_ClearRect);
 
-            VkViewport l_Viewport{};
-            l_Viewport.x = (float)p_TileX;
-            l_Viewport.y = (float)p_TileY;
-            l_Viewport.width = (float)p_TileW;
-            l_Viewport.height = (float)p_TileH;
-            l_Viewport.minDepth = 0.0f;
-            l_Viewport.maxDepth = 1.0f;
-            vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
+                VkViewport l_Viewport{};
+                l_Viewport.x = (float)p_TileX;
+                l_Viewport.y = (float)p_TileY;
+                l_Viewport.width = (float)p_TileW;
+                l_Viewport.height = (float)p_TileH;
+                l_Viewport.minDepth = 0.0f;
+                l_Viewport.maxDepth = 1.0f;
+                vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
 
-            VkRect2D l_Scissor{};
-            l_Scissor.offset = {(int32_t)p_TileX, (int32_t)p_TileY};
-            l_Scissor.extent = {p_TileW, p_TileH};
-            vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
+                VkRect2D l_Scissor{};
+                l_Scissor.offset = {(int32_t)p_TileX,
+                                    (int32_t)p_TileY};
+                l_Scissor.extent = {p_TileW, p_TileH};
+                vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
 
-            MaterialType l_CurrentMaterialType =
-                Low::Util::Handle::DEAD;
+                MaterialType l_CurrentMaterialType =
+                    Low::Util::Handle::DEAD;
 
-            for (auto it = p_RenderView.get_render_scene()
+                for (auto it = p_RenderView.get_render_scene()
+                                   .get_draw_commands()
+                                   .begin();
+                     it != p_RenderView.get_render_scene()
                                .get_draw_commands()
-                               .begin();
-                 it != p_RenderView.get_render_scene()
-                           .get_draw_commands()
-                           .end();
-                 ++it) {
-              if (!it->is_alive() ||
-                  !it->get_render_object().is_alive()) {
-                continue;
-              }
-              if (it->get_render_object().get_mesh().get_state() !=
-                  MeshState::LOADED) {
-                continue;
-              }
+                               .end();
+                     ++it) {
+                  if (!it->is_alive() ||
+                      !it->has_any_render_object()) {
+                    continue;
+                  }
+                  if (it->get_any_render_object_mesh().get_state() !=
+                      MeshState::LOADED) {
+                    continue;
+                  }
 
-              Material i_Material = it->get_material();
-              if (!i_Material.is_alive()) {
-                i_Material = it->get_render_object().get_material();
-              }
-              if (!i_Material.is_alive()) {
-                continue;
-              }
+                  Material i_Material = it->get_material();
+                  if (!i_Material.is_alive()) {
+                    i_Material = it->get_any_render_object_material();
+                  }
+                  if (!i_Material.is_alive()) {
+                    continue;
+                  }
 
-              MaterialType i_MaterialType =
-                  i_Material.get_material_type();
-              if (!i_MaterialType.is_alive() ||
-                  !i_MaterialType.casts_shadows()) {
-                continue;
-              }
+                  MaterialType i_MaterialType =
+                      i_Material.get_material_type();
+                  if (!i_MaterialType.is_alive() ||
+                      !i_MaterialType.casts_shadows()) {
+                    continue;
+                  }
 
-              Pipeline i_ShadowPipeline =
-                  i_MaterialType.get_shadow_pipeline_handle();
-              if (!i_ShadowPipeline.is_alive()) {
-                continue;
-              }
+                  Pipeline i_ShadowPipeline =
+                      i_MaterialType.get_shadow_pipeline_handle();
+                  if (!i_ShadowPipeline.is_alive()) {
+                    continue;
+                  }
 
-              GpuSubmesh i_GpuSubmesh = it->get_submesh();
-              if (!i_GpuSubmesh.is_alive()) {
-                continue;
-              }
+                  GpuSubmesh i_GpuSubmesh = it->get_submesh();
+                  if (!i_GpuSubmesh.is_alive()) {
+                    continue;
+                  }
 
-              if (i_MaterialType != l_CurrentMaterialType) {
-                l_CurrentMaterialType = i_MaterialType;
+                  if (i_MaterialType != l_CurrentMaterialType) {
+                    l_CurrentMaterialType = i_MaterialType;
 
-                vkCmdBindPipeline(l_Cmd,
-                                  VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                  i_ShadowPipeline.get());
+                    vkCmdBindPipeline(l_Cmd,
+                                      VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                      i_ShadowPipeline.get());
 
-                VkDescriptorSet l_GlobalSet =
-                    Global::get_global_descriptor_set();
-                vkCmdBindDescriptorSets(
-                    l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    i_ShadowPipeline.get_layout().get(), 0, 1,
-                    &l_GlobalSet, 0, nullptr);
-              }
+                    VkDescriptorSet l_GlobalSet =
+                        Global::get_global_descriptor_set();
+                    vkCmdBindDescriptorSets(
+                        l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                        i_ShadowPipeline.get_layout().get(), 0, 1,
+                        &l_GlobalSet, 0, nullptr);
+                  }
 
-              ShadowPassPushConstants l_Push{};
-              l_Push.renderObjectSlot = it->get_slot();
-              l_Push.activeVertexBuffer =
-                  (u32)it->get_active_vertex_buffer();
-              l_Push.lightSpaceMatrix = p_LightSpace;
+                  ShadowPassPushConstants l_Push{};
+                  l_Push.renderObjectSlot = it->get_slot();
+                  l_Push.activeVertexBuffer =
+                      (u32)it->get_active_vertex_buffer();
+                  l_Push.lightSpaceMatrix = p_LightSpace;
 
-              vkCmdPushConstants(
-                  l_Cmd, i_ShadowPipeline.get_layout().get(),
-                  VK_SHADER_STAGE_VERTEX_BIT, 0,
-                  sizeof(ShadowPassPushConstants), &l_Push);
+                  vkCmdPushConstants(
+                      l_Cmd, i_ShadowPipeline.get_layout().get(),
+                      VK_SHADER_STAGE_VERTEX_BIT, 0,
+                      sizeof(ShadowPassPushConstants), &l_Push);
 
-              vkCmdDrawIndexed(l_Cmd, i_GpuSubmesh.get_index_count(),
-                               1, i_GpuSubmesh.get_index_start(),
-                               static_cast<int32_t>(
-                                   it->get_active_vertex_offset()),
-                               0);
-            }
-          };
+                  vkCmdDrawIndexed(
+                      l_Cmd, i_GpuSubmesh.get_index_count(), 1,
+                      i_GpuSubmesh.get_index_start(),
+                      static_cast<int32_t>(
+                          it->get_active_vertex_offset()),
+                      0);
+                }
+              };
 
           for (int i = 0; i < SHADOW_CSM_CASCADE_COUNT; ++i) {
             u32 l_TileX = i * SHADOW_TILE_SIZE_CSM;

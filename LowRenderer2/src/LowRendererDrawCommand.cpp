@@ -57,9 +57,9 @@ namespace Low {
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, DrawCommand, submesh,
                                  Low::Renderer::GpuSubmesh))
           Low::Renderer::GpuSubmesh();
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, DrawCommand, render_object,
-                                 Low::Renderer::RenderObject))
-          Low::Renderer::RenderObject();
+      new (ACCESSOR_TYPE_SOA_PTR(
+          l_Handle, DrawCommand, render_object_handle,
+          Low::Util::Handle)) Low::Util::Handle();
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, DrawCommand, material,
                                  Low::Renderer::Material))
           Low::Renderer::Material();
@@ -253,33 +253,32 @@ namespace Low {
         // End property: slot
       }
       {
-        // Property: render_object
+        // Property: render_object_handle
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(render_object);
+        l_PropertyInfo.name = N(render_object_handle);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(DrawCommand::Data, render_object);
+            offsetof(DrawCommand::Data, render_object_handle);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType =
-            Low::Renderer::RenderObject::IDENTIFIER;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           DrawCommand l_Handle = p_Handle.get_id();
-          l_Handle.get_render_object();
-          return (void *)&ACCESSOR_TYPE_SOA(
-              p_Handle, DrawCommand, render_object,
-              Low::Renderer::RenderObject);
+          l_Handle.get_render_object_handle();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, DrawCommand,
+                                            render_object_handle,
+                                            Low::Util::Handle);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           DrawCommand l_Handle = p_Handle.get_id();
-          *((Low::Renderer::RenderObject *)p_Data) =
-              l_Handle.get_render_object();
+          *((Low::Util::Handle *)p_Data) =
+              l_Handle.get_render_object_handle();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-        // End property: render_object
+        // End property: render_object_handle
       }
       {
         // Property: material
@@ -470,8 +469,7 @@ namespace Low {
           l_ParameterInfo.name = N(p_RenderObject);
           l_ParameterInfo.type =
               Low::Util::RTTI::PropertyType::HANDLE;
-          l_ParameterInfo.handleType =
-              Low::Renderer::RenderObject::type_id();
+          l_ParameterInfo.handleType = 0;
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         {
@@ -521,6 +519,116 @@ namespace Low {
         l_FunctionInfo.handleType = 0;
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: get_active_vertex_offset
+      }
+      {
+        // Function: has_static_render_object
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(has_static_render_object);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: has_static_render_object
+      }
+      {
+        // Function: has_skeletal_render_object
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(has_skeletal_render_object);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: has_skeletal_render_object
+      }
+      {
+        // Function: get_static_render_object
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(get_static_render_object);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = RenderObject::type_id();
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: get_static_render_object
+      }
+      {
+        // Function: get_skeletal_render_object
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(get_skeletal_render_object);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = SkeletalRenderObject::type_id();
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: get_skeletal_render_object
+      }
+      {
+        // Function: has_any_dirty_render_object
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(has_any_dirty_render_object);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: has_any_dirty_render_object
+      }
+      {
+        // Function: has_any_render_object
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(has_any_render_object);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: has_any_render_object
+      }
+      {
+        // Function: get_any_render_object_mesh
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(get_any_render_object_mesh);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = Mesh::type_id();
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: get_any_render_object_mesh
+      }
+      {
+        // Function: get_any_render_object_material
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(get_any_render_object_material);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = Material::type_id();
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: get_any_render_object_material
+      }
+      {
+        // Function: get_any_render_object_name
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(get_any_render_object_name);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::NAME;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: get_any_render_object_name
+      }
+      {
+        // Function: is_any_render_object_uploaded
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(is_any_render_object_uploaded);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: is_any_render_object_uploaded
+      }
+      {
+        // Function: mark_any_render_object_dirty
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(mark_any_render_object_dirty);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: mark_any_render_object_dirty
+      }
+      {
+        // Function: get_any_render_object_last_uploaded_mesh_gpu_id
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name =
+            N(get_any_render_object_last_uploaded_mesh_gpu_id);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function:
+        // get_any_render_object_last_uploaded_mesh_gpu_id
       }
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
@@ -640,9 +748,7 @@ namespace Low {
         l_Handle.set_submesh(get_submesh());
       }
       l_Handle.set_slot(get_slot());
-      if (get_render_object().is_alive()) {
-        l_Handle.set_render_object(get_render_object());
-      }
+      l_Handle.set_render_object_handle(get_render_object_handle());
       if (get_material().is_alive()) {
         l_Handle.set_material(get_material());
       }
@@ -775,7 +881,7 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_transform
 
-      if (!get_render_object().is_dirty()) {
+      if (!has_any_dirty_render_object()) {
         ms_Dirty.insert(get_id());
       }
       // LOW_CODEGEN::END::CUSTOM:SETTER_world_transform
@@ -841,35 +947,32 @@ namespace Low {
       broadcast_observable(N(slot));
     }
 
-    Low::Renderer::RenderObject DrawCommand::get_render_object() const
+    Low::Util::Handle DrawCommand::get_render_object_handle() const
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_render_object
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_render_object_handle
+      // LOW_CODEGEN::END::CUSTOM:GETTER_render_object_handle
 
-      // LOW_CODEGEN::END::CUSTOM:GETTER_render_object
-
-      return TYPE_SOA(DrawCommand, render_object,
-                      Low::Renderer::RenderObject);
+      return TYPE_SOA(DrawCommand, render_object_handle,
+                      Low::Util::Handle);
     }
-    void DrawCommand::set_render_object(
-        Low::Renderer::RenderObject p_Value)
+    void
+    DrawCommand::set_render_object_handle(Low::Util::Handle p_Value)
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_render_object
-
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_render_object
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_render_object_handle
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_render_object_handle
 
       // Set new value
-      TYPE_SOA(DrawCommand, render_object,
-               Low::Renderer::RenderObject) = p_Value;
+      TYPE_SOA(DrawCommand, render_object_handle, Low::Util::Handle) =
+          p_Value;
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_render_object
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_render_object_handle
+      // LOW_CODEGEN::END::CUSTOM:SETTER_render_object_handle
 
-      // LOW_CODEGEN::END::CUSTOM:SETTER_render_object
-
-      broadcast_observable(N(render_object));
+      broadcast_observable(N(render_object_handle));
     }
 
     Low::Renderer::Material DrawCommand::get_material() const
@@ -899,7 +1002,7 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material
 
-      if (!get_render_object().is_dirty()) {
+      if (!has_any_dirty_render_object()) {
         ms_Dirty.insert(get_id());
       }
       if (get_material().is_alive()) {
@@ -1054,26 +1157,58 @@ namespace Low {
     }
 
     DrawCommand
-    DrawCommand::make(Low::Renderer::RenderObject p_RenderObject,
+    DrawCommand::make(Low::Util::Handle p_RenderObject,
                       Low::Renderer::RenderScene p_RenderScene,
                       Low::Renderer::GpuSubmesh p_Submesh)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
 
-      DrawCommand l_DrawCommand =
-          DrawCommand::make(p_RenderObject.get_name());
+      DrawCommand l_DrawCommand;
+
+      {
+        RenderObject l_RenderObject = p_RenderObject.get_id();
+
+        if (l_RenderObject.is_alive()) {
+          l_DrawCommand =
+              DrawCommand::make(l_RenderObject.get_name());
+        }
+      }
+      {
+        SkeletalRenderObject l_RenderObject = p_RenderObject.get_id();
+
+        if (l_RenderObject.is_alive()) {
+          l_DrawCommand =
+              DrawCommand::make(l_RenderObject.get_name());
+        }
+      }
 
       _LOW_ASSERT(p_RenderScene.is_alive());
 
-      l_DrawCommand.set_render_object(p_RenderObject);
+      l_DrawCommand.set_render_object_handle(p_RenderObject);
       l_DrawCommand.set_submesh(p_Submesh);
       l_DrawCommand.set_render_scene_handle(p_RenderScene.get_id());
 
-      if (p_RenderObject.is_alive()) {
-        l_DrawCommand.set_object_id(p_RenderObject.get_object_id());
+      {
+        RenderObject l_RenderObject = p_RenderObject.get_id();
 
-        if (!p_RenderObject.is_dirty()) {
-          ms_Dirty.insert(l_DrawCommand);
+        if (l_RenderObject.is_alive()) {
+          l_DrawCommand.set_object_id(l_RenderObject.get_object_id());
+
+          if (!l_RenderObject.is_dirty()) {
+            ms_Dirty.insert(l_DrawCommand);
+          }
+        }
+      }
+
+      {
+        SkeletalRenderObject l_RenderObject = p_RenderObject.get_id();
+
+        if (l_RenderObject.is_alive()) {
+          l_DrawCommand.set_object_id(l_RenderObject.get_object_id());
+
+          if (!l_RenderObject.is_dirty()) {
+            ms_Dirty.insert(l_DrawCommand);
+          }
         }
       }
 
@@ -1124,6 +1259,148 @@ namespace Low {
 
       return get_submesh().get_vertex_start();
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_active_vertex_offset
+    }
+
+    bool DrawCommand::has_static_render_object() const
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_has_static_render_object
+      return get_static_render_object().is_alive();
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_has_static_render_object
+    }
+
+    bool DrawCommand::has_skeletal_render_object() const
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_has_skeletal_render_object
+      return get_skeletal_render_object().is_alive();
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_has_skeletal_render_object
+    }
+
+    RenderObject DrawCommand::get_static_render_object() const
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_static_render_object
+      return get_render_object_handle().get_id();
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_static_render_object
+    }
+
+    SkeletalRenderObject
+    DrawCommand::get_skeletal_render_object() const
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_skeletal_render_object
+      return get_render_object_handle().get_id();
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_skeletal_render_object
+    }
+
+    bool DrawCommand::has_any_dirty_render_object() const
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_has_any_dirty_render_object
+      if (has_static_render_object()) {
+        return get_static_render_object().is_dirty();
+      }
+      if (has_skeletal_render_object()) {
+        return get_skeletal_render_object().is_dirty();
+      }
+      return false;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_has_any_dirty_render_object
+    }
+
+    bool DrawCommand::has_any_render_object() const
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_has_any_render_object
+      return has_static_render_object() ||
+             has_skeletal_render_object();
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_has_any_render_object
+    }
+
+    Mesh DrawCommand::get_any_render_object_mesh() const
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_any_render_object_mesh
+      if (has_static_render_object()) {
+        return get_static_render_object().get_mesh();
+      }
+
+      if (has_skeletal_render_object()) {
+        return get_skeletal_render_object().get_mesh();
+      }
+
+      return Util::Handle::DEAD;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_any_render_object_mesh
+    }
+
+    Material DrawCommand::get_any_render_object_material() const
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_any_render_object_material
+      if (has_static_render_object()) {
+        return get_static_render_object().get_material();
+      }
+
+      if (has_skeletal_render_object()) {
+        return get_skeletal_render_object().get_material();
+      }
+
+      return Util::Handle::DEAD;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_any_render_object_material
+    }
+
+    Util::Name DrawCommand::get_any_render_object_name() const
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_any_render_object_name
+      if (has_static_render_object()) {
+        return get_static_render_object().get_name();
+      }
+
+      if (has_skeletal_render_object()) {
+        return get_skeletal_render_object().get_name();
+      }
+
+      return N(NoRenderObject);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_any_render_object_name
+    }
+
+    bool DrawCommand::is_any_render_object_uploaded() const
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_is_any_render_object_uploaded
+      if (has_static_render_object()) {
+        return get_static_render_object().is_uploaded();
+      }
+
+      if (has_skeletal_render_object()) {
+        return get_skeletal_render_object().is_uploaded();
+      }
+
+      LOW_ASSERT(false, "No renderobject assigned to drawcommand.");
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_is_any_render_object_uploaded
+    }
+
+    void DrawCommand::mark_any_render_object_dirty()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_mark_any_render_object_dirty
+      if (has_static_render_object()) {
+        return get_static_render_object().mark_dirty();
+      }
+
+      if (has_skeletal_render_object()) {
+        return get_skeletal_render_object().mark_dirty();
+      }
+      LOW_ASSERT(false, "No renderobject assigned to drawcommand.");
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_mark_any_render_object_dirty
+    }
+
+    uint64_t
+    DrawCommand::get_any_render_object_last_uploaded_mesh_gpu_id()
+        const
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_any_render_object_last_uploaded_mesh_gpu_id
+      if (has_static_render_object()) {
+        return get_static_render_object()
+            .get_last_uploaded_mesh_gpu_id();
+      }
+
+      if (has_skeletal_render_object()) {
+        return get_skeletal_render_object()
+            .get_last_uploaded_mesh_gpu_id();
+      }
+      LOW_ASSERT(false, "No renderobject assigned to drawcommand.");
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_any_render_object_last_uploaded_mesh_gpu_id
     }
 
     uint32_t DrawCommand::create_instance(u32 &p_PageIndex,

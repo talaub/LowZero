@@ -35,8 +35,7 @@ namespace Low {
         uint32_t index_start;
         uint32_t bone_weight_start;
         Low::Math::Matrix4x4 transform;
-        Low::Math::Matrix4x4 parent_transform;
-        Low::Math::Matrix4x4 local_transform;
+        int32_t node_index;
         Low::Math::AABB aabb;
         Low::Math::Sphere bounding_sphere;
         Low::Util::Name name;
@@ -184,11 +183,8 @@ namespace Low {
       Low::Math::Matrix4x4 &get_transform() const;
       void set_transform(Low::Math::Matrix4x4 &p_Value);
 
-      Low::Math::Matrix4x4 &get_parent_transform() const;
-      void set_parent_transform(Low::Math::Matrix4x4 &p_Value);
-
-      Low::Math::Matrix4x4 &get_local_transform() const;
-      void set_local_transform(Low::Math::Matrix4x4 &p_Value);
+      int32_t get_node_index() const;
+      void set_node_index(int32_t p_Value);
 
       Low::Math::AABB &get_aabb() const;
       void set_aabb(Low::Math::AABB &p_Value);

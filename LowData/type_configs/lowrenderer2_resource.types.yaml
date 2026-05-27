@@ -61,6 +61,12 @@ types:
         type: Low::Math::AABB
       bounding_sphere:
         type: Low::Math::Sphere
+      nodes:
+        type: Low::Util::List<MeshNode>
+        no_setter: true
+    functions:
+      clear_loaded_geometry:
+        return_type: void
 
   SubmeshGeometry:
     skip_name_serialization: true
@@ -91,6 +97,8 @@ types:
         type: Low::Math::Sphere
       bone_weights:
         type: Low::Util::List<Low::Util::Resource::BoneVertexWeight>
+      node_index:
+        type: int32_t
 
   MeshResource:
     private_make: true
@@ -183,10 +191,8 @@ types:
         type: uint32_t
       transform:
         type: Low::Math::Matrix4x4
-      parent_transform:
-        type: Low::Math::Matrix4x4
-      local_transform:
-        type: Low::Math::Matrix4x4
+      node_index:
+        type: int32_t
       aabb:
         type: Low::Math::AABB
       bounding_sphere:

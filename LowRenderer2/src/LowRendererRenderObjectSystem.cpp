@@ -6,9 +6,9 @@
 #include "LowRendererRenderObject.h"
 #include "LowRendererAdaptiveRenderObject.h"
 #include "LowRendererRenderScene.h"
-#include "LowRendererSkeleton.h"
-#include "LowRendererSkinningInstance.h"
-#include "LowRendererSkinningPose.h"
+#include "LowRendererSkeletalRenderObject.h"
+#include "LowRendererMeshGeometry.h"
+#include "LowRendererMeshInstanceNode.h"
 #include "LowRendererTextureState.h"
 #include "LowRendererUiDrawCommand.h"
 #include "LowRendererUiRenderObject.h"
@@ -24,94 +24,6 @@
 namespace Low {
   namespace Renderer {
     namespace RenderObjectSystem {
-      static Util::Map<u64, i32> g_RigidSubmeshBoneCache;
-
-      static u64 rigid_submesh_bone_cache_key(
-          Skeleton p_Skeleton, GpuSubmesh p_Submesh)
-      {
-        const u64 l_SkeletonId = p_Skeleton.get_id();
-        const u64 l_SubmeshId = p_Submesh.get_id();
-        return l_SkeletonId ^
-               (l_SubmeshId + 0x9e3779b97f4a7c15ull +
-                (l_SkeletonId << 6u) + (l_SkeletonId >> 2u));
-      }
-
-      static bool matrix_nearly_equal(const Math::Matrix4x4 &p_A,
-                                      const Math::Matrix4x4 &p_B,
-                                      const float p_Epsilon = 0.0001f)
-      {
-        for (u32 i_Column = 0u; i_Column < 4u; ++i_Column) {
-          for (u32 i_Row = 0u; i_Row < 4u; ++i_Row) {
-            if (glm::abs(p_A[i_Column][i_Row] -
-                         p_B[i_Column][i_Row]) > p_Epsilon) {
-              return false;
-            }
-          }
-        }
-
-        return true;
-      }
-
-      static i32 resolve_rigid_submesh_bone_index(
-          Skeleton p_Skeleton, GpuSubmesh p_Submesh)
-      {
-        const u64 l_CacheKey =
-            rigid_submesh_bone_cache_key(p_Skeleton, p_Submesh);
-        auto l_CacheIt =
-            g_RigidSubmeshBoneCache.find(l_CacheKey);
-        if (l_CacheIt != g_RigidSubmeshBoneCache.end()) {
-          return l_CacheIt->second;
-        }
-
-        i32 l_BoneIndex = -1;
-        for (u32 i = 0u; i < p_Skeleton.get_bone_count(); ++i) {
-          const SkeletonBone &i_Bone = p_Skeleton.get_bones()[i];
-          if (matrix_nearly_equal(i_Bone.global_bind_transform,
-                                  p_Submesh.get_parent_transform())) {
-            l_BoneIndex = static_cast<i32>(i);
-            break;
-          }
-        }
-
-        g_RigidSubmeshBoneCache[l_CacheKey] = l_BoneIndex;
-        return l_BoneIndex;
-      }
-
-      static bool get_rigid_skeletal_submesh_transform(
-          RenderObject p_RenderObject, GpuSubmesh p_Submesh,
-          Math::Matrix4x4 &p_OutTransform)
-      {
-        if (p_Submesh.get_bone_weight_count() > 0u) {
-          return false;
-        }
-
-        SkinningInstance l_SkinningInstance =
-            p_RenderObject.get_skinning_instance();
-        if (!l_SkinningInstance.is_alive()) {
-          return false;
-        }
-
-        SkinningPose l_Pose = l_SkinningInstance.get_pose();
-        if (!l_Pose.is_alive() || !l_Pose.get_skeleton().is_alive()) {
-          return false;
-        }
-
-        Skeleton l_Skeleton = l_Pose.get_skeleton();
-        if (l_Skeleton.get_bone_count() !=
-            l_Pose.get_matrices().size()) {
-          return false;
-        }
-
-        const i32 l_BoneIndex =
-            resolve_rigid_submesh_bone_index(l_Skeleton, p_Submesh);
-        if (l_BoneIndex < 0) {
-          return false;
-        }
-
-        p_OutTransform = l_Pose.get_matrices()[l_BoneIndex] *
-                         p_Submesh.get_transform();
-        return true;
-      }
 
       static void cmd_prepare_storage_buffer_upload(
           VkCommandBuffer p_Cmd, Vulkan::DynamicBuffer &p_Buffer,
@@ -182,7 +94,11 @@ namespace Low {
           DrawCommand i_DrawCommand = *it;
 
           if (!i_DrawCommand.is_alive() ||
-              i_DrawCommand.get_render_object().is_dirty()) {
+              (i_DrawCommand.has_static_render_object() &&
+               i_DrawCommand.get_static_render_object().is_dirty()) ||
+              (i_DrawCommand.has_skeletal_render_object() &&
+               i_DrawCommand.get_skeletal_render_object()
+                   .is_dirty())) {
             // We will skip dead draw commands as well as ones that
             // have a dirty renderobject because then they will be
             // updated later together with their render object
@@ -205,7 +121,8 @@ namespace Low {
           bool i_IsFirstTimeUpload = false;
           if (!i_DrawCommand.is_uploaded()) {
             LOW_ASSERT(
-                !i_DrawCommand.get_render_object().is_alive(),
+                !i_DrawCommand.has_static_render_object() &&
+                    !i_DrawCommand.has_skeletal_render_object(),
                 "Drawcommands that are not yet uploaded should exist "
                 "on their own and not as part of a renderobject");
 
@@ -231,7 +148,8 @@ namespace Low {
 
           i_Upload.objectId = i_DrawCommand.get_object_id();
 
-          i_Upload.materialIndex = get_default_material().get_index();
+          i_Upload.materialIndex =
+              get_default_material().get_gpu().get_index();
           if (i_DrawCommand.get_material().is_alive() &&
               i_DrawCommand.get_material().get_state() ==
                   MaterialState::LOADED) {
@@ -354,7 +272,8 @@ namespace Low {
             if (i_RenderObject.get_material().is_alive() &&
                 i_DrawCommand.get_material() !=
                     i_RenderObject.get_material()) {
-              i_DrawCommand.set_material(i_RenderObject.get_material());
+              i_DrawCommand.set_material(
+                  i_RenderObject.get_material());
             }
 
             Material i_Material = i_DrawCommand.get_material();
@@ -412,17 +331,8 @@ namespace Low {
             }
 
             Math::Matrix4x4 i_WorldTransform =
-                i_RenderObject.get_world_transform();
-            if (!i_DrawCommand.get_skinning_command().is_alive()) {
-              Math::Matrix4x4 i_SubmeshTransform(1.0f);
-              if (!get_rigid_skeletal_submesh_transform(
-                      i_RenderObject, i_DrawCommand.get_submesh(),
-                      i_SubmeshTransform)) {
-                i_SubmeshTransform =
-                    i_DrawCommand.get_submesh().get_transform();
-              }
-              i_WorldTransform *= i_SubmeshTransform;
-            }
+                i_RenderObject.get_world_transform() *
+                i_DrawCommand.get_submesh().get_transform();
             i_DrawCommand.set_world_transform(i_WorldTransform);
 
             i_DrawCommand.set_object_id(
@@ -487,6 +397,251 @@ namespace Low {
         for (auto it = l_RescheduleRenderObjects.begin();
              it != l_RescheduleRenderObjects.end(); ++it) {
           it->set_dirty(true);
+        }
+
+        return l_Result;
+      }
+
+      static bool update_dirty_skeletal_renderobjects(float p_Delta)
+      {
+        bool l_Result = true;
+
+        Util::List<SkeletalRenderObject> l_Reschedules;
+
+        for (auto it = SkeletalRenderObject::ms_Dirty.begin();
+             it != SkeletalRenderObject::ms_Dirty.end(); ++it) {
+          SkeletalRenderObject i_SRO = *it;
+          if (!i_SRO.is_alive()) {
+            continue;
+          }
+
+          if (i_SRO.get_mesh().get_state() != MeshState::LOADED ||
+              !i_SRO.get_mesh().get_gpu().is_alive()) {
+            l_Reschedules.push_back(i_SRO);
+            continue;
+          }
+
+          // Mesh was reloaded — destroy existing DrawCommands and
+          // MeshInstanceNodes and start fresh
+          if (i_SRO.is_uploaded() &&
+              i_SRO.get_mesh().get_gpu().get_id() !=
+                  i_SRO.get_last_uploaded_mesh_gpu_id()) {
+            for (MeshInstanceNode i_Node : i_SRO.get_nodes()) {
+              if (i_Node.is_alive()) {
+                i_Node.destroy();
+              }
+            }
+            i_SRO.get_nodes().clear();
+
+            for (DrawCommand i_DrawCommand :
+                 i_SRO.get_draw_commands()) {
+              if (i_DrawCommand.is_alive()) {
+                i_DrawCommand.destroy();
+              }
+            }
+            Vulkan::Global::get_drawcommand_buffer().free(
+                i_SRO.get_slot(), i_SRO.get_draw_commands().size());
+            i_SRO.set_uploaded(false);
+            i_SRO.get_draw_commands().clear();
+          }
+
+          Mesh i_Mesh = i_SRO.get_mesh();
+          GpuMesh i_GpuMesh = i_Mesh.get_gpu();
+          MeshGeometry i_MeshGeometry = i_Mesh.get_geometry();
+          RenderScene i_RenderScene = i_SRO.get_render_scene_handle();
+
+          // Create MeshInstanceNodes once geometry nodes are available.
+          // Geometry nodes may be empty on first tick if the skeleton
+          // wasn't loaded yet when the mesh callback ran, so we retry
+          // every frame until they appear.
+          if (i_SRO.get_nodes().empty() && i_MeshGeometry.is_alive() &&
+              !i_MeshGeometry.get_nodes().empty()) {
+            Util::List<MeshNode> &i_MeshNodes =
+                i_MeshGeometry.get_nodes();
+            for (u32 i = 0u; i < (u32)i_MeshNodes.size(); ++i) {
+              MeshInstanceNode i_Node = MeshInstanceNode::make(
+                  i_MeshNodes[i].name, i_MeshNodes[i].parent_index,
+                  i_MeshNodes[i].bone_index);
+              i_SRO.get_nodes().push_back(i_Node);
+            }
+            // Re-wire DrawCommands that existed before nodes were ready
+            for (DrawCommand i_Dc : i_SRO.get_draw_commands()) {
+              const i32 i_RewireIdx =
+                  i_Dc.get_submesh().get_node_index();
+              if (i_RewireIdx >= 0 &&
+                  (u32)i_RewireIdx < (u32)i_SRO.get_nodes().size()) {
+                i_SRO.get_nodes()[(u32)i_RewireIdx].set_draw_command(
+                    i_Dc);
+              }
+            }
+          }
+
+          // Create DrawCommands on first setup and wire
+          // MeshInstanceNode backrefs
+          if (i_SRO.get_draw_commands().empty()) {
+            for (auto sit = i_GpuMesh.get_submeshes().begin();
+                 sit != i_GpuMesh.get_submeshes().end(); ++sit) {
+              GpuSubmesh i_GpuSubmesh = *sit;
+
+              DrawCommand i_DrawCommand = DrawCommand::make(
+                  i_SRO, i_RenderScene, i_GpuSubmesh);
+
+              if (!i_DrawCommand.get_material().is_alive()) {
+                i_DrawCommand.set_material(i_SRO.get_material());
+              }
+
+              i_SRO.get_draw_commands().push_back(i_DrawCommand);
+
+              const i32 i_NodeIdx = i_GpuSubmesh.get_node_index();
+              if (i_NodeIdx >= 0 &&
+                  (u32)i_NodeIdx < (u32)i_SRO.get_nodes().size()) {
+                i_SRO.get_nodes()[(u32)i_NodeIdx].set_draw_command(
+                    i_DrawCommand);
+              }
+            }
+          }
+
+          const Util::List<DrawCommand> &i_DrawCommands =
+              i_SRO.get_draw_commands();
+
+          bool i_HasPendingMaterial = false;
+          for (DrawCommand i_DrawCommand : i_DrawCommands) {
+            if (i_SRO.get_material().is_alive() &&
+                i_DrawCommand.get_material() !=
+                    i_SRO.get_material()) {
+              i_DrawCommand.set_material(i_SRO.get_material());
+            }
+            if (i_DrawCommand.get_material().is_alive() &&
+                i_DrawCommand.get_material().get_state() !=
+                    MaterialState::LOADED) {
+              i_HasPendingMaterial = true;
+            }
+          }
+
+          size_t l_StagingOffset = 0;
+          const u64 l_FrameUploadSpace =
+              Vulkan::Global::get_current_frame_staging_buffer()
+                  .request_space(sizeof(DrawCommandUpload) *
+                                     i_DrawCommands.size(),
+                                 &l_StagingOffset);
+
+          if (l_FrameUploadSpace <
+              (sizeof(DrawCommandUpload) * i_DrawCommands.size())) {
+            l_Result = false;
+            break;
+          }
+
+          bool i_IsFirstTimeUpload = false;
+          if (!i_SRO.is_uploaded()) {
+            u32 i_Slot = 0;
+            if (!Vulkan::Global::get_drawcommand_buffer().reserve(
+                    i_DrawCommands.size(), &i_Slot)) {
+              l_Result = false;
+              break;
+            }
+            i_SRO.set_slot(i_Slot);
+            i_SRO.set_uploaded(true);
+            i_IsFirstTimeUpload = true;
+          }
+          i_SRO.set_last_uploaded_mesh_gpu_id(i_GpuMesh.get_id());
+
+          Util::List<DrawCommandUpload> i_Uploads;
+
+          for (u32 i = 0u; i < (u32)i_DrawCommands.size(); ++i) {
+            DrawCommand i_DrawCommand = i_DrawCommands[i];
+
+            if (i_IsFirstTimeUpload) {
+              i_DrawCommand.set_slot(i_SRO.get_slot() + i);
+              i_DrawCommand.set_uploaded(true);
+              i_DrawCommand.set_object_id(i_SRO.get_object_id());
+              i_RenderScene.insert_draw_command(i_DrawCommand);
+            }
+
+            Math::Matrix4x4 i_WorldTransform;
+            if (i_DrawCommand.get_submesh().get_bone_weight_count() ==
+                0u) {
+              bool i_HasNodeTransform = false;
+              const i32 i_NodeIndex =
+                  i_DrawCommand.get_submesh().get_node_index();
+              if (i_NodeIndex >= 0 &&
+                  (u32)i_NodeIndex < i_SRO.get_nodes().size()) {
+                MeshInstanceNode i_Node =
+                    i_SRO.get_nodes()[(u32)i_NodeIndex];
+                if (i_Node.is_alive()) {
+                  i_WorldTransform = i_Node.get_world_transform();
+                  i_HasNodeTransform = true;
+                }
+              }
+
+              if (!i_HasNodeTransform) {
+                i_WorldTransform = i_SRO.get_world_transform() *
+                                   i_DrawCommand.get_submesh()
+                                       .get_transform();
+              }
+              i_DrawCommand.set_world_transform(i_WorldTransform);
+            } else {
+              // Skinned submesh: compute shader deforms from
+              // bind-pose model space; only SRO world transform is
+              // needed
+              i_WorldTransform = i_SRO.get_world_transform();
+              i_DrawCommand.set_world_transform(i_WorldTransform);
+            }
+
+            DrawCommandUpload i_Upload;
+            i_Upload.worldTransform =
+                i_DrawCommand.get_world_transform();
+            i_Upload.objectId = i_DrawCommand.get_object_id();
+
+            i_Upload.materialIndex =
+                get_default_material().get_gpu().get_index();
+            if (i_DrawCommand.get_material().is_alive() &&
+                i_DrawCommand.get_material().get_state() ==
+                    MaterialState::LOADED) {
+              i_Upload.materialIndex =
+                  i_DrawCommand.get_material().get_gpu().get_index();
+            }
+
+            i_Uploads.push_back(i_Upload);
+          }
+
+          LOW_ASSERT(
+              Vulkan::Global::get_current_frame_staging_buffer()
+                  .write(i_Uploads.data(),
+                         sizeof(DrawCommandUpload) * i_Uploads.size(),
+                         l_StagingOffset),
+              "Failed to write draw command data to staging buffer");
+
+          VkBufferCopy i_CopyRegion;
+          i_CopyRegion.srcOffset = l_StagingOffset;
+          i_CopyRegion.dstOffset =
+              i_SRO.get_slot() * sizeof(DrawCommandUpload);
+          i_CopyRegion.size = l_FrameUploadSpace;
+
+          cmd_prepare_storage_buffer_upload(
+              Vulkan::Global::get_current_command_buffer(),
+              Vulkan::Global::get_drawcommand_buffer(), i_CopyRegion);
+          vkCmdCopyBuffer(
+              Vulkan::Global::get_current_command_buffer(),
+              Vulkan::Global::get_current_frame_staging_buffer()
+                  .buffer.buffer,
+              Vulkan::Global::get_drawcommand_buffer()
+                  .m_Buffer.buffer,
+              1, &i_CopyRegion);
+          cmd_finish_storage_buffer_upload(
+              Vulkan::Global::get_current_command_buffer(),
+              Vulkan::Global::get_drawcommand_buffer(), i_CopyRegion);
+
+          i_SRO.set_dirty(false);
+
+          if (i_HasPendingMaterial) {
+            l_Reschedules.push_back(i_SRO);
+          }
+        }
+
+        SkeletalRenderObject::ms_Dirty.clear();
+
+        for (SkeletalRenderObject &i_SRO : l_Reschedules) {
+          i_SRO.mark_dirty();
         }
 
         return l_Result;
@@ -870,6 +1025,7 @@ namespace Low {
       {
         update_dirty_drawcommands(p_Delta);
         update_dirty_renderobjects(p_Delta);
+        update_dirty_skeletal_renderobjects(p_Delta);
         return true;
       }
 

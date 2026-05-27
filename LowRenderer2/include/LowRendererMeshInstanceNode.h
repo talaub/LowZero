@@ -8,36 +8,26 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-
-#include "LowUtilResource.h"
-#include "LowRendererSubmeshGeometry.h"
+#include "LowRendererDrawCommand.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-
-    struct MeshNode
-    {
-      Util::Name name;
-      i32 parent_index;
-      Math::Matrix4x4 local_transform;
-      i32 submesh_index;
-      i32 bone_index;
-    };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_RENDERER2_API MeshGeometry : public Low::Util::Handle
+    struct LOW_RENDERER2_API MeshInstanceNode
+        : public Low::Util::Handle
     {
     public:
       struct Data
       {
       public:
-        uint32_t submesh_count;
-        Low::Util::List<SubmeshGeometry> submeshes;
-        Low::Math::AABB aabb;
-        Low::Math::Sphere bounding_sphere;
-        Low::Util::List<MeshNode> nodes;
+        Low::Math::Matrix4x4 world_transform;
+        int32_t parent_index;
+        int32_t bone_index;
+        DrawCommand draw_command;
+        bool dirty;
         Low::Util::Name name;
 
         static size_t get_size()
@@ -52,7 +42,7 @@ namespace Low {
     public:
       static Low::Util::List<Low::Util::Instances::Page *> ms_Pages;
 
-      static Low::Util::List<MeshGeometry> ms_LivingInstances;
+      static Low::Util::List<MeshInstanceNode> ms_LivingInstances;
 
       const static Low::Util::TypeIdentifier IDENTIFIER;
 
@@ -61,9 +51,12 @@ namespace Low {
         return ms_TypeId;
       }
 
-      static MeshGeometry make(Low::Util::Name p_Name);
+    private:
+      static MeshInstanceNode make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
-      explicit MeshGeometry(const MeshGeometry &p_Copy)
+
+    public:
+      explicit MeshInstanceNode(const MeshInstanceNode &p_Copy)
           : Low::Util::Handle(p_Copy.m_Id)
       {
       }
@@ -73,34 +66,35 @@ namespace Low {
       static void initialize();
       static void cleanup();
 
-      MeshGeometry(u64 p_Id) : Low::Util::Handle(p_Id)
+      MeshInstanceNode(u64 p_Id) : Low::Util::Handle(p_Id)
       {
       }
-      MeshGeometry() : Low::Util::Handle()
+      MeshInstanceNode() : Low::Util::Handle()
       {
       }
-      MeshGeometry(Low::Util::Handle p_Handle)
+      MeshInstanceNode(Low::Util::Handle p_Handle)
           : Low::Util::Handle(p_Handle.get_id())
       {
       }
 
       using Handle::operator=;
 
-      MeshGeometry &operator=(const MeshGeometry &) = default;
-      MeshGeometry &operator=(MeshGeometry &&) noexcept = default;
+      MeshInstanceNode &operator=(const MeshInstanceNode &) = default;
+      MeshInstanceNode &
+      operator=(MeshInstanceNode &&) noexcept = default;
 
       static uint32_t living_count()
       {
         return static_cast<uint32_t>(ms_LivingInstances.size());
       }
-      static MeshGeometry *living_instances()
+      static MeshInstanceNode *living_instances()
       {
         return ms_LivingInstances.data();
       }
 
-      static MeshGeometry create_handle_by_index(u32 p_Index);
+      static MeshInstanceNode create_handle_by_index(u32 p_Index);
 
-      static MeshGeometry find_by_index(uint32_t p_Index);
+      static MeshInstanceNode find_by_index(uint32_t p_Index);
       static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
       bool is_alive() const;
@@ -123,13 +117,13 @@ namespace Low {
 
       void serialize(Low::Util::Serial::Node &p_Node) const;
 
-      MeshGeometry duplicate(Low::Util::Name p_Name) const;
-      static MeshGeometry duplicate(MeshGeometry p_Handle,
-                                    Low::Util::Name p_Name);
+      MeshInstanceNode duplicate(Low::Util::Name p_Name) const;
+      static MeshInstanceNode duplicate(MeshInstanceNode p_Handle,
+                                        Low::Util::Name p_Name);
       static Low::Util::Handle _duplicate(Low::Util::Handle p_Handle,
                                           Low::Util::Name p_Name);
 
-      static MeshGeometry find_by_name(Low::Util::Name p_Name);
+      static MeshInstanceNode find_by_name(Low::Util::Name p_Name);
       static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
@@ -139,35 +133,38 @@ namespace Low {
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
-        MeshGeometry l_Handle = p_Handle.get_id();
+        MeshInstanceNode l_Handle = p_Handle.get_id();
         return l_Handle.is_alive();
       }
 
       static void destroy(Low::Util::Handle p_Handle)
       {
         _LOW_ASSERT(is_alive(p_Handle));
-        MeshGeometry l_MeshGeometry = p_Handle.get_id();
-        l_MeshGeometry.destroy();
+        MeshInstanceNode l_MeshInstanceNode = p_Handle.get_id();
+        l_MeshInstanceNode.destroy();
       }
 
-      uint32_t get_submesh_count() const;
-      void set_submesh_count(uint32_t p_Value);
+      Low::Math::Matrix4x4 &get_world_transform() const;
+      void set_world_transform(Low::Math::Matrix4x4 &p_Value);
 
-      Low::Util::List<SubmeshGeometry> &get_submeshes() const;
-      void set_submeshes(Low::Util::List<SubmeshGeometry> &p_Value);
+      int32_t get_parent_index() const;
 
-      Low::Math::AABB &get_aabb() const;
-      void set_aabb(Low::Math::AABB &p_Value);
+      int32_t get_bone_index() const;
 
-      Low::Math::Sphere &get_bounding_sphere() const;
-      void set_bounding_sphere(Low::Math::Sphere &p_Value);
+      DrawCommand get_draw_command() const;
+      void set_draw_command(DrawCommand p_Value);
 
-      Low::Util::List<MeshNode> &get_nodes() const;
+      bool is_dirty() const;
+      void set_dirty(bool p_Value);
+      void toggle_dirty();
+      void mark_dirty();
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      void clear_loaded_geometry();
+      static MeshInstanceNode make(Util::Name p_Name,
+                                   int32_t p_ParentIndex,
+                                   int32_t p_BoneIndex);
       static bool get_page_for_index(const u32 p_Index,
                                      u32 &p_PageIndex,
                                      u32 &p_SlotIndex);
@@ -177,19 +174,18 @@ namespace Low {
       static u32 ms_PageSize;
       static u32 create_instance(u32 &p_PageIndex, u32 &p_SlotIndex);
       static u32 create_page();
+      void set_parent_index(int32_t p_Value);
+      void set_bone_index(int32_t p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
-
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
     };
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
-
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
   } // namespace Renderer
 } // namespace Low
 
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE
-
 // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_HEADER_CODE

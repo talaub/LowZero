@@ -53,12 +53,6 @@ namespace Low {
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, GpuSubmesh, transform,
                                  Low::Math::Matrix4x4))
           Low::Math::Matrix4x4();
-      new (ACCESSOR_TYPE_SOA_PTR(
-          l_Handle, GpuSubmesh, parent_transform,
-          Low::Math::Matrix4x4)) Low::Math::Matrix4x4();
-      new (ACCESSOR_TYPE_SOA_PTR(
-          l_Handle, GpuSubmesh, local_transform,
-          Low::Math::Matrix4x4)) Low::Math::Matrix4x4();
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, GpuSubmesh, aabb,
                                  Low::Math::AABB)) Low::Math::AABB();
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, GpuSubmesh,
@@ -483,68 +477,33 @@ namespace Low {
         // End property: transform
       }
       {
-        // Property: parent_transform
+        // Property: node_index
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(parent_transform);
+        l_PropertyInfo.name = N(node_index);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(GpuSubmesh::Data, parent_transform);
+            offsetof(GpuSubmesh::Data, node_index);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          l_Handle.get_parent_transform();
+          l_Handle.get_node_index();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GpuSubmesh,
-                                            parent_transform,
-                                            Low::Math::Matrix4x4);
+                                            node_index, int32_t);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          l_Handle.set_parent_transform(
-              *(Low::Math::Matrix4x4 *)p_Data);
+          l_Handle.set_node_index(*(int32_t *)p_Data);
         };
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GpuSubmesh l_Handle = p_Handle.get_id();
-          *((Low::Math::Matrix4x4 *)p_Data) =
-              l_Handle.get_parent_transform();
+          *((int32_t *)p_Data) = l_Handle.get_node_index();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-        // End property: parent_transform
-      }
-      {
-        // Property: local_transform
-        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(local_transform);
-        l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset =
-            offsetof(GpuSubmesh::Data, local_transform);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get_return =
-            [](Low::Util::Handle p_Handle) -> void const * {
-          GpuSubmesh l_Handle = p_Handle.get_id();
-          l_Handle.get_local_transform();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GpuSubmesh,
-                                            local_transform,
-                                            Low::Math::Matrix4x4);
-        };
-        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          GpuSubmesh l_Handle = p_Handle.get_id();
-          l_Handle.set_local_transform(
-              *(Low::Math::Matrix4x4 *)p_Data);
-        };
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
-                                void *p_Data) {
-          GpuSubmesh l_Handle = p_Handle.get_id();
-          *((Low::Math::Matrix4x4 *)p_Data) =
-              l_Handle.get_local_transform();
-        };
-        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-        // End property: local_transform
+        // End property: node_index
       }
       {
         // Property: aabb
@@ -758,8 +717,7 @@ namespace Low {
       l_Handle.set_index_start(get_index_start());
       l_Handle.set_bone_weight_start(get_bone_weight_start());
       l_Handle.set_transform(get_transform());
-      l_Handle.set_parent_transform(get_parent_transform());
-      l_Handle.set_local_transform(get_local_transform());
+      l_Handle.set_node_index(get_node_index());
       l_Handle.set_aabb(get_aabb());
       l_Handle.set_bounding_sphere(get_bounding_sphere());
 
@@ -1160,66 +1118,29 @@ namespace Low {
       broadcast_observable(N(transform));
     }
 
-    Low::Math::Matrix4x4 &GpuSubmesh::get_parent_transform() const
+    int32_t GpuSubmesh::get_node_index() const
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_parent_transform
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_node_index
+      // LOW_CODEGEN::END::CUSTOM:GETTER_node_index
 
-      // LOW_CODEGEN::END::CUSTOM:GETTER_parent_transform
-
-      return TYPE_SOA(GpuSubmesh, parent_transform,
-                      Low::Math::Matrix4x4);
+      return TYPE_SOA(GpuSubmesh, node_index, int32_t);
     }
-    void
-    GpuSubmesh::set_parent_transform(Low::Math::Matrix4x4 &p_Value)
+    void GpuSubmesh::set_node_index(int32_t p_Value)
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_parent_transform
-
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_parent_transform
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_node_index
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_node_index
 
       // Set new value
-      TYPE_SOA(GpuSubmesh, parent_transform, Low::Math::Matrix4x4) =
-          p_Value;
+      TYPE_SOA(GpuSubmesh, node_index, int32_t) = p_Value;
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent_transform
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_node_index
+      // LOW_CODEGEN::END::CUSTOM:SETTER_node_index
 
-      // LOW_CODEGEN::END::CUSTOM:SETTER_parent_transform
-
-      broadcast_observable(N(parent_transform));
-    }
-
-    Low::Math::Matrix4x4 &GpuSubmesh::get_local_transform() const
-    {
-      _LOW_ASSERT(is_alive());
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_local_transform
-
-      // LOW_CODEGEN::END::CUSTOM:GETTER_local_transform
-
-      return TYPE_SOA(GpuSubmesh, local_transform,
-                      Low::Math::Matrix4x4);
-    }
-    void
-    GpuSubmesh::set_local_transform(Low::Math::Matrix4x4 &p_Value)
-    {
-      _LOW_ASSERT(is_alive());
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_local_transform
-
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_local_transform
-
-      // Set new value
-      TYPE_SOA(GpuSubmesh, local_transform, Low::Math::Matrix4x4) =
-          p_Value;
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_local_transform
-
-      // LOW_CODEGEN::END::CUSTOM:SETTER_local_transform
-
-      broadcast_observable(N(local_transform));
+      broadcast_observable(N(node_index));
     }
 
     Low::Math::AABB &GpuSubmesh::get_aabb() const

@@ -8,8 +8,6 @@
 #include "LowRendererRenderView.h"
 #include "LowRendererRenderObject.h"
 #include "LowRendererRenderScene.h"
-#include "LowRendererSkinningInstance.h"
-#include "LowRendererSkinningPose.h"
 #include "LowRendererUiCanvas.h"
 
 namespace Low {
@@ -119,14 +117,9 @@ namespace Low {
       Renderer::RenderObject m_GroundRenderObject;
 
     private:
-      void ensure_bind_pose_skinning();
-
-      Renderer::SkinningPose m_BindPose;
-      Renderer::SkinningInstance m_SkinningInstance;
       bool m_InitialCameraSetup;
       float m_CameraOrbitDistance;
       bool m_LowSpotCalculated = false;
-      bool m_BindPoseReady = false;
     };
 
     struct LOW_EDITOR_API MaterialViewer : public Viewport

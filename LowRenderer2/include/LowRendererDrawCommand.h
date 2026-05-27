@@ -14,6 +14,7 @@
 #include "LowRendererRenderObject.h"
 #include "LowRendererSkinningCommand.h"
 #include "LowRendererGlobals.h"
+#include "LowRendererSkeletalRenderObject.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -32,7 +33,7 @@ namespace Low {
         Low::Math::Matrix4x4 world_transform;
         Low::Renderer::GpuSubmesh submesh;
         uint32_t slot;
-        Low::Renderer::RenderObject render_object;
+        Low::Util::Handle render_object_handle;
         Low::Renderer::Material material;
         bool uploaded;
         uint64_t render_scene_handle;
@@ -161,7 +162,7 @@ namespace Low {
       uint32_t get_slot() const;
       void set_slot(uint32_t p_Value);
 
-      Low::Renderer::RenderObject get_render_object() const;
+      Low::Util::Handle get_render_object_handle() const;
 
       Low::Renderer::Material get_material() const;
       void set_material(Low::Renderer::Material p_Value);
@@ -183,12 +184,25 @@ namespace Low {
       void set_name(Low::Util::Name p_Value);
 
       static DrawCommand
-      make(Low::Renderer::RenderObject p_RenderObject,
+      make(Low::Util::Handle p_RenderObject,
            Low::Renderer::RenderScene p_RenderScene,
            Low::Renderer::GpuSubmesh p_Submesh);
       uint64_t get_sort_index() const;
       VertexBuffer get_active_vertex_buffer() const;
       uint64_t get_active_vertex_offset() const;
+      bool has_static_render_object() const;
+      bool has_skeletal_render_object() const;
+      RenderObject get_static_render_object() const;
+      SkeletalRenderObject get_skeletal_render_object() const;
+      bool has_any_dirty_render_object() const;
+      bool has_any_render_object() const;
+      Mesh get_any_render_object_mesh() const;
+      Material get_any_render_object_material() const;
+      Util::Name get_any_render_object_name() const;
+      bool is_any_render_object_uploaded() const;
+      void mark_any_render_object_dirty();
+      uint64_t
+      get_any_render_object_last_uploaded_mesh_gpu_id() const;
       static bool get_page_for_index(const u32 p_Index,
                                      u32 &p_PageIndex,
                                      u32 &p_SlotIndex);
@@ -199,7 +213,7 @@ namespace Low {
       static u32 create_instance(u32 &p_PageIndex, u32 &p_SlotIndex);
       static u32 create_page();
       void set_submesh(Low::Renderer::GpuSubmesh p_Value);
-      void set_render_object(Low::Renderer::RenderObject p_Value);
+      void set_render_object_handle(Low::Util::Handle p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
 

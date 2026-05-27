@@ -516,6 +516,35 @@ namespace Low {
         // End property: bone_weights
       }
       {
+        // Property: node_index
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(node_index);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(SubmeshGeometry::Data, node_index);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          SubmeshGeometry l_Handle = p_Handle.get_id();
+          l_Handle.get_node_index();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SubmeshGeometry,
+                                            node_index, int32_t);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          SubmeshGeometry l_Handle = p_Handle.get_id();
+          l_Handle.set_node_index(*(int32_t *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          SubmeshGeometry l_Handle = p_Handle.get_id();
+          *((int32_t *)p_Data) = l_Handle.get_node_index();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: node_index
+      }
+      {
         // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
@@ -673,6 +702,7 @@ namespace Low {
       l_Handle.set_aabb(get_aabb());
       l_Handle.set_bounding_sphere(get_bounding_sphere());
       l_Handle.set_bone_weights(get_bone_weights());
+      l_Handle.set_node_index(get_node_index());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
 
@@ -1103,6 +1133,31 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_bone_weights
 
       broadcast_observable(N(bone_weights));
+    }
+
+    int32_t SubmeshGeometry::get_node_index() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_node_index
+      // LOW_CODEGEN::END::CUSTOM:GETTER_node_index
+
+      return TYPE_SOA(SubmeshGeometry, node_index, int32_t);
+    }
+    void SubmeshGeometry::set_node_index(int32_t p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_node_index
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_node_index
+
+      // Set new value
+      TYPE_SOA(SubmeshGeometry, node_index, int32_t) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_node_index
+      // LOW_CODEGEN::END::CUSTOM:SETTER_node_index
+
+      broadcast_observable(N(node_index));
     }
 
     Low::Util::Name SubmeshGeometry::get_name() const

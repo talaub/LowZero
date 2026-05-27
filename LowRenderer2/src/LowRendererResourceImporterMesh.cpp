@@ -752,6 +752,28 @@ namespace Low {
           return l_NodeRelevant;
         }
 
+        static void propagate_skeleton_relevance_down(
+            const aiNode *p_Node,
+            Util::Set<Util::Name> &p_RelevantNodes,
+            bool p_AncestorRelevant)
+        {
+          const Util::Name l_NodeName =
+              LOW_NAME(p_Node->mName.C_Str());
+          const bool l_Relevant =
+              p_AncestorRelevant ||
+              p_RelevantNodes.find(l_NodeName) !=
+                  p_RelevantNodes.end();
+
+          if (l_Relevant) {
+            p_RelevantNodes.insert(l_NodeName);
+          }
+
+          for (u32 i = 0u; i < p_Node->mNumChildren; ++i) {
+            propagate_skeleton_relevance_down(
+                p_Node->mChildren[i], p_RelevantNodes, l_Relevant);
+          }
+        }
+
         static void extract_skeleton_bone(
             const aiNode *p_Node,
             const Util::Map<Util::Name, Math::Matrix4x4>
@@ -777,7 +799,7 @@ namespace Low {
             l_Bone.parentIndex = p_ParentIndex;
             l_Bone.localBindTransform = l_LocalTransform;
             l_Bone.globalBindTransform = l_GlobalTransform;
-            l_Bone.inverseBindMatrix = Math::Matrix4x4(1.0f);
+            l_Bone.inverseBindMatrix = glm::inverse(l_GlobalTransform);
             l_Bone.deforming = false;
             l_Bone.sourceBoneIndex = LOW_UINT32_MAX;
 
@@ -878,6 +900,8 @@ namespace Low {
           Util::Set<Util::Name> l_RelevantNodes;
           collect_relevant_skeleton_nodes(
               p_Scene->mRootNode, l_DeformingBones, l_RelevantNodes);
+          propagate_skeleton_relevance_down(p_Scene->mRootNode,
+                                            l_RelevantNodes, false);
 
           extract_skeleton_bone(p_Scene->mRootNode, l_DeformingBones,
                                 l_RelevantNodes, -1,

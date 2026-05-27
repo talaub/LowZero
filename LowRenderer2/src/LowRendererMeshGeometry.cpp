@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "LowRendererSubmeshGeometry.h"
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
@@ -56,6 +57,9 @@ namespace Low {
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, MeshGeometry,
                                  bounding_sphere, Low::Math::Sphere))
           Low::Math::Sphere();
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, MeshGeometry, nodes,
+                                 Low::Util::List<MeshNode>))
+          Low::Util::List<MeshNode>();
       ACCESSOR_TYPE_SOA(l_Handle, MeshGeometry, name,
                         Low::Util::Name) = Low::Util::Name(0u);
 
@@ -83,6 +87,8 @@ namespace Low {
             it->destroy();
           }
         }
+
+        get_nodes().clear();
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 
@@ -278,6 +284,34 @@ namespace Low {
         // End property: bounding_sphere
       }
       {
+        // Property: nodes
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(nodes);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(MeshGeometry::Data, nodes);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          MeshGeometry l_Handle = p_Handle.get_id();
+          l_Handle.get_nodes();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, MeshGeometry, nodes,
+              Low::Util::List<MeshNode>);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MeshGeometry l_Handle = p_Handle.get_id();
+          *((Low::Util::List<MeshNode> *)p_Data) =
+              l_Handle.get_nodes();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: nodes
+      }
+      {
         // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
@@ -305,6 +339,15 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: name
+      }
+      {
+        // Function: clear_loaded_geometry
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(clear_loaded_geometry);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: clear_loaded_geometry
       }
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
@@ -639,6 +682,16 @@ namespace Low {
       broadcast_observable(N(bounding_sphere));
     }
 
+    Low::Util::List<MeshNode> &MeshGeometry::get_nodes() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_nodes
+      // LOW_CODEGEN::END::CUSTOM:GETTER_nodes
+
+      return TYPE_SOA(MeshGeometry, nodes, Low::Util::List<MeshNode>);
+    }
+
     Low::Util::Name MeshGeometry::get_name() const
     {
       _LOW_ASSERT(is_alive());
@@ -665,6 +718,18 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
+    }
+
+    void MeshGeometry::clear_loaded_geometry()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_clear_loaded_geometry
+      for (SubmeshGeometry i_Submesh : get_submeshes()) {
+        if (i_Submesh.is_alive()) {
+        i_Submesh.destroy();
+        }
+      }
+      get_submeshes().clear();
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_clear_loaded_geometry
     }
 
     uint32_t MeshGeometry::create_instance(u32 &p_PageIndex,

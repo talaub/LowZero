@@ -20,6 +20,7 @@
 #include "LowCoreGameMode.h"
 #include "LowCoreCamera.h"
 #include "LowCoreInput.h"
+#include "LowCoreAnimator.h"
 
 #include "LowCoreScriptClass.h"
 #include "LowCoreScriptAsset.h"
@@ -120,6 +121,7 @@ namespace Low {
     {
       Component::Transform::initialize();
       Component::MeshRenderer::initialize();
+      Component::Animator::initialize();
       Component::DirectionalLight::initialize();
       Component::PointLight::initialize();
       Component::Rigidbody::initialize();
@@ -313,6 +315,7 @@ namespace Low {
       Component::PointLight::cleanup();
       Component::DirectionalLight::cleanup();
       Component::Transform::cleanup();
+      Component::Animator::cleanup();
       Component::MeshRenderer::cleanup();
     }
 

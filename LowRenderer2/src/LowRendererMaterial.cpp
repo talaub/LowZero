@@ -1710,25 +1710,29 @@ namespace Low {
 
         u32 l_Index = GpuTexture::get_capacity() + 5;
 
-        for (auto it = ms_PendingTextureBindings.begin();
-             it != ms_PendingTextureBindings.end();) {
-          if (it->propertyName == p_Name &&
-              it->material.get_id() == get_id()) {
-            it = ms_PendingTextureBindings.erase(it);
-          } else {
-            ++it;
+        {
+          Util::UniqueLock<Util::Mutex> l_PendingLock(
+              ms_PendingTextureBindingsMutex);
+          for (auto it = ms_PendingTextureBindings.begin();
+               it != ms_PendingTextureBindings.end();) {
+            if (it->propertyName == p_Name &&
+                it->material.get_id() == get_id()) {
+              it = ms_PendingTextureBindings.erase(it);
+            } else {
+              ++it;
+            }
           }
-        }
 
-        if (p_Value.is_alive() &&
-            p_Value.get_state() == TextureState::LOADED) {
-          l_Index = p_Value.get_gpu().get_bindless_index();
-        } else if (p_Value.is_alive()) {
-          PendingTextureBinding l_Binding;
-          l_Binding.propertyName = p_Name;
-          l_Binding.material = get_id();
-          l_Binding.texture = p_Value;
-          ms_PendingTextureBindings.push_back(l_Binding);
+          if (p_Value.is_alive() &&
+              p_Value.get_state() == TextureState::LOADED) {
+            l_Index = p_Value.get_gpu().get_bindless_index();
+          } else if (p_Value.is_alive()) {
+            PendingTextureBinding l_Binding;
+            l_Binding.propertyName = p_Name;
+            l_Binding.material = get_id();
+            l_Binding.texture = p_Value;
+            ms_PendingTextureBindings.push_back(l_Binding);
+          }
         }
 
         {

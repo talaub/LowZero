@@ -1,4 +1,4 @@
-#include "LowRendererSkinningInstance.h"
+#include "LowRendererMeshInstanceNode.h"
 
 #include <algorithm>
 
@@ -12,53 +12,50 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
-#include "LowRendererSkinningCommand.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-    Low::Util::Set<Low::Renderer::SkinningInstance>
-        Low::Renderer::SkinningInstance::ms_NeedInitialization;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    u16 SkinningInstance::ms_TypeId = 0;
+    u16 MeshInstanceNode::ms_TypeId = 0;
     const Low::Util::TypeIdentifier
-        SkinningInstance::IDENTIFIER(LOW_NAME(509652687),
-                                     LOW_NAME(2228007357));
-    uint32_t SkinningInstance::ms_Capacity = 0u;
-    uint32_t SkinningInstance::ms_PageSize = 0u;
-    Low::Util::List<SkinningInstance>
-        SkinningInstance::ms_LivingInstances;
+        MeshInstanceNode::IDENTIFIER(LOW_NAME(509652687),
+                                     LOW_NAME(2078444829));
+    uint32_t MeshInstanceNode::ms_Capacity = 0u;
+    uint32_t MeshInstanceNode::ms_PageSize = 0u;
+    Low::Util::List<MeshInstanceNode>
+        MeshInstanceNode::ms_LivingInstances;
     Low::Util::List<Low::Util::Instances::Page *>
-        SkinningInstance::ms_Pages;
+        MeshInstanceNode::ms_Pages;
 
-    Low::Util::Handle SkinningInstance::_make(Low::Util::Name p_Name)
+    Low::Util::Handle MeshInstanceNode::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
     }
 
-    SkinningInstance SkinningInstance::make(Low::Util::Name p_Name)
+    MeshInstanceNode MeshInstanceNode::make(Low::Util::Name p_Name)
     {
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
       uint32_t l_Index = create_instance(l_PageIndex, l_SlotIndex);
 
-      SkinningInstance l_Handle;
+      MeshInstanceNode l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = SkinningInstance::ms_TypeId;
+      l_Handle.m_Data.m_Type = MeshInstanceNode::ms_TypeId;
 
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, SkinningInstance, pose,
-                                 SkinningPose)) SkinningPose();
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, SkinningInstance, mesh,
-                                 Mesh)) Mesh();
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, SkinningInstance,
-                                 skinning_commands,
-                                 Low::Util::List<SkinningCommand>))
-          Low::Util::List<SkinningCommand>();
-      ACCESSOR_TYPE_SOA(l_Handle, SkinningInstance, name,
+      new (ACCESSOR_TYPE_SOA_PTR(
+          l_Handle, MeshInstanceNode, world_transform,
+          Low::Math::Matrix4x4)) Low::Math::Matrix4x4();
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, MeshInstanceNode,
+                                 draw_command, DrawCommand))
+          DrawCommand();
+      ACCESSOR_TYPE_SOA(l_Handle, MeshInstanceNode, dirty, bool) =
+          false;
+      ACCESSOR_TYPE_SOA(l_Handle, MeshInstanceNode, name,
                         Low::Util::Name) = Low::Util::Name(0u);
 
       l_Handle.set_name(p_Name);
@@ -66,29 +63,17 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
-      l_Handle.mark_needs_initialization();
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
     }
 
-    void SkinningInstance::destroy()
+    void MeshInstanceNode::destroy()
     {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-        for (SkinningCommand i_Command : get_skinning_commands()) {
-          if (i_Command.is_alive()) {
-            i_Command.destroy();
-          }
-        }
-
-        get_skinning_commands().clear();
-
-        if (get_pose().is_alive()) {
-          get_pose().dereference(get_id());
-        }
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 
@@ -113,16 +98,16 @@ namespace Low {
       }
     }
 
-    void SkinningInstance::initialize()
+    void MeshInstanceNode::initialize()
     {
       const Low::Util::TypeIdentifier l_IdentifierNames(
-          N(LowRenderer2), N(SkinningInstance));
+          N(LowRenderer2), N(MeshInstanceNode));
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(
-          N(LowRenderer2), N(SkinningInstance));
+          N(LowRenderer2), N(MeshInstanceNode));
 
       ms_PageSize = Low::Math::Util::clamp(
           Low::Math::Util::next_power_of_two(ms_Capacity), 8, 32);
@@ -132,7 +117,7 @@ namespace Low {
           Low::Util::Instances::Page *i_Page =
               new Low::Util::Instances::Page;
           Low::Util::Instances::initialize_page(
-              i_Page, SkinningInstance::Data::get_size(),
+              i_Page, MeshInstanceNode::Data::get_size(),
               ms_PageSize);
           ms_Pages.push_back(i_Page);
           l_Capacity += ms_PageSize;
@@ -141,138 +126,168 @@ namespace Low {
       }
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
-      l_TypeInfo.name = N(SkinningInstance);
+      l_TypeInfo.name = N(MeshInstanceNode);
       l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
-      l_TypeInfo.is_alive = &SkinningInstance::is_alive;
-      l_TypeInfo.destroy = &SkinningInstance::destroy;
-      l_TypeInfo.serialize = &SkinningInstance::serialize;
-      l_TypeInfo.deserialize = &SkinningInstance::deserialize;
-      l_TypeInfo.find_by_index = &SkinningInstance::_find_by_index;
-      l_TypeInfo.notify = &SkinningInstance::_notify;
+      l_TypeInfo.is_alive = &MeshInstanceNode::is_alive;
+      l_TypeInfo.destroy = &MeshInstanceNode::destroy;
+      l_TypeInfo.serialize = &MeshInstanceNode::serialize;
+      l_TypeInfo.deserialize = &MeshInstanceNode::deserialize;
+      l_TypeInfo.find_by_index = &MeshInstanceNode::_find_by_index;
+      l_TypeInfo.notify = &MeshInstanceNode::_notify;
       l_TypeInfo.post_load = nullptr;
-      l_TypeInfo.find_by_name = &SkinningInstance::_find_by_name;
+      l_TypeInfo.find_by_name = &MeshInstanceNode::_find_by_name;
       l_TypeInfo.make_component = nullptr;
-      l_TypeInfo.make_default = &SkinningInstance::_make;
-      l_TypeInfo.duplicate_default = &SkinningInstance::_duplicate;
+      l_TypeInfo.make_default = &MeshInstanceNode::_make;
+      l_TypeInfo.duplicate_default = &MeshInstanceNode::_duplicate;
       l_TypeInfo.duplicate_component = nullptr;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
-              &SkinningInstance::living_instances);
-      l_TypeInfo.get_living_count = &SkinningInstance::living_count;
+              &MeshInstanceNode::living_instances);
+      l_TypeInfo.get_living_count = &MeshInstanceNode::living_count;
       l_TypeInfo.component = false;
       l_TypeInfo.uiComponent = false;
       {
-        // Property: pose
+        // Property: world_transform
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(pose);
+        l_PropertyInfo.name = N(world_transform);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(SkinningInstance::Data, pose);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = SkinningPose::IDENTIFIER;
-        l_PropertyInfo.get_return =
-            [](Low::Util::Handle p_Handle) -> void const * {
-          SkinningInstance l_Handle = p_Handle.get_id();
-          l_Handle.get_pose();
-          return (void *)&ACCESSOR_TYPE_SOA(
-              p_Handle, SkinningInstance, pose, SkinningPose);
-        };
-        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          SkinningInstance l_Handle = p_Handle.get_id();
-          l_Handle.set_pose(*(SkinningPose *)p_Data);
-        };
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
-                                void *p_Data) {
-          SkinningInstance l_Handle = p_Handle.get_id();
-          *((SkinningPose *)p_Data) = l_Handle.get_pose();
-        };
-        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-        // End property: pose
-      }
-      {
-        // Property: mesh
-        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(mesh);
-        l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset =
-            offsetof(SkinningInstance::Data, mesh);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Mesh::IDENTIFIER;
-        l_PropertyInfo.get_return =
-            [](Low::Util::Handle p_Handle) -> void const * {
-          SkinningInstance l_Handle = p_Handle.get_id();
-          l_Handle.get_mesh();
-          return (void *)&ACCESSOR_TYPE_SOA(
-              p_Handle, SkinningInstance, mesh, Mesh);
-        };
-        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {};
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
-                                void *p_Data) {
-          SkinningInstance l_Handle = p_Handle.get_id();
-          *((Mesh *)p_Data) = l_Handle.get_mesh();
-        };
-        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-        // End property: mesh
-      }
-      {
-        // Property: skinning_commands
-        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(skinning_commands);
-        l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset =
-            offsetof(SkinningInstance::Data, skinning_commands);
+            offsetof(MeshInstanceNode::Data, world_transform);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
-          SkinningInstance l_Handle = p_Handle.get_id();
-          l_Handle.get_skinning_commands();
+          MeshInstanceNode l_Handle = p_Handle.get_id();
+          l_Handle.get_world_transform();
           return (void *)&ACCESSOR_TYPE_SOA(
-              p_Handle, SkinningInstance, skinning_commands,
-              Low::Util::List<SkinningCommand>);
+              p_Handle, MeshInstanceNode, world_transform,
+              Low::Math::Matrix4x4);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          MeshInstanceNode l_Handle = p_Handle.get_id();
+          l_Handle.set_world_transform(
+              *(Low::Math::Matrix4x4 *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MeshInstanceNode l_Handle = p_Handle.get_id();
+          *((Low::Math::Matrix4x4 *)p_Data) =
+              l_Handle.get_world_transform();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: world_transform
+      }
+      {
+        // Property: parent_index
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(parent_index);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(MeshInstanceNode::Data, parent_index);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          MeshInstanceNode l_Handle = p_Handle.get_id();
+          l_Handle.get_parent_index();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, MeshInstanceNode, parent_index, int32_t);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
-          SkinningInstance l_Handle = p_Handle.get_id();
-          *((Low::Util::List<SkinningCommand> *)p_Data) =
-              l_Handle.get_skinning_commands();
+          MeshInstanceNode l_Handle = p_Handle.get_id();
+          *((int32_t *)p_Data) = l_Handle.get_parent_index();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-        // End property: skinning_commands
+        // End property: parent_index
       }
       {
-        // Property: render_object_id
+        // Property: bone_index
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(render_object_id);
+        l_PropertyInfo.name = N(bone_index);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(SkinningInstance::Data, render_object_id);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+            offsetof(MeshInstanceNode::Data, bone_index);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
-          SkinningInstance l_Handle = p_Handle.get_id();
-          l_Handle.get_render_object_id();
+          MeshInstanceNode l_Handle = p_Handle.get_id();
+          l_Handle.get_bone_index();
           return (void *)&ACCESSOR_TYPE_SOA(
-              p_Handle, SkinningInstance, render_object_id, uint64_t);
+              p_Handle, MeshInstanceNode, bone_index, int32_t);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MeshInstanceNode l_Handle = p_Handle.get_id();
+          *((int32_t *)p_Data) = l_Handle.get_bone_index();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: bone_index
+      }
+      {
+        // Property: draw_command
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(draw_command);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(MeshInstanceNode::Data, draw_command);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType = DrawCommand::IDENTIFIER;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          MeshInstanceNode l_Handle = p_Handle.get_id();
+          l_Handle.get_draw_command();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, MeshInstanceNode, draw_command, DrawCommand);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          SkinningInstance l_Handle = p_Handle.get_id();
-          l_Handle.set_render_object_id(*(uint64_t *)p_Data);
+          MeshInstanceNode l_Handle = p_Handle.get_id();
+          l_Handle.set_draw_command(*(DrawCommand *)p_Data);
         };
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
-          SkinningInstance l_Handle = p_Handle.get_id();
-          *((uint64_t *)p_Data) = l_Handle.get_render_object_id();
+          MeshInstanceNode l_Handle = p_Handle.get_id();
+          *((DrawCommand *)p_Data) = l_Handle.get_draw_command();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-        // End property: render_object_id
+        // End property: draw_command
+      }
+      {
+        // Property: dirty
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(dirty);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(MeshInstanceNode::Data, dirty);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          MeshInstanceNode l_Handle = p_Handle.get_id();
+          l_Handle.is_dirty();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, MeshInstanceNode, dirty, bool);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          MeshInstanceNode l_Handle = p_Handle.get_id();
+          l_Handle.set_dirty(*(bool *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MeshInstanceNode l_Handle = p_Handle.get_id();
+          *((bool *)p_Data) = l_Handle.is_dirty();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: dirty
       }
       {
         // Property: name
@@ -280,24 +295,24 @@ namespace Low {
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(SkinningInstance::Data, name);
+            offsetof(MeshInstanceNode::Data, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
-          SkinningInstance l_Handle = p_Handle.get_id();
+          MeshInstanceNode l_Handle = p_Handle.get_id();
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(
-              p_Handle, SkinningInstance, name, Low::Util::Name);
+              p_Handle, MeshInstanceNode, name, Low::Util::Name);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          SkinningInstance l_Handle = p_Handle.get_id();
+          MeshInstanceNode l_Handle = p_Handle.get_id();
           l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
-          SkinningInstance l_Handle = p_Handle.get_id();
+          MeshInstanceNode l_Handle = p_Handle.get_id();
           *((Low::Util::Name *)p_Data) = l_Handle.get_name();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -308,7 +323,7 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = SkinningInstance::type_id();
+        l_FunctionInfo.handleType = MeshInstanceNode::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_Name);
@@ -318,23 +333,22 @@ namespace Low {
         }
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-          l_ParameterInfo.name = N(p_Mesh);
+          l_ParameterInfo.name = N(p_ParentIndex);
           l_ParameterInfo.type =
-              Low::Util::RTTI::PropertyType::HANDLE;
-          l_ParameterInfo.handleType = Renderer::Mesh::type_id();
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_BoneIndex);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_ParameterInfo.handleType = 0;
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: make
-      }
-      {
-        // Function: mark_needs_initialization
-        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
-        l_FunctionInfo.name = N(mark_needs_initialization);
-        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
-        l_FunctionInfo.handleType = 0;
-        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
-        // End function: mark_needs_initialization
       }
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
@@ -342,9 +356,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
     }
 
-    void SkinningInstance::cleanup()
+    void MeshInstanceNode::cleanup()
     {
-      Low::Util::List<SkinningInstance> l_Instances =
+      Low::Util::List<MeshInstanceNode> l_Instances =
           ms_LivingInstances;
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
@@ -361,18 +375,18 @@ namespace Low {
     }
 
     Low::Util::Handle
-    SkinningInstance::_find_by_index(uint32_t p_Index)
+    MeshInstanceNode::_find_by_index(uint32_t p_Index)
     {
       return find_by_index(p_Index).get_id();
     }
 
-    SkinningInstance SkinningInstance::find_by_index(uint32_t p_Index)
+    MeshInstanceNode MeshInstanceNode::find_by_index(uint32_t p_Index)
     {
       LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
 
-      SkinningInstance l_Handle;
+      MeshInstanceNode l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = SkinningInstance::ms_TypeId;
+      l_Handle.m_Data.m_Type = MeshInstanceNode::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -386,24 +400,24 @@ namespace Low {
       return l_Handle;
     }
 
-    SkinningInstance
-    SkinningInstance::create_handle_by_index(u32 p_Index)
+    MeshInstanceNode
+    MeshInstanceNode::create_handle_by_index(u32 p_Index)
     {
       if (p_Index < get_capacity()) {
         return find_by_index(p_Index);
       }
 
-      SkinningInstance l_Handle;
+      MeshInstanceNode l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = SkinningInstance::ms_TypeId;
+      l_Handle.m_Data.m_Type = MeshInstanceNode::ms_TypeId;
 
       return l_Handle;
     }
 
-    bool SkinningInstance::is_alive() const
+    bool MeshInstanceNode::is_alive() const
     {
-      if (m_Data.m_Type != SkinningInstance::ms_TypeId) {
+      if (m_Data.m_Type != MeshInstanceNode::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -413,25 +427,25 @@ namespace Low {
         return false;
       }
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-      return m_Data.m_Type == SkinningInstance::ms_TypeId &&
+      return m_Data.m_Type == MeshInstanceNode::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
     }
 
-    uint32_t SkinningInstance::get_capacity()
+    uint32_t MeshInstanceNode::get_capacity()
     {
       return ms_Capacity;
     }
 
     Low::Util::Handle
-    SkinningInstance::_find_by_name(Low::Util::Name p_Name)
+    MeshInstanceNode::_find_by_name(Low::Util::Name p_Name)
     {
       return find_by_name(p_Name).get_id();
     }
 
-    SkinningInstance
-    SkinningInstance::find_by_name(Low::Util::Name p_Name)
+    MeshInstanceNode
+    MeshInstanceNode::find_by_name(Low::Util::Name p_Name)
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
@@ -446,19 +460,19 @@ namespace Low {
       return Low::Util::Handle::DEAD;
     }
 
-    SkinningInstance
-    SkinningInstance::duplicate(Low::Util::Name p_Name) const
+    MeshInstanceNode
+    MeshInstanceNode::duplicate(Low::Util::Name p_Name) const
     {
       _LOW_ASSERT(is_alive());
 
-      SkinningInstance l_Handle = make(p_Name);
-      if (get_pose().is_alive()) {
-        l_Handle.set_pose(get_pose());
+      MeshInstanceNode l_Handle = make(p_Name);
+      l_Handle.set_world_transform(get_world_transform());
+      l_Handle.set_parent_index(get_parent_index());
+      l_Handle.set_bone_index(get_bone_index());
+      if (get_draw_command().is_alive()) {
+        l_Handle.set_draw_command(get_draw_command());
       }
-      if (get_mesh().is_alive()) {
-        l_Handle.set_mesh(get_mesh());
-      }
-      l_Handle.set_render_object_id(get_render_object_id());
+      l_Handle.set_dirty(is_dirty());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -466,23 +480,23 @@ namespace Low {
       return l_Handle;
     }
 
-    SkinningInstance
-    SkinningInstance::duplicate(SkinningInstance p_Handle,
+    MeshInstanceNode
+    MeshInstanceNode::duplicate(MeshInstanceNode p_Handle,
                                 Low::Util::Name p_Name)
     {
       return p_Handle.duplicate(p_Name);
     }
 
     Low::Util::Handle
-    SkinningInstance::_duplicate(Low::Util::Handle p_Handle,
+    MeshInstanceNode::_duplicate(Low::Util::Handle p_Handle,
                                  Low::Util::Name p_Name)
     {
-      SkinningInstance l_SkinningInstance = p_Handle.get_id();
-      return l_SkinningInstance.duplicate(p_Name);
+      MeshInstanceNode l_MeshInstanceNode = p_Handle.get_id();
+      return l_MeshInstanceNode.duplicate(p_Name);
     }
 
     void
-    SkinningInstance::serialize(Low::Util::Serial::Node &p_Node) const
+    MeshInstanceNode::serialize(Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -490,15 +504,15 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
-    void SkinningInstance::serialize(Low::Util::Handle p_Handle,
+    void MeshInstanceNode::serialize(Low::Util::Handle p_Handle,
                                      Low::Util::Serial::Node &p_Node)
     {
-      SkinningInstance l_SkinningInstance = p_Handle.get_id();
-      l_SkinningInstance.serialize(p_Node);
+      MeshInstanceNode l_MeshInstanceNode = p_Handle.get_id();
+      l_MeshInstanceNode.serialize(p_Node);
     }
 
     Low::Util::Handle
-    SkinningInstance::deserialize(Low::Util::Serial::Node &p_Node,
+    MeshInstanceNode::deserialize(Low::Util::Serial::Node &p_Node,
                                   Low::Util::Handle p_Creator)
     {
 
@@ -507,7 +521,7 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
     }
 
-    void SkinningInstance::broadcast_observable(
+    void MeshInstanceNode::broadcast_observable(
         Low::Util::Name p_Observable) const
     {
       Low::Util::ObserverKey l_Key;
@@ -517,7 +531,7 @@ namespace Low {
       Low::Util::notify(l_Key);
     }
 
-    u64 SkinningInstance::observe(
+    u64 MeshInstanceNode::observe(
         Low::Util::Name p_Observable,
         Low::Util::Function<void(Low::Util::Handle, Low::Util::Name)>
             p_Observer) const
@@ -529,7 +543,7 @@ namespace Low {
       return Low::Util::observe(l_Key, p_Observer);
     }
 
-    u64 SkinningInstance::observe(Low::Util::Name p_Observable,
+    u64 MeshInstanceNode::observe(Low::Util::Name p_Observable,
                                   Low::Util::Handle p_Observer) const
     {
       Low::Util::ObserverKey l_Key;
@@ -539,127 +553,183 @@ namespace Low {
       return Low::Util::observe(l_Key, p_Observer);
     }
 
-    void SkinningInstance::notify(Low::Util::Handle p_Observed,
+    void MeshInstanceNode::notify(Low::Util::Handle p_Observed,
                                   Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
-    void SkinningInstance::_notify(Low::Util::Handle p_Observer,
+    void MeshInstanceNode::_notify(Low::Util::Handle p_Observer,
                                    Low::Util::Handle p_Observed,
                                    Low::Util::Name p_Observable)
     {
-      SkinningInstance l_SkinningInstance = p_Observer.get_id();
-      l_SkinningInstance.notify(p_Observed, p_Observable);
+      MeshInstanceNode l_MeshInstanceNode = p_Observer.get_id();
+      l_MeshInstanceNode.notify(p_Observed, p_Observable);
     }
 
-    SkinningPose SkinningInstance::get_pose() const
+    Low::Math::Matrix4x4 &
+    MeshInstanceNode::get_world_transform() const
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pose
-      // LOW_CODEGEN::END::CUSTOM:GETTER_pose
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_transform
+      // LOW_CODEGEN::END::CUSTOM:GETTER_world_transform
 
-      return TYPE_SOA(SkinningInstance, pose, SkinningPose);
+      return TYPE_SOA(MeshInstanceNode, world_transform,
+                      Low::Math::Matrix4x4);
     }
-    void SkinningInstance::set_pose(SkinningPose p_Value)
+    void MeshInstanceNode::set_world_transform(
+        Low::Math::Matrix4x4 &p_Value)
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_pose
-      if (get_pose().is_alive()) {
-        get_pose().dereference(get_id());
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_transform
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_transform
+
+      if (get_world_transform() != p_Value) {
+        // Set dirty flags
+        mark_dirty();
+
+        // Set new value
+        TYPE_SOA(MeshInstanceNode, world_transform,
+                 Low::Math::Matrix4x4) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_transform
+        // LOW_CODEGEN::END::CUSTOM:SETTER_world_transform
+
+        broadcast_observable(N(world_transform));
       }
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_pose
+    }
+
+    int32_t MeshInstanceNode::get_parent_index() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_parent_index
+      // LOW_CODEGEN::END::CUSTOM:GETTER_parent_index
+
+      return TYPE_SOA(MeshInstanceNode, parent_index, int32_t);
+    }
+    void MeshInstanceNode::set_parent_index(int32_t p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_parent_index
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_parent_index
 
       // Set new value
-      TYPE_SOA(SkinningInstance, pose, SkinningPose) = p_Value;
+      TYPE_SOA(MeshInstanceNode, parent_index, int32_t) = p_Value;
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pose
-      if (p_Value.is_alive()) {
-        p_Value.reference(get_id());
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent_index
+      // LOW_CODEGEN::END::CUSTOM:SETTER_parent_index
+
+      broadcast_observable(N(parent_index));
+    }
+
+    int32_t MeshInstanceNode::get_bone_index() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_bone_index
+      // LOW_CODEGEN::END::CUSTOM:GETTER_bone_index
+
+      return TYPE_SOA(MeshInstanceNode, bone_index, int32_t);
+    }
+    void MeshInstanceNode::set_bone_index(int32_t p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_bone_index
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_bone_index
+
+      // Set new value
+      TYPE_SOA(MeshInstanceNode, bone_index, int32_t) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_bone_index
+      // LOW_CODEGEN::END::CUSTOM:SETTER_bone_index
+
+      broadcast_observable(N(bone_index));
+    }
+
+    DrawCommand MeshInstanceNode::get_draw_command() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_draw_command
+      // LOW_CODEGEN::END::CUSTOM:GETTER_draw_command
+
+      return TYPE_SOA(MeshInstanceNode, draw_command, DrawCommand);
+    }
+    void MeshInstanceNode::set_draw_command(DrawCommand p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_draw_command
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_draw_command
+
+      // Set new value
+      TYPE_SOA(MeshInstanceNode, draw_command, DrawCommand) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_draw_command
+      // LOW_CODEGEN::END::CUSTOM:SETTER_draw_command
+
+      broadcast_observable(N(draw_command));
+    }
+
+    bool MeshInstanceNode::is_dirty() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dirty
+      // LOW_CODEGEN::END::CUSTOM:GETTER_dirty
+
+      return TYPE_SOA(MeshInstanceNode, dirty, bool);
+    }
+    void MeshInstanceNode::toggle_dirty()
+    {
+      set_dirty(!is_dirty());
+    }
+
+    void MeshInstanceNode::set_dirty(bool p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dirty
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
+
+      // Set new value
+      TYPE_SOA(MeshInstanceNode, dirty, bool) = p_Value;
+
+      if (p_Value) {
+        mark_dirty();
       }
 
-      mark_needs_initialization();
-      // LOW_CODEGEN::END::CUSTOM:SETTER_pose
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
+      // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
 
-      broadcast_observable(N(pose));
+      broadcast_observable(N(dirty));
     }
 
-    Mesh SkinningInstance::get_mesh() const
+    void MeshInstanceNode::mark_dirty()
     {
-      _LOW_ASSERT(is_alive());
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mesh
-      // LOW_CODEGEN::END::CUSTOM:GETTER_mesh
-
-      return TYPE_SOA(SkinningInstance, mesh, Mesh);
-    }
-    void SkinningInstance::set_mesh(Mesh p_Value)
-    {
-      _LOW_ASSERT(is_alive());
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mesh
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_mesh
-
-      // Set new value
-      TYPE_SOA(SkinningInstance, mesh, Mesh) = p_Value;
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mesh
-      // LOW_CODEGEN::END::CUSTOM:SETTER_mesh
-
-      broadcast_observable(N(mesh));
+      if (!is_dirty()) {
+        TYPE_SOA(MeshInstanceNode, dirty, bool) = true;
+        // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+        // LOW_CODEGEN::END::CUSTOM:MARK_dirty
+      }
     }
 
-    Low::Util::List<SkinningCommand> &
-    SkinningInstance::get_skinning_commands() const
-    {
-      _LOW_ASSERT(is_alive());
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_skinning_commands
-      // LOW_CODEGEN::END::CUSTOM:GETTER_skinning_commands
-
-      return TYPE_SOA(SkinningInstance, skinning_commands,
-                      Low::Util::List<SkinningCommand>);
-    }
-
-    uint64_t SkinningInstance::get_render_object_id() const
-    {
-      _LOW_ASSERT(is_alive());
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_render_object_id
-      // LOW_CODEGEN::END::CUSTOM:GETTER_render_object_id
-
-      return TYPE_SOA(SkinningInstance, render_object_id, uint64_t);
-    }
-    void SkinningInstance::set_render_object_id(uint64_t p_Value)
-    {
-      _LOW_ASSERT(is_alive());
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_render_object_id
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_render_object_id
-
-      // Set new value
-      TYPE_SOA(SkinningInstance, render_object_id, uint64_t) =
-          p_Value;
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_render_object_id
-      // LOW_CODEGEN::END::CUSTOM:SETTER_render_object_id
-
-      broadcast_observable(N(render_object_id));
-    }
-
-    Low::Util::Name SkinningInstance::get_name() const
+    Low::Util::Name MeshInstanceNode::get_name() const
     {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
-      return TYPE_SOA(SkinningInstance, name, Low::Util::Name);
+      return TYPE_SOA(MeshInstanceNode, name, Low::Util::Name);
     }
-    void SkinningInstance::set_name(Low::Util::Name p_Value)
+    void MeshInstanceNode::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
 
@@ -667,7 +737,7 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
-      TYPE_SOA(SkinningInstance, name, Low::Util::Name) = p_Value;
+      TYPE_SOA(MeshInstanceNode, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
@@ -675,29 +745,20 @@ namespace Low {
       broadcast_observable(N(name));
     }
 
-    SkinningInstance SkinningInstance::make(Util::Name p_Name,
-                                            Renderer::Mesh p_Mesh)
+    MeshInstanceNode MeshInstanceNode::make(Util::Name p_Name,
+                                            int32_t p_ParentIndex,
+                                            int32_t p_BoneIndex)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
-      LOW_ASSERT(p_Mesh.is_alive(),
-                 "Cannot create skinning instance with dead mesh.");
-      SkinningInstance l_Instance = make(p_Name);
-      l_Instance.set_mesh(p_Mesh);
+      MeshInstanceNode l_Node = make(p_Name);
+      l_Node.set_parent_index(p_ParentIndex);
+      l_Node.set_bone_index(p_BoneIndex);
 
-      l_Instance.mark_needs_initialization();
-
-      return l_Instance;
+      return l_Node;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
     }
 
-    void SkinningInstance::mark_needs_initialization()
-    {
-      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_mark_needs_initialization
-      ms_NeedInitialization.insert(get_id());
-      // LOW_CODEGEN::END::CUSTOM:FUNCTION_mark_needs_initialization
-    }
-
-    uint32_t SkinningInstance::create_instance(u32 &p_PageIndex,
+    uint32_t MeshInstanceNode::create_instance(u32 &p_PageIndex,
                                                u32 &p_SlotIndex)
     {
       u32 l_Index = 0;
@@ -730,23 +791,23 @@ namespace Low {
       return l_Index;
     }
 
-    u32 SkinningInstance::create_page()
+    u32 MeshInstanceNode::create_page()
     {
       const u32 l_Capacity = get_capacity();
       LOW_ASSERT((l_Capacity + ms_PageSize) < LOW_UINT32_MAX,
-                 "Could not increase capacity for SkinningInstance.");
+                 "Could not increase capacity for MeshInstanceNode.");
 
       Low::Util::Instances::Page *l_Page =
           new Low::Util::Instances::Page;
       Low::Util::Instances::initialize_page(
-          l_Page, SkinningInstance::Data::get_size(), ms_PageSize);
+          l_Page, MeshInstanceNode::Data::get_size(), ms_PageSize);
       ms_Pages.push_back(l_Page);
 
       ms_Capacity = l_Capacity + l_Page->size;
       return ms_Pages.size() - 1;
     }
 
-    bool SkinningInstance::get_page_for_index(const u32 p_Index,
+    bool MeshInstanceNode::get_page_for_index(const u32 p_Index,
                                               u32 &p_PageIndex,
                                               u32 &p_SlotIndex)
     {

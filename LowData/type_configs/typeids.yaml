@@ -55,6 +55,7 @@ LowCore:
   ControllerInstance: 105
   Class: 106
   ClassInstance: 107
+  Animator: 120
 LowRenderer2:
   GraphicsPipeline: 32
   Pipeline: 45
@@ -116,6 +117,8 @@ LowRenderer2:
   SkinningPose: 115
   SkinningInstance: 116
   SkinningCommand: 117
+  SkeletalRenderObject: 118
+  MeshInstanceNode: 119
 LowRendjrer2:
   RenderObject: 56
   RenderView: 57

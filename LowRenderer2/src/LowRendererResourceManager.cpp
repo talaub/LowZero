@@ -279,7 +279,9 @@ namespace Low {
 
       static void build_mesh_bone_to_skeleton_bone_map(
           const Util::Resource::Mesh &p_Mesh,
-          Util::Map<u32, u32> &p_OutBoneIndexRemap)
+          Util::Map<u32, u32> &p_OutBoneIndexRemap,
+          Util::Map<Util::Name, u32> *p_OutNameToSkeletonBoneIndex =
+              nullptr)
       {
         p_OutBoneIndexRemap.clear();
 
@@ -316,6 +318,20 @@ namespace Low {
           }
         }
 
+        for (const Util::Resource::BoneHierarchyNode &i_Node :
+             p_Mesh.boneHierarchy) {
+          if (l_RelevantNodes.find(i_Node.name) !=
+              l_RelevantNodes.end()) {
+            continue;
+          }
+          if (i_Node.parentIndex >= 0 &&
+              l_RelevantNodes.find(
+                  p_Mesh.boneHierarchy[i_Node.parentIndex].name) !=
+                  l_RelevantNodes.end()) {
+            l_RelevantNodes.insert(i_Node.name);
+          }
+        }
+
         Util::Map<Util::Name, u32> l_SkeletonBoneIndices;
         for (const Util::Resource::BoneHierarchyNode &i_Node :
              p_Mesh.boneHierarchy) {
@@ -328,6 +344,10 @@ namespace Low {
               static_cast<u32>(l_SkeletonBoneIndices.size());
         }
 
+        if (p_OutNameToSkeletonBoneIndex) {
+          *p_OutNameToSkeletonBoneIndex = l_SkeletonBoneIndices;
+        }
+
         for (auto it = p_Mesh.bones.begin(); it != p_Mesh.bones.end();
              ++it) {
           if (l_UsedMeshBoneIndices.find(it->second.index) ==
@@ -335,7 +355,8 @@ namespace Low {
             continue;
           }
 
-          auto i_SkeletonBoneIt = l_SkeletonBoneIndices.find(it->first);
+          auto i_SkeletonBoneIt =
+              l_SkeletonBoneIndices.find(it->first);
           if (i_SkeletonBoneIt == l_SkeletonBoneIndices.end()) {
             continue;
           }
@@ -607,7 +628,6 @@ namespace Low {
       static bool mesh_can_load(Mesh p_Mesh)
       {
         return p_Mesh.get_state() == MeshState::UNLOADED &&
-               !p_Mesh.get_geometry().is_alive() &&
                !p_Mesh.get_gpu().is_alive() &&
                p_Mesh.get_resource().is_alive();
       }
@@ -648,6 +668,10 @@ namespace Low {
           i_Submesh.destroy();
         }
         l_Gpu.destroy();
+
+        if (p_Mesh.get_geometry().is_alive()) {
+          p_Mesh.get_geometry().destroy();
+        }
 
         for (auto it = g_MeshEntriesContainer.begin();
              it != g_MeshEntriesContainer.end();) {
@@ -1037,10 +1061,28 @@ namespace Low {
               }
 
               Util::Map<u32, u32> l_BoneIndexRemap;
+              Util::Map<Util::Name, u32> l_NameToSkeletonBoneIndex;
               build_mesh_bone_to_skeleton_bone_map(
-                  p_Result.mesh, l_BoneIndexRemap);
+                  p_Result.mesh, l_BoneIndexRemap,
+                  l_Mesh.get_type() == MeshType::SKELETAL
+                      ? &l_NameToSkeletonBoneIndex
+                      : nullptr);
+
+              const bool l_IsSkeletal =
+                  l_Mesh.get_type() == MeshType::SKELETAL;
+
+              if (l_IsSkeletal && l_Skeleton.is_alive() &&
+                  !l_Skeleton.get_bones().empty()) {
+                l_NameToSkeletonBoneIndex.clear();
+                Util::List<SkeletonBone> &i_Bones =
+                    l_Skeleton.get_bones();
+                for (u32 i = 0u; i < (u32)i_Bones.size(); ++i) {
+                  l_NameToSkeletonBoneIndex[i_Bones[i].name] = i;
+                }
+              }
 
               u32 l_SubmeshCount = 0u;
+              u32 l_NodeIdx = 0u;
               for (auto &i_Submesh : p_Result.mesh.submeshes) {
                 for (auto &i_MeshInfo : i_Submesh.meshInfos) {
                   SubmeshGeometry i_SubmeshGeometry =
@@ -1066,6 +1108,8 @@ namespace Low {
                       i_Submesh.parentTransform);
                   i_SubmeshGeometry.set_local_transform(
                       i_Submesh.localTransform);
+                  i_SubmeshGeometry.set_node_index(
+                      l_IsSkeletal ? (i32)l_NodeIdx : -1);
 
                   auto i_AabbIt =
                       p_Result.submesh_aabbs.find(i_MeshInfo.name);
@@ -1085,6 +1129,43 @@ namespace Low {
                   l_MeshGeometry.get_submeshes().push_back(
                       i_SubmeshGeometry);
                   l_SubmeshCount++;
+                }
+                l_NodeIdx++;
+              }
+
+              if (l_IsSkeletal) {
+                u32 l_GeomIdx = 0u;
+                for (u32 i = 0u;
+                     i < (u32)p_Result.mesh.boneHierarchy.size();
+                     ++i) {
+                  const Util::Resource::BoneHierarchyNode
+                      &i_BoneNode = p_Result.mesh.boneHierarchy[i];
+
+                  MeshNode i_MeshNode;
+                  i_MeshNode.name = i_BoneNode.name;
+                  i_MeshNode.parent_index = i_BoneNode.parentIndex;
+                  i_MeshNode.local_transform =
+                      i_BoneNode.localTransform;
+
+                  auto i_SkeletonIt =
+                      l_NameToSkeletonBoneIndex.find(i_BoneNode.name);
+                  i_MeshNode.bone_index =
+                      (i_SkeletonIt !=
+                       l_NameToSkeletonBoneIndex.end())
+                          ? (i32)i_SkeletonIt->second
+                          : -1;
+
+                  const u32 i_MeshInfoCount =
+                      (u32)p_Result.mesh.submeshes[i]
+                          .meshInfos.size();
+                  if (i_MeshInfoCount > 0u) {
+                    i_MeshNode.submesh_index = (i32)l_GeomIdx;
+                    l_GeomIdx += i_MeshInfoCount;
+                  } else {
+                    i_MeshNode.submesh_index = -1;
+                  }
+
+                  l_MeshGeometry.get_nodes().push_back(i_MeshNode);
                 }
               }
 
@@ -1128,8 +1209,9 @@ namespace Low {
           i_GpuSubmesh.set_vertex_count(it->get_vertex_count());
           i_GpuSubmesh.set_index_count(it->get_index_count());
           i_GpuSubmesh.set_bone_weight_count(
-              it->get_bone_weights().empty() ? 0u
-                                             : it->get_vertex_count());
+              it->get_bone_weights().empty()
+                  ? 0u
+                  : it->get_vertex_count());
           i_GpuSubmesh.set_uploaded_vertex_count(0);
           i_GpuSubmesh.set_uploaded_index_count(0);
           i_GpuSubmesh.set_uploaded_bone_weight_count(0);
@@ -1137,9 +1219,7 @@ namespace Low {
           i_GpuSubmesh.set_bounding_sphere(it->get_bounding_sphere());
           i_GpuSubmesh.set_aabb(it->get_aabb());
           i_GpuSubmesh.set_transform(it->get_transform());
-          i_GpuSubmesh.set_parent_transform(
-              it->get_parent_transform());
-          i_GpuSubmesh.set_local_transform(it->get_local_transform());
+          i_GpuSubmesh.set_node_index(it->get_node_index());
 
           l_GpuMesh.get_submeshes().push_back(i_GpuSubmesh);
 
@@ -1415,13 +1495,11 @@ namespace Low {
         return true;
       }
 
-      static bool
-      request_mesh_buffer_space(UploadEntry &p_UploadEntry,
-                                u32 p_VertexCount, u32 p_IndexCount,
-                                u32 p_BoneWeightCount,
-                                u32 *p_OutVertexStart,
-                                u32 *p_OutIndexStart,
-                                u32 *p_OutBoneWeightStart)
+      static bool request_mesh_buffer_space(
+          UploadEntry &p_UploadEntry, u32 p_VertexCount,
+          u32 p_IndexCount, u32 p_BoneWeightCount,
+          u32 *p_OutVertexStart, u32 *p_OutIndexStart,
+          u32 *p_OutBoneWeightStart)
       {
         MeshEntry l_MeshEntry;
         l_MeshEntry.lodPriority = p_UploadEntry.lodPriority;
@@ -1463,7 +1541,8 @@ namespace Low {
       build_vertex_skinning_weights(SubmeshGeometry p_SubmeshGeometry)
       {
         Util::List<VertexSkinningWeights> l_SkinningWeights;
-        l_SkinningWeights.resize(p_SubmeshGeometry.get_vertex_count());
+        l_SkinningWeights.resize(
+            p_SubmeshGeometry.get_vertex_count());
 
         for (VertexSkinningWeights &i_Weights : l_SkinningWeights) {
           i_Weights.bone_indices = Math::UVector4(0u);
@@ -1509,10 +1588,9 @@ namespace Low {
         }
 
         for (VertexSkinningWeights &i_Weights : l_SkinningWeights) {
-          const float i_TotalWeight = i_Weights.weights.x +
-                                      i_Weights.weights.y +
-                                      i_Weights.weights.z +
-                                      i_Weights.weights.w;
+          const float i_TotalWeight =
+              i_Weights.weights.x + i_Weights.weights.y +
+              i_Weights.weights.z + i_Weights.weights.w;
           if (i_TotalWeight > 0.0f) {
             i_Weights.weights /= i_TotalWeight;
           }
@@ -1566,10 +1644,9 @@ namespace Low {
         const bool l_HasBoneWeights =
             l_GpuSubmesh.get_bone_weight_count() > 0u;
         const u64 l_BoneWeightDataSize =
-            l_HasBoneWeights
-                ? (l_SubmeshGeometry.get_vertex_count() *
-                   sizeof(VertexSkinningWeights))
-                : 0u;
+            l_HasBoneWeights ? (l_SubmeshGeometry.get_vertex_count() *
+                                sizeof(VertexSkinningWeights))
+                             : 0u;
 
         if (l_GpuSubmesh.get_uploaded_vertex_count() <
             l_GpuSubmesh.get_vertex_count()) {
@@ -2126,7 +2203,7 @@ namespace Low {
           if (l_Mesh.get_gpu().get_uploaded_submesh_count() >=
               l_Mesh.get_gpu().get_submesh_count()) {
             l_Mesh.set_state(MeshState::LOADED);
-            l_Mesh.get_geometry().destroy();
+            l_Mesh.get_geometry().clear_loaded_geometry();
           }
         }
 

@@ -22,9 +22,9 @@ types:
         private_setter: true
       slot:
         type: uint32_t
-      render_object:
-        type: Low::Renderer::RenderObject
-        handle: true
+      render_object_handle:
+        type: Low::Util::Handle
+        no_ref: true
         private_setter: true
       material:
         type: Low::Renderer::Material
@@ -45,7 +45,7 @@ types:
         return_handle: true
         parameters:
           - name: renderObject
-            type: Low::Renderer::RenderObject
+            type: Low::Util::Handle
             handle: true
           - name: renderScene
             type: Low::Renderer::RenderScene
@@ -61,6 +61,45 @@ types:
         constant: true
         no_ref: true
       get_active_vertex_offset:
+        constant: true
+        return_type: uint64_t
+      has_static_render_object:
+        constant: true
+        return_type: bool
+      has_skeletal_render_object:
+        constant: true
+        return_type: bool
+      get_static_render_object:
+        constant: true
+        return_type: RenderObject
+        return_handle: true
+      get_skeletal_render_object:
+        constant: true
+        return_type: SkeletalRenderObject
+        return_handle: true
+      has_any_dirty_render_object:
+        constant: true
+        return_type: bool
+      has_any_render_object:
+        constant: true
+        return_type: bool
+      get_any_render_object_mesh:
+        constant: true
+        return_type: Mesh
+        return_handle: true
+      get_any_render_object_material:
+        constant: true
+        return_type: Material
+        return_handle: true
+      get_any_render_object_name:
+        constant: true
+        return_type: Util::Name
+      is_any_render_object_uploaded:
+        constant: true
+        return_type: bool
+      mark_any_render_object_dirty:
+        return_type: void
+      get_any_render_object_last_uploaded_mesh_gpu_id:
         constant: true
         return_type: uint64_t
 
@@ -97,9 +136,6 @@ types:
       object_id:
         type: uint32_t
         dirty_flag: dirty
-      skinning_instance:
-        type: SkinningInstance
-        handle: true
     functions:
       make:
         static: true
@@ -112,6 +148,91 @@ types:
           - name: mesh
             type: Low::Renderer::Mesh
             handle: true
+
+  SkeletalRenderObject:
+    skip_name_serialization: true
+    skip_name_deserialization: true
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    private_make: true
+    properties:
+      world_transform:
+        type: Low::Math::Matrix4x4
+        dirty_flag: dirty
+      mesh:
+        type: Low::Renderer::Mesh
+        handle: true
+        private_setter: true
+      last_uploaded_mesh_gpu_id:
+        type: uint64_t
+      uploaded:
+        type: bool
+      slot:
+        type: uint32_t
+      render_scene_handle:
+        type: uint64_t
+        private_setter: true
+      material:
+        type: Low::Renderer::Material
+        handle: true
+        dirty_flag: dirty
+      draw_commands:
+        type: Low::Util::List<DrawCommand>
+        no_setter: true
+      object_id:
+        type: uint32_t
+        dirty_flag: dirty
+      skinning_instance:
+        type: SkinningInstance
+        handle: true
+      nodes:
+        type: Low::Util::List<MeshInstanceNode>
+        no_setter: true
+    functions:
+      make:
+        static: true
+        return_type: SkeletalRenderObject
+        return_handle: true
+        parameters:
+          - name: renderScene
+            type: RenderScene
+            handle: true
+          - name: mesh
+            type: Low::Renderer::Mesh
+            handle: true
+
+  MeshInstanceNode:
+    skip_name_serialization: true
+    skip_name_deserialization: true
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    private_make: true
+    properties:
+      world_transform:
+        type: Low::Math::Matrix4x4
+        dirty_flag: dirty
+      parent_index:
+        type: int32_t
+        private_setter: true
+      bone_index:
+        type: int32_t
+        private_setter: true
+      draw_command:
+        type: DrawCommand
+        handle: true
+    functions:
+      make:
+        static: true
+        return_type: MeshInstanceNode
+        return_handle: true
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: parentIndex
+            type: int32_t
+          - name: boneIndex
+            type: int32_t
+
   RenderScene:
     skip_name_serialization: true
     skip_name_deserialization: true
@@ -929,6 +1050,8 @@ types:
       skinning_commands:
         type: Low::Util::List<SkinningCommand>
         no_setter: true
+      render_object_id:
+        type: uint64_t
     functions:
       make:
         static: true

@@ -31,6 +31,7 @@
 #include "LowCoreRigidbody.h"
 #include "LowCoreNavmeshAgent.h"
 #include "LowCoreCamera.h"
+#include "LowCoreAnimator.h"
 
 #include "LowUtilEnums.h"
 #include "LowUtilGlobals.h"
@@ -87,6 +88,24 @@ namespace Low {
       }
     }
 
+    static void highlight_skeletal_renderobject(
+        Renderer::SkeletalRenderObject p_RenderObject,
+        const Renderer::HighlightType p_HighlightType)
+    {
+      if (!p_RenderObject.is_alive()) {
+        return;
+      }
+      for (Renderer::DrawCommand i_DrawCommand :
+           p_RenderObject.get_draw_commands()) {
+        Renderer::HighlightDrawSolid i_HighlightDraw;
+        i_HighlightDraw.drawCommand = i_DrawCommand;
+        i_HighlightDraw.highlightType = p_HighlightType;
+        Renderer::get_editor_renderview()
+            .get_highlight_draws_solid()
+            .push_back(i_HighlightDraw);
+      }
+    }
+
     static void
     highlight_entity(Core::Entity p_Entity,
                      const Renderer::HighlightType p_HighlightType)
@@ -97,10 +116,21 @@ namespace Low {
       Core::Component::MeshRenderer l_MeshRenderer =
           p_Entity.get_component(
               Core::Component::MeshRenderer::type_id());
+      Core::Component::Animator l_Animator = p_Entity.get_component(
+          Core::Component::Animator::type_id());
       if (l_MeshRenderer.is_alive()) {
-        highlight_renderobject(l_MeshRenderer.get_render_object(),
-                               p_HighlightType);
-        return;
+        if (l_MeshRenderer.get_render_object().is_alive()) {
+          highlight_renderobject(l_MeshRenderer.get_render_object(),
+                                 p_HighlightType);
+          return;
+        }
+      }
+      if (l_Animator.is_alive()) {
+        if (l_Animator.get_render_object().is_alive()) {
+          highlight_skeletal_renderobject(
+              l_Animator.get_render_object(), p_HighlightType);
+          return;
+        }
       }
     }
 
@@ -380,9 +410,11 @@ namespace Low {
       const float l_IconSize = 18.0f * l_S;
 
       const ImVec2 l_ButtonMin(p_ButtonCenter.x - l_ButtonSize * 0.5f,
-                               p_ButtonCenter.y - l_ButtonSize * 0.5f);
+                               p_ButtonCenter.y -
+                                   l_ButtonSize * 0.5f);
       const ImVec2 l_ButtonMax(p_ButtonCenter.x + l_ButtonSize * 0.5f,
-                               p_ButtonCenter.y + l_ButtonSize * 0.5f);
+                               p_ButtonCenter.y +
+                                   l_ButtonSize * 0.5f);
 
       ImDrawList *l_Draw = ImGui::GetWindowDrawList();
       if (p_Background) {
@@ -392,19 +424,21 @@ namespace Low {
             ImVec2(1, 1), l_Radius, IM_COL32(255, 255, 255, 10),
             IM_COL32(0, 0, 0, 0));
       } else {
-        l_Draw->AddRectFilled(
-            l_ButtonMin, l_ButtonMax,
-            ImGui::GetColorU32(ImGuiCol_WindowBg), l_Radius,
-            ImDrawFlags_RoundCornersAll);
+        l_Draw->AddRectFilled(l_ButtonMin, l_ButtonMax,
+                              ImGui::GetColorU32(ImGuiCol_WindowBg),
+                              l_Radius, ImDrawFlags_RoundCornersAll);
       }
 
       ImGui::PushID(p_Id);
       ImGui::SetCursorScreenPos(l_ButtonMin);
-      ImGui::InvisibleButton("button", ImVec2(l_ButtonSize, l_ButtonSize));
+      ImGui::InvisibleButton("button",
+                             ImVec2(l_ButtonSize, l_ButtonSize));
 
-      const bool l_Hovered = ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly);
+      const bool l_Hovered =
+          ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly);
       const bool l_Held = ImGui::IsItemActive();
-      const bool l_Pressed = ImGui::IsItemClicked(ImGuiMouseButton_Left);
+      const bool l_Pressed =
+          ImGui::IsItemClicked(ImGuiMouseButton_Left);
 
       if (l_Hovered || l_Held) {
         const ImU32 l_Fill = ImGui::GetColorU32(
@@ -694,8 +728,8 @@ namespace Low {
             l_Style);
 
         const ImVec2 l_PlayButtonCenter(
-            l_SceneRectMin.x + (l_SceneRectMax.x - l_SceneRectMin.x) *
-                                   0.5f,
+            l_SceneRectMin.x +
+                (l_SceneRectMax.x - l_SceneRectMin.x) * 0.5f,
             l_SceneRectMin.y + l_TopPadding);
 
         if (Core::get_engine_state() == Util::EngineState::EDITING) {
@@ -837,8 +871,7 @@ namespace Low {
 
         Math::Matrix4x4 l_GizmoMatrix(1.0f);
         if (l_SelectedTransforms.size() == 1) {
-          l_GizmoMatrix =
-              l_SelectedTransforms[0].get_world_matrix();
+          l_GizmoMatrix = l_SelectedTransforms[0].get_world_matrix();
         } else {
           Math::Vector3 l_Min =
               l_SelectedTransforms[0].get_world_position();
@@ -858,11 +891,10 @@ namespace Low {
 
         Math::Matrix4x4 l_OriginalGizmoMatrix = l_GizmoMatrix;
 
-        if (ImGuizmo::Manipulate((float *)&l_ViewMatrix,
-                                 (float *)&l_ProjectionMatrix,
-                                 l_Operation, ImGuizmo::LOCAL,
-                                 (float *)&l_GizmoMatrix, NULL,
-                                 &l_Snap.x)) {
+        if (ImGuizmo::Manipulate(
+                (float *)&l_ViewMatrix, (float *)&l_ProjectionMatrix,
+                l_Operation, ImGuizmo::LOCAL, (float *)&l_GizmoMatrix,
+                NULL, &l_Snap.x)) {
 
           bool l_IsFirst = false;
           if (!get_gizmos_dragged()) {
@@ -938,7 +970,8 @@ namespace Low {
                   (CommonOperations::PropertyEditOperation *)
                       l_Transaction.get_operations()[i];
               for (uint32_t j = 0;
-                   j < l_OldTransaction.get_operations().size(); ++j) {
+                   j < l_OldTransaction.get_operations().size();
+                   ++j) {
                 CommonOperations::PropertyEditOperation
                     *i_OldOperation =
                         (CommonOperations::PropertyEditOperation *)

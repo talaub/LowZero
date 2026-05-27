@@ -618,7 +618,12 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mesh
-
+        if (p_Value == get_mesh()) {
+          return;
+        }
+        if (get_mesh().is_alive()) {
+          get_mesh().dereference(get_id());
+        }
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_mesh
 
         if (get_mesh() != p_Value) {
@@ -646,7 +651,9 @@ namespace Low {
           }
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mesh
-
+          if (p_Value.is_alive()) {
+            p_Value.reference(get_id());
+          }
           // LOW_CODEGEN::END::CUSTOM:SETTER_mesh
 
           broadcast_observable(N(mesh));

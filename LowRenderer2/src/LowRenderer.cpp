@@ -58,6 +58,8 @@
 #include "LowRendererSkinningInstance.h"
 #include "LowRendererSkinningPose.h"
 #include "LowRendererSkinningSystem.h"
+#include "LowRendererSkeletalRenderObject.h"
+#include "LowRendererMeshInstanceNode.h"
 
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
@@ -146,6 +148,8 @@ namespace Low {
       MaterialType::initialize();
       SkeletonResource::initialize();
       Skeleton::initialize();
+      SkeletalRenderObject::initialize();
+      MeshInstanceNode::initialize();
       AnimationClipResource::initialize();
       AnimationClip::initialize();
       RenderScene::initialize();
@@ -191,6 +195,8 @@ namespace Low {
 
     static void cleanup_types()
     {
+      SkeletalRenderObject::cleanup();
+      MeshInstanceNode::cleanup();
       SkinningPose::cleanup();
       SkinningCommand::cleanup();
       SkinningInstance::cleanup();
@@ -816,8 +822,8 @@ namespace Low {
           l_ResourceConfig.material_id = l_Material.get_unique_id();
           l_ResourceConfig.path = p_Path;
           l_ResourceConfig.data_path = Util::project_asset_cache_path(
-              Util::hash_to_string(l_Material.get_id()) +
-              "material.yaml");
+              Util::hash_to_string(l_Material.get_unique_id()) +
+              ".material.yaml");
           l_ResourceConfig.name = p_Name;
 
           MaterialResource l_Resource =
@@ -992,22 +998,37 @@ namespace Low {
 
     static void tick_materials(float p_Delta)
     {
-      Util::UniqueLock<Util::Mutex> l_PendingLock(
-          Material::ms_PendingTextureBindingsMutex);
-      for (auto it = Material::ms_PendingTextureBindings.begin();
-           it != Material::ms_PendingTextureBindings.end();) {
-        if (!it->texture.is_alive() || !it->material.is_alive()) {
-          it = Material::ms_PendingTextureBindings.erase(it);
+      Util::List<PendingTextureBinding> l_ReadyTextureBindings;
+      {
+        Util::UniqueLock<Util::Mutex> l_PendingLock(
+            Material::ms_PendingTextureBindingsMutex);
+        for (auto it = Material::ms_PendingTextureBindings.begin();
+             it != Material::ms_PendingTextureBindings.end();) {
+          if (!it->texture.is_alive() || !it->material.is_alive()) {
+            it = Material::ms_PendingTextureBindings.erase(it);
+            continue;
+          }
+
+          if (it->texture.get_state() == TextureState::LOADED) {
+            l_ReadyTextureBindings.push_back(*it);
+            it = Material::ms_PendingTextureBindings.erase(it);
+            continue;
+          }
+
+          ++it;
+        }
+      }
+
+      for (PendingTextureBinding &i_Binding :
+           l_ReadyTextureBindings) {
+        if (!i_Binding.texture.is_alive() ||
+            !i_Binding.material.is_alive() ||
+            i_Binding.texture.get_state() != TextureState::LOADED) {
           continue;
         }
 
-        if (it->texture.get_state() == TextureState::LOADED) {
-          it->material.set_property_texture(it->propertyName,
-                                            it->texture);
-          break;
-        }
-
-        ++it;
+        i_Binding.material.set_property_texture(
+            i_Binding.propertyName, i_Binding.texture);
       }
 
       for (u32 i = 0; i < GpuMaterial::living_count(); ++i) {
