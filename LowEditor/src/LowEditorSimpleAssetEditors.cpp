@@ -103,8 +103,14 @@ namespace Low {
     MeshAssetEditor::MeshAssetEditor(Util::Handle p_Handle)
         : TypeEditor(p_Handle)
     {
-      m_MeshViewer =
-          new MeshViewer(p_Handle.get_id(), Math::UVector2(500, 500));
+      Renderer::Mesh l_Mesh = p_Handle.get_id();
+      if (l_Mesh.get_type() == Renderer::MeshType::SKELETAL) {
+        m_MeshViewer =
+            new SkeletalMeshViewer(l_Mesh, Math::UVector2(500, 500));
+      } else {
+        m_MeshViewer =
+            new MeshViewer(l_Mesh, Math::UVector2(500, 500));
+      }
     }
 
     MeshAssetEditor::~MeshAssetEditor()

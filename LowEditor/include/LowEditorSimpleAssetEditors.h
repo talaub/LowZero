@@ -18,7 +18,7 @@ namespace Low {
       }
 
     protected:
-      MeshViewer *m_MeshViewer;
+      Viewport *m_MeshViewer;
     };
 
     struct MaterialAssetEditor : public TypeEditor

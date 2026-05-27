@@ -3,11 +3,15 @@
 #include "LowEditorApi.h"
 
 #include "LowMath.h"
+#include "LowRenderer.h"
 #include "LowRendererPrimitives.h"
 #include "LowRendererRenderStep.h"
 #include "LowRendererRenderView.h"
 #include "LowRendererRenderObject.h"
 #include "LowRendererRenderScene.h"
+#include "LowRendererSkeletalRenderObject.h"
+#include "LowRendererSkinningInstance.h"
+#include "LowRendererSkinningPose.h"
 #include "LowRendererUiCanvas.h"
 
 namespace Low {
@@ -120,6 +124,74 @@ namespace Low {
       bool m_InitialCameraSetup;
       float m_CameraOrbitDistance;
       bool m_LowSpotCalculated = false;
+    };
+
+    struct LOW_EDITOR_API SkeletalMeshViewer : public Viewport
+    {
+      SkeletalMeshViewer(Renderer::Mesh p_Mesh,
+                         const Math::UVector2 p_Dimensions)
+          : Viewport(p_Dimensions), m_InitialCameraSetup(false),
+            m_CameraOrbitDistance(0.0f), m_BindPoseInitialized(false)
+      {
+        m_RenderScene.set_directional_light_color(1.0f, 1.0f, 1.0f);
+        m_RenderScene.set_directional_light_intensity(0.75f);
+        m_RenderScene.set_directional_light_direction(-0.15f, -1.0f,
+                                                      -1.5f);
+
+        m_RenderView.add_step_by_name(RENDERSTEP_SKY_GRADIENT_NAME);
+
+        m_RenderObject = Renderer::SkeletalRenderObject::make(
+            m_RenderScene, p_Mesh);
+        m_RenderObject.set_material(Renderer::get_default_material());
+
+        Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
+        l_LocalMatrix =
+            glm::translate(l_LocalMatrix, Math::Vector3(0.0f));
+        l_LocalMatrix *=
+            glm::toMat4(Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f));
+        l_LocalMatrix = glm::scale(l_LocalMatrix, Math::Vector3(1.0f));
+        m_RenderObject.set_world_transform(l_LocalMatrix);
+
+        m_Pose = Renderer::SkinningPose::make(N(Skeletal Mesh Viewer));
+        m_Pose.set_skeleton(p_Mesh.get_skeleton());
+
+        m_SkinningInstance = Renderer::SkinningInstance::make(
+            N(Skeletal Mesh Viewer), p_Mesh);
+        m_SkinningInstance.set_pose(m_Pose);
+        m_SkinningInstance.set_render_object_id(
+            m_RenderObject.get_id());
+        m_RenderObject.set_skinning_instance(m_SkinningInstance);
+
+        m_GroundRenderObject =
+            spawn_mesh(Renderer::get_primitives().unitCube);
+
+        Low::Math::Matrix4x4 l_GroundMatrix(1.0f);
+        l_GroundMatrix = glm::translate(
+            l_GroundMatrix, Math::Vector3(0.0f, 0.0f, 0.0f));
+        l_GroundMatrix *=
+            glm::toMat4(Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f));
+        l_GroundMatrix = glm::scale(
+            l_GroundMatrix, Math::Vector3(50.0f, 0.2f, 50.0f));
+
+        m_GroundRenderObject.set_world_transform(l_GroundMatrix);
+      }
+
+      virtual ~SkeletalMeshViewer();
+
+      virtual bool tick(const float p_Delta) override;
+
+      Renderer::SkeletalRenderObject m_RenderObject;
+      Renderer::SkinningPose m_Pose;
+      Renderer::SkinningInstance m_SkinningInstance;
+      Renderer::RenderObject m_GroundRenderObject;
+
+    private:
+      bool m_InitialCameraSetup;
+      float m_CameraOrbitDistance;
+      bool m_BindPoseInitialized;
+      bool m_BindPoseSubmitted = false;
+      bool m_LowSpotCalculated = false;
+      Util::List<Math::Matrix4x4> m_BindGlobalPose;
     };
 
     struct LOW_EDITOR_API MaterialViewer : public Viewport
