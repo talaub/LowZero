@@ -13,7 +13,7 @@
 
 #include "LowCorePrefabInstance.h"
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
-
+#include "LowRenderer.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -95,7 +95,8 @@ namespace Low {
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
-          if (get_render_view().is_alive()) {
+          if (get_render_view().is_alive() &&
+              get_render_view() != Renderer::get_game_renderview()) {
             get_render_view().destroy();
           }
 

@@ -1079,7 +1079,8 @@ namespace Low {
         }
       } // namespace MeshImport
 
-      static void create_thumbnail_picture(Mesh p_Mesh)
+      static void create_thumbnail_picture(Mesh p_Mesh,
+                                           u64 p_SkeletonId = 0u)
       {
         Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
 
@@ -1102,11 +1103,6 @@ namespace Low {
         l_RenderView.add_step_by_name(RENDERSTEP_LIGHTING_NAME);
         l_RenderView.add_step_by_name(RENDERSTEP_TONEMAPPING_NAME);
 
-        RenderObject l_RenderObject =
-            RenderObject::make(l_RenderScene, p_Mesh);
-        l_RenderObject.set_material(get_default_material());
-        l_RenderObject.set_world_transform(l_LocalMatrix);
-
         l_RenderScene.set_directional_light_color(1.0f, 1.0f, 1.0f);
         l_RenderScene.set_directional_light_intensity(0.75f);
         l_RenderScene.set_directional_light_direction(-0.15f, -1.0f,
@@ -1115,9 +1111,22 @@ namespace Low {
         ThumbnailCreationSchedule l_Schedule;
         l_Schedule.mesh = p_Mesh;
         l_Schedule.material = Util::Handle::DEAD;
+        l_Schedule.skeletonId = p_SkeletonId;
         l_Schedule.scene = l_RenderScene;
         l_Schedule.view = l_RenderView;
-        l_Schedule.object = l_RenderObject;
+        l_Schedule.bindPoseInitialized = false;
+        l_Schedule.bindPoseEvaluated = false;
+
+        if (p_Mesh.get_type() == MeshType::SKELETAL) {
+          l_Schedule.skeletal = true;
+        } else {
+          RenderObject l_RenderObject =
+              RenderObject::make(l_RenderScene, p_Mesh);
+          l_RenderObject.set_material(get_default_material());
+          l_RenderObject.set_world_transform(l_LocalMatrix);
+
+          l_Schedule.object = l_RenderObject;
+        }
 
         l_Schedule.path = Util::get_project().editorImagesPath +
                           "\\thumbnails\\mesh_" +
@@ -1490,7 +1499,7 @@ namespace Low {
           ResourceManager::reload_mesh(l_Mesh);
         }
 
-        create_thumbnail_picture(l_Mesh);
+        create_thumbnail_picture(l_Mesh, l_SkeletonUniqueId);
 
         return true;
       }

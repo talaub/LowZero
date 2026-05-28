@@ -11,6 +11,9 @@
 #include "LowRendererRenderScene.h"
 #include "LowRendererRenderView.h"
 #include "LowRendererTextureExport.h"
+#include "LowRendererSkeletalRenderObject.h"
+#include "LowRendererSkinningInstance.h"
+#include "LowRendererSkinningPose.h"
 
 namespace Low {
   namespace Renderer {
@@ -40,12 +43,19 @@ namespace Low {
       RenderScene scene;
       RenderView view;
       RenderObject object;
+      SkeletalRenderObject skeletalObject;
+      SkinningPose skinningPose;
+      SkinningInstance skinningInstance;
       Mesh mesh;
       Material material;
+      u64 skeletonId = 0u;
       Math::Vector3 viewDirection;
       Util::String path;
       ThumbnailCreationState state;
       TextureExport textureExport;
+      bool skeletal = false;
+      bool bindPoseInitialized = false;
+      bool bindPoseEvaluated = false;
     };
 
     LOW_RENDERER2_API MaterialTypes &get_material_types();

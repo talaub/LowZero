@@ -87,6 +87,8 @@ namespace Low {
           m_Registrator.typeId = Handle::type_id(p_TypeIdentifier);
           m_Registrator.loader = nullptr;
           m_Registrator.creatable = false;
+          m_Registrator.autoInitialize = false;
+          m_Registrator.initializeOnStartup = false;
           m_Registrator.importOnStartup = false;
           m_Registrator.postRegister = nullptr;
         }

@@ -51,6 +51,7 @@
 #include "LowRendererShaderSource.h"
 #include "LowRendererShaderVariant.h"
 #include "LowRendererSkeleton.h"
+#include "LowRendererSkeletonState.h"
 #include "LowRendererSkeletonResource.h"
 #include "LowRendererAnimationClip.h"
 #include "LowRendererAnimationClipResource.h"
@@ -99,6 +100,7 @@ namespace Low {
     RenderScene g_GlobalScene;
 
     SS2DCanvas g_SS2DCanvas;
+    Util::List<Math::Matrix4x4> g_ThumbnailBindGlobalPoseScratch;
 
     Texture get_default_texture()
     {
@@ -1102,6 +1104,160 @@ namespace Low {
       }
     }
 
+    static bool thumbnail_mesh_has_weighted_submeshes(Mesh p_Mesh)
+    {
+      if (!p_Mesh.is_alive() || !p_Mesh.get_gpu().is_alive()) {
+        return false;
+      }
+
+      for (GpuSubmesh i_Submesh :
+           p_Mesh.get_gpu().get_submeshes()) {
+        if (i_Submesh.get_bone_weight_count() > 0u) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    static bool
+    prepare_skeletal_thumbnail(ThumbnailCreationSchedule &p_Schedule)
+    {
+      if (!p_Schedule.skeletal) {
+        return true;
+      }
+
+      if (!p_Schedule.mesh.is_alive()) {
+        return false;
+      }
+
+      Skeleton l_Skeleton = p_Schedule.mesh.get_skeleton();
+      if (!l_Skeleton.is_alive() && p_Schedule.skeletonId != 0u) {
+        l_Skeleton =
+            Util::find_handle_by_unique_id(p_Schedule.skeletonId);
+        if (l_Skeleton.is_alive()) {
+          p_Schedule.mesh.set_skeleton(l_Skeleton);
+        }
+      }
+
+      if (!l_Skeleton.is_alive()) {
+        return false;
+      }
+
+      if (l_Skeleton.get_state() == SkeletonState::UNLOADED) {
+        ResourceManager::load_skeleton(l_Skeleton);
+        return false;
+      }
+
+      if (l_Skeleton.get_state() != SkeletonState::LOADED) {
+        return false;
+      }
+
+      Util::List<SkeletonBone> &l_Bones = l_Skeleton.get_bones();
+      if (l_Bones.empty()) {
+        return false;
+      }
+
+      if (p_Schedule.mesh.get_state() == MeshState::UNLOADED) {
+        ResourceManager::load_mesh(p_Schedule.mesh);
+        return false;
+      }
+
+      if (p_Schedule.mesh.get_state() != MeshState::LOADED) {
+        return false;
+      }
+
+      if (!p_Schedule.skeletalObject.is_alive()) {
+        Math::Matrix4x4 l_LocalMatrix(1.0f);
+        l_LocalMatrix =
+            glm::translate(l_LocalMatrix, Math::Vector3(0.0f));
+        l_LocalMatrix *=
+            glm::toMat4(Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f));
+        l_LocalMatrix =
+            glm::scale(l_LocalMatrix, Math::Vector3(1.0f));
+
+        SkeletalRenderObject l_RenderObject =
+            SkeletalRenderObject::make(p_Schedule.scene,
+                                       p_Schedule.mesh);
+        l_RenderObject.set_material(get_default_material());
+        l_RenderObject.set_world_transform(l_LocalMatrix);
+
+        SkinningPose l_Pose =
+            SkinningPose::make(N(ThumbnailBindPose));
+        l_Pose.set_skeleton(l_Skeleton);
+
+        SkinningInstance l_SkinningInstance =
+            SkinningInstance::make(N(ThumbnailSkinningInstance),
+                                   p_Schedule.mesh);
+        l_SkinningInstance.set_pose(l_Pose);
+        l_SkinningInstance.set_render_object_id(
+            l_RenderObject.get_id());
+        l_RenderObject.set_skinning_instance(l_SkinningInstance);
+
+        p_Schedule.skeletalObject = l_RenderObject;
+        p_Schedule.skinningPose = l_Pose;
+        p_Schedule.skinningInstance = l_SkinningInstance;
+        p_Schedule.bindPoseInitialized = false;
+        p_Schedule.bindPoseEvaluated = false;
+
+        return false;
+      }
+
+      if (!p_Schedule.skinningPose.is_alive() ||
+          !p_Schedule.skinningInstance.is_alive()) {
+        return false;
+      }
+
+      if (p_Schedule.skinningPose.get_skeleton() != l_Skeleton) {
+        p_Schedule.skinningPose.set_skeleton(l_Skeleton);
+      }
+
+      if (!p_Schedule.bindPoseInitialized) {
+        Util::List<Math::Matrix4x4> &l_PoseMatrices =
+            p_Schedule.skinningPose.get_matrices();
+        l_PoseMatrices.resize(l_Bones.size());
+
+        for (u32 i = 0u; i < (u32)l_Bones.size(); ++i) {
+          l_PoseMatrices[i] =
+              l_Bones[i].global_bind_transform *
+              l_Bones[i].inverse_bind_matrix;
+        }
+
+        p_Schedule.skinningPose.mark_dirty();
+        p_Schedule.bindPoseInitialized = true;
+      }
+
+      if (!p_Schedule.bindPoseEvaluated) {
+        g_ThumbnailBindGlobalPoseScratch.resize(l_Bones.size());
+        for (u32 i = 0u; i < (u32)l_Bones.size(); ++i) {
+          g_ThumbnailBindGlobalPoseScratch[i] =
+              l_Bones[i].global_bind_transform;
+        }
+
+        if (!SkinningSystem::evaluate_global_pose_for_skeletal_renderobject(
+                p_Schedule.skeletalObject, l_Skeleton,
+                g_ThumbnailBindGlobalPoseScratch)) {
+          return false;
+        }
+
+        p_Schedule.bindPoseEvaluated = true;
+      }
+
+      if (p_Schedule.skeletalObject.get_draw_commands().empty()) {
+        return false;
+      }
+
+      if (thumbnail_mesh_has_weighted_submeshes(p_Schedule.mesh)) {
+        if (!p_Schedule.skinningPose.is_uploaded() ||
+            p_Schedule.skinningInstance.get_skinning_commands()
+                .empty()) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
     static bool tick_thumbnail_creation(float p_Delta)
     {
       auto calculate_sphere_fit_distance =
@@ -1133,10 +1289,16 @@ namespace Low {
       for (auto it = g_ThumbnailCreationSchedules.begin();
            it != g_ThumbnailCreationSchedules.end();) {
         if (it->state == ThumbnailCreationState::SCHEDULED) {
+          if (!prepare_skeletal_thumbnail(*it)) {
+            ++it;
+            continue;
+          }
+
           if (it->mesh.get_state() != MeshState::LOADED) {
             ++it;
             continue;
           }
+
           if (it->material.is_alive() &&
               it->material.get_state() != MaterialState::LOADED) {
             ++it;
@@ -1173,7 +1335,18 @@ namespace Low {
             continue;
           }
 
-          it->object.destroy();
+          if (it->object.is_alive()) {
+            it->object.destroy();
+          }
+          if (it->skeletalObject.is_alive()) {
+            it->skeletalObject.destroy();
+          }
+          if (it->skinningInstance.is_alive()) {
+            it->skinningInstance.destroy();
+          }
+          if (it->skinningPose.is_alive()) {
+            it->skinningPose.destroy();
+          }
           it->view.destroy();
           it->scene.destroy();
 

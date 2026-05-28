@@ -250,19 +250,18 @@ namespace Low {
       for (auto i_Type : g_AssetTypes) {
         bool i_IsImport = false;
 
-        const Util::String i_FileSuffix =
-            String(p_Event.path.extension().string().c_str());
-
         for (auto i_RawSuffix : i_Type.rawSuffixes) {
-          if (i_RawSuffix == i_FileSuffix) {
+          if (StringHelper::ends_with(l_FullEventPath,
+                                      i_RawSuffix)) {
             i_IsImport = true;
             break;
           }
         }
 
-        if (!i_IsImport) {
+        if (!i_IsImport && i_Type.autoInitialize &&
+            p_Event.type != FileSystem::Watcher::EventType::Removed) {
           for (auto i_Suffix : i_Type.assetSuffixes) {
-            if (i_Suffix == i_FileSuffix) {
+            if (StringHelper::ends_with(l_FullEventPath, i_Suffix)) {
               for (auto i_Dir : i_Type.initializeDirectories) {
                 const bool i_IsValidInitDir =
                     FileSystem::is_file_in_directory(
@@ -272,10 +271,9 @@ namespace Low {
                         i_Dir.recursive);
 
                 if (i_IsValidInitDir) {
-                  String i_Path = PathHelper::normalize(
-                      Util::get_project().dataPath + "/" +
-                      p_Event.path.string().c_str());
-                  initialize_asset(i_Type, i_Path);
+                  if (!find_asset_record_by_path(l_FullEventPath)) {
+                    initialize_asset(i_Type, l_FullEventPath);
+                  }
                 }
               }
               break;

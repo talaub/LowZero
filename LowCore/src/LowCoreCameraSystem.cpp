@@ -52,10 +52,16 @@ namespace Low {
             Component::Camera i_Camera = l_Cameras[i];
 
             if (!i_Camera.get_render_view().is_alive()) {
+              /*
               i_Camera.set_render_view(Renderer::RenderView::make(
                   i_Camera.get_entity().get_name()));
               i_Camera.get_render_view().set_render_scene(
                   Renderer::get_global_renderscene());
+                  */
+              // TODO: Temp hack
+              // HACK: Temporary
+              i_Camera.set_render_view(
+                  Renderer::get_game_renderview());
             }
 
             if (!l_ActiveCamera.is_alive()) {
