@@ -142,6 +142,7 @@ types:
     component: true
     editor:
       icon: skeleton
+    scripting_expose: true
     properties:
       render_object:
         editor_editable: false
@@ -165,6 +166,7 @@ types:
         editor_editable: false
         type: Low::Renderer::AnimationClip
         handle: true
+        expose_scripting: true
         skip_deserialization: true
         skip_serialization: true
       animation_progress:

@@ -53,9 +53,20 @@ function generate_type_api(p_Type, db) {
   t += line(`new (p_Memory) ${l_TypeString};`);
   t += line(`}`);
   t += line(
+    `static void ${TYPE_PREFIX}_id_construct(u64 p_Id, ${l_TypeString}* p_Memory){`,
+  );
+  t += line(`new (p_Memory) ${l_TypeString}(p_Id);`);
+  t += line(`}`);
+  t += line(
     `static void ${TYPE_PREFIX}_copy_construct(const ${l_TypeString}& p_Other, ${l_TypeString}* p_Memory){`,
   );
   t += line(`new (p_Memory) ${l_TypeString}(p_Other);`);
+  t += line(`}`);
+  t += line(
+    `static ${l_TypeString}& ${TYPE_PREFIX}_assign(const ${l_TypeString}& p_Other, ${l_TypeString}* p_Self){`,
+  );
+  t += line(`*p_Self = p_Other;`);
+  t += line(`return *p_Self;`);
   t += line(`}`);
   t += line(`static void ${TYPE_PREFIX}_destruct(${l_TypeString}* p_Memory){`);
   t += line(`using namespace ${p_Type.namespace_string};`);
@@ -81,6 +92,10 @@ function generate_type_api(p_Type, db) {
 
   t += line(`static u32 ${TYPE_PREFIX}_living_count(){`);
   t += line(`return ${l_TypeString}::living_count();`);
+  t += line(`}`);
+
+  t += line(`static u16 ${TYPE_PREFIX}_type_id(){`);
+  t += line(`return ${l_TypeString}::type_id();`);
   t += line(`}`);
 
   for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
@@ -208,10 +223,24 @@ function generate_type_api(p_Type, db) {
   );
   t += empty();
   t += line(
+    `r = p_Engine->RegisterObjectBehaviour("${p_Type.scripting_name}", asBEHAVE_CONSTRUCT, "void f(u64 id)", asFUNCTION(${TYPE_PREFIX}_id_construct), asCALL_CDECL_OBJLAST);`,
+  );
+  t += line(
+    `LOW_ASSERT(r >= 0, "Failed to expose id constructor of ${l_TypeString}.");`,
+  );
+  t += empty();
+  t += line(
     `r = p_Engine->RegisterObjectBehaviour("${p_Type.scripting_name}", asBEHAVE_CONSTRUCT, "void f(const ${p_Type.scripting_name}& in)", asFUNCTION(${TYPE_PREFIX}_copy_construct), asCALL_CDECL_OBJLAST);`,
   );
   t += line(
     `LOW_ASSERT(r >= 0, "Failed to expose copy constructor of ${l_TypeString}.");`,
+  );
+  t += empty();
+  t += line(
+    `r = p_Engine->RegisterObjectMethod("${p_Type.scripting_name}", "${p_Type.scripting_name}& opAssign(const ${p_Type.scripting_name}& in)", asFUNCTION(${TYPE_PREFIX}_assign), asCALL_CDECL_OBJLAST);`,
+  );
+  t += line(
+    `LOW_ASSERT(r >= 0, "Failed to expose assignment operator of ${l_TypeString}.");`,
   );
   t += empty();
   t += line(
@@ -222,7 +251,7 @@ function generate_type_api(p_Type, db) {
   );
 
   t += line(
-    `r = p_Engine->RegisterObjectMethod("${p_Type.scripting_name}", "bool get_alive() const property", asMETHODPR(${l_TypeString}, is_alive, () const, bool), asCALL_THISCALL);`,
+    `r = p_Engine->RegisterObjectMethod("${p_Type.scripting_name}", "bool get_is_alive() const property", asMETHODPR(${l_TypeString}, is_alive, () const, bool), asCALL_THISCALL);`,
   );
   t += line(
     `LOW_ASSERT(r >= 0, "Failed to expose is_alive getter for ${l_TypeString}.");`,
@@ -351,6 +380,13 @@ function generate_type_api(p_Type, db) {
       `LOW_ASSERT(r >= 0, "Failed to set namespace for ${l_TypeString}.");`,
     );
   }
+
+  t += line(
+    `r = p_Engine->RegisterGlobalFunction("u16 get_TYPE_ID() property", asFUNCTION(${TYPE_PREFIX}_type_id), asCALL_CDECL);`,
+  );
+  t += line(
+    `LOW_ASSERT(r >= 0, "Failed to expose TYPE_ID for ${l_TypeString}.");`,
+  );
 
   if (p_Type.any_component_type) {
   } else if (!p_Type.private_make) {

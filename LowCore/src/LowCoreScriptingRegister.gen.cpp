@@ -3,6 +3,7 @@
 #include "LowCoreRegion.h"
 #include "LowCoreEntity.h"
 #include "LowCoreTransform.h"
+#include "LowCoreAnimator.h"
 #include "LowCoreCamera.h"
 #include "LowCoreScriptModule.h"
 #include "LowCoreScriptAsset.h"
@@ -12,6 +13,7 @@
 #include "LowCoreUiElement.h"
 #include "LowCoreUiDisplay.h"
 #include "LowCoreUiText.h"
+#include "LowRendererAnimationClip.h"
 
 // --------------------------
 static void
@@ -19,11 +21,23 @@ LowCore_Region_default_construct(Low::Core::Region *p_Memory)
 {
   new (p_Memory) Low::Core::Region;
 }
+static void LowCore_Region_id_construct(u64 p_Id,
+                                        Low::Core::Region *p_Memory)
+{
+  new (p_Memory) Low::Core::Region(p_Id);
+}
 static void
 LowCore_Region_copy_construct(const Low::Core::Region &p_Other,
                               Low::Core::Region *p_Memory)
 {
   new (p_Memory) Low::Core::Region(p_Other);
+}
+static Low::Core::Region &
+LowCore_Region_assign(const Low::Core::Region &p_Other,
+                      Low::Core::Region *p_Self)
+{
+  *p_Self = p_Other;
+  return *p_Self;
 }
 static void LowCore_Region_destruct(Low::Core::Region *p_Memory)
 {
@@ -43,6 +57,10 @@ LowCore_Region_genfindbyname(Low::Util::Name p_Name)
 static u32 LowCore_Region_living_count()
 {
   return Low::Core::Region::living_count();
+}
+static u16 LowCore_Region_type_id()
+{
+  return Low::Core::Region::type_id();
 }
 // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:REGION:HELPERS
 
@@ -68,6 +86,12 @@ static void expose_LowCore_Region(asIScriptEngine *p_Engine)
       "Failed to expose default constructor of Low::Core::Region.");
 
   r = p_Engine->RegisterObjectBehaviour(
+      "Region", asBEHAVE_CONSTRUCT, "void f(u64 id)",
+      asFUNCTION(LowCore_Region_id_construct), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose id constructor of Low::Core::Region.");
+
+  r = p_Engine->RegisterObjectBehaviour(
       "Region", asBEHAVE_CONSTRUCT, "void f(const Region& in)",
       asFUNCTION(LowCore_Region_copy_construct),
       asCALL_CDECL_OBJLAST);
@@ -75,13 +99,20 @@ static void expose_LowCore_Region(asIScriptEngine *p_Engine)
       r >= 0,
       "Failed to expose copy constructor of Low::Core::Region.");
 
+  r = p_Engine->RegisterObjectMethod(
+      "Region", "Region& opAssign(const Region& in)",
+      asFUNCTION(LowCore_Region_assign), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose assignment operator of Low::Core::Region.");
+
   r = p_Engine->RegisterObjectBehaviour(
       "Region", asBEHAVE_DESTRUCT, "void f()",
       asFUNCTION(LowCore_Region_destruct), asCALL_CDECL_OBJLAST);
   LOW_ASSERT(r >= 0,
              "Failed to expose destructor of Low::Core::Region.");
   r = p_Engine->RegisterObjectMethod(
-      "Region", "bool get_alive() const property",
+      "Region", "bool get_is_alive() const property",
       asMETHODPR(Low::Core::Region, is_alive, () const, bool),
       asCALL_THISCALL);
   LOW_ASSERT(
@@ -109,6 +140,11 @@ static void expose_LowCore_Region(asIScriptEngine *p_Engine)
   LOW_ASSERT(r >= 0,
              "Failed to set namespace for Low::Core::Region.");
   r = p_Engine->RegisterGlobalFunction(
+      "u16 get_TYPE_ID() property",
+      asFUNCTION(LowCore_Region_type_id), asCALL_CDECL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose TYPE_ID for Low::Core::Region.");
+  r = p_Engine->RegisterGlobalFunction(
       "Region make(Name)", asFUNCTION(LowCore_Region_genmake),
       asCALL_CDECL);
   LOW_ASSERT(r >= 0, "Failed to expose generic make function for "
@@ -131,11 +167,23 @@ LowCore_Entity_default_construct(Low::Core::Entity *p_Memory)
 {
   new (p_Memory) Low::Core::Entity;
 }
+static void LowCore_Entity_id_construct(u64 p_Id,
+                                        Low::Core::Entity *p_Memory)
+{
+  new (p_Memory) Low::Core::Entity(p_Id);
+}
 static void
 LowCore_Entity_copy_construct(const Low::Core::Entity &p_Other,
                               Low::Core::Entity *p_Memory)
 {
   new (p_Memory) Low::Core::Entity(p_Other);
+}
+static Low::Core::Entity &
+LowCore_Entity_assign(const Low::Core::Entity &p_Other,
+                      Low::Core::Entity *p_Self)
+{
+  *p_Self = p_Other;
+  return *p_Self;
 }
 static void LowCore_Entity_destruct(Low::Core::Entity *p_Memory)
 {
@@ -155,6 +203,10 @@ LowCore_Entity_genfindbyname(Low::Util::Name p_Name)
 static u32 LowCore_Entity_living_count()
 {
   return Low::Core::Entity::living_count();
+}
+static u16 LowCore_Entity_type_id()
+{
+  return Low::Core::Entity::type_id();
 }
 static uint64_t
 LowCore_Entity_func_get_component(Low::Core::Entity p_This,
@@ -209,6 +261,12 @@ static void expose_LowCore_Entity(asIScriptEngine *p_Engine)
       "Failed to expose default constructor of Low::Core::Entity.");
 
   r = p_Engine->RegisterObjectBehaviour(
+      "Entity", asBEHAVE_CONSTRUCT, "void f(u64 id)",
+      asFUNCTION(LowCore_Entity_id_construct), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose id constructor of Low::Core::Entity.");
+
+  r = p_Engine->RegisterObjectBehaviour(
       "Entity", asBEHAVE_CONSTRUCT, "void f(const Entity& in)",
       asFUNCTION(LowCore_Entity_copy_construct),
       asCALL_CDECL_OBJLAST);
@@ -216,13 +274,20 @@ static void expose_LowCore_Entity(asIScriptEngine *p_Engine)
       r >= 0,
       "Failed to expose copy constructor of Low::Core::Entity.");
 
+  r = p_Engine->RegisterObjectMethod(
+      "Entity", "Entity& opAssign(const Entity& in)",
+      asFUNCTION(LowCore_Entity_assign), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose assignment operator of Low::Core::Entity.");
+
   r = p_Engine->RegisterObjectBehaviour(
       "Entity", asBEHAVE_DESTRUCT, "void f()",
       asFUNCTION(LowCore_Entity_destruct), asCALL_CDECL_OBJLAST);
   LOW_ASSERT(r >= 0,
              "Failed to expose destructor of Low::Core::Entity.");
   r = p_Engine->RegisterObjectMethod(
-      "Entity", "bool get_alive() const property",
+      "Entity", "bool get_is_alive() const property",
       asMETHODPR(Low::Core::Entity, is_alive, () const, bool),
       asCALL_THISCALL);
   LOW_ASSERT(
@@ -291,6 +356,11 @@ static void expose_LowCore_Entity(asIScriptEngine *p_Engine)
   LOW_ASSERT(r >= 0,
              "Failed to set namespace for Low::Core::Entity.");
   r = p_Engine->RegisterGlobalFunction(
+      "u16 get_TYPE_ID() property",
+      asFUNCTION(LowCore_Entity_type_id), asCALL_CDECL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose TYPE_ID for Low::Core::Entity.");
+  r = p_Engine->RegisterGlobalFunction(
       "Entity make(Name)", asFUNCTION(LowCore_Entity_genmake),
       asCALL_CDECL);
   LOW_ASSERT(r >= 0, "Failed to expose generic make function for "
@@ -313,11 +383,23 @@ static void LowCore_Transform_default_construct(
 {
   new (p_Memory) Low::Core::Component::Transform;
 }
+static void LowCore_Transform_id_construct(
+    u64 p_Id, Low::Core::Component::Transform *p_Memory)
+{
+  new (p_Memory) Low::Core::Component::Transform(p_Id);
+}
 static void LowCore_Transform_copy_construct(
     const Low::Core::Component::Transform &p_Other,
     Low::Core::Component::Transform *p_Memory)
 {
   new (p_Memory) Low::Core::Component::Transform(p_Other);
+}
+static Low::Core::Component::Transform &LowCore_Transform_assign(
+    const Low::Core::Component::Transform &p_Other,
+    Low::Core::Component::Transform *p_Self)
+{
+  *p_Self = p_Other;
+  return *p_Self;
 }
 static void
 LowCore_Transform_destruct(Low::Core::Component::Transform *p_Memory)
@@ -328,6 +410,10 @@ LowCore_Transform_destruct(Low::Core::Component::Transform *p_Memory)
 static u32 LowCore_Transform_living_count()
 {
   return Low::Core::Component::Transform::living_count();
+}
+static u16 LowCore_Transform_type_id()
+{
+  return Low::Core::Component::Transform::type_id();
 }
 // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:TRANSFORM:HELPERS
 
@@ -354,10 +440,23 @@ static void expose_LowCore_Transform(asIScriptEngine *p_Engine)
                      "Low::Core::Component::Transform.");
 
   r = p_Engine->RegisterObjectBehaviour(
+      "Transform", asBEHAVE_CONSTRUCT, "void f(u64 id)",
+      asFUNCTION(LowCore_Transform_id_construct),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose id constructor of "
+                     "Low::Core::Component::Transform.");
+
+  r = p_Engine->RegisterObjectBehaviour(
       "Transform", asBEHAVE_CONSTRUCT, "void f(const Transform& in)",
       asFUNCTION(LowCore_Transform_copy_construct),
       asCALL_CDECL_OBJLAST);
   LOW_ASSERT(r >= 0, "Failed to expose copy constructor of "
+                     "Low::Core::Component::Transform.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "Transform", "Transform& opAssign(const Transform& in)",
+      asFUNCTION(LowCore_Transform_assign), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose assignment operator of "
                      "Low::Core::Component::Transform.");
 
   r = p_Engine->RegisterObjectBehaviour(
@@ -366,7 +465,7 @@ static void expose_LowCore_Transform(asIScriptEngine *p_Engine)
   LOW_ASSERT(r >= 0, "Failed to expose destructor of "
                      "Low::Core::Component::Transform.");
   r = p_Engine->RegisterObjectMethod(
-      "Transform", "bool get_alive() const property",
+      "Transform", "bool get_is_alive() const property",
       asMETHODPR(Low::Core::Component::Transform, is_alive, () const,
                  bool),
       asCALL_THISCALL);
@@ -478,6 +577,11 @@ static void expose_LowCore_Transform(asIScriptEngine *p_Engine)
   LOW_ASSERT(
       r >= 0,
       "Failed to set namespace for Low::Core::Component::Transform.");
+  r = p_Engine->RegisterGlobalFunction(
+      "u16 get_TYPE_ID() property",
+      asFUNCTION(LowCore_Transform_type_id), asCALL_CDECL);
+  LOW_ASSERT(r >= 0, "Failed to expose TYPE_ID for "
+                     "Low::Core::Component::Transform.");
   r = p_Engine->SetDefaultNamespace("");
   LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
   // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:TRANSFORM:EXPOSE
@@ -486,16 +590,173 @@ static void expose_LowCore_Transform(asIScriptEngine *p_Engine)
 }
 
 // --------------------------
+static void LowCore_Animator_default_construct(
+    Low::Core::Component::Animator *p_Memory)
+{
+  new (p_Memory) Low::Core::Component::Animator;
+}
+static void LowCore_Animator_id_construct(
+    u64 p_Id, Low::Core::Component::Animator *p_Memory)
+{
+  new (p_Memory) Low::Core::Component::Animator(p_Id);
+}
+static void LowCore_Animator_copy_construct(
+    const Low::Core::Component::Animator &p_Other,
+    Low::Core::Component::Animator *p_Memory)
+{
+  new (p_Memory) Low::Core::Component::Animator(p_Other);
+}
+static Low::Core::Component::Animator &
+LowCore_Animator_assign(const Low::Core::Component::Animator &p_Other,
+                        Low::Core::Component::Animator *p_Self)
+{
+  *p_Self = p_Other;
+  return *p_Self;
+}
+static void
+LowCore_Animator_destruct(Low::Core::Component::Animator *p_Memory)
+{
+  using namespace Low::Core::Component;
+  p_Memory->~Animator();
+}
+static u32 LowCore_Animator_living_count()
+{
+  return Low::Core::Component::Animator::living_count();
+}
+static u16 LowCore_Animator_type_id()
+{
+  return Low::Core::Component::Animator::type_id();
+}
+// LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:ANIMATOR:HELPERS
+// LOW_CODEGEN::END::CUSTOM:LOWCORE:ANIMATOR:HELPERS
+
+static void register_LowCore_Animator(asIScriptEngine *p_Engine)
+{
+  int r = 0;
+  r = p_Engine->RegisterObjectType(
+      "Animator", sizeof(Low::Core::Component::Animator),
+      asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose Low::Core::Component::Animator type.");
+}
+static void expose_LowCore_Animator(asIScriptEngine *p_Engine)
+{
+  int r = 0;
+  r = p_Engine->RegisterObjectBehaviour(
+      "Animator", asBEHAVE_CONSTRUCT, "void f()",
+      asFUNCTION(LowCore_Animator_default_construct),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose default constructor of "
+                     "Low::Core::Component::Animator.");
+
+  r = p_Engine->RegisterObjectBehaviour(
+      "Animator", asBEHAVE_CONSTRUCT, "void f(u64 id)",
+      asFUNCTION(LowCore_Animator_id_construct),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose id constructor of "
+                     "Low::Core::Component::Animator.");
+
+  r = p_Engine->RegisterObjectBehaviour(
+      "Animator", asBEHAVE_CONSTRUCT, "void f(const Animator& in)",
+      asFUNCTION(LowCore_Animator_copy_construct),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose copy constructor of "
+                     "Low::Core::Component::Animator.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "Animator", "Animator& opAssign(const Animator& in)",
+      asFUNCTION(LowCore_Animator_assign), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose assignment operator of "
+                     "Low::Core::Component::Animator.");
+
+  r = p_Engine->RegisterObjectBehaviour(
+      "Animator", asBEHAVE_DESTRUCT, "void f()",
+      asFUNCTION(LowCore_Animator_destruct), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose destructor of "
+                     "Low::Core::Component::Animator.");
+  r = p_Engine->RegisterObjectMethod(
+      "Animator", "bool get_is_alive() const property",
+      asMETHODPR(Low::Core::Component::Animator, is_alive, () const,
+                 bool),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose is_alive getter for "
+                     "Low::Core::Component::Animator.");
+  r = p_Engine->RegisterObjectMethod(
+      "Animator", "void destroy()",
+      asMETHODPR(Low::Core::Component::Animator, destroy, (), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose destroy for Low::Core::Component::Animator.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "Animator", "AnimationClip get_active_clip() const property",
+      asMETHOD(Low::Core::Component::Animator, get_active_clip),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose property getter for active_clip of "
+             "Low::Core::Component::Animator.");
+  r = p_Engine->RegisterObjectMethod(
+      "Animator", "void set_active_clip(AnimationClip) property",
+      asMETHOD(Low::Core::Component::Animator, set_active_clip),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose property setter for active_clip of "
+             "Low::Core::Component::Animator.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "Animator", "Entity get_entity() const property",
+      asMETHOD(Low::Core::Component::Animator, get_entity),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property getter for entity of "
+                     "Low::Core::Component::Animator.");
+  r = p_Engine->RegisterObjectMethod(
+      "Animator", "void set_entity(Entity) property",
+      asMETHOD(Low::Core::Component::Animator, set_entity),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property setter for entity of "
+                     "Low::Core::Component::Animator.");
+
+  r = p_Engine->SetDefaultNamespace("Animator");
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to set namespace for Low::Core::Component::Animator.");
+  r = p_Engine->RegisterGlobalFunction(
+      "u16 get_TYPE_ID() property",
+      asFUNCTION(LowCore_Animator_type_id), asCALL_CDECL);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose TYPE_ID for Low::Core::Component::Animator.");
+  r = p_Engine->SetDefaultNamespace("");
+  LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
+  // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:ANIMATOR:EXPOSE
+  // LOW_CODEGEN::END::CUSTOM:LOWCORE:ANIMATOR:EXPOSE
+}
+
+// --------------------------
 static void LowCore_Camera_default_construct(
     Low::Core::Component::Camera *p_Memory)
 {
   new (p_Memory) Low::Core::Component::Camera;
+}
+static void
+LowCore_Camera_id_construct(u64 p_Id,
+                            Low::Core::Component::Camera *p_Memory)
+{
+  new (p_Memory) Low::Core::Component::Camera(p_Id);
 }
 static void LowCore_Camera_copy_construct(
     const Low::Core::Component::Camera &p_Other,
     Low::Core::Component::Camera *p_Memory)
 {
   new (p_Memory) Low::Core::Component::Camera(p_Other);
+}
+static Low::Core::Component::Camera &
+LowCore_Camera_assign(const Low::Core::Component::Camera &p_Other,
+                      Low::Core::Component::Camera *p_Self)
+{
+  *p_Self = p_Other;
+  return *p_Self;
 }
 static void
 LowCore_Camera_destruct(Low::Core::Component::Camera *p_Memory)
@@ -506,6 +767,10 @@ LowCore_Camera_destruct(Low::Core::Component::Camera *p_Memory)
 static u32 LowCore_Camera_living_count()
 {
   return Low::Core::Component::Camera::living_count();
+}
+static u16 LowCore_Camera_type_id()
+{
+  return Low::Core::Component::Camera::type_id();
 }
 // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:CAMERA:HELPERS
 
@@ -531,10 +796,22 @@ static void expose_LowCore_Camera(asIScriptEngine *p_Engine)
                      "Low::Core::Component::Camera.");
 
   r = p_Engine->RegisterObjectBehaviour(
+      "Camera", asBEHAVE_CONSTRUCT, "void f(u64 id)",
+      asFUNCTION(LowCore_Camera_id_construct), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose id constructor of "
+                     "Low::Core::Component::Camera.");
+
+  r = p_Engine->RegisterObjectBehaviour(
       "Camera", asBEHAVE_CONSTRUCT, "void f(const Camera& in)",
       asFUNCTION(LowCore_Camera_copy_construct),
       asCALL_CDECL_OBJLAST);
   LOW_ASSERT(r >= 0, "Failed to expose copy constructor of "
+                     "Low::Core::Component::Camera.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "Camera", "Camera& opAssign(const Camera& in)",
+      asFUNCTION(LowCore_Camera_assign), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose assignment operator of "
                      "Low::Core::Component::Camera.");
 
   r = p_Engine->RegisterObjectBehaviour(
@@ -544,7 +821,7 @@ static void expose_LowCore_Camera(asIScriptEngine *p_Engine)
       r >= 0,
       "Failed to expose destructor of Low::Core::Component::Camera.");
   r = p_Engine->RegisterObjectMethod(
-      "Camera", "bool get_alive() const property",
+      "Camera", "bool get_is_alive() const property",
       asMETHODPR(Low::Core::Component::Camera, is_alive, () const,
                  bool),
       asCALL_THISCALL);
@@ -595,6 +872,12 @@ static void expose_LowCore_Camera(asIScriptEngine *p_Engine)
   LOW_ASSERT(
       r >= 0,
       "Failed to set namespace for Low::Core::Component::Camera.");
+  r = p_Engine->RegisterGlobalFunction(
+      "u16 get_TYPE_ID() property",
+      asFUNCTION(LowCore_Camera_type_id), asCALL_CDECL);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose TYPE_ID for Low::Core::Component::Camera.");
   r = p_Engine->SetDefaultNamespace("");
   LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
   // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:CAMERA:EXPOSE
@@ -608,11 +891,24 @@ static void LowCore_Module_default_construct(
 {
   new (p_Memory) Low::Core::Scripting::Module;
 }
+static void
+LowCore_Module_id_construct(u64 p_Id,
+                            Low::Core::Scripting::Module *p_Memory)
+{
+  new (p_Memory) Low::Core::Scripting::Module(p_Id);
+}
 static void LowCore_Module_copy_construct(
     const Low::Core::Scripting::Module &p_Other,
     Low::Core::Scripting::Module *p_Memory)
 {
   new (p_Memory) Low::Core::Scripting::Module(p_Other);
+}
+static Low::Core::Scripting::Module &
+LowCore_Module_assign(const Low::Core::Scripting::Module &p_Other,
+                      Low::Core::Scripting::Module *p_Self)
+{
+  *p_Self = p_Other;
+  return *p_Self;
 }
 static void
 LowCore_Module_destruct(Low::Core::Scripting::Module *p_Memory)
@@ -633,6 +929,10 @@ LowCore_Module_genfindbyname(Low::Util::Name p_Name)
 static u32 LowCore_Module_living_count()
 {
   return Low::Core::Scripting::Module::living_count();
+}
+static u16 LowCore_Module_type_id()
+{
+  return Low::Core::Scripting::Module::type_id();
 }
 // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:MODULE:HELPERS
 
@@ -658,10 +958,22 @@ static void expose_LowCore_Module(asIScriptEngine *p_Engine)
                      "Low::Core::Scripting::Module.");
 
   r = p_Engine->RegisterObjectBehaviour(
+      "Module", asBEHAVE_CONSTRUCT, "void f(u64 id)",
+      asFUNCTION(LowCore_Module_id_construct), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose id constructor of "
+                     "Low::Core::Scripting::Module.");
+
+  r = p_Engine->RegisterObjectBehaviour(
       "Module", asBEHAVE_CONSTRUCT, "void f(const Module& in)",
       asFUNCTION(LowCore_Module_copy_construct),
       asCALL_CDECL_OBJLAST);
   LOW_ASSERT(r >= 0, "Failed to expose copy constructor of "
+                     "Low::Core::Scripting::Module.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "Module", "Module& opAssign(const Module& in)",
+      asFUNCTION(LowCore_Module_assign), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose assignment operator of "
                      "Low::Core::Scripting::Module.");
 
   r = p_Engine->RegisterObjectBehaviour(
@@ -671,7 +983,7 @@ static void expose_LowCore_Module(asIScriptEngine *p_Engine)
       r >= 0,
       "Failed to expose destructor of Low::Core::Scripting::Module.");
   r = p_Engine->RegisterObjectMethod(
-      "Module", "bool get_alive() const property",
+      "Module", "bool get_is_alive() const property",
       asMETHODPR(Low::Core::Scripting::Module, is_alive, () const,
                  bool),
       asCALL_THISCALL);
@@ -703,6 +1015,12 @@ static void expose_LowCore_Module(asIScriptEngine *p_Engine)
       r >= 0,
       "Failed to set namespace for Low::Core::Scripting::Module.");
   r = p_Engine->RegisterGlobalFunction(
+      "u16 get_TYPE_ID() property",
+      asFUNCTION(LowCore_Module_type_id), asCALL_CDECL);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose TYPE_ID for Low::Core::Scripting::Module.");
+  r = p_Engine->RegisterGlobalFunction(
       "Module make(Name)", asFUNCTION(LowCore_Module_genmake),
       asCALL_CDECL);
   LOW_ASSERT(r >= 0, "Failed to expose generic make function for "
@@ -725,11 +1043,24 @@ LowCore_Asset_default_construct(Low::Core::Scripting::Asset *p_Memory)
 {
   new (p_Memory) Low::Core::Scripting::Asset;
 }
+static void
+LowCore_Asset_id_construct(u64 p_Id,
+                           Low::Core::Scripting::Asset *p_Memory)
+{
+  new (p_Memory) Low::Core::Scripting::Asset(p_Id);
+}
 static void LowCore_Asset_copy_construct(
     const Low::Core::Scripting::Asset &p_Other,
     Low::Core::Scripting::Asset *p_Memory)
 {
   new (p_Memory) Low::Core::Scripting::Asset(p_Other);
+}
+static Low::Core::Scripting::Asset &
+LowCore_Asset_assign(const Low::Core::Scripting::Asset &p_Other,
+                     Low::Core::Scripting::Asset *p_Self)
+{
+  *p_Self = p_Other;
+  return *p_Self;
 }
 static void
 LowCore_Asset_destruct(Low::Core::Scripting::Asset *p_Memory)
@@ -750,6 +1081,10 @@ LowCore_Asset_genfindbyname(Low::Util::Name p_Name)
 static u32 LowCore_Asset_living_count()
 {
   return Low::Core::Scripting::Asset::living_count();
+}
+static u16 LowCore_Asset_type_id()
+{
+  return Low::Core::Scripting::Asset::type_id();
 }
 // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:ASSET:HELPERS
 
@@ -775,9 +1110,21 @@ static void expose_LowCore_Asset(asIScriptEngine *p_Engine)
                      "Low::Core::Scripting::Asset.");
 
   r = p_Engine->RegisterObjectBehaviour(
+      "Asset", asBEHAVE_CONSTRUCT, "void f(u64 id)",
+      asFUNCTION(LowCore_Asset_id_construct), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose id constructor of "
+                     "Low::Core::Scripting::Asset.");
+
+  r = p_Engine->RegisterObjectBehaviour(
       "Asset", asBEHAVE_CONSTRUCT, "void f(const Asset& in)",
       asFUNCTION(LowCore_Asset_copy_construct), asCALL_CDECL_OBJLAST);
   LOW_ASSERT(r >= 0, "Failed to expose copy constructor of "
+                     "Low::Core::Scripting::Asset.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "Asset", "Asset& opAssign(const Asset& in)",
+      asFUNCTION(LowCore_Asset_assign), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose assignment operator of "
                      "Low::Core::Scripting::Asset.");
 
   r = p_Engine->RegisterObjectBehaviour(
@@ -787,7 +1134,7 @@ static void expose_LowCore_Asset(asIScriptEngine *p_Engine)
       r >= 0,
       "Failed to expose destructor of Low::Core::Scripting::Asset.");
   r = p_Engine->RegisterObjectMethod(
-      "Asset", "bool get_alive() const property",
+      "Asset", "bool get_is_alive() const property",
       asMETHODPR(Low::Core::Scripting::Asset, is_alive, () const,
                  bool),
       asCALL_THISCALL);
@@ -819,6 +1166,12 @@ static void expose_LowCore_Asset(asIScriptEngine *p_Engine)
       r >= 0,
       "Failed to set namespace for Low::Core::Scripting::Asset.");
   r = p_Engine->RegisterGlobalFunction(
+      "u16 get_TYPE_ID() property", asFUNCTION(LowCore_Asset_type_id),
+      asCALL_CDECL);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose TYPE_ID for Low::Core::Scripting::Asset.");
+  r = p_Engine->RegisterGlobalFunction(
       "Asset make(Name)", asFUNCTION(LowCore_Asset_genmake),
       asCALL_CDECL);
   LOW_ASSERT(r >= 0, "Failed to expose generic make function for "
@@ -841,11 +1194,24 @@ static void LowCore_WidgetAsset_default_construct(
 {
   new (p_Memory) Low::Core::UI::WidgetAsset;
 }
+static void
+LowCore_WidgetAsset_id_construct(u64 p_Id,
+                                 Low::Core::UI::WidgetAsset *p_Memory)
+{
+  new (p_Memory) Low::Core::UI::WidgetAsset(p_Id);
+}
 static void LowCore_WidgetAsset_copy_construct(
     const Low::Core::UI::WidgetAsset &p_Other,
     Low::Core::UI::WidgetAsset *p_Memory)
 {
   new (p_Memory) Low::Core::UI::WidgetAsset(p_Other);
+}
+static Low::Core::UI::WidgetAsset &
+LowCore_WidgetAsset_assign(const Low::Core::UI::WidgetAsset &p_Other,
+                           Low::Core::UI::WidgetAsset *p_Self)
+{
+  *p_Self = p_Other;
+  return *p_Self;
 }
 static void
 LowCore_WidgetAsset_destruct(Low::Core::UI::WidgetAsset *p_Memory)
@@ -866,6 +1232,10 @@ LowCore_WidgetAsset_genfindbyname(Low::Util::Name p_Name)
 static u32 LowCore_WidgetAsset_living_count()
 {
   return Low::Core::UI::WidgetAsset::living_count();
+}
+static u16 LowCore_WidgetAsset_type_id()
+{
+  return Low::Core::UI::WidgetAsset::type_id();
 }
 // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:WIDGETASSET:HELPERS
 
@@ -891,11 +1261,24 @@ static void expose_LowCore_WidgetAsset(asIScriptEngine *p_Engine)
                      "Low::Core::UI::WidgetAsset.");
 
   r = p_Engine->RegisterObjectBehaviour(
+      "WidgetAsset", asBEHAVE_CONSTRUCT, "void f(u64 id)",
+      asFUNCTION(LowCore_WidgetAsset_id_construct),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose id constructor of "
+                     "Low::Core::UI::WidgetAsset.");
+
+  r = p_Engine->RegisterObjectBehaviour(
       "WidgetAsset", asBEHAVE_CONSTRUCT,
       "void f(const WidgetAsset& in)",
       asFUNCTION(LowCore_WidgetAsset_copy_construct),
       asCALL_CDECL_OBJLAST);
   LOW_ASSERT(r >= 0, "Failed to expose copy constructor of "
+                     "Low::Core::UI::WidgetAsset.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "WidgetAsset", "WidgetAsset& opAssign(const WidgetAsset& in)",
+      asFUNCTION(LowCore_WidgetAsset_assign), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose assignment operator of "
                      "Low::Core::UI::WidgetAsset.");
 
   r = p_Engine->RegisterObjectBehaviour(
@@ -905,7 +1288,7 @@ static void expose_LowCore_WidgetAsset(asIScriptEngine *p_Engine)
       r >= 0,
       "Failed to expose destructor of Low::Core::UI::WidgetAsset.");
   r = p_Engine->RegisterObjectMethod(
-      "WidgetAsset", "bool get_alive() const property",
+      "WidgetAsset", "bool get_is_alive() const property",
       asMETHODPR(Low::Core::UI::WidgetAsset, is_alive, () const,
                  bool),
       asCALL_THISCALL);
@@ -937,6 +1320,12 @@ static void expose_LowCore_WidgetAsset(asIScriptEngine *p_Engine)
       r >= 0,
       "Failed to set namespace for Low::Core::UI::WidgetAsset.");
   r = p_Engine->RegisterGlobalFunction(
+      "u16 get_TYPE_ID() property",
+      asFUNCTION(LowCore_WidgetAsset_type_id), asCALL_CDECL);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose TYPE_ID for Low::Core::UI::WidgetAsset.");
+  r = p_Engine->RegisterGlobalFunction(
       "WidgetAsset make(Name)",
       asFUNCTION(LowCore_WidgetAsset_genmake), asCALL_CDECL);
   LOW_ASSERT(r >= 0, "Failed to expose generic make function for "
@@ -959,11 +1348,23 @@ static void LowCore_WidgetInstance_default_construct(
 {
   new (p_Memory) Low::Core::UI::WidgetInstance;
 }
+static void LowCore_WidgetInstance_id_construct(
+    u64 p_Id, Low::Core::UI::WidgetInstance *p_Memory)
+{
+  new (p_Memory) Low::Core::UI::WidgetInstance(p_Id);
+}
 static void LowCore_WidgetInstance_copy_construct(
     const Low::Core::UI::WidgetInstance &p_Other,
     Low::Core::UI::WidgetInstance *p_Memory)
 {
   new (p_Memory) Low::Core::UI::WidgetInstance(p_Other);
+}
+static Low::Core::UI::WidgetInstance &LowCore_WidgetInstance_assign(
+    const Low::Core::UI::WidgetInstance &p_Other,
+    Low::Core::UI::WidgetInstance *p_Self)
+{
+  *p_Self = p_Other;
+  return *p_Self;
 }
 static void LowCore_WidgetInstance_destruct(
     Low::Core::UI::WidgetInstance *p_Memory)
@@ -984,6 +1385,10 @@ LowCore_WidgetInstance_genfindbyname(Low::Util::Name p_Name)
 static u32 LowCore_WidgetInstance_living_count()
 {
   return Low::Core::UI::WidgetInstance::living_count();
+}
+static u16 LowCore_WidgetInstance_type_id()
+{
+  return Low::Core::UI::WidgetInstance::type_id();
 }
 // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:WIDGETINSTANCE:HELPERS
 
@@ -1009,11 +1414,26 @@ static void expose_LowCore_WidgetInstance(asIScriptEngine *p_Engine)
                      "Low::Core::UI::WidgetInstance.");
 
   r = p_Engine->RegisterObjectBehaviour(
+      "WidgetInstance", asBEHAVE_CONSTRUCT, "void f(u64 id)",
+      asFUNCTION(LowCore_WidgetInstance_id_construct),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose id constructor of "
+                     "Low::Core::UI::WidgetInstance.");
+
+  r = p_Engine->RegisterObjectBehaviour(
       "WidgetInstance", asBEHAVE_CONSTRUCT,
       "void f(const WidgetInstance& in)",
       asFUNCTION(LowCore_WidgetInstance_copy_construct),
       asCALL_CDECL_OBJLAST);
   LOW_ASSERT(r >= 0, "Failed to expose copy constructor of "
+                     "Low::Core::UI::WidgetInstance.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "WidgetInstance",
+      "WidgetInstance& opAssign(const WidgetInstance& in)",
+      asFUNCTION(LowCore_WidgetInstance_assign),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose assignment operator of "
                      "Low::Core::UI::WidgetInstance.");
 
   r = p_Engine->RegisterObjectBehaviour(
@@ -1023,7 +1443,7 @@ static void expose_LowCore_WidgetInstance(asIScriptEngine *p_Engine)
   LOW_ASSERT(r >= 0, "Failed to expose destructor of "
                      "Low::Core::UI::WidgetInstance.");
   r = p_Engine->RegisterObjectMethod(
-      "WidgetInstance", "bool get_alive() const property",
+      "WidgetInstance", "bool get_is_alive() const property",
       asMETHODPR(Low::Core::UI::WidgetInstance, is_alive, () const,
                  bool),
       asCALL_THISCALL);
@@ -1055,6 +1475,12 @@ static void expose_LowCore_WidgetInstance(asIScriptEngine *p_Engine)
       r >= 0,
       "Failed to set namespace for Low::Core::UI::WidgetInstance.");
   r = p_Engine->RegisterGlobalFunction(
+      "u16 get_TYPE_ID() property",
+      asFUNCTION(LowCore_WidgetInstance_type_id), asCALL_CDECL);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose TYPE_ID for Low::Core::UI::WidgetInstance.");
+  r = p_Engine->RegisterGlobalFunction(
       "WidgetInstance make(Name)",
       asFUNCTION(LowCore_WidgetInstance_genmake), asCALL_CDECL);
   LOW_ASSERT(r >= 0, "Failed to expose generic make function for "
@@ -1077,11 +1503,23 @@ LowCore_View_default_construct(Low::Core::UI::View *p_Memory)
 {
   new (p_Memory) Low::Core::UI::View;
 }
+static void LowCore_View_id_construct(u64 p_Id,
+                                      Low::Core::UI::View *p_Memory)
+{
+  new (p_Memory) Low::Core::UI::View(p_Id);
+}
 static void
 LowCore_View_copy_construct(const Low::Core::UI::View &p_Other,
                             Low::Core::UI::View *p_Memory)
 {
   new (p_Memory) Low::Core::UI::View(p_Other);
+}
+static Low::Core::UI::View &
+LowCore_View_assign(const Low::Core::UI::View &p_Other,
+                    Low::Core::UI::View *p_Self)
+{
+  *p_Self = p_Other;
+  return *p_Self;
 }
 static void LowCore_View_destruct(Low::Core::UI::View *p_Memory)
 {
@@ -1101,6 +1539,10 @@ LowCore_View_genfindbyname(Low::Util::Name p_Name)
 static u32 LowCore_View_living_count()
 {
   return Low::Core::UI::View::living_count();
+}
+static u16 LowCore_View_type_id()
+{
+  return Low::Core::UI::View::type_id();
 }
 static Low::Core::UI::View
 LowCore_View_func_spawn_instance(Low::Core::UI::View p_This,
@@ -1138,11 +1580,25 @@ static void expose_LowCore_View(asIScriptEngine *p_Engine)
       "Failed to expose default constructor of Low::Core::UI::View.");
 
   r = p_Engine->RegisterObjectBehaviour(
+      "View", asBEHAVE_CONSTRUCT, "void f(u64 id)",
+      asFUNCTION(LowCore_View_id_construct), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose id constructor of Low::Core::UI::View.");
+
+  r = p_Engine->RegisterObjectBehaviour(
       "View", asBEHAVE_CONSTRUCT, "void f(const View& in)",
       asFUNCTION(LowCore_View_copy_construct), asCALL_CDECL_OBJLAST);
   LOW_ASSERT(
       r >= 0,
       "Failed to expose copy constructor of Low::Core::UI::View.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "View", "View& opAssign(const View& in)",
+      asFUNCTION(LowCore_View_assign), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose assignment operator of Low::Core::UI::View.");
 
   r = p_Engine->RegisterObjectBehaviour(
       "View", asBEHAVE_DESTRUCT, "void f()",
@@ -1150,7 +1606,7 @@ static void expose_LowCore_View(asIScriptEngine *p_Engine)
   LOW_ASSERT(r >= 0,
              "Failed to expose destructor of Low::Core::UI::View.");
   r = p_Engine->RegisterObjectMethod(
-      "View", "bool get_alive() const property",
+      "View", "bool get_is_alive() const property",
       asMETHODPR(Low::Core::UI::View, is_alive, () const, bool),
       asCALL_THISCALL);
   LOW_ASSERT(
@@ -1247,6 +1703,11 @@ static void expose_LowCore_View(asIScriptEngine *p_Engine)
   LOW_ASSERT(r >= 0,
              "Failed to set namespace for Low::Core::UI::View.");
   r = p_Engine->RegisterGlobalFunction(
+      "u16 get_TYPE_ID() property", asFUNCTION(LowCore_View_type_id),
+      asCALL_CDECL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose TYPE_ID for Low::Core::UI::View.");
+  r = p_Engine->RegisterGlobalFunction(
       "View make(Name)", asFUNCTION(LowCore_View_genmake),
       asCALL_CDECL);
   LOW_ASSERT(r >= 0, "Failed to expose generic make function for "
@@ -1270,10 +1731,23 @@ LowCore_Element_default_construct(Low::Core::UI::Element *p_Memory)
   new (p_Memory) Low::Core::UI::Element;
 }
 static void
+LowCore_Element_id_construct(u64 p_Id,
+                             Low::Core::UI::Element *p_Memory)
+{
+  new (p_Memory) Low::Core::UI::Element(p_Id);
+}
+static void
 LowCore_Element_copy_construct(const Low::Core::UI::Element &p_Other,
                                Low::Core::UI::Element *p_Memory)
 {
   new (p_Memory) Low::Core::UI::Element(p_Other);
+}
+static Low::Core::UI::Element &
+LowCore_Element_assign(const Low::Core::UI::Element &p_Other,
+                       Low::Core::UI::Element *p_Self)
+{
+  *p_Self = p_Other;
+  return *p_Self;
 }
 static void LowCore_Element_destruct(Low::Core::UI::Element *p_Memory)
 {
@@ -1288,6 +1762,10 @@ LowCore_Element_genfindbyname(Low::Util::Name p_Name)
 static u32 LowCore_Element_living_count()
 {
   return Low::Core::UI::Element::living_count();
+}
+static u16 LowCore_Element_type_id()
+{
+  return Low::Core::UI::Element::type_id();
 }
 static uint64_t
 LowCore_Element_func_get_component(Low::Core::UI::Element p_This,
@@ -1353,12 +1831,25 @@ static void expose_LowCore_Element(asIScriptEngine *p_Engine)
                      "Low::Core::UI::Element.");
 
   r = p_Engine->RegisterObjectBehaviour(
+      "Element", asBEHAVE_CONSTRUCT, "void f(u64 id)",
+      asFUNCTION(LowCore_Element_id_construct), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose id constructor of Low::Core::UI::Element.");
+
+  r = p_Engine->RegisterObjectBehaviour(
       "Element", asBEHAVE_CONSTRUCT, "void f(const Element& in)",
       asFUNCTION(LowCore_Element_copy_construct),
       asCALL_CDECL_OBJLAST);
   LOW_ASSERT(
       r >= 0,
       "Failed to expose copy constructor of Low::Core::UI::Element.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "Element", "Element& opAssign(const Element& in)",
+      asFUNCTION(LowCore_Element_assign), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose assignment operator of "
+                     "Low::Core::UI::Element.");
 
   r = p_Engine->RegisterObjectBehaviour(
       "Element", asBEHAVE_DESTRUCT, "void f()",
@@ -1367,7 +1858,7 @@ static void expose_LowCore_Element(asIScriptEngine *p_Engine)
       r >= 0,
       "Failed to expose destructor of Low::Core::UI::Element.");
   r = p_Engine->RegisterObjectMethod(
-      "Element", "bool get_alive() const property",
+      "Element", "bool get_is_alive() const property",
       asMETHODPR(Low::Core::UI::Element, is_alive, () const, bool),
       asCALL_THISCALL);
   LOW_ASSERT(
@@ -1465,6 +1956,11 @@ static void expose_LowCore_Element(asIScriptEngine *p_Engine)
 
   r = p_Engine->SetDefaultNamespace("UI::Element");
   r = p_Engine->RegisterGlobalFunction(
+      "u16 get_TYPE_ID() property",
+      asFUNCTION(LowCore_Element_type_id), asCALL_CDECL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose TYPE_ID for Low::Core::UI::Element.");
+  r = p_Engine->RegisterGlobalFunction(
       "Element find_by_name(Name)",
       asFUNCTION(LowCore_Element_genfindbyname), asCALL_CDECL);
   LOW_ASSERT(r >= 0, "Failed to expose generic find by name function "
@@ -1483,11 +1979,23 @@ static void LowCore_Display_default_construct(
 {
   new (p_Memory) Low::Core::UI::Component::Display;
 }
+static void LowCore_Display_id_construct(
+    u64 p_Id, Low::Core::UI::Component::Display *p_Memory)
+{
+  new (p_Memory) Low::Core::UI::Component::Display(p_Id);
+}
 static void LowCore_Display_copy_construct(
     const Low::Core::UI::Component::Display &p_Other,
     Low::Core::UI::Component::Display *p_Memory)
 {
   new (p_Memory) Low::Core::UI::Component::Display(p_Other);
+}
+static Low::Core::UI::Component::Display &LowCore_Display_assign(
+    const Low::Core::UI::Component::Display &p_Other,
+    Low::Core::UI::Component::Display *p_Self)
+{
+  *p_Self = p_Other;
+  return *p_Self;
 }
 static void
 LowCore_Display_destruct(Low::Core::UI::Component::Display *p_Memory)
@@ -1498,6 +2006,10 @@ LowCore_Display_destruct(Low::Core::UI::Component::Display *p_Memory)
 static u32 LowCore_Display_living_count()
 {
   return Low::Core::UI::Component::Display::living_count();
+}
+static u16 LowCore_Display_type_id()
+{
+  return Low::Core::UI::Component::Display::type_id();
 }
 // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:DISPLAY:HELPERS
 
@@ -1524,10 +2036,22 @@ static void expose_LowCore_Display(asIScriptEngine *p_Engine)
                      "Low::Core::UI::Component::Display.");
 
   r = p_Engine->RegisterObjectBehaviour(
+      "Display", asBEHAVE_CONSTRUCT, "void f(u64 id)",
+      asFUNCTION(LowCore_Display_id_construct), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose id constructor of "
+                     "Low::Core::UI::Component::Display.");
+
+  r = p_Engine->RegisterObjectBehaviour(
       "Display", asBEHAVE_CONSTRUCT, "void f(const Display& in)",
       asFUNCTION(LowCore_Display_copy_construct),
       asCALL_CDECL_OBJLAST);
   LOW_ASSERT(r >= 0, "Failed to expose copy constructor of "
+                     "Low::Core::UI::Component::Display.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "Display", "Display& opAssign(const Display& in)",
+      asFUNCTION(LowCore_Display_assign), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose assignment operator of "
                      "Low::Core::UI::Component::Display.");
 
   r = p_Engine->RegisterObjectBehaviour(
@@ -1536,7 +2060,7 @@ static void expose_LowCore_Display(asIScriptEngine *p_Engine)
   LOW_ASSERT(r >= 0, "Failed to expose destructor of "
                      "Low::Core::UI::Component::Display.");
   r = p_Engine->RegisterObjectMethod(
-      "Display", "bool get_alive() const property",
+      "Display", "bool get_is_alive() const property",
       asMETHODPR(Low::Core::UI::Component::Display, is_alive,
                  () const, bool),
       asCALL_THISCALL);
@@ -1681,6 +2205,11 @@ static void expose_LowCore_Display(asIScriptEngine *p_Engine)
   r = p_Engine->SetDefaultNamespace("Display");
   LOW_ASSERT(r >= 0, "Failed to set namespace for "
                      "Low::Core::UI::Component::Display.");
+  r = p_Engine->RegisterGlobalFunction(
+      "u16 get_TYPE_ID() property",
+      asFUNCTION(LowCore_Display_type_id), asCALL_CDECL);
+  LOW_ASSERT(r >= 0, "Failed to expose TYPE_ID for "
+                     "Low::Core::UI::Component::Display.");
   r = p_Engine->SetDefaultNamespace("");
   LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
   // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:DISPLAY:EXPOSE
@@ -1694,11 +2223,24 @@ static void LowCore_Text_default_construct(
 {
   new (p_Memory) Low::Core::UI::Component::Text;
 }
+static void
+LowCore_Text_id_construct(u64 p_Id,
+                          Low::Core::UI::Component::Text *p_Memory)
+{
+  new (p_Memory) Low::Core::UI::Component::Text(p_Id);
+}
 static void LowCore_Text_copy_construct(
     const Low::Core::UI::Component::Text &p_Other,
     Low::Core::UI::Component::Text *p_Memory)
 {
   new (p_Memory) Low::Core::UI::Component::Text(p_Other);
+}
+static Low::Core::UI::Component::Text &
+LowCore_Text_assign(const Low::Core::UI::Component::Text &p_Other,
+                    Low::Core::UI::Component::Text *p_Self)
+{
+  *p_Self = p_Other;
+  return *p_Self;
 }
 static void
 LowCore_Text_destruct(Low::Core::UI::Component::Text *p_Memory)
@@ -1709,6 +2251,10 @@ LowCore_Text_destruct(Low::Core::UI::Component::Text *p_Memory)
 static u32 LowCore_Text_living_count()
 {
   return Low::Core::UI::Component::Text::living_count();
+}
+static u16 LowCore_Text_type_id()
+{
+  return Low::Core::UI::Component::Text::type_id();
 }
 static std::string
 LowCore_Text_get_text(Low::Core::UI::Component::Text p_This)
@@ -1746,9 +2292,21 @@ static void expose_LowCore_Text(asIScriptEngine *p_Engine)
                      "Low::Core::UI::Component::Text.");
 
   r = p_Engine->RegisterObjectBehaviour(
+      "Text", asBEHAVE_CONSTRUCT, "void f(u64 id)",
+      asFUNCTION(LowCore_Text_id_construct), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose id constructor of "
+                     "Low::Core::UI::Component::Text.");
+
+  r = p_Engine->RegisterObjectBehaviour(
       "Text", asBEHAVE_CONSTRUCT, "void f(const Text& in)",
       asFUNCTION(LowCore_Text_copy_construct), asCALL_CDECL_OBJLAST);
   LOW_ASSERT(r >= 0, "Failed to expose copy constructor of "
+                     "Low::Core::UI::Component::Text.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "Text", "Text& opAssign(const Text& in)",
+      asFUNCTION(LowCore_Text_assign), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose assignment operator of "
                      "Low::Core::UI::Component::Text.");
 
   r = p_Engine->RegisterObjectBehaviour(
@@ -1757,7 +2315,7 @@ static void expose_LowCore_Text(asIScriptEngine *p_Engine)
   LOW_ASSERT(r >= 0, "Failed to expose destructor of "
                      "Low::Core::UI::Component::Text.");
   r = p_Engine->RegisterObjectMethod(
-      "Text", "bool get_alive() const property",
+      "Text", "bool get_is_alive() const property",
       asMETHODPR(Low::Core::UI::Component::Text, is_alive, () const,
                  bool),
       asCALL_THISCALL);
@@ -1825,11 +2383,175 @@ static void expose_LowCore_Text(asIScriptEngine *p_Engine)
   LOW_ASSERT(
       r >= 0,
       "Failed to set namespace for Low::Core::UI::Component::Text.");
+  r = p_Engine->RegisterGlobalFunction(
+      "u16 get_TYPE_ID() property", asFUNCTION(LowCore_Text_type_id),
+      asCALL_CDECL);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose TYPE_ID for Low::Core::UI::Component::Text.");
   r = p_Engine->SetDefaultNamespace("");
   LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
   // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:TEXT:EXPOSE
 
   // LOW_CODEGEN::END::CUSTOM:LOWCORE:TEXT:EXPOSE
+}
+
+// --------------------------
+static void LowRenderer2_AnimationClip_default_construct(
+    Low::Renderer::AnimationClip *p_Memory)
+{
+  new (p_Memory) Low::Renderer::AnimationClip;
+}
+static void LowRenderer2_AnimationClip_id_construct(
+    u64 p_Id, Low::Renderer::AnimationClip *p_Memory)
+{
+  new (p_Memory) Low::Renderer::AnimationClip(p_Id);
+}
+static void LowRenderer2_AnimationClip_copy_construct(
+    const Low::Renderer::AnimationClip &p_Other,
+    Low::Renderer::AnimationClip *p_Memory)
+{
+  new (p_Memory) Low::Renderer::AnimationClip(p_Other);
+}
+static Low::Renderer::AnimationClip &
+LowRenderer2_AnimationClip_assign(
+    const Low::Renderer::AnimationClip &p_Other,
+    Low::Renderer::AnimationClip *p_Self)
+{
+  *p_Self = p_Other;
+  return *p_Self;
+}
+static void LowRenderer2_AnimationClip_destruct(
+    Low::Renderer::AnimationClip *p_Memory)
+{
+  using namespace Low::Renderer;
+  p_Memory->~AnimationClip();
+}
+static Low::Renderer::AnimationClip
+LowRenderer2_AnimationClip_genmake(Low::Util::Name p_Name)
+{
+  return Low::Renderer::AnimationClip::make(p_Name);
+}
+static Low::Renderer::AnimationClip
+LowRenderer2_AnimationClip_genfindbyname(Low::Util::Name p_Name)
+{
+  return Low::Renderer::AnimationClip::find_by_name(p_Name);
+}
+static u32 LowRenderer2_AnimationClip_living_count()
+{
+  return Low::Renderer::AnimationClip::living_count();
+}
+static u16 LowRenderer2_AnimationClip_type_id()
+{
+  return Low::Renderer::AnimationClip::type_id();
+}
+// LOW_CODEGEN:BEGIN:CUSTOM:LOWRENDERER2:ANIMATIONCLIP:HELPERS
+// LOW_CODEGEN::END::CUSTOM:LOWRENDERER2:ANIMATIONCLIP:HELPERS
+
+static void
+register_LowRenderer2_AnimationClip(asIScriptEngine *p_Engine)
+{
+  int r = 0;
+  r = p_Engine->RegisterObjectType(
+      "AnimationClip", sizeof(Low::Renderer::AnimationClip),
+      asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose Low::Renderer::AnimationClip type.");
+}
+static void
+expose_LowRenderer2_AnimationClip(asIScriptEngine *p_Engine)
+{
+  int r = 0;
+  r = p_Engine->RegisterObjectBehaviour(
+      "AnimationClip", asBEHAVE_CONSTRUCT, "void f()",
+      asFUNCTION(LowRenderer2_AnimationClip_default_construct),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose default constructor of "
+                     "Low::Renderer::AnimationClip.");
+
+  r = p_Engine->RegisterObjectBehaviour(
+      "AnimationClip", asBEHAVE_CONSTRUCT, "void f(u64 id)",
+      asFUNCTION(LowRenderer2_AnimationClip_id_construct),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose id constructor of "
+                     "Low::Renderer::AnimationClip.");
+
+  r = p_Engine->RegisterObjectBehaviour(
+      "AnimationClip", asBEHAVE_CONSTRUCT,
+      "void f(const AnimationClip& in)",
+      asFUNCTION(LowRenderer2_AnimationClip_copy_construct),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose copy constructor of "
+                     "Low::Renderer::AnimationClip.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "AnimationClip",
+      "AnimationClip& opAssign(const AnimationClip& in)",
+      asFUNCTION(LowRenderer2_AnimationClip_assign),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose assignment operator of "
+                     "Low::Renderer::AnimationClip.");
+
+  r = p_Engine->RegisterObjectBehaviour(
+      "AnimationClip", asBEHAVE_DESTRUCT, "void f()",
+      asFUNCTION(LowRenderer2_AnimationClip_destruct),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose destructor of Low::Renderer::AnimationClip.");
+  r = p_Engine->RegisterObjectMethod(
+      "AnimationClip", "bool get_is_alive() const property",
+      asMETHODPR(Low::Renderer::AnimationClip, is_alive, () const,
+                 bool),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose is_alive getter for "
+                     "Low::Renderer::AnimationClip.");
+  r = p_Engine->RegisterObjectMethod(
+      "AnimationClip", "void destroy()",
+      asMETHODPR(Low::Renderer::AnimationClip, destroy, (), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose destroy for Low::Renderer::AnimationClip.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "AnimationClip", "Name get_name() const property",
+      asMETHOD(Low::Renderer::AnimationClip, get_name),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property getter for name of "
+                     "Low::Renderer::AnimationClip.");
+  r = p_Engine->RegisterObjectMethod(
+      "AnimationClip", "void set_name(Name) property",
+      asMETHOD(Low::Renderer::AnimationClip, set_name),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property setter for name of "
+                     "Low::Renderer::AnimationClip.");
+
+  r = p_Engine->SetDefaultNamespace("AnimationClip");
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to set namespace for Low::Renderer::AnimationClip.");
+  r = p_Engine->RegisterGlobalFunction(
+      "u16 get_TYPE_ID() property",
+      asFUNCTION(LowRenderer2_AnimationClip_type_id), asCALL_CDECL);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose TYPE_ID for Low::Renderer::AnimationClip.");
+  r = p_Engine->RegisterGlobalFunction(
+      "AnimationClip make(Name)",
+      asFUNCTION(LowRenderer2_AnimationClip_genmake), asCALL_CDECL);
+  LOW_ASSERT(r >= 0, "Failed to expose generic make function for "
+                     "Low::Renderer::AnimationClip.");
+  r = p_Engine->RegisterGlobalFunction(
+      "AnimationClip find_by_name(Name)",
+      asFUNCTION(LowRenderer2_AnimationClip_genfindbyname),
+      asCALL_CDECL);
+  LOW_ASSERT(r >= 0, "Failed to expose generic find by name function "
+                     "for Low::Renderer::AnimationClip.");
+  r = p_Engine->SetDefaultNamespace("");
+  LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
+  // LOW_CODEGEN:BEGIN:CUSTOM:LOWRENDERER2:ANIMATIONCLIP:EXPOSE
+  // LOW_CODEGEN::END::CUSTOM:LOWRENDERER2:ANIMATIONCLIP:EXPOSE
 }
 
 namespace Low::Core {
@@ -1838,6 +2560,7 @@ namespace Low::Core {
     register_LowCore_Region(p_Engine);
     register_LowCore_Entity(p_Engine);
     register_LowCore_Transform(p_Engine);
+    register_LowCore_Animator(p_Engine);
     register_LowCore_Camera(p_Engine);
     register_LowCore_Module(p_Engine);
     register_LowCore_Asset(p_Engine);
@@ -1847,6 +2570,7 @@ namespace Low::Core {
     register_LowCore_Element(p_Engine);
     register_LowCore_Display(p_Engine);
     register_LowCore_Text(p_Engine);
+    register_LowRenderer2_AnimationClip(p_Engine);
   }
 } // namespace Low::Core
 namespace Low::Core {
@@ -1855,6 +2579,7 @@ namespace Low::Core {
     expose_LowCore_Region(p_Engine);
     expose_LowCore_Entity(p_Engine);
     expose_LowCore_Transform(p_Engine);
+    expose_LowCore_Animator(p_Engine);
     expose_LowCore_Camera(p_Engine);
     expose_LowCore_Module(p_Engine);
     expose_LowCore_Asset(p_Engine);
@@ -1864,5 +2589,6 @@ namespace Low::Core {
     expose_LowCore_Element(p_Engine);
     expose_LowCore_Display(p_Engine);
     expose_LowCore_Text(p_Engine);
+    expose_LowRenderer2_AnimationClip(p_Engine);
   }
 } // namespace Low::Core

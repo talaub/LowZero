@@ -5,7 +5,10 @@
 #include "LowUtilString.h"
 #include "LowUtilHandle.h"
 
+#include "LowMathVectorUtil.h"
+
 #include "LowCoreEntity.h"
+#include "LowCoreInput.h"
 
 #include "LowCore.h"
 
@@ -15,20 +18,113 @@ namespace Low {
   namespace Core {
     namespace Scripting {
       // BEGIN REGISTER RUNTIME
+      static bool runtime_is_playing()
+      {
+        return Low::Core::get_engine_state() ==
+               Low::Util::EngineState::PLAYING;
+      }
+
       static void expose_runtime(asIScriptEngine *p_Engine)
       {
         int r = p_Engine->SetDefaultNamespace("Runtime");
         LOW_ASSERT(r >= 0, "Failed to set namespace");
+
+        r = p_Engine->RegisterEnum("EngineState");
+        LOW_ASSERT(r >= 0, "Failed to register Runtime::EngineState");
+
+        r = p_Engine->RegisterEnumValue(
+            "EngineState", "Editing",
+            static_cast<int>(Low::Util::EngineState::EDITING));
+        LOW_ASSERT(
+            r >= 0,
+            "Failed to register Runtime::EngineState::Editing");
+
+        r = p_Engine->RegisterEnumValue(
+            "EngineState", "Playing",
+            static_cast<int>(Low::Util::EngineState::PLAYING));
+        LOW_ASSERT(
+            r >= 0,
+            "Failed to register Runtime::EngineState::Playing");
 
         r = p_Engine->RegisterGlobalFunction(
             "float get_delta_time() property",
             asFUNCTION(Low::Core::get_delta_time), asCALL_CDECL);
         LOW_ASSERT(r >= 0, "Failed to register Runtime::delta_time");
 
+        r = p_Engine->RegisterGlobalFunction(
+            "EngineState get_state() property",
+            asFUNCTION(Low::Core::get_engine_state), asCALL_CDECL);
+        LOW_ASSERT(r >= 0, "Failed to register Runtime::state");
+
+        r = p_Engine->RegisterGlobalFunction(
+            "bool get_is_playing() property",
+            asFUNCTION(runtime_is_playing), asCALL_CDECL);
+        LOW_ASSERT(r >= 0, "Failed to register Runtime::is_playing");
+
         r = p_Engine->SetDefaultNamespace("");
         LOW_ASSERT(r >= 0, "Failed to reset namespace");
       }
       // END REGISTER RUNTIME
+      // ------------------------------------------------------
+      // BEGIN REGISTER INPUT
+      static bool input_is_key_down(Low::Util::KeyboardButton p_Button)
+      {
+        return Low::Core::Input::keyboard_button_down(p_Button);
+      }
+
+      static void expose_input(asIScriptEngine *p_Engine)
+      {
+        int r = p_Engine->SetDefaultNamespace("Input");
+        LOW_ASSERT(r >= 0, "Failed to set Input namespace");
+
+        r = p_Engine->RegisterEnum("KeyboardButton");
+        LOW_ASSERT(r >= 0, "Failed to register Input::KeyboardButton");
+
+#define LOW_AS_REGISTER_KEYBOARD_BUTTON(x)                          \
+  r = p_Engine->RegisterEnumValue(                                  \
+      "KeyboardButton", #x,                                         \
+      static_cast<int>(Low::Util::KeyboardButton::x));              \
+  LOW_ASSERT(r >= 0,                                                \
+             "Failed to register Input::KeyboardButton::" #x)
+
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(Q);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(W);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(E);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(R);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(T);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(Y);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(U);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(I);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(O);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(P);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(A);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(S);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(D);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(F);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(G);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(H);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(J);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(K);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(L);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(Z);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(X);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(C);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(V);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(B);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(N);
+        LOW_AS_REGISTER_KEYBOARD_BUTTON(M);
+
+#undef LOW_AS_REGISTER_KEYBOARD_BUTTON
+
+        r = p_Engine->RegisterGlobalFunction(
+            "bool is_key_down(KeyboardButton)",
+            asFUNCTION(input_is_key_down), asCALL_CDECL);
+        LOW_ASSERT(r >= 0, "Failed to register Input::is_key_down");
+
+        r = p_Engine->SetDefaultNamespace("");
+        LOW_ASSERT(r >= 0, "Failed to reset namespace");
+      }
+      // END REGISTER INPUT
       // ------------------------------------------------------
       // BEGIN REGISTER HANDLE
       static void
@@ -212,6 +308,12 @@ namespace Low {
         new (p_Memory) Low::Math::UVector2(p_X, p_Y);
       }
 
+      static void uvector2_scalar_construct(const u32 p_Value,
+                                            Low::Math::UVector2 *p_Memory)
+      {
+        new (p_Memory) Low::Math::UVector2(p_Value);
+      }
+
       static void
       vector2_default_construct(Low::Math::Vector2 *p_Memory)
       {
@@ -224,6 +326,13 @@ namespace Low {
       {
         new (p_Memory) Low::Math::Vector2(p_X, p_Y);
       }
+
+      static void vector2_scalar_construct(const float p_Value,
+                                           Low::Math::Vector2 *p_Memory)
+      {
+        new (p_Memory) Low::Math::Vector2(p_Value);
+      }
+
       static void
       vector3_default_construct(Low::Math::Vector3 *p_Memory)
       {
@@ -237,6 +346,12 @@ namespace Low {
         new (p_Memory) Low::Math::Vector3(p_X, p_Y, p_Z);
       }
 
+      static void vector3_scalar_construct(const float p_Value,
+                                           Low::Math::Vector3 *p_Memory)
+      {
+        new (p_Memory) Low::Math::Vector3(p_Value);
+      }
+
       static void
       vector4_default_construct(Low::Math::Vector4 *p_Memory)
       {
@@ -248,6 +363,12 @@ namespace Low {
                                          Low::Math::Vector4 *p_Memory)
       {
         new (p_Memory) Low::Math::Vector4(p_X, p_Y, p_Z, p_W);
+      }
+
+      static void vector4_scalar_construct(const float p_Value,
+                                           Low::Math::Vector4 *p_Memory)
+      {
+        new (p_Memory) Low::Math::Vector4(p_Value);
       }
 
       static void
@@ -269,7 +390,17 @@ namespace Low {
         new (p_Memory) Low::Math::Quaternion(l_Q);
       }
 
-#define VEC_OPT(x, y, s)                                             \
+      static float script_arg_float(asIScriptGeneric *p_Gen)
+      {
+        return p_Gen->GetArgFloat(0);
+      }
+
+      static u32 script_arg_u32(asIScriptGeneric *p_Gen)
+      {
+        return static_cast<u32>(p_Gen->GetArgDWord(0));
+      }
+
+#define VEC_OPT(x, y, s, get_scalar)                                 \
   static void x##_add_generic(asIScriptGeneric *p_Gen)               \
   {                                                                  \
     auto *l_Self = static_cast<Low::Math::y *>(p_Gen->GetObject());  \
@@ -278,6 +409,12 @@ namespace Low {
     auto *l_Return = static_cast<Low::Math::y *>(                    \
         p_Gen->GetAddressOfReturnLocation());                        \
     *l_Return = (*l_Self) + (*l_Other);                              \
+  }                                                                  \
+  static Low::Math::y &x##_add_assign(const Low::Math::y &p_Other,   \
+                                      Low::Math::y *p_Self)          \
+  {                                                                  \
+    *p_Self += p_Other;                                              \
+    return *p_Self;                                                  \
   }                                                                  \
   static void x##_sub_generic(asIScriptGeneric *p_Gen)               \
   {                                                                  \
@@ -291,18 +428,18 @@ namespace Low {
   static void x##_mul_generic(asIScriptGeneric *p_Gen)               \
   {                                                                  \
     auto *l_Self = static_cast<Low::Math::y *>(p_Gen->GetObject());  \
-    auto *l_Other = static_cast<s *>(p_Gen->GetArgAddress(0));       \
+    const s l_Other = get_scalar(p_Gen);                             \
     auto *l_Return = static_cast<Low::Math::y *>(                    \
         p_Gen->GetAddressOfReturnLocation());                        \
-    *l_Return = (*l_Self) * (*l_Other);                              \
+    *l_Return = (*l_Self) * l_Other;                                 \
   }                                                                  \
   static void x##_div_generic(asIScriptGeneric *p_Gen)               \
   {                                                                  \
     auto *l_Self = static_cast<Low::Math::y *>(p_Gen->GetObject());  \
-    auto *l_Other = static_cast<s *>(p_Gen->GetArgAddress(0));       \
+    const s l_Other = get_scalar(p_Gen);                             \
     auto *l_Return = static_cast<Low::Math::y *>(                    \
         p_Gen->GetAddressOfReturnLocation());                        \
-    *l_Return = (*l_Self) + (*l_Other);                              \
+    *l_Return = (*l_Self) / l_Other;                                 \
   }                                                                  \
   static void x##_equals_generic(asIScriptGeneric *p_Gen)            \
   {                                                                  \
@@ -314,10 +451,10 @@ namespace Low {
     *l_Return = (*l_Self) == (*l_Other);                             \
   }
 
-      VEC_OPT(vector2, Vector2, float)
-      VEC_OPT(uvector2, UVector2, u32)
-      VEC_OPT(vector3, Vector3, float)
-      VEC_OPT(vector4, Vector4, float)
+      VEC_OPT(vector2, Vector2, float, script_arg_float)
+      VEC_OPT(uvector2, UVector2, u32, script_arg_u32)
+      VEC_OPT(vector3, Vector3, float, script_arg_float)
+      VEC_OPT(vector4, Vector4, float, script_arg_float)
 
 #undef VEC_OPT
 
@@ -337,6 +474,52 @@ namespace Low {
                           const Low::Math::Vector3 &p_Other)
       {
         return Low::Math::VectorUtil::distance(p_Self, p_Other);
+      }
+
+      static Low::Math::Vector3
+      vector3_lerp(const Low::Math::Vector3 &p_From,
+                   const Low::Math::Vector3 &p_To,
+                   const float p_Delta)
+      {
+        return Low::Math::VectorUtil::lerp(p_From, p_To, p_Delta);
+      }
+
+      static Low::Math::Vector3 vector3_forward()
+      {
+        return Low::Math::Vector3(0.0f, 0.0f, -1.0f);
+      }
+
+      static Low::Math::Vector3 vector3_back()
+      {
+        return Low::Math::Vector3(0.0f, 0.0f, 1.0f);
+      }
+
+      static Low::Math::Vector3 vector3_up()
+      {
+        return Low::Math::Vector3(0.0f, 1.0f, 0.0f);
+      }
+
+      static Low::Math::Vector3 vector3_down()
+      {
+        return Low::Math::Vector3(0.0f, -1.0f, 0.0f);
+      }
+
+      static Low::Math::Vector3 vector3_right()
+      {
+        return Low::Math::Vector3(1.0f, 0.0f, 0.0f);
+      }
+
+      static Low::Math::Vector3 vector3_left()
+      {
+        return Low::Math::Vector3(-1.0f, 0.0f, 0.0f);
+      }
+
+      static Low::Math::Quaternion
+      quaternion_from_direction(const Low::Math::Vector3 &p_Direction,
+                                const Low::Math::Vector3 &p_Up)
+      {
+        return Low::Math::VectorUtil::from_direction(p_Direction,
+                                                     p_Up);
       }
 
       static void expose_math(asIScriptEngine *p_Engine)
@@ -396,11 +579,23 @@ namespace Low {
               asCALL_CDECL_OBJLAST);
           LOW_ASSERT(r >= 0,
                      "Failed to register UVector2 init constructor");
+          r = p_Engine->RegisterObjectBehaviour(
+              "UVector2", asBEHAVE_CONSTRUCT, "void f(u32 value)",
+              asFUNCTION(uvector2_scalar_construct),
+              asCALL_CDECL_OBJLAST);
+          LOW_ASSERT(r >= 0,
+                     "Failed to register UVector2 scalar constructor");
 
           r = p_Engine->RegisterObjectMethod(
               "UVector2", "UVector2 opAdd(const UVector2 &in) const",
               asFUNCTION(uvector2_add_generic), asCALL_GENERIC);
           LOW_ASSERT(r >= 0, "Failed to register UVector2::opAdd");
+          r = p_Engine->RegisterObjectMethod(
+              "UVector2",
+              "UVector2& opAddAssign(const UVector2 &in)",
+              asFUNCTION(uvector2_add_assign), asCALL_CDECL_OBJLAST);
+          LOW_ASSERT(r >= 0,
+                     "Failed to register UVector2::opAddAssign");
           r = p_Engine->RegisterObjectMethod(
               "UVector2", "UVector2 opSub(const UVector2 &in) const",
               asFUNCTION(uvector2_sub_generic), asCALL_GENERIC);
@@ -443,11 +638,22 @@ namespace Low {
               asCALL_CDECL_OBJLAST);
           LOW_ASSERT(r >= 0,
                      "Failed to register Vector2 init constructor");
+          r = p_Engine->RegisterObjectBehaviour(
+              "Vector2", asBEHAVE_CONSTRUCT, "void f(float value)",
+              asFUNCTION(vector2_scalar_construct),
+              asCALL_CDECL_OBJLAST);
+          LOW_ASSERT(r >= 0,
+                     "Failed to register Vector2 scalar constructor");
 
           r = p_Engine->RegisterObjectMethod(
               "Vector2", "Vector2 opAdd(const Vector2 &in) const",
               asFUNCTION(vector2_add_generic), asCALL_GENERIC);
           LOW_ASSERT(r >= 0, "Failed to register Vector2::opAdd");
+          r = p_Engine->RegisterObjectMethod(
+              "Vector2", "Vector2& opAddAssign(const Vector2 &in)",
+              asFUNCTION(vector2_add_assign), asCALL_CDECL_OBJLAST);
+          LOW_ASSERT(r >= 0,
+                     "Failed to register Vector2::opAddAssign");
           r = p_Engine->RegisterObjectMethod(
               "Vector2", "Vector2 opSub(const Vector2 &in) const",
               asFUNCTION(vector2_sub_generic), asCALL_GENERIC);
@@ -484,11 +690,22 @@ namespace Low {
               "void f(float x, float y, float z)",
               asFUNCTION(vector3_init_construct),
               asCALL_CDECL_OBJLAST);
+          r = p_Engine->RegisterObjectBehaviour(
+              "Vector3", asBEHAVE_CONSTRUCT, "void f(float value)",
+              asFUNCTION(vector3_scalar_construct),
+              asCALL_CDECL_OBJLAST);
+          LOW_ASSERT(r >= 0,
+                     "Failed to register Vector3 scalar constructor");
 
           r = p_Engine->RegisterObjectMethod(
               "Vector3", "Vector3 opAdd(const Vector3 &in) const",
               asFUNCTION(vector3_add_generic), asCALL_GENERIC);
           LOW_ASSERT(r >= 0, "Failed to register Vector3::opAdd");
+          r = p_Engine->RegisterObjectMethod(
+              "Vector3", "Vector3& opAddAssign(const Vector3 &in)",
+              asFUNCTION(vector3_add_assign), asCALL_CDECL_OBJLAST);
+          LOW_ASSERT(r >= 0,
+                     "Failed to register Vector3::opAddAssign");
           r = p_Engine->RegisterObjectMethod(
               "Vector3", "Vector3 opSub(const Vector3 &in) const",
               asFUNCTION(vector3_sub_generic), asCALL_GENERIC);
@@ -521,6 +738,49 @@ namespace Low {
               asFUNCTION(vector3_distance_to), asCALL_CDECL_OBJFIRST);
           LOW_ASSERT(r >= 0,
                      "Failed to register Vector3::distance_to");
+
+          r = p_Engine->SetDefaultNamespace("Vector3");
+          LOW_ASSERT(r >= 0, "Failed to set Vector3 namespace");
+
+          r = p_Engine->RegisterGlobalFunction(
+              "Vector3 lerp(const Vector3 &in, const Vector3 &in, "
+              "float)",
+              asFUNCTION(vector3_lerp), asCALL_CDECL);
+          LOW_ASSERT(r >= 0, "Failed to register Vector3::lerp");
+
+          r = p_Engine->RegisterGlobalFunction(
+              "Vector3 get_forward() property",
+              asFUNCTION(vector3_forward), asCALL_CDECL);
+          LOW_ASSERT(r >= 0,
+                     "Failed to register Vector3::forward");
+
+          r = p_Engine->RegisterGlobalFunction(
+              "Vector3 get_back() property", asFUNCTION(vector3_back),
+              asCALL_CDECL);
+          LOW_ASSERT(r >= 0, "Failed to register Vector3::back");
+
+          r = p_Engine->RegisterGlobalFunction(
+              "Vector3 get_up() property", asFUNCTION(vector3_up),
+              asCALL_CDECL);
+          LOW_ASSERT(r >= 0, "Failed to register Vector3::up");
+
+          r = p_Engine->RegisterGlobalFunction(
+              "Vector3 get_down() property", asFUNCTION(vector3_down),
+              asCALL_CDECL);
+          LOW_ASSERT(r >= 0, "Failed to register Vector3::down");
+
+          r = p_Engine->RegisterGlobalFunction(
+              "Vector3 get_right() property",
+              asFUNCTION(vector3_right), asCALL_CDECL);
+          LOW_ASSERT(r >= 0, "Failed to register Vector3::right");
+
+          r = p_Engine->RegisterGlobalFunction(
+              "Vector3 get_left() property", asFUNCTION(vector3_left),
+              asCALL_CDECL);
+          LOW_ASSERT(r >= 0, "Failed to register Vector3::left");
+
+          r = p_Engine->SetDefaultNamespace("");
+          LOW_ASSERT(r >= 0, "Failed to reset namespace");
         }
         // Vec4
         {
@@ -543,22 +803,33 @@ namespace Low {
               "void f(float x, float y, float z, float w)",
               asFUNCTION(vector4_init_construct),
               asCALL_CDECL_OBJLAST);
+          r = p_Engine->RegisterObjectBehaviour(
+              "Vector4", asBEHAVE_CONSTRUCT, "void f(float value)",
+              asFUNCTION(vector4_scalar_construct),
+              asCALL_CDECL_OBJLAST);
+          LOW_ASSERT(r >= 0,
+                     "Failed to register Vector4 scalar constructor");
 
           r = p_Engine->RegisterObjectMethod(
               "Vector4", "Vector4 opAdd(const Vector4 &in) const",
-              asFUNCTION(vector3_add_generic), asCALL_GENERIC);
+              asFUNCTION(vector4_add_generic), asCALL_GENERIC);
           LOW_ASSERT(r >= 0, "Failed to register Vector4::opAdd");
           r = p_Engine->RegisterObjectMethod(
+              "Vector4", "Vector4& opAddAssign(const Vector4 &in)",
+              asFUNCTION(vector4_add_assign), asCALL_CDECL_OBJLAST);
+          LOW_ASSERT(r >= 0,
+                     "Failed to register Vector4::opAddAssign");
+          r = p_Engine->RegisterObjectMethod(
               "Vector4", "Vector4 opSub(const Vector4 &in) const",
-              asFUNCTION(vector3_sub_generic), asCALL_GENERIC);
+              asFUNCTION(vector4_sub_generic), asCALL_GENERIC);
           LOW_ASSERT(r >= 0, "Failed to register Vector4::opSub");
           r = p_Engine->RegisterObjectMethod(
               "Vector4", "Vector4 opMul(const float) const",
-              asFUNCTION(vector3_mul_generic), asCALL_GENERIC);
+              asFUNCTION(vector4_mul_generic), asCALL_GENERIC);
           LOW_ASSERT(r >= 0, "Failed to register Vector4::opMul");
           r = p_Engine->RegisterObjectMethod(
               "Vector4", "Vector4 opDiv(const float) const",
-              asFUNCTION(vector3_div_generic), asCALL_GENERIC);
+              asFUNCTION(vector4_div_generic), asCALL_GENERIC);
           LOW_ASSERT(r >= 0, "Failed to register Vector4::opDiv");
           r = p_Engine->RegisterObjectMethod(
               "Vector4", "bool opEquals(const Vector4& in) const",
@@ -590,6 +861,20 @@ namespace Low {
               "void f(float x, float y, float z, float w)",
               asFUNCTION(quaternion_init_construct),
               asCALL_CDECL_OBJLAST);
+
+          r = p_Engine->SetDefaultNamespace("Quaternion");
+          LOW_ASSERT(r >= 0, "Failed to set Quaternion namespace");
+
+          r = p_Engine->RegisterGlobalFunction(
+              "Quaternion from_direction(const Vector3 &in, "
+              "const Vector3 &in)",
+              asFUNCTION(quaternion_from_direction), asCALL_CDECL);
+          LOW_ASSERT(
+              r >= 0,
+              "Failed to register Quaternion::from_direction");
+
+          r = p_Engine->SetDefaultNamespace("");
+          LOW_ASSERT(r >= 0, "Failed to reset namespace");
         }
       }
       // END REGISTER MATH
@@ -871,6 +1156,7 @@ namespace Low {
         expose_logger(p_Engine);
         expose_handle(p_Engine);
         expose_runtime(p_Engine);
+        expose_input(p_Engine);
       }
 
       void register_interfaces(asIScriptEngine *p_Engine)

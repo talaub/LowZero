@@ -34,6 +34,11 @@ namespace Low {
 
       Vector3 normalize(const Vector3 p_Vector)
       {
+        if (magnitude_squared(p_Vector) <=
+            (LOW_MATH_EPSILON * LOW_MATH_EPSILON)) {
+          return Vector3(0.0f);
+        }
+
         return glm::normalize(p_Vector);
       }
 
@@ -45,7 +50,12 @@ namespace Low {
       Quaternion from_direction(const Vector3 p_Direction,
                                 const Vector3 p_Up)
       {
-        glm::vec3 direction = glm::normalize(p_Direction);
+        glm::vec3 direction = normalize(p_Direction);
+        if (magnitude_squared(direction) <=
+            (LOW_MATH_EPSILON * LOW_MATH_EPSILON)) {
+          return Quaternion();
+        }
+
         return glm::quatLookAt(direction, p_Up);
         /*
               float dot = glm::dot(p_Up, direction);

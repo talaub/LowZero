@@ -7,6 +7,7 @@
 #include "LowUtilGlobals.h"
 #include "LowUtilLogger.h"
 #include "SDL_events.h"
+#include "SDL_keyboard.h"
 
 namespace Low {
   namespace Core {
@@ -19,13 +20,77 @@ namespace Low {
 
       Math::Vector2 g_MousePosition;
 
+      static SDL_Scancode
+      keyboard_button_to_scancode(Util::KeyboardButton p_Button)
+      {
+        switch (p_Button) {
+        case Util::KeyboardButton::Q:
+          return SDL_SCANCODE_Q;
+        case Util::KeyboardButton::W:
+          return SDL_SCANCODE_W;
+        case Util::KeyboardButton::E:
+          return SDL_SCANCODE_E;
+        case Util::KeyboardButton::R:
+          return SDL_SCANCODE_R;
+        case Util::KeyboardButton::T:
+          return SDL_SCANCODE_T;
+        case Util::KeyboardButton::Y:
+          return SDL_SCANCODE_Y;
+        case Util::KeyboardButton::U:
+          return SDL_SCANCODE_U;
+        case Util::KeyboardButton::I:
+          return SDL_SCANCODE_I;
+        case Util::KeyboardButton::O:
+          return SDL_SCANCODE_O;
+        case Util::KeyboardButton::P:
+          return SDL_SCANCODE_P;
+        case Util::KeyboardButton::A:
+          return SDL_SCANCODE_A;
+        case Util::KeyboardButton::S:
+          return SDL_SCANCODE_S;
+        case Util::KeyboardButton::D:
+          return SDL_SCANCODE_D;
+        case Util::KeyboardButton::F:
+          return SDL_SCANCODE_F;
+        case Util::KeyboardButton::G:
+          return SDL_SCANCODE_G;
+        case Util::KeyboardButton::H:
+          return SDL_SCANCODE_H;
+        case Util::KeyboardButton::J:
+          return SDL_SCANCODE_J;
+        case Util::KeyboardButton::K:
+          return SDL_SCANCODE_K;
+        case Util::KeyboardButton::L:
+          return SDL_SCANCODE_L;
+        case Util::KeyboardButton::Z:
+          return SDL_SCANCODE_Z;
+        case Util::KeyboardButton::X:
+          return SDL_SCANCODE_X;
+        case Util::KeyboardButton::C:
+          return SDL_SCANCODE_C;
+        case Util::KeyboardButton::V:
+          return SDL_SCANCODE_V;
+        case Util::KeyboardButton::B:
+          return SDL_SCANCODE_B;
+        case Util::KeyboardButton::N:
+          return SDL_SCANCODE_N;
+        case Util::KeyboardButton::M:
+          return SDL_SCANCODE_M;
+        }
+
+        return SDL_SCANCODE_UNKNOWN;
+      }
+
       bool keyboard_button_down(Util::KeyboardButton p_Button)
       {
+        const SDL_Scancode l_Scancode =
+            keyboard_button_to_scancode(p_Button);
+        if (l_Scancode == SDL_SCANCODE_UNKNOWN) {
+          return false;
+        }
 
-        // FIX: Fix
-        return false;
-
-        // Renderer::get_window().keyboard_button_down(p_Button);
+        const Uint8 *l_State = SDL_GetKeyboardState(nullptr);
+        return l_State && l_State[l_Scancode];
       }
 
       bool keyboard_button_up(Util::KeyboardButton p_Button)

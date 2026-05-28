@@ -853,6 +853,7 @@ types:
   AnimationClip:
     unique_id: true
     reference_counted: true
+    scripting_expose: true
     properties:
       state:
         type: Low::Renderer::AnimationClipState
