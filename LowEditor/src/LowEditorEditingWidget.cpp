@@ -7,6 +7,7 @@
 #include "LowEditorCommonOperations.h"
 #include "LowEditorGui.h"
 #include "LowEditorBase.h"
+#include "LowEditorThemes.h"
 
 #include "LowMath.h"
 #include "LowRendererEditorImage.h"
@@ -315,6 +316,84 @@ namespace Low {
       ImGui::PushID("ViewportToolbarVertical");
 
       EditorTool &l_Active = *p_ActiveTool;
+      float l_TargetMarkerY = l_BarPos.y + l_PadY + l_Icon * 0.5f;
+
+      for (u32 i = 0u; i < p_Items.size(); ++i) {
+        if (p_Items[i].id == l_Active) {
+          l_TargetMarkerY = l_BarPos.y + l_PadY +
+                            (l_Icon + l_Gap) * (float)i +
+                            l_Icon * 0.5f;
+          break;
+        }
+      }
+
+      static bool l_MarkerInitialized = false;
+      static EditorTool l_PreviousActiveTool = EditorTool::Select;
+      static float l_MarkerStartY = 0.0f;
+      static float l_MarkerTargetY = 0.0f;
+      static float l_MarkerY = 0.0f;
+      static Core::Tween l_MarkerTween;
+
+      if (!l_MarkerInitialized) {
+        l_MarkerInitialized = true;
+        l_PreviousActiveTool = l_Active;
+        l_MarkerStartY = l_TargetMarkerY;
+        l_MarkerTargetY = l_TargetMarkerY;
+        l_MarkerY = l_TargetMarkerY;
+      }
+
+      if (l_Active != l_PreviousActiveTool) {
+        if (l_MarkerTween.is_alive()) {
+          l_MarkerTween.destroy();
+        }
+        l_MarkerStartY = l_MarkerY;
+        l_MarkerTargetY = l_TargetMarkerY;
+        l_MarkerTween =
+            Core::Tween::start(0.16f, Core::TweenEase::OUTCUBIC);
+        l_PreviousActiveTool = l_Active;
+      } else if (!l_MarkerTween.is_alive()) {
+        l_MarkerY = l_TargetMarkerY;
+        l_MarkerStartY = l_TargetMarkerY;
+        l_MarkerTargetY = l_TargetMarkerY;
+      }
+
+      if (l_MarkerTween.is_alive()) {
+        const float l_MarkerProgress =
+            Core::System::Tween::get_eased_progress(l_MarkerTween);
+        l_MarkerY = Math::Util::lerp(l_MarkerStartY,
+                                     l_MarkerTargetY,
+                                     l_MarkerProgress);
+        if (l_MarkerTween.is_finished()) {
+          l_MarkerTween.destroy();
+        }
+      }
+
+      {
+        const ImVec4 l_DebugColor =
+            color_to_imvec4(theme_get_current().debug);
+        ImVec4 l_GlowColor = l_DebugColor;
+        l_GlowColor.w *= 0.22f;
+        const ImU32 l_GlowU32 = ImGui::GetColorU32(l_GlowColor);
+        const ImU32 l_MarkerU32 = ImGui::GetColorU32(l_DebugColor);
+        const float l_MarkerW = 2.0f * l_S;
+        const float l_GlowW = 5.0f * l_S;
+        const float l_MarkerH = l_Icon * 1.16f;
+        const float l_MarkerX = l_BarMin.x + 3.0f * l_S;
+        const ImVec2 l_GlowMin(l_MarkerX - 1.5f * l_S,
+                               l_MarkerY - l_MarkerH * 0.5f);
+        const ImVec2 l_GlowMax(l_GlowMin.x + l_GlowW,
+                               l_MarkerY + l_MarkerH * 0.5f);
+        const ImVec2 l_MarkerMin(l_MarkerX,
+                                 l_MarkerY - l_MarkerH * 0.5f);
+        const ImVec2 l_MarkerMax(l_MarkerMin.x + l_MarkerW,
+                                 l_MarkerY + l_MarkerH * 0.5f);
+        l_Draw->AddRectFilled(l_GlowMin, l_GlowMax, l_GlowU32,
+                              l_GlowW * 0.5f,
+                              ImDrawFlags_RoundCornersAll);
+        l_Draw->AddRectFilled(l_MarkerMin, l_MarkerMax, l_MarkerU32,
+                              l_MarkerW * 0.5f,
+                              ImDrawFlags_RoundCornersAll);
+      }
 
       for (const ToolbarItem &l_Item : p_Items) {
         ImGui::PushID((int)l_Item.id);
@@ -326,11 +405,10 @@ namespace Low {
         const bool l_Hovered =
             ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly);
         const bool l_Held = ImGui::IsItemActive();
-        const bool l_Selected = (l_Active == l_Item.id);
 
-        // hover / selected fill
-        if (l_Hovered || l_Selected || l_Held) {
-          const ImU32 l_Fill = l_Selected ? l_ActCol : l_HovCol;
+        // hover / press fill
+        if (l_Hovered || l_Held) {
+          const ImU32 l_Fill = l_Held ? l_ActCol : l_HovCol;
           const ImVec2 l_Min = ImGui::GetItemRectMin();
           const ImVec2 l_Max = ImGui::GetItemRectMax();
           l_Draw->AddRectFilled(l_Min, l_Max, l_Fill, l_Radius * 0.6f,

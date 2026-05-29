@@ -6,6 +6,7 @@
 #include "LowUtilHandle.h"
 
 #include "LowMathVectorUtil.h"
+#include "LowMathQuaternionUtil.h"
 
 #include "LowCoreEntity.h"
 #include "LowCoreInput.h"
@@ -522,6 +523,14 @@ namespace Low {
                                                      p_Up);
       }
 
+      static Low::Math::Quaternion
+      quaternion_slerp(const Low::Math::Quaternion &p_From,
+                       const Low::Math::Quaternion &p_To,
+                       const float p_T)
+      {
+        return Low::Math::QuaternionUtil::slerp(p_From, p_To, p_T);
+      }
+
       static void expose_math(asIScriptEngine *p_Engine)
       {
         expose_typedefs(p_Engine);
@@ -872,6 +881,12 @@ namespace Low {
           LOW_ASSERT(
               r >= 0,
               "Failed to register Quaternion::from_direction");
+
+          r = p_Engine->RegisterGlobalFunction(
+              "Quaternion slerp(const Quaternion &in, "
+              "const Quaternion &in, float)",
+              asFUNCTION(quaternion_slerp), asCALL_CDECL);
+          LOW_ASSERT(r >= 0, "Failed to register Quaternion::slerp");
 
           r = p_Engine->SetDefaultNamespace("");
           LOW_ASSERT(r >= 0, "Failed to reset namespace");

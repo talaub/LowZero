@@ -66,6 +66,7 @@ class Quaternion {
     Quaternion(){}
     Quaternion(float x, float y, float z, float w){}
     static Quaternion from_direction(const Vector3& direction, const Vector3& up) {return Quaternion();}
+    static Quaternion slerp(const Quaternion& from, const Quaternion& to, float t) {return Quaternion();}
 
     float x;
     float y;
