@@ -57,6 +57,8 @@ LowCore:
   ClassInstance: 107
   Animator: 120
   Tween: 121
+  Pose: 122
+  Clip: 123
 LowRenderer2:
   GraphicsPipeline: 32
   Pipeline: 45

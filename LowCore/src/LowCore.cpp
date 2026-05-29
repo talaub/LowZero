@@ -21,6 +21,7 @@
 #include "LowCoreCamera.h"
 #include "LowCoreInput.h"
 #include "LowCoreAnimator.h"
+#include "LowCoreAnimationPose.h"
 #include "LowCoreTween.h"
 #include "LowCoreTweenEase.h"
 
@@ -123,6 +124,8 @@ namespace Low {
     {
       Component::Transform::initialize();
       Component::MeshRenderer::initialize();
+      Animation::Clip::initialize();
+      Animation::Pose::initialize();
       Component::Animator::initialize();
       Component::DirectionalLight::initialize();
       Component::PointLight::initialize();
@@ -320,6 +323,8 @@ namespace Low {
       Component::DirectionalLight::cleanup();
       Component::Transform::cleanup();
       Component::Animator::cleanup();
+      Animation::Pose::cleanup();
+      Animation::Clip::cleanup();
       Component::MeshRenderer::cleanup();
     }
 

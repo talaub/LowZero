@@ -152,7 +152,7 @@ types:
         skip_serialization: true
       pose:
         editor_editable: false
-        type: Low::Renderer::SkinningPose
+        type: Low::Core::Animation::Pose
         handle: true
         skip_deserialization: true
         skip_serialization: true
@@ -164,7 +164,7 @@ types:
         skip_serialization: true
       active_clip:
         editor_editable: false
-        type: Low::Renderer::AnimationClip
+        type: Low::Core::Animation::Clip
         handle: true
         expose_scripting: true
         skip_deserialization: true
@@ -178,6 +178,7 @@ types:
         editor_editable: false
         type: Low::Renderer::Skeleton
         handle: true
+        expose_scripting: true
         skip_deserialization: true
         skip_serialization: true
 

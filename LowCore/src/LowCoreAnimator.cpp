@@ -62,15 +62,15 @@ namespace Low {
             Low::Renderer::SkeletalRenderObject))
             Low::Renderer::SkeletalRenderObject();
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Animator, pose,
-                                   Low::Renderer::SkinningPose))
-            Low::Renderer::SkinningPose();
+                                   Low::Core::Animation::Pose))
+            Low::Core::Animation::Pose();
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Animator,
                                    skinning_instance,
                                    Low::Renderer::SkinningInstance))
             Low::Renderer::SkinningInstance();
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Animator, active_clip,
-                                   Low::Renderer::AnimationClip))
-            Low::Renderer::AnimationClip();
+                                   Low::Core::Animation::Clip))
+            Low::Core::Animation::Clip();
         ACCESSOR_TYPE_SOA(l_Handle, Animator, animation_progress,
                           float) = 0.0f;
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Animator, skeleton,
@@ -220,24 +220,23 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(Animator::Data, pose);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
-              Low::Renderer::SkinningPose::IDENTIFIER;
+              Low::Core::Animation::Pose::IDENTIFIER;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Animator l_Handle = p_Handle.get_id();
             l_Handle.get_pose();
             return (void *)&ACCESSOR_TYPE_SOA(
-                p_Handle, Animator, pose,
-                Low::Renderer::SkinningPose);
+                p_Handle, Animator, pose, Low::Core::Animation::Pose);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
             Animator l_Handle = p_Handle.get_id();
-            l_Handle.set_pose(*(Low::Renderer::SkinningPose *)p_Data);
+            l_Handle.set_pose(*(Low::Core::Animation::Pose *)p_Data);
           };
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Animator l_Handle = p_Handle.get_id();
-            *((Low::Renderer::SkinningPose *)p_Data) =
+            *((Low::Core::Animation::Pose *)p_Data) =
                 l_Handle.get_pose();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -285,25 +284,25 @@ namespace Low {
               offsetof(Animator::Data, active_clip);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
-              Low::Renderer::AnimationClip::IDENTIFIER;
+              Low::Core::Animation::Clip::IDENTIFIER;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Animator l_Handle = p_Handle.get_id();
             l_Handle.get_active_clip();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, Animator, active_clip,
-                Low::Renderer::AnimationClip);
+                Low::Core::Animation::Clip);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
             Animator l_Handle = p_Handle.get_id();
             l_Handle.set_active_clip(
-                *(Low::Renderer::AnimationClip *)p_Data);
+                *(Low::Core::Animation::Clip *)p_Data);
           };
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Animator l_Handle = p_Handle.get_id();
-            *((Low::Renderer::AnimationClip *)p_Data) =
+            *((Low::Core::Animation::Clip *)p_Data) =
                 l_Handle.get_active_clip();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -674,16 +673,16 @@ namespace Low {
         broadcast_observable(N(render_object));
       }
 
-      Low::Renderer::SkinningPose Animator::get_pose() const
+      Low::Core::Animation::Pose Animator::get_pose() const
       {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pose
         // LOW_CODEGEN::END::CUSTOM:GETTER_pose
 
-        return TYPE_SOA(Animator, pose, Low::Renderer::SkinningPose);
+        return TYPE_SOA(Animator, pose, Low::Core::Animation::Pose);
       }
-      void Animator::set_pose(Low::Renderer::SkinningPose p_Value)
+      void Animator::set_pose(Low::Core::Animation::Pose p_Value)
       {
         _LOW_ASSERT(is_alive());
 
@@ -691,7 +690,7 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_pose
 
         // Set new value
-        TYPE_SOA(Animator, pose, Low::Renderer::SkinningPose) =
+        TYPE_SOA(Animator, pose, Low::Core::Animation::Pose) =
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pose
@@ -729,7 +728,7 @@ namespace Low {
         broadcast_observable(N(skinning_instance));
       }
 
-      Low::Renderer::AnimationClip Animator::get_active_clip() const
+      Low::Core::Animation::Clip Animator::get_active_clip() const
       {
         _LOW_ASSERT(is_alive());
 
@@ -737,22 +736,25 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:GETTER_active_clip
 
         return TYPE_SOA(Animator, active_clip,
-                        Low::Renderer::AnimationClip);
+                        Low::Core::Animation::Clip);
       }
       void
-      Animator::set_active_clip(Low::Renderer::AnimationClip p_Value)
+      Animator::set_active_clip(Low::Core::Animation::Clip p_Value)
       {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_active_clip
+        if (p_Value == get_active_clip()) {
+          return;
+        }
         if (get_active_clip().is_alive()) {
           get_active_clip().dereference(get_id());
         }
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_active_clip
 
         // Set new value
-        TYPE_SOA(Animator, active_clip,
-                 Low::Renderer::AnimationClip) = p_Value;
+        TYPE_SOA(Animator, active_clip, Low::Core::Animation::Clip) =
+            p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_active_clip
         if (p_Value.is_alive()) {

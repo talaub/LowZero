@@ -349,7 +349,7 @@ namespace Low {
         l_MarkerStartY = l_MarkerY;
         l_MarkerTargetY = l_TargetMarkerY;
         l_MarkerTween =
-            Core::Tween::start(0.16f, Core::TweenEase::OUTCUBIC);
+            Core::Tween::start(0.26f, Core::TweenEase::OUTCUBIC);
         l_PreviousActiveTool = l_Active;
       } else if (!l_MarkerTween.is_alive()) {
         l_MarkerY = l_TargetMarkerY;
@@ -360,8 +360,7 @@ namespace Low {
       if (l_MarkerTween.is_alive()) {
         const float l_MarkerProgress =
             Core::System::Tween::get_eased_progress(l_MarkerTween);
-        l_MarkerY = Math::Util::lerp(l_MarkerStartY,
-                                     l_MarkerTargetY,
+        l_MarkerY = Math::Util::lerp(l_MarkerStartY, l_MarkerTargetY,
                                      l_MarkerProgress);
         if (l_MarkerTween.is_finished()) {
           l_MarkerTween.destroy();

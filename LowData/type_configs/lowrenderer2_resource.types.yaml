@@ -779,6 +779,7 @@ types:
             type: Util::String
 
   Skeleton:
+    scripting_expose: true
     unique_id: true
     reference_counted: true
     properties:
@@ -853,7 +854,7 @@ types:
   AnimationClip:
     unique_id: true
     reference_counted: true
-    scripting_expose: true
+    scripting_expose: false
     properties:
       state:
         type: Low::Renderer::AnimationClipState

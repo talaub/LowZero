@@ -13,7 +13,9 @@
 #include "LowCoreUiElement.h"
 #include "LowCoreUiDisplay.h"
 #include "LowCoreUiText.h"
+#include "LowCoreAnimationClip.h"
 #include "LowRendererAnimationClip.h"
+#include "LowRendererSkeleton.h"
 
 // --------------------------
 static void
@@ -730,6 +732,12 @@ static void expose_LowCore_Animator(asIScriptEngine *p_Engine)
   r = p_Engine->SetDefaultNamespace("");
   LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
   // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:ANIMATOR:EXPOSE
+  r = p_Engine->RegisterObjectMethod(
+      "Animator", "Skeleton get_skeleton() const property",
+      asMETHOD(Low::Core::Component::Animator, get_skeleton),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property getter for skeleton of "
+                     "Low::Core::Component::Animator.");
   // LOW_CODEGEN::END::CUSTOM:LOWCORE:ANIMATOR:EXPOSE
 }
 
@@ -2397,161 +2405,236 @@ static void expose_LowCore_Text(asIScriptEngine *p_Engine)
 }
 
 // --------------------------
-static void LowRenderer2_AnimationClip_default_construct(
-    Low::Renderer::AnimationClip *p_Memory)
+static void
+LowRenderer2_Skeleton_default_construct(Low::Renderer::Skeleton *p_Memory)
 {
-  new (p_Memory) Low::Renderer::AnimationClip;
+  new (p_Memory) Low::Renderer::Skeleton;
 }
-static void LowRenderer2_AnimationClip_id_construct(
-    u64 p_Id, Low::Renderer::AnimationClip *p_Memory)
+static void LowRenderer2_Skeleton_id_construct(
+    u64 p_Id, Low::Renderer::Skeleton *p_Memory)
 {
-  new (p_Memory) Low::Renderer::AnimationClip(p_Id);
+  new (p_Memory) Low::Renderer::Skeleton(p_Id);
 }
-static void LowRenderer2_AnimationClip_copy_construct(
-    const Low::Renderer::AnimationClip &p_Other,
-    Low::Renderer::AnimationClip *p_Memory)
+static void LowRenderer2_Skeleton_copy_construct(
+    const Low::Renderer::Skeleton &p_Other,
+    Low::Renderer::Skeleton *p_Memory)
 {
-  new (p_Memory) Low::Renderer::AnimationClip(p_Other);
+  new (p_Memory) Low::Renderer::Skeleton(p_Other);
 }
-static Low::Renderer::AnimationClip &
-LowRenderer2_AnimationClip_assign(
-    const Low::Renderer::AnimationClip &p_Other,
-    Low::Renderer::AnimationClip *p_Self)
+static Low::Renderer::Skeleton &
+LowRenderer2_Skeleton_assign(const Low::Renderer::Skeleton &p_Other,
+                             Low::Renderer::Skeleton *p_Self)
 {
   *p_Self = p_Other;
   return *p_Self;
 }
-static void LowRenderer2_AnimationClip_destruct(
-    Low::Renderer::AnimationClip *p_Memory)
+static void
+LowRenderer2_Skeleton_destruct(Low::Renderer::Skeleton *p_Memory)
 {
   using namespace Low::Renderer;
-  p_Memory->~AnimationClip();
+  p_Memory->~Skeleton();
 }
-static Low::Renderer::AnimationClip
-LowRenderer2_AnimationClip_genmake(Low::Util::Name p_Name)
-{
-  return Low::Renderer::AnimationClip::make(p_Name);
-}
-static Low::Renderer::AnimationClip
-LowRenderer2_AnimationClip_genfindbyname(Low::Util::Name p_Name)
-{
-  return Low::Renderer::AnimationClip::find_by_name(p_Name);
-}
-static u32 LowRenderer2_AnimationClip_living_count()
-{
-  return Low::Renderer::AnimationClip::living_count();
-}
-static u16 LowRenderer2_AnimationClip_type_id()
-{
-  return Low::Renderer::AnimationClip::type_id();
-}
-// LOW_CODEGEN:BEGIN:CUSTOM:LOWRENDERER2:ANIMATIONCLIP:HELPERS
-// LOW_CODEGEN::END::CUSTOM:LOWRENDERER2:ANIMATIONCLIP:HELPERS
 
-static void
-register_LowRenderer2_AnimationClip(asIScriptEngine *p_Engine)
+static void register_LowRenderer2_Skeleton(asIScriptEngine *p_Engine)
 {
   int r = 0;
   r = p_Engine->RegisterObjectType(
-      "AnimationClip", sizeof(Low::Renderer::AnimationClip),
+      "Skeleton", sizeof(Low::Renderer::Skeleton),
       asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
+  LOW_ASSERT(r >= 0, "Failed to expose Low::Renderer::Skeleton type.");
+}
+static void expose_LowRenderer2_Skeleton(asIScriptEngine *p_Engine)
+{
+  int r = 0;
+  r = p_Engine->RegisterObjectBehaviour(
+      "Skeleton", asBEHAVE_CONSTRUCT, "void f()",
+      asFUNCTION(LowRenderer2_Skeleton_default_construct),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose default constructor of "
+                     "Low::Renderer::Skeleton.");
+  r = p_Engine->RegisterObjectBehaviour(
+      "Skeleton", asBEHAVE_CONSTRUCT, "void f(u64 id)",
+      asFUNCTION(LowRenderer2_Skeleton_id_construct),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose id constructor of "
+                     "Low::Renderer::Skeleton.");
+  r = p_Engine->RegisterObjectBehaviour(
+      "Skeleton", asBEHAVE_CONSTRUCT, "void f(const Skeleton& in)",
+      asFUNCTION(LowRenderer2_Skeleton_copy_construct),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose copy constructor of "
+                     "Low::Renderer::Skeleton.");
+  r = p_Engine->RegisterObjectMethod(
+      "Skeleton", "Skeleton& opAssign(const Skeleton& in)",
+      asFUNCTION(LowRenderer2_Skeleton_assign),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose assignment operator of "
+                     "Low::Renderer::Skeleton.");
+  r = p_Engine->RegisterObjectBehaviour(
+      "Skeleton", asBEHAVE_DESTRUCT, "void f()",
+      asFUNCTION(LowRenderer2_Skeleton_destruct),
+      asCALL_CDECL_OBJLAST);
   LOW_ASSERT(r >= 0,
-             "Failed to expose Low::Renderer::AnimationClip type.");
+             "Failed to expose destructor of Low::Renderer::Skeleton.");
+  r = p_Engine->RegisterObjectMethod(
+      "Skeleton", "bool get_is_alive() const property",
+      asMETHODPR(Low::Renderer::Skeleton, is_alive, () const, bool),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose is_alive getter for "
+                     "Low::Renderer::Skeleton.");
+}
+
+// --------------------------
+static void LowCoreAnimation_Clip_default_construct(
+    Low::Core::Animation::Clip *p_Memory)
+{
+  new (p_Memory) Low::Core::Animation::Clip;
+}
+static void LowCoreAnimation_Clip_id_construct(
+    u64 p_Id, Low::Core::Animation::Clip *p_Memory)
+{
+  new (p_Memory) Low::Core::Animation::Clip(p_Id);
+}
+static void LowCoreAnimation_Clip_copy_construct(
+    const Low::Core::Animation::Clip &p_Other,
+    Low::Core::Animation::Clip *p_Memory)
+{
+  new (p_Memory) Low::Core::Animation::Clip(p_Other);
+}
+static Low::Core::Animation::Clip &
+LowCoreAnimation_Clip_assign(
+    const Low::Core::Animation::Clip &p_Other,
+    Low::Core::Animation::Clip *p_Self)
+{
+  *p_Self = p_Other;
+  return *p_Self;
 }
 static void
-expose_LowRenderer2_AnimationClip(asIScriptEngine *p_Engine)
+LowCoreAnimation_Clip_destruct(Low::Core::Animation::Clip *p_Memory)
+{
+  using namespace Low::Core::Animation;
+  p_Memory->~Clip();
+}
+static Low::Core::Animation::Clip
+LowCoreAnimation_Clip_genfindbyname(Low::Util::Name p_Name)
+{
+  return Low::Core::Animation::Clip::find_by_name(p_Name);
+}
+static Low::Core::Animation::Clip
+LowCoreAnimation_Clip_find(Low::Renderer::Skeleton p_Skeleton,
+                           Low::Util::Name p_Name)
+{
+  return Low::Core::Animation::Clip::find(p_Skeleton, p_Name);
+}
+static u16 LowCoreAnimation_Clip_type_id()
+{
+  return Low::Core::Animation::Clip::type_id();
+}
+
+static void
+register_LowCoreAnimation_Clip(asIScriptEngine *p_Engine)
+{
+  int r = 0;
+  r = p_Engine->RegisterObjectType(
+      "AnimationClip", sizeof(Low::Core::Animation::Clip),
+      asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose Low::Core::Animation::Clip type.");
+}
+static void
+expose_LowCoreAnimation_Clip(asIScriptEngine *p_Engine)
 {
   int r = 0;
   r = p_Engine->RegisterObjectBehaviour(
       "AnimationClip", asBEHAVE_CONSTRUCT, "void f()",
-      asFUNCTION(LowRenderer2_AnimationClip_default_construct),
+      asFUNCTION(LowCoreAnimation_Clip_default_construct),
       asCALL_CDECL_OBJLAST);
   LOW_ASSERT(r >= 0, "Failed to expose default constructor of "
-                     "Low::Renderer::AnimationClip.");
+                     "Low::Core::Animation::Clip.");
 
   r = p_Engine->RegisterObjectBehaviour(
       "AnimationClip", asBEHAVE_CONSTRUCT, "void f(u64 id)",
-      asFUNCTION(LowRenderer2_AnimationClip_id_construct),
+      asFUNCTION(LowCoreAnimation_Clip_id_construct),
       asCALL_CDECL_OBJLAST);
   LOW_ASSERT(r >= 0, "Failed to expose id constructor of "
-                     "Low::Renderer::AnimationClip.");
+                     "Low::Core::Animation::Clip.");
 
   r = p_Engine->RegisterObjectBehaviour(
       "AnimationClip", asBEHAVE_CONSTRUCT,
       "void f(const AnimationClip& in)",
-      asFUNCTION(LowRenderer2_AnimationClip_copy_construct),
+      asFUNCTION(LowCoreAnimation_Clip_copy_construct),
       asCALL_CDECL_OBJLAST);
   LOW_ASSERT(r >= 0, "Failed to expose copy constructor of "
-                     "Low::Renderer::AnimationClip.");
+                     "Low::Core::Animation::Clip.");
 
   r = p_Engine->RegisterObjectMethod(
       "AnimationClip",
       "AnimationClip& opAssign(const AnimationClip& in)",
-      asFUNCTION(LowRenderer2_AnimationClip_assign),
-      asCALL_CDECL_OBJLAST);
+      asFUNCTION(LowCoreAnimation_Clip_assign), asCALL_CDECL_OBJLAST);
   LOW_ASSERT(r >= 0, "Failed to expose assignment operator of "
-                     "Low::Renderer::AnimationClip.");
+                     "Low::Core::Animation::Clip.");
 
   r = p_Engine->RegisterObjectBehaviour(
       "AnimationClip", asBEHAVE_DESTRUCT, "void f()",
-      asFUNCTION(LowRenderer2_AnimationClip_destruct),
+      asFUNCTION(LowCoreAnimation_Clip_destruct),
       asCALL_CDECL_OBJLAST);
-  LOW_ASSERT(
-      r >= 0,
-      "Failed to expose destructor of Low::Renderer::AnimationClip.");
+  LOW_ASSERT(r >= 0,
+             "Failed to expose destructor of Low::Core::Animation::Clip.");
   r = p_Engine->RegisterObjectMethod(
       "AnimationClip", "bool get_is_alive() const property",
-      asMETHODPR(Low::Renderer::AnimationClip, is_alive, () const,
+      asMETHODPR(Low::Core::Animation::Clip, is_alive, () const,
                  bool),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose is_alive getter for "
-                     "Low::Renderer::AnimationClip.");
-  r = p_Engine->RegisterObjectMethod(
-      "AnimationClip", "void destroy()",
-      asMETHODPR(Low::Renderer::AnimationClip, destroy, (), void),
-      asCALL_THISCALL);
-  LOW_ASSERT(
-      r >= 0,
-      "Failed to expose destroy for Low::Renderer::AnimationClip.");
-
+                     "Low::Core::Animation::Clip.");
   r = p_Engine->RegisterObjectMethod(
       "AnimationClip", "Name get_name() const property",
-      asMETHOD(Low::Renderer::AnimationClip, get_name),
+      asMETHOD(Low::Core::Animation::Clip, get_name),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property getter for name of "
-                     "Low::Renderer::AnimationClip.");
+                     "Low::Core::Animation::Clip.");
   r = p_Engine->RegisterObjectMethod(
-      "AnimationClip", "void set_name(Name) property",
-      asMETHOD(Low::Renderer::AnimationClip, set_name),
+      "AnimationClip", "bool is_loaded() const",
+      asMETHOD(Low::Core::Animation::Clip, is_loaded),
       asCALL_THISCALL);
-  LOW_ASSERT(r >= 0, "Failed to expose property setter for name of "
-                     "Low::Renderer::AnimationClip.");
+  LOW_ASSERT(r >= 0,
+             "Failed to expose is_loaded for Low::Core::Animation::Clip.");
+  r = p_Engine->RegisterObjectMethod(
+      "AnimationClip", "float get_duration() const property",
+      asMETHOD(Low::Core::Animation::Clip, get_duration),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose duration getter for "
+                     "Low::Core::Animation::Clip.");
+  r = p_Engine->RegisterObjectMethod(
+      "AnimationClip",
+      "float get_ticks_per_second() const property",
+      asMETHOD(Low::Core::Animation::Clip, get_ticks_per_second),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose ticks_per_second getter for "
+                     "Low::Core::Animation::Clip.");
 
   r = p_Engine->SetDefaultNamespace("AnimationClip");
   LOW_ASSERT(
       r >= 0,
-      "Failed to set namespace for Low::Renderer::AnimationClip.");
+      "Failed to set namespace for Low::Core::Animation::Clip.");
   r = p_Engine->RegisterGlobalFunction(
       "u16 get_TYPE_ID() property",
-      asFUNCTION(LowRenderer2_AnimationClip_type_id), asCALL_CDECL);
-  LOW_ASSERT(
-      r >= 0,
-      "Failed to expose TYPE_ID for Low::Renderer::AnimationClip.");
+      asFUNCTION(LowCoreAnimation_Clip_type_id), asCALL_CDECL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose TYPE_ID for Low::Core::Animation::Clip.");
   r = p_Engine->RegisterGlobalFunction(
-      "AnimationClip make(Name)",
-      asFUNCTION(LowRenderer2_AnimationClip_genmake), asCALL_CDECL);
-  LOW_ASSERT(r >= 0, "Failed to expose generic make function for "
-                     "Low::Renderer::AnimationClip.");
+      "AnimationClip find(Skeleton, Name)",
+      asFUNCTION(LowCoreAnimation_Clip_find), asCALL_CDECL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose find for Low::Core::Animation::Clip.");
   r = p_Engine->RegisterGlobalFunction(
       "AnimationClip find_by_name(Name)",
-      asFUNCTION(LowRenderer2_AnimationClip_genfindbyname),
+      asFUNCTION(LowCoreAnimation_Clip_genfindbyname),
       asCALL_CDECL);
   LOW_ASSERT(r >= 0, "Failed to expose generic find by name function "
-                     "for Low::Renderer::AnimationClip.");
+                     "for Low::Core::Animation::Clip.");
   r = p_Engine->SetDefaultNamespace("");
   LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
-  // LOW_CODEGEN:BEGIN:CUSTOM:LOWRENDERER2:ANIMATIONCLIP:EXPOSE
-  // LOW_CODEGEN::END::CUSTOM:LOWRENDERER2:ANIMATIONCLIP:EXPOSE
 }
 
 namespace Low::Core {
@@ -2570,7 +2653,8 @@ namespace Low::Core {
     register_LowCore_Element(p_Engine);
     register_LowCore_Display(p_Engine);
     register_LowCore_Text(p_Engine);
-    register_LowRenderer2_AnimationClip(p_Engine);
+    register_LowRenderer2_Skeleton(p_Engine);
+    register_LowCoreAnimation_Clip(p_Engine);
   }
 } // namespace Low::Core
 namespace Low::Core {
@@ -2589,6 +2673,7 @@ namespace Low::Core {
     expose_LowCore_Element(p_Engine);
     expose_LowCore_Display(p_Engine);
     expose_LowCore_Text(p_Engine);
-    expose_LowRenderer2_AnimationClip(p_Engine);
+    expose_LowRenderer2_Skeleton(p_Engine);
+    expose_LowCoreAnimation_Clip(p_Engine);
   }
 } // namespace Low::Core

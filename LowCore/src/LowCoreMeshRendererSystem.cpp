@@ -1,6 +1,5 @@
 #include "LowCoreTransformSystem.h"
 
-#include "LowRendererAnimationClipState.h"
 #include "LowRendererMeshState.h"
 #include "LowRendererMeshType.h"
 #include "LowRendererSkeletalRenderObject.h"
@@ -18,6 +17,8 @@
 #include "LowCoreTransform.h"
 #include "LowCoreTaskScheduler.h"
 #include "LowCoreAnimator.h"
+#include "LowCoreAnimationClip.h"
+#include "LowCoreAnimationPose.h"
 
 #include "LowRenderer.h"
 #include "LowRendererAnimationClip.h"
@@ -113,7 +114,7 @@ namespace Low {
         }
 
         static void
-        tick_animator(const float p_Delta,
+        tick_animator(const float p_Delta, Util::EngineState p_State,
                       Component::MeshRenderer p_MeshRenderer)
         {
           Entity l_Entity = p_MeshRenderer.get_entity();
@@ -162,25 +163,21 @@ namespace Low {
                 p_MeshRenderer.get_mesh().get_skeleton());
 
             l_Animator.set_pose(
-                Renderer::SkinningPose::make(l_Entity.get_name()));
-            l_Animator.get_pose().set_skeleton(
-                l_Animator.get_skeleton());
+                Animation::Pose::make(l_Entity.get_name()));
+
+            Renderer::SkinningPose l_SkinningPose =
+                l_Animator.get_pose().get_skinning_pose();
+            l_SkinningPose.set_skeleton(l_Animator.get_skeleton());
 
             l_Animator.set_skinning_instance(
                 Renderer::SkinningInstance::make(
                     l_Entity.get_name(), p_MeshRenderer.get_mesh()));
             l_Animator.get_skinning_instance().set_pose(
-                l_Animator.get_pose());
+                l_Animator.get_pose().get_skinning_pose());
             l_Animator.get_skinning_instance().set_render_object_id(
                 l_Animator.get_render_object().get_id());
             l_Animator.get_render_object().set_skinning_instance(
                 l_Animator.get_skinning_instance());
-
-            {
-              // TODO: THIS IS TEST CODE
-              l_Animator.set_active_clip(
-                  Renderer::AnimationClip::find_by_index(1));
-            }
           }
 
           Renderer::SkeletalRenderObject l_RenderObject =
@@ -201,13 +198,6 @@ namespace Low {
           l_RenderObject.set_world_transform(
               l_Transform.get_world_matrix());
 
-          if (!l_Animator.get_active_clip().is_alive()) {
-            return;
-          }
-          if (l_Animator.get_active_clip().get_state() !=
-              Renderer::AnimationClipState::LOADED) {
-            return;
-          }
           if (!l_Animator.get_skeleton().is_alive()) {
             return;
           }
@@ -216,15 +206,69 @@ namespace Low {
             return;
           }
 
-          Renderer::AnimationClip l_Clip =
-              l_Animator.get_active_clip();
+          Animation::Clip l_Clip = l_Animator.get_active_clip();
+          const bool l_UseBindPose =
+              p_State == Util::EngineState::EDITING ||
+              !l_Clip.is_alive() || !l_Clip.is_loaded();
+
           Renderer::Skeleton l_Skeleton = l_Animator.get_skeleton();
-          Renderer::SkinningPose l_Pose = l_Animator.get_pose();
+          Animation::Pose l_Pose = l_Animator.get_pose();
+          if (!l_Pose.is_alive()) {
+            return;
+          }
+
+          Renderer::SkinningPose l_SkinningPose =
+              l_Pose.get_skinning_pose();
+          if (!l_SkinningPose.is_alive()) {
+            return;
+          }
+
+          if (l_UseBindPose) {
+            Util::List<Renderer::SkeletonBone> &l_Bones =
+                l_Skeleton.get_bones();
+            const u32 l_BoneCount = (u32)l_Bones.size();
+            if (l_BoneCount == 0u) {
+              return;
+            }
+
+            Util::List<Math::Matrix4x4> &l_PoseMatrices =
+                l_SkinningPose.get_matrices();
+            l_PoseMatrices.resize(l_BoneCount);
+
+            Util::List<Math::Matrix4x4> &l_GlobalPose =
+                g_GlobalPoseScratch;
+            l_GlobalPose.resize(l_BoneCount);
+
+            for (u32 i = 0u; i < l_BoneCount; ++i) {
+              l_GlobalPose[i] = l_Bones[i].global_bind_transform;
+              l_PoseMatrices[i] =
+                  l_Bones[i].global_bind_transform *
+                  l_Bones[i].inverse_bind_matrix;
+            }
+
+            l_SkinningPose.mark_dirty();
+
+            Renderer::SkinningSystem::
+                evaluate_global_pose_for_skeletal_renderobject(
+                    l_RenderObject, l_Skeleton, l_GlobalPose);
+            return;
+          }
+
+          Renderer::AnimationClip l_RendererClip =
+              l_Clip.get_renderer_clip();
+          if (!l_RendererClip.is_alive()) {
+            return;
+          }
+
+          const float l_Duration = l_Clip.get_duration();
+          if (l_Duration <= 0.0f) {
+            return;
+          }
 
           const float l_NewProgress =
               std::fmod(l_Animator.get_animation_progress() +
                             p_Delta * l_Clip.get_ticks_per_second(),
-                        l_Clip.get_duration());
+                        l_Duration);
           l_Animator.set_animation_progress(l_NewProgress);
 
           Util::List<Renderer::SkeletonBone> &l_Bones =
@@ -232,7 +276,7 @@ namespace Low {
           const u32 l_BoneCount = (u32)l_Bones.size();
 
           Util::List<Math::Matrix4x4> &l_PoseMatrices =
-              l_Pose.get_matrices();
+              l_SkinningPose.get_matrices();
           if (l_PoseMatrices.size() != l_BoneCount) {
             l_PoseMatrices.resize(l_BoneCount);
           }
@@ -245,7 +289,7 @@ namespace Low {
           }
 
           for (const Renderer::AnimationChannel &i_Channel :
-               l_Clip.get_channels()) {
+               l_RendererClip.get_channels()) {
             if (i_Channel.bone_index >= l_BoneCount) {
               continue;
             }
@@ -293,7 +337,7 @@ namespace Low {
               evaluate_global_pose_for_skeletal_renderobject(
                   l_RenderObject, l_Skeleton, l_GlobalPose);
 
-          l_Pose.mark_dirty();
+          l_SkinningPose.mark_dirty();
         }
 
         static void
@@ -358,7 +402,7 @@ namespace Low {
                     Renderer::MeshType::SKELETAL &&
                 i_Entity.has_component(
                     Component::Animator::type_id())) {
-              tick_animator(p_Delta, i_MeshRenderer);
+              tick_animator(p_Delta, p_State, i_MeshRenderer);
             } else {
               tick_mesh_renderer(p_Delta, i_MeshRenderer);
             }

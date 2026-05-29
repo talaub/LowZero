@@ -1,0 +1,117 @@
+module: LowCore
+source_path: animation/src
+header_path: animation/include
+prefix: LowCoreAnimation
+namespace:
+  - Low
+  - Core
+  - Animation
+dll_macro: LOW_CORE_API
+types:
+  Clip:
+    scripting_expose: true
+    scripting_name: AnimationClip
+    reference_counted: true
+    header_imports:
+      - LowRendererAnimationClip.h
+    private_make: true
+    properties:
+      renderer_clip:
+        type: Renderer::AnimationClip
+        handle: true
+        private_setter: true
+    functions:
+      make_from_renderer_clip:
+        static: true
+        return_type: Clip
+        return_handle: true
+        private: true
+        parameters:
+          - name: rendererClip
+            type: Renderer::AnimationClip
+            handle: true
+      find:
+        expose_scripting: true
+        static: true
+        return_type: Clip
+        return_handle: true
+        parameters:
+          - name: skeleton
+            type: Renderer::Skeleton
+            handle: true
+          - name: name
+            type: Util::Name
+      is_loaded:
+        expose_scripting: true
+        return_type: bool
+        constant: true
+      get_duration:
+        expose_scripting: true
+        return_type: float
+        constant: true
+      get_ticks_per_second:
+        expose_scripting: true
+        return_type: float
+        constant: true
+
+  Pose:
+    header_imports:
+      - LowRendererSkinningPose.h
+      - LowCoreAnimationClip.h
+    properties:
+      skinning_pose:
+        type: Renderer::SkinningPose
+        handle: true
+    functions:
+      copy_from:
+        return_type: bool
+        parameters:
+          - name: source
+            type: Pose
+            handle: true
+      blend_with:
+        return_type: bool
+        parameters:
+          - name: target
+            type: Pose
+            handle: true
+          - name: weight
+            type: float
+      blend_from:
+        return_type: bool
+        parameters:
+          - name: sourceA
+            type: Pose
+            handle: true
+          - name: sourceB
+            type: Pose
+            handle: true
+          - name: weight
+            type: float
+      sample_clip:
+        return_type: bool
+        parameters:
+          - name: clip
+            type: Clip
+            handle: true
+          - name: progress
+            type: float
+          - name: looping
+            type: bool
+      blend_from_clips:
+        return_type: bool
+        parameters:
+          - name: sourceA
+            type: Clip
+            handle: true
+          - name: progressA
+            type: float
+          - name: sourceB
+            type: Clip
+            handle: true
+          - name: progressB
+            type: float
+          - name: weight
+            type: float
+          - name: looping
+            type: bool
