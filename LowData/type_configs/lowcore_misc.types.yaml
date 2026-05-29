@@ -1,0 +1,41 @@
+module: LowCore
+namespace:
+  - Low
+  - Core
+dll_macro: LOW_CORE_API
+types:
+  Tween:
+    private_make: true
+    properties:
+      current_duration:
+        type: float
+      ease:
+        type: TweenEase
+        enum: true
+        private_setter: true
+      full_duration:
+        type: float
+        private_setter: true
+    functions:
+      start:
+        static: true
+        return_type: Tween
+        return_handle: true
+        parameters:
+          - name: time
+            type: float
+            constant: true
+            const: true
+          - name: ease
+            type: TweenEase
+            enum: true
+            constant: true
+            const: true
+      is_finished:
+        return_type: bool
+        const: true
+        constant: true
+      get_progress:
+        return_type: float
+        const: true
+        constant: true

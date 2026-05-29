@@ -1,0 +1,21 @@
+module: LowCore
+namespace:
+  - Low
+  - Core
+dll_macro: LOW_CORE_API
+enums:
+  TweenEase:
+    options:
+      - name: Linear
+      - name: InQuad
+      - name: OutQuad
+      - name: InOutQuad
+      - name: InCubic
+      - name: OutCubic
+      - name: InOutCubic
+      - name: InQuart
+      - name: OutQuart
+      - name: InOutQuart
+      - name: InBack
+      - name: OutBack
+      - name: InOutBack

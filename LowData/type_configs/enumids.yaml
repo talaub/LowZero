@@ -12,3 +12,4 @@ LowRenderer2:
 LowCore:
   ScriptAssetGenerator: 8
   AssetGenerator: 9
+  TweenEase: 13

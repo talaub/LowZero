@@ -26,6 +26,7 @@
 #include "LowCoreUiWidgetAsset.h"
 
 #include "LowCoreScripting.h"
+#include "LowCoreTweenSystem.h"
 
 #include <chrono>
 
@@ -111,6 +112,7 @@ namespace Low {
         UI::System::Display::tick(p_Delta, get_engine_state());
         System::Region::tick(p_Delta, get_engine_state());
         System::Camera::tick(p_Delta, get_engine_state());
+        System::Tween::tick(p_Delta, get_engine_state());
         if (!l_FirstRun) {
           System::Physics::tick(p_Delta, get_engine_state());
           // System::Navmesh::tick(p_Delta, get_engine_state());

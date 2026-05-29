@@ -2,7 +2,6 @@
 
 #include <algorithm>
 
-#include "LowRendererSubmeshGeometry.h"
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
@@ -725,7 +724,7 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_clear_loaded_geometry
       for (SubmeshGeometry i_Submesh : get_submeshes()) {
         if (i_Submesh.is_alive()) {
-        i_Submesh.destroy();
+          i_Submesh.destroy();
         }
       }
       get_submeshes().clear();

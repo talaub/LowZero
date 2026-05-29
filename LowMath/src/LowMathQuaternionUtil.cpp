@@ -2,6 +2,7 @@
 
 #include "LowMathVectorUtil.h"
 
+#include <glm/gtc/quaternion.hpp>
 #include <math.h>
 #include <string>
 
@@ -39,6 +40,32 @@ namespace Low {
       {
         static Quaternion q(1.f, 0.f, 0.f, 0.f);
         return q;
+      }
+
+      float dot(const Quaternion p_A, const Quaternion p_B)
+      {
+        return p_A.x * p_B.x + p_A.y * p_B.y + p_A.z * p_B.z +
+               p_A.w * p_B.w;
+      }
+
+      float magnitude(const Quaternion p_Quaternion)
+      {
+        return sqrt(dot(p_Quaternion, p_Quaternion));
+      }
+
+      Quaternion normalize(const Quaternion p_Quaternion)
+      {
+        const float l_Magnitude = magnitude(p_Quaternion);
+        if (l_Magnitude <= LOW_MATH_EPSILON) {
+          return get_identity();
+        }
+        return glm::normalize(p_Quaternion);
+      }
+
+      Quaternion slerp(const Quaternion p_A, const Quaternion p_B,
+                       float p_T)
+      {
+        return glm::slerp(p_A, p_B, p_T);
       }
     } // namespace QuaternionUtil
   } // namespace Math

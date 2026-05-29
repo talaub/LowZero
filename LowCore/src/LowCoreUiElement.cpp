@@ -1160,10 +1160,12 @@ namespace Low {
 
         Component::Display l_Display = get_display();
 
-        Util::List<u64> l_Children = l_Display.get_children();
+        if (l_Display.is_alive()) {
+          Util::List<u64> l_Children = l_Display.get_children();
 
-        for (Component::Display i_Display : l_Children) {
-          i_Display.get_element().destroy_with_hierarchy();
+          for (Component::Display i_Display : l_Children) {
+            i_Display.get_element().destroy_with_hierarchy();
+          }
         }
 
         destroy();

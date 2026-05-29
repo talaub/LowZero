@@ -32,6 +32,8 @@
 #include "LowCoreNavmeshAgent.h"
 #include "LowCoreCamera.h"
 #include "LowCoreAnimator.h"
+#include "LowCoreTween.h"
+#include "LowCoreTweenSystem.h"
 
 #include "LowUtilEnums.h"
 #include "LowUtilGlobals.h"
@@ -67,6 +69,7 @@ namespace Low {
       float corner_radius = 10.0f;
       float icon_size = 23.0f; // glyph/em square or texture size
       float outline_thickness = 1.0f;
+      float offset_x = 0.0f;
       bool center_vertically = true; // otherwise anchored to top
     };
 
@@ -262,7 +265,8 @@ namespace Low {
 
       // position: left side, centered vertically (or top-aligned)
       ImVec2 l_BarPos;
-      l_BarPos.x = l_ContentMin.x + l_Margin;
+      l_BarPos.x =
+          l_ContentMin.x + l_Margin + (l_Style.offset_x * l_S);
       if (l_Style.center_vertically) {
         l_BarPos.y =
             l_ContentMin.y +
@@ -692,8 +696,43 @@ namespace Low {
                        RenderViewWidget &p_RenderViewWidget)
     {
       const float l_TopPadding = 40.0f;
+      const float l_ToolbarTweenDuration = .65f;
 
       static EditorTool l_ActiveTool = EditorTool::Select;
+      static Core::Tween l_ToolbarTween;
+      static Util::EngineState l_PreviousEngineState =
+          Core::get_engine_state();
+      static float l_ToolbarTransitionStart = 0.0f;
+      static float l_ToolbarTransitionTarget = 0.0f;
+      static float l_ToolbarHiddenProgress = 0.0f;
+
+      const Util::EngineState l_EngineState =
+          Core::get_engine_state();
+      if (l_EngineState != l_PreviousEngineState) {
+        if (l_ToolbarTween.is_alive()) {
+          l_ToolbarTween.destroy();
+        }
+        l_ToolbarTransitionStart = l_ToolbarHiddenProgress;
+        l_ToolbarTransitionTarget =
+            l_EngineState == Util::EngineState::PLAYING ? 1.0f : 0.0f;
+        l_ToolbarTween = Core::Tween::start(
+            l_ToolbarTweenDuration, Core::TweenEase::INOUTBACK);
+        l_PreviousEngineState = l_EngineState;
+      }
+
+      if (l_ToolbarTween.is_alive()) {
+        const float l_TweenProgress =
+            Core::System::Tween::get_eased_progress(l_ToolbarTween);
+        l_ToolbarHiddenProgress = Math::Util::lerp(
+            l_ToolbarTransitionStart, l_ToolbarTransitionTarget,
+            l_TweenProgress);
+        if (l_ToolbarTween.is_finished()) {
+          l_ToolbarTween.destroy();
+        }
+      } else {
+        l_ToolbarHiddenProgress =
+            l_EngineState == Util::EngineState::PLAYING ? 1.0f : 0.0f;
+      }
 
       {
         ImVec2 l_Avail;
@@ -722,6 +761,11 @@ namespace Low {
         l_Style.center_vertically =
             true; // or false to pin to top-left
         l_Style.dpi_scale = ImGui::GetIO().FontGlobalScale;
+        l_Style.offset_x =
+            Math::Util::lerp(0.0f,
+                             -(l_Style.margin + l_Style.pad_x * 2.0f +
+                               l_Style.icon_size),
+                             l_ToolbarHiddenProgress);
 
         render_viewport_with_vertical_toolbar(
             l_BlurredViewportTexture, l_Avail, l_Items, &l_ActiveTool,

@@ -21,6 +21,8 @@
 #include "LowCoreCamera.h"
 #include "LowCoreInput.h"
 #include "LowCoreAnimator.h"
+#include "LowCoreTween.h"
+#include "LowCoreTweenEase.h"
 
 #include "LowCoreScriptClass.h"
 #include "LowCoreScriptAsset.h"
@@ -132,10 +134,12 @@ namespace Low {
 
     static void initialize_base_types()
     {
+      TweenEaseEnumHelper::initialize();
       Region::initialize();
       Scene::initialize();
       Entity::initialize();
       GameMode::initialize();
+      Tween::initialize();
     }
 
     static void initialize_ui_component_types()
@@ -321,10 +325,12 @@ namespace Low {
 
     static void cleanup_base_types()
     {
+      Tween::cleanup();
       GameMode::cleanup();
       Entity::cleanup();
       Region::cleanup();
       Scene::cleanup();
+      TweenEaseEnumHelper::cleanup();
     }
 
     static void cleanup_ui_component_types()
