@@ -147,15 +147,21 @@ function generate_type_api(p_Type, db) {
         if (i_ParamCount > 0) {
           t += write(", ");
         }
-        t += write(`${i_Param.type.string} ${i_Param.name}`);
+        //console.log(i_Param.type);
+        t += write(`${i_Param.type.full_string} ${i_Param.name}`);
       }
       t += line(`) {`);
       if (i_ReturnType != "void") {
         t += write("return ");
       }
       t += write(`p_This.${i_FuncName}(`);
+      let i_C = 0;
       for (let i_Param of i_Func.parameters) {
+        if (i_C) {
+          t += write(", ");
+        }
         t += write(`${i_Param.name}`);
+        i_C++;
       }
       t += line(`);`);
       t += line(`}`);
@@ -353,7 +359,7 @@ function generate_type_api(p_Type, db) {
         i_ParamsString += `${i_Param.type.scripting}`;
       }
       t += line(
-        `r = p_Engine->RegisterObjectMethod("${p_Type.scripting_name}", "${i_Func.return_type.scripting} ${i_FuncName}(${i_ParamsString}) ", asFUNCTION(${TYPE_PREFIX}_func_${i_Func.name}), asCALL_CDECL_OBJFIRST);`,
+        `r = p_Engine->RegisterObjectMethod("${p_Type.scripting_name}", "${i_Func.return_type.scripting} ${i_FuncName}(${i_ParamsString}) ${i_Func.scripting && i_Func.scripting.property ? "property" : ""}", asFUNCTION(${TYPE_PREFIX}_func_${i_Func.name}), asCALL_CDECL_OBJFIRST);`,
       );
       t += line(
         `LOW_ASSERT(r >= 0, "Failed to expose function ${i_FuncName} of ${l_TypeString}.");`,

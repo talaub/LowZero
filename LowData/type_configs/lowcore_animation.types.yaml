@@ -47,10 +47,14 @@ types:
         constant: true
       get_duration:
         expose_scripting: true
+        scripting:
+          property: true
         return_type: float
         constant: true
       get_ticks_per_second:
         expose_scripting: true
+        scripting:
+          property: true
         return_type: float
         constant: true
 
@@ -58,6 +62,7 @@ types:
     header_imports:
       - LowRendererSkinningPose.h
       - LowCoreAnimationClip.h
+    scripting_expose: true
     properties:
       skinning_pose:
         type: Renderer::SkinningPose
@@ -65,12 +70,14 @@ types:
     functions:
       copy_from:
         return_type: bool
+        expose_scripting: true
         parameters:
           - name: source
             type: Pose
             handle: true
       blend_with:
         return_type: bool
+        expose_scripting: true
         parameters:
           - name: target
             type: Pose
@@ -79,6 +86,7 @@ types:
             type: float
       blend_from:
         return_type: bool
+        expose_scripting: true
         parameters:
           - name: sourceA
             type: Pose
@@ -90,6 +98,7 @@ types:
             type: float
       sample_clip:
         return_type: bool
+        expose_scripting: true
         parameters:
           - name: clip
             type: Clip
@@ -100,6 +109,7 @@ types:
             type: bool
       blend_from_clips:
         return_type: bool
+        expose_scripting: true
         parameters:
           - name: sourceA
             type: Clip

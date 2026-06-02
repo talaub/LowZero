@@ -156,6 +156,7 @@ types:
         handle: true
         skip_deserialization: true
         skip_serialization: true
+        expose_scripting: true
       skinning_instance:
         editor_editable: false
         type: Low::Renderer::SkinningInstance
@@ -174,6 +175,7 @@ types:
         type: float
         skip_deserialization: true
         skip_serialization: true
+        expose_scripting: true
       skeleton:
         editor_editable: false
         type: Low::Renderer::Skeleton

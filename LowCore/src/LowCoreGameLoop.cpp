@@ -169,6 +169,7 @@ namespace Low {
         UI::System::Text::tick(p_Delta, get_engine_state());
 
         Scripting::tick_as(p_Delta);
+        System::MeshRenderer::late_tick(p_Delta, get_engine_state());
 
         l_FirstRun = false;
       }

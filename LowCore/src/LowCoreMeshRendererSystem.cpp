@@ -333,11 +333,64 @@ namespace Low {
                 l_GlobalPose[i] * l_Bones[i].inverse_bind_matrix;
           }
 
+          l_SkinningPose.mark_dirty();
+        }
+
+        static void
+        late_tick_animator(Component::MeshRenderer p_MeshRenderer)
+        {
+          Entity l_Entity = p_MeshRenderer.get_entity();
+          Component::Animator l_Animator =
+              l_Entity.get_component(Component::Animator::type_id());
+
+          Renderer::SkeletalRenderObject l_RenderObject =
+              l_Animator.get_render_object();
+          if (!l_RenderObject.is_alive()) {
+            return;
+          }
+
+          Renderer::Skeleton l_Skeleton = l_Animator.get_skeleton();
+          if (!l_Skeleton.is_alive() ||
+              l_Skeleton.get_state() !=
+                  Renderer::SkeletonState::LOADED) {
+            return;
+          }
+
+          Animation::Pose l_Pose = l_Animator.get_pose();
+          if (!l_Pose.is_alive()) {
+            return;
+          }
+
+          Renderer::SkinningPose l_SkinningPose =
+              l_Pose.get_skinning_pose();
+          if (!l_SkinningPose.is_alive()) {
+            return;
+          }
+
+          Util::List<Renderer::SkeletonBone> &l_Bones =
+              l_Skeleton.get_bones();
+          const u32 l_BoneCount = (u32)l_Bones.size();
+
+          Util::List<Math::Matrix4x4> &l_PoseMatrices =
+              l_SkinningPose.get_matrices();
+          if (l_PoseMatrices.size() != l_BoneCount) {
+            return;
+          }
+
+          Util::List<Math::Matrix4x4> &l_GlobalPose =
+              g_GlobalPoseScratch;
+          l_GlobalPose.resize(l_BoneCount);
+
+          for (u32 i = 0u; i < l_BoneCount; ++i) {
+            // global[i] = skinning[i] * global_bind[i]
+            // (because skinning[i] = global[i] * inv_bind[i])
+            l_GlobalPose[i] =
+                l_PoseMatrices[i] * l_Bones[i].global_bind_transform;
+          }
+
           Renderer::SkinningSystem::
               evaluate_global_pose_for_skeletal_renderobject(
                   l_RenderObject, l_Skeleton, l_GlobalPose);
-
-          l_SkinningPose.mark_dirty();
         }
 
         static void
@@ -405,6 +458,28 @@ namespace Low {
               tick_animator(p_Delta, p_State, i_MeshRenderer);
             } else {
               tick_mesh_renderer(p_Delta, i_MeshRenderer);
+            }
+          }
+        }
+
+        void late_tick(float p_Delta, Util::EngineState p_State)
+        {
+          Component::MeshRenderer *l_MeshRenderers =
+              Component::MeshRenderer::living_instances();
+
+          for (uint32_t i = 0u;
+               i < Component::MeshRenderer::living_count(); ++i) {
+            Component::MeshRenderer i_MeshRenderer =
+                l_MeshRenderers[i];
+
+            Entity i_Entity = i_MeshRenderer.get_entity();
+
+            if (i_MeshRenderer.get_mesh().is_alive() &&
+                i_MeshRenderer.get_mesh().get_type() ==
+                    Renderer::MeshType::SKELETAL &&
+                i_Entity.has_component(
+                    Component::Animator::type_id())) {
+              late_tick_animator(i_MeshRenderer);
             }
           }
         }

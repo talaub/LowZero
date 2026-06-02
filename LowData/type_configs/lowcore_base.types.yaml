@@ -46,17 +46,17 @@ types:
           - name: node
             type: Util::Serial::Node
       add_entity:
-       return_type: void 
-       parameters:
-         - name: entity
-           type: Entity
-           handle: true
+        return_type: void
+        parameters:
+          - name: entity
+            type: Entity
+            handle: true
       remove_entity:
-       return_type: void 
-       parameters:
-         - name: entity
-           type: Entity
-           handle: true
+        return_type: void
+        parameters:
+          - name: entity
+            type: Entity
+            handle: true
       load_entities:
         return_type: void
       unload_entities:
@@ -123,6 +123,8 @@ types:
             type: uint16_t
       get_transform:
         expose_scripting: true
+        scripting:
+          property: true
         return_type: Low::Core::Component::Transform
         return_handle: true
         constant: true

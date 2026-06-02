@@ -298,7 +298,9 @@ function process_file(p_Path, p_FileName, p_Project = false) {
     i_Type.module = l_Config.module;
     i_Type.prefix = l_Config.prefix ? l_Config.prefix : l_Config.module;
     i_Type.api_file = `${i_Type.module}Api.h`;
-    i_Type.scripting_name = i_TypeName;
+    if (!i_Type.scripting_name) {
+      i_Type.scripting_name = i_TypeName;
+    }
     if (!i_Type.scripting_namespace) {
       i_Type.scripting_namespace = "";
     }
@@ -953,7 +955,7 @@ function insert_type_into_db(p_Type, db) {
     functions: {},
     scripting_expose: !!p_Type.scripting_expose,
     full_scripting_string: p_Type.full_scripting_string,
-    scripting_name: p_Type.scripting_name,
+    scripting_name: p_Type.scripting_name ? p_Type.scripting_name : l_Type.name,
     scripting_namespace: p_Type.scripting_namespace,
     header_file_name: p_Type.header_file_name,
     include_line: `#include "${p_Type.header_file_name}"`,
@@ -985,6 +987,7 @@ function insert_type_into_db(p_Type, db) {
       name: i_Func.name,
       return_type: type_desc(i_Func.return_type, !!i_Func.return_hamdle),
       expose_scripting: !!i_Func.expose_scripting,
+      scripting: i_Func.scripting ? i_Func.scripting : {},
     };
 
     l_Type.functions[i_Func.name].parameters = [];
@@ -1042,9 +1045,11 @@ function get_full_type_description(p_Desc, p_ContextNamespace, db) {
   }
 
   if (l_IsHandle) {
+    l_Desc.full_string = db.types[l_Desc.handle_id].full_string;
     l_Desc.scripting = db.types[l_Desc.handle_id].full_scripting_string;
   } else {
-    l_Desc.scripting = get_scripting_type(l_Desc.string);
+    ((l_Desc.full_string = l_Desc.string),
+      (l_Desc.scripting = get_scripting_type(l_Desc.string)));
   }
 
   return l_Desc;

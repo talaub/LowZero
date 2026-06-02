@@ -152,7 +152,8 @@ namespace Low {
                                             bool p_Looping,
                                             LocalPose &p_OutPose)
       {
-        if (!p_Clip.is_alive() || !p_Clip.is_loaded()) {
+        LOW_ASSERT(p_Clip.is_alive(), "Cannot sample dead clip.");
+        if (!p_Clip.is_loaded()) {
           return false;
         }
 
@@ -161,6 +162,9 @@ namespace Low {
         if (!l_Skeleton.is_alive() ||
             l_Skeleton.get_state() !=
                 Renderer::SkeletonState::LOADED) {
+          LOW_LOG_WARN
+              << "Failed to sample. Skeleton dead or not loaded."
+              << LOW_LOG_END;
           return false;
         }
 
@@ -202,16 +206,15 @@ namespace Low {
           const LocalPose &p_LocalPose, Renderer::Skeleton p_Skeleton,
           Renderer::SkinningPose p_SkinningPose)
       {
-        if (!p_Skeleton.is_alive() || !p_SkinningPose.is_alive()) {
-          return false;
-        }
+        LOW_ASSERT(p_Skeleton.is_alive(), "Skeleton dead.");
+        LOW_ASSERT(p_SkinningPose.is_alive(),
+                   "Renderer skinning pose dead.");
 
         Util::List<Renderer::SkeletonBone> &l_Bones =
             p_Skeleton.get_bones();
         const u32 l_BoneCount = static_cast<u32>(l_Bones.size());
-        if (p_LocalPose.joint_count() != l_BoneCount) {
-          return false;
-        }
+        LOW_ASSERT(p_LocalPose.joint_count() == l_BoneCount,
+                   "Bonecount missmatch between pose and skeleton.");
 
         if (!p_SkinningPose.get_skeleton().is_alive() ||
             p_SkinningPose.get_skeleton().get_id() !=
@@ -1023,21 +1026,23 @@ namespace Low {
                                   float p_Weight, bool p_Looping)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_blend_from_clips
+        LOW_ASSERT(is_alive(), "Pose dead");
         if (!is_alive()) {
           return false;
         }
-        if (!p_SourceA.is_alive() || !p_SourceB.is_alive()) {
-          return false;
-        }
+        LOW_ASSERT(p_SourceA.is_alive(), "Clip V input dead.");
+        LOW_ASSERT(p_SourceB.is_alive(), "Clip A input dead.");
 
         if (!sample_clip_to_local_pose(p_SourceA, p_ProgressA,
                                        p_Looping,
                                        g_SamplePoseScratchA)) {
+          LOW_LOG_WARN << "Failed to sample clip A" << LOW_LOG_END;
           return false;
         }
         if (!sample_clip_to_local_pose(p_SourceB, p_ProgressB,
                                        p_Looping,
                                        g_SamplePoseScratchB)) {
+          LOW_LOG_WARN << "Failed to sample clip B" << LOW_LOG_END;
           return false;
         }
 
@@ -1049,12 +1054,14 @@ namespace Low {
             !l_SourceBSkeleton.is_alive() ||
             l_SourceASkeleton.get_id() !=
                 l_SourceBSkeleton.get_id()) {
+          LOW_LOG_WARN << "Skeleton mismatch." << LOW_LOG_END;
           return false;
         }
 
         if (!Blender::blend(g_SamplePoseScratchA,
                             g_SamplePoseScratchB, p_Weight,
                             g_BlendPoseScratch)) {
+          LOW_LOG_WARN << "Blending failed." << LOW_LOG_END;
           return false;
         }
 
