@@ -51,6 +51,10 @@ namespace Low {
 
         LOW_EDITOR_API void register_nodes(Graph &p_Graph);
       } // namespace UiControllerNodes
+
+      namespace GameplaySystemNodes {
+        LOW_EDITOR_API void register_nodes(Graph &p_Graph);
+      } // namespace GameplaySystemNodes
     } // namespace VisualScript
   } // namespace Editor
 } // namespace Low

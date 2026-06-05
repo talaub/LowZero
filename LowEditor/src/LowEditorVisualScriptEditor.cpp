@@ -411,14 +411,44 @@ namespace Low {
             UiControllerNodes::InteractionType::MouseExit);
       }
 
+      Util::Name GameplaySystemContextDefinition::get_name() const
+      {
+        return N(vs_context_gameplay_system);
+      }
+
+      Util::Name
+      GameplaySystemContextDefinition::get_default_compile_profile()
+          const
+      {
+        return N(cp_gameplay_system);
+      }
+
+      void GameplaySystemContextDefinition::register_node_libraries(
+          Graph &p_Graph) const
+      {
+        register_common_node_libraries(p_Graph);
+        GameplaySystemNodes::register_nodes(p_Graph);
+      }
+
+      void GameplaySystemContextDefinition::build_default_template(
+          Document &p_Document) const
+      {
+        GraphBuilder l_Builder(p_Document.graph, &p_Document.schema);
+        l_Builder.add_spawn_node(N(vs_spawn_gameplay_system_tick),
+                                 Math::Vector2(100.0f, 100.0f));
+      }
+
       void
       register_builtin_contexts(ContextRegistry &p_ContextRegistry)
       {
         static DefaultContextDefinition g_DefaultContext;
         static UiControllerContextDefinition g_UiControllerContext;
+        static GameplaySystemContextDefinition
+            g_GameplaySystemContext;
 
         p_ContextRegistry.register_context(g_DefaultContext);
         p_ContextRegistry.register_context(g_UiControllerContext);
+        p_ContextRegistry.register_context(g_GameplaySystemContext);
       }
 
       ContextRegistry &get_context_registry()
@@ -612,64 +642,7 @@ namespace Low {
             ImGui::EndCombo();
           }
 
-          if (p_Editor.new_variable_type == PinType::Number) {
-            if (ImGui::BeginCombo(
-                    "##new_variable_number_subtype",
-                    p_Editor.new_variable_number_subtype ==
-                            NumberSubtype::Float
-                        ? "Float"
-                    : p_Editor.new_variable_number_subtype ==
-                            NumberSubtype::Int32
-                        ? "Int32"
-                    : p_Editor.new_variable_number_subtype ==
-                            NumberSubtype::UInt32
-                        ? "UInt32"
-                        : "UInt64")) {
-              const NumberSubtype l_Subtypes[] = {
-                  NumberSubtype::Float, NumberSubtype::Int32,
-                  NumberSubtype::UInt32, NumberSubtype::UInt64};
-              for (NumberSubtype i_Subtype : l_Subtypes) {
-                const char *l_Label =
-                    i_Subtype == NumberSubtype::Float    ? "Float"
-                    : i_Subtype == NumberSubtype::Int32  ? "Int32"
-                    : i_Subtype == NumberSubtype::UInt32 ? "UInt32"
-                                                         : "UInt64";
-                const bool l_Selected =
-                    p_Editor.new_variable_number_subtype == i_Subtype;
-                if (ImGui::Selectable(l_Label, l_Selected)) {
-                  p_Editor.new_variable_number_subtype = i_Subtype;
-                }
-                if (l_Selected) {
-                  ImGui::SetItemDefaultFocus();
-                }
-              }
-              ImGui::EndCombo();
-            }
-          } else if (p_Editor.new_variable_type == PinType::String) {
-            if (ImGui::BeginCombo(
-                    "##new_variable_string_subtype",
-                    p_Editor.new_variable_string_subtype ==
-                            StringSubtype::Name
-                        ? "Name"
-                        : "String")) {
-              const StringSubtype l_Subtypes[] = {
-                  StringSubtype::String, StringSubtype::Name};
-              for (StringSubtype i_Subtype : l_Subtypes) {
-                const char *l_Label = i_Subtype == StringSubtype::Name
-                                          ? "Name"
-                                          : "String";
-                const bool l_Selected =
-                    p_Editor.new_variable_string_subtype == i_Subtype;
-                if (ImGui::Selectable(l_Label, l_Selected)) {
-                  p_Editor.new_variable_string_subtype = i_Subtype;
-                }
-                if (l_Selected) {
-                  ImGui::SetItemDefaultFocus();
-                }
-              }
-              ImGui::EndCombo();
-            }
-          } else if (p_Editor.new_variable_type == PinType::Handle) {
+          if (p_Editor.new_variable_type == PinType::Handle) {
             Util::String l_CurrentTypeLabel =
                 ((u64)p_Editor.new_variable_handle_type) != 0
                     ? (Util::String)p_Editor.new_variable_handle_type
@@ -764,27 +737,7 @@ namespace Low {
               ImGui::TextDisabled(
                   "%s", get_pin_type_label(i_Variable.type));
 
-              if (i_Variable.type == PinType::Number) {
-                ImGui::SameLine();
-                ImGui::TextDisabled("(%s)",
-                                    i_Variable.number_subtype ==
-                                            NumberSubtype::Float
-                                        ? "Float"
-                                    : i_Variable.number_subtype ==
-                                            NumberSubtype::Int32
-                                        ? "Int32"
-                                    : i_Variable.number_subtype ==
-                                            NumberSubtype::UInt32
-                                        ? "UInt32"
-                                        : "UInt64");
-              } else if (i_Variable.type == PinType::String) {
-                ImGui::SameLine();
-                ImGui::TextDisabled("(%s)",
-                                    i_Variable.string_subtype ==
-                                            StringSubtype::Name
-                                        ? "Name"
-                                        : "String");
-              } else if (i_Variable.type == PinType::Handle &&
+              if (i_Variable.type == PinType::Handle &&
                          ((u64)i_Variable.handle_type) != 0) {
                 ImGui::SameLine();
                 ImGui::TextDisabled(

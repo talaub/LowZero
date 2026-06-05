@@ -2,9 +2,12 @@
 #include "LowEditorVisualScriptEditor.h"
 #include "LowEditorVisualScriptNodes.h"
 
+#include "LowEditor.h"
 #include "LowEditorFonts.h"
 #include "LowEditorGui.h"
 #include "LowEditorIcons.h"
+#include "LowEditorMetadata.h"
+#include "LowUtilHandle.h"
 #include "LowUtilHashing.h"
 #include "LowUtilLogger.h"
 #include "LowUtilString.h"
@@ -179,6 +182,22 @@ namespace Low {
           p_DrawList->AddCircleFilled(p_Anchor, l_Radius, p_Color);
           p_DrawList->AddCircle(p_Anchor, l_Radius,
                                 IM_COL32(22, 22, 27, 255), 0, 1.5f);
+        }
+
+        static void draw_array_pin(ImDrawList *p_DrawList,
+                                   const ImVec2 &p_Anchor,
+                                   float p_Radius, ImU32 p_Color,
+                                   bool p_Hovered)
+        {
+          const float l_Half = p_Hovered ? p_Radius + 1.5f : p_Radius;
+          const ImVec2 l_Min(p_Anchor.x - l_Half,
+                             p_Anchor.y - l_Half);
+          const ImVec2 l_Max(p_Anchor.x + l_Half,
+                             p_Anchor.y + l_Half);
+          p_DrawList->AddRectFilled(l_Min, l_Max, p_Color, 2.0f);
+          p_DrawList->AddRect(l_Min, l_Max,
+                              IM_COL32(22, 22, 27, 255), 2.0f, 0,
+                              1.5f);
         }
 
         static Util::String
@@ -895,15 +914,223 @@ namespace Low {
         return it->second;
       }
 
+      void GameplaySystemCompileProfileSettings::serialize(
+          Util::Serial::Node &p_Node) const
+      {
+        p_Node["class_name"] = class_name;
+      }
+
+      void GameplaySystemCompileProfileSettings::deserialize(
+          const Util::Serial::Node &p_Node)
+      {
+        if (p_Node["class_name"]) {
+          class_name = p_Node["class_name"].as<Util::String>();
+        }
+      }
+
+      std::unique_ptr<CompileProfileSettings>
+      GameplaySystemCompileProfile::create_settings() const
+      {
+        return std::make_unique<
+            GameplaySystemCompileProfileSettings>();
+      }
+
+      Util::String GameplaySystemCompileProfile::get_class_name(
+          const Document &p_Document) const
+      {
+        const GameplaySystemCompileProfileSettings *l_Settings =
+            p_Document.get_compile_settings<
+                GameplaySystemCompileProfileSettings>();
+        if (l_Settings && !l_Settings->class_name.empty()) {
+          return l_Settings->class_name;
+        }
+        return "VisualScriptGameplaySystem";
+      }
+
+      void GameplaySystemCompileProfile::emit_members(
+          Graph &p_Graph, CompileContext &p_Context) const
+      {
+        for (const Variable &i_Variable : p_Graph.variables) {
+          if (!i_Variable.is_valid()) {
+            continue;
+          }
+
+          Util::String l_TypeStr;
+          switch (i_Variable.type) {
+          case PinType::Bool:
+            l_TypeStr = "bool";
+            break;
+          case PinType::Number:
+            l_TypeStr = "float";
+            break;
+          case PinType::String:
+            l_TypeStr =
+                i_Variable.string_subtype == StringSubtype::Name
+                    ? "Name"
+                    : "string";
+            break;
+          case PinType::Vector2:
+            l_TypeStr = "Vector2";
+            break;
+          case PinType::Vector3:
+            l_TypeStr = "Vector3";
+            break;
+          case PinType::Vector4:
+            l_TypeStr = "Vector4";
+            break;
+          case PinType::Quaternion:
+            l_TypeStr = "Quaternion";
+            break;
+          case PinType::Handle:
+            if ((u64)i_Variable.handle_type != 0 &&
+                Util::Handle::is_registered_type(
+                    i_Variable.handle_type)) {
+              const TypeMetadata &l_Meta = get_type_metadata(
+                  Util::Handle::type_id(i_Variable.handle_type));
+              l_TypeStr =
+                  !l_Meta.fullScriptingTypeString.empty()
+                      ? l_Meta.fullScriptingTypeString
+                      : l_Meta.fullTypeString;
+            }
+            break;
+          default:
+            continue;
+          }
+
+          if (l_TypeStr.empty()) {
+            continue;
+          }
+
+          p_Context.append_line(l_TypeStr + " " +
+                                i_Variable.name + ";");
+        }
+      }
+
+      void GameplaySystemCompileProfile::collect_entry_points(
+          Graph &p_Graph,
+          Util::List<CompileEntryPoint> &p_EntryPoints) const
+      {
+        for (const Low::Editor::Node &i_Node :
+             p_Graph.graph.nodes) {
+          const Node *l_NodeMetadata =
+              p_Graph.find_node(i_Node.id);
+          if (!l_NodeMetadata) {
+            continue;
+          }
+
+          Util::String l_FunctionName;
+          Util::String l_FunctionSignature;
+
+          if (l_NodeMetadata->node_class ==
+              N(vs_gameplay_system_begin_play)) {
+            l_FunctionName = "begin_play";
+            l_FunctionSignature = "void begin_play()";
+          } else if (l_NodeMetadata->node_class ==
+                     N(vs_gameplay_system_tick)) {
+            l_FunctionName = "tick";
+            l_FunctionSignature = "void tick(float p_Delta)";
+          } else {
+            continue;
+          }
+
+          Util::List<Low::Editor::Pin *> l_NodePins =
+              p_Graph.graph.get_node_pins(i_Node.id);
+          PinId l_ExecutionOutputPin;
+          for (const Low::Editor::Pin *i_Pin : l_NodePins) {
+            const Pin *l_PinMetadata =
+                p_Graph.find_pin(i_Pin->id);
+            if (!l_PinMetadata ||
+                l_PinMetadata->type != PinType::Execution ||
+                i_Pin->direction != PinDirection::Output) {
+              continue;
+            }
+            l_ExecutionOutputPin = i_Pin->id;
+            break;
+          }
+
+          if (!l_ExecutionOutputPin.is_valid()) {
+            continue;
+          }
+
+          CompileEntryPoint l_Entry;
+          l_Entry.node = i_Node.id;
+          l_Entry.execution_output_pin = l_ExecutionOutputPin;
+          l_Entry.function_name = l_FunctionName;
+          l_Entry.function_signature = l_FunctionSignature;
+          p_EntryPoints.push_back(l_Entry);
+        }
+      }
+
+      void GameplaySystemCompileProfile::compile(
+          Document &p_Document, CompileContext &p_Context) const
+      {
+        Graph &p_Graph = p_Document.graph;
+
+        const Util::String l_ClassName = make_script_identifier(
+            get_class_name(p_Document),
+            "VisualScriptGameplaySystem");
+        p_Context.begin_block(Util::String("class ") +
+                              l_ClassName +
+                              Util::String(": GameplaySystem"));
+        emit_members(p_Graph, p_Context);
+
+        Util::List<CompileEntryPoint> l_EntryPoints;
+        collect_entry_points(p_Graph, l_EntryPoints);
+
+        bool l_HasBeginPlay = false;
+        bool l_HasTick = false;
+
+        for (const CompileEntryPoint &i_Entry : l_EntryPoints) {
+          if (!i_Entry.is_valid()) {
+            continue;
+          }
+
+          if (i_Entry.function_name == "begin_play") {
+            l_HasBeginPlay = true;
+          } else if (i_Entry.function_name == "tick") {
+            l_HasTick = true;
+          }
+
+          Util::String l_Signature = i_Entry.function_signature;
+          if (l_Signature.empty()) {
+            l_Signature = Util::String("void ") +
+                          i_Entry.function_name + "()";
+          }
+
+          p_Context.begin_block(l_Signature);
+          p_Graph.continue_compilation(
+              i_Entry.execution_output_pin, p_Context);
+          p_Context.end_block();
+          p_Context.main_code.append("\n");
+        }
+
+        if (!l_HasBeginPlay) {
+          p_Context.begin_block("void begin_play()");
+          p_Context.end_block();
+          p_Context.main_code.append("\n");
+        }
+        if (!l_HasTick) {
+          p_Context.begin_block("void tick(float p_Delta)");
+          p_Context.end_block();
+          p_Context.main_code.append("\n");
+        }
+
+        p_Context.end_block(";");
+      }
+
       void register_builtin_compile_profiles(
           CompileProfileRegistry &p_ProfileRegistry)
       {
         static DefaultCompileProfile g_DefaultCompileProfile;
         static UiControllerCompileProfile
             g_UiControllerCompileProfile;
+        static GameplaySystemCompileProfile
+            g_GameplaySystemCompileProfile;
         p_ProfileRegistry.register_profile(g_DefaultCompileProfile);
         p_ProfileRegistry.register_profile(
             g_UiControllerCompileProfile);
+        p_ProfileRegistry.register_profile(
+            g_GameplaySystemCompileProfile);
       }
 
       NodeGraphMutationResult<Low::Editor::Node>
@@ -2290,6 +2517,10 @@ namespace Low {
             draw_execution_pin(p_Context.draw_list, l_PinAnchor,
                                i_Pin->is_input(), l_Radius * 1.45f,
                                l_PinColor, l_PinHovered);
+          } else if (l_PinMetadata && l_PinMetadata->container_type ==
+                                          PinContainerType::List) {
+            draw_array_pin(p_Context.draw_list, l_PinAnchor, l_Radius,
+                           l_PinColor, l_PinHovered);
           } else {
             draw_data_pin(p_Context.draw_list, l_PinAnchor, l_Radius,
                           l_PinColor, l_PinHovered);

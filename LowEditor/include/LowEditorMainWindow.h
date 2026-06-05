@@ -5,6 +5,7 @@
 #include "imgui.h"
 
 #include "LowUtilEnums.h"
+#include "LowUtilString.h"
 
 #include "LowCoreEntity.h"
 #include "LowCoreUiElement.h"
@@ -55,6 +56,7 @@ namespace Low {
     void _set_focused_widget(Widget *p_Widget);
 
     Widget *_open_widget_for_handle(Util::Handle p_Handle);
+    void _open_vs_file(const Util::String &p_Path);
 
     namespace Helper {
       struct SphericalBillboardMaterials

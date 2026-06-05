@@ -38,6 +38,7 @@
 #include "LowEditorScriptWidget.h"
 #include "LowEditorVersionControlWidget.h"
 #include "LowEditorEditWidget.h"
+#include "LowEditorVisualScriptFileWidget.h"
 #include "LowEditorRendererDebugWidget.h"
 #include "LowEditorJobWidget.h"
 #include "LowEditor.h"
@@ -102,6 +103,8 @@ namespace Low {
     ScriptWidget *g_ScriptWidget;
 
     Low::Util::Map<Util::Handle, EditWidget *> g_EditWidgets;
+    Low::Util::Map<Util::String, VisualScriptFileWidget *>
+        g_VSFileWidgets;
 
     Low::Util::Map<Util::String, EditorWidget> g_Widgets;
 
@@ -1400,6 +1403,20 @@ namespace Low {
         }
       }
 
+      for (auto it = g_VSFileWidgets.begin();
+           it != g_VSFileWidgets.end();) {
+        it->second->show(p_Delta);
+        if (it->second->is_open()) {
+          it++;
+        } else {
+          if (g_FocusedWidget == it->second) {
+            _set_focused_widget(nullptr);
+          }
+          delete it->second;
+          it = g_VSFileWidgets.erase(it);
+        }
+      }
+
       if (!g_FocusedWidget ||
           !g_FocusedWidget->handle_shortcuts(p_Delta)) {
         handle_shortcuts(p_Delta);
@@ -1431,6 +1448,21 @@ namespace Low {
       EditWidget *l_NewWidget = new EditWidget(p_Handle);
       _set_focused_widget(l_NewWidget);
       g_EditWidgets[p_Handle] = l_NewWidget;
+    }
+
+    void _open_vs_file(const Util::String &p_Path)
+    {
+      for (auto &it : g_VSFileWidgets) {
+        if (it.first == p_Path) {
+          _set_focused_widget(it.second);
+          return;
+        }
+      }
+
+      VisualScriptFileWidget *l_Widget =
+          new VisualScriptFileWidget(p_Path);
+      _set_focused_widget(l_Widget);
+      g_VSFileWidgets[p_Path] = l_Widget;
     }
 
     DetailsWidget *get_details_widget()

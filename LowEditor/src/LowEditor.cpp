@@ -21,6 +21,7 @@
 #include "LowCorePrefabInstance.h"
 #include "LowCoreScriptAsset.h"
 #include "LowCoreScripting.h"
+#include "LowCoreScriptModule.h"
 #include "LowCoreUiWidgetAsset.h"
 
 #include "LowEditorMainWindow.h"
@@ -37,6 +38,8 @@
 #include "LowEditorScriptWidget.h"
 #include "LowEditorSimpleAssetEditors.h"
 #include "LowEditorUiWidgetEditor.h"
+#include "LowEditorVisualScriptAssetBuilder.h"
+#include "LowEditorVisualScriptEditor.h"
 
 #include "Flode.h"
 #include "FlodeEditor.h"
@@ -1612,7 +1615,7 @@ namespace Low {
         g_AssetTypeColor[AssetType::Font] = color_from_hex("#b744ac");
         g_AssetTypeColor[AssetType::Mesh] = color_from_hex("#baa343");
         g_AssetTypeColor[AssetType::Flode] =
-            color_from_hex("#424ebc");
+            color_from_hex("#c47a32");
         g_AssetTypeColor[AssetType::File] = color_from_hex("#b2b2b2");
         g_AssetTypeColor[AssetType::UiWidget] =
             color_from_hex("#4bb3bb");
@@ -1697,6 +1700,59 @@ namespace Low {
             "New UI-Widget", N(Widget), AssetType::UiWidget);
         AssetCreation::register_default<Renderer::Material>(
             "New Material", N(Material), AssetType::Material);
+
+        {
+          AssetCreation::Action l_Action;
+          l_Action.id = N(new_gameplay_system);
+          l_Action.label = "New Gameplay System";
+          l_Action.assetType = AssetType::Flode;
+          l_Action.priority = 90;
+          l_Action.defaultName = N(GameplaySystem);
+          l_Action.create =
+              [](const AssetCreation::Context &p_Context,
+                 Util::Name p_Name) -> Util::Handle {
+            using namespace VisualScript;
+
+            GameplaySystemContextDefinition l_CtxDef;
+            ScriptAssetBuilder l_Builder(l_CtxDef);
+
+            const Util::String l_Name = p_Name.c_str();
+            const Util::String l_Path =
+                p_Context.directoryPath + "/" + l_Name + ".vs.yaml";
+
+            const Util::String l_UniqueId =
+                Util::hash_to_string(Util::generate_unique_id());
+            const Util::String l_ClassName =
+                l_Name + "_" + l_UniqueId;
+
+            l_Builder.get_document().output_path =
+                Util::project_visual_script_out_path(
+                    l_ClassName + ".as");
+
+            if (GameplaySystemCompileProfileSettings *l_Settings =
+                    l_Builder.get_compile_settings<
+                        GameplaySystemCompileProfileSettings>()) {
+              l_Settings->class_name = l_ClassName;
+            }
+
+            l_CtxDef.build_default_template(
+                l_Builder.get_document());
+
+            Core::Scripting::Module l_Module =
+                Core::Scripting::Module::find_by_name(
+                    N(gameplay.system));
+            if (l_Module.is_alive()) {
+              l_Builder.create_script_asset(
+                  p_Name, l_Module,
+                  ".vs_out/" + l_ClassName + ".as");
+            }
+
+            l_Builder.save_compile_and_build_module(l_Path);
+
+            return Util::Handle();
+          };
+          AssetCreation::register_action(l_Action);
+        }
       }
       {
         /*
@@ -1915,6 +1971,11 @@ namespace Low {
       get_script_widget()->load_file(p_Path);
       open_editor_widget(get_script_widget());
       ImGui::SetWindowFocus(ICON_LC_BRACES " Code Editor");
+    }
+
+    void open_vs_file(const Util::String &p_Path)
+    {
+      _open_vs_file(p_Path);
     }
 
     void delete_file_if_exists(Low::Util::String p_Path)

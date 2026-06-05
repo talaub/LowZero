@@ -150,6 +150,18 @@ namespace Low {
             override;
       };
 
+      struct LOW_EDITOR_API GameplaySystemContextDefinition
+          : public ContextDefinition
+      {
+        virtual Util::Name get_name() const override;
+        virtual Util::Name
+        get_default_compile_profile() const override;
+        virtual void
+        register_node_libraries(Graph &p_Graph) const override;
+        virtual void
+        build_default_template(Document &p_Document) const override;
+      };
+
       LOW_EDITOR_API void
       register_builtin_contexts(ContextRegistry &p_ContextRegistry);
 

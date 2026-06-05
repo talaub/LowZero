@@ -360,6 +360,8 @@ namespace Low {
         if (i_Result.doubleClicked) {
           if (i_AssetType == AssetType::Script) {
             open_file_in_code_editor(i_FileWatcher.path);
+          } else if (i_AssetType == AssetType::Flode) {
+            open_vs_file(i_FileWatcher.path);
           } else if (i_AssetType == AssetType::File &&
                      i_FileWatcher.extension == "yaml") {
             open_file_in_code_editor(i_FileWatcher.path);

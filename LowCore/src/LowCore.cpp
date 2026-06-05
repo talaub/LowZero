@@ -177,6 +177,7 @@ namespace Low {
       Scripting::ClassInstance::initialize();
       Scripting::Module::make(N(low.misc));
       Scripting::Module::make(N(ui.controller));
+      Scripting::Module::make(N(gameplay.system));
     }
 
     static void initialize_types()

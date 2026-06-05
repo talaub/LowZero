@@ -242,6 +242,44 @@ namespace Low {
                 CompileContext &p_Context) const override;
       };
 
+      struct LOW_EDITOR_API GameplaySystemCompileProfileSettings
+          : public CompileProfileSettings
+      {
+        Util::String class_name = "VisualScriptGameplaySystem";
+
+        virtual Util::Name get_profile_name() const override
+        {
+          return N(cp_gameplay_system);
+        }
+
+        virtual void
+        serialize(Util::Serial::Node &p_Node) const override;
+        virtual void
+        deserialize(const Util::Serial::Node &p_Node) override;
+      };
+
+      struct LOW_EDITOR_API GameplaySystemCompileProfile
+          : public CompileProfile
+      {
+        virtual Util::Name get_name() const override
+        {
+          return N(cp_gameplay_system);
+        }
+        virtual std::unique_ptr<CompileProfileSettings>
+        create_settings() const override;
+        virtual Util::String
+        get_class_name(const Document &p_Document) const;
+        virtual void collect_entry_points(
+            Graph &p_Graph,
+            Util::List<CompileEntryPoint> &p_EntryPoints) const;
+        virtual void emit_members(Graph &p_Graph,
+                                  CompileContext &p_Context) const;
+
+        virtual void
+        compile(Document &p_Document,
+                CompileContext &p_Context) const override;
+      };
+
       struct LOW_EDITOR_API DefaultCompileProfile
           : public CompileProfile
       {
