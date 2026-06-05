@@ -434,7 +434,7 @@ namespace Low {
         GameplaySystem i_System =
             GameplaySystem::living_instances()[i];
 
-        i_System.spawn_instance();
+        i_System.spawn_instance().begin_play();
       }
     }
 

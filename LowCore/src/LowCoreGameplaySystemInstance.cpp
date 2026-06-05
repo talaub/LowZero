@@ -241,6 +241,15 @@ namespace Low {
         // End property: name
       }
       {
+        // Function: begin_play
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(begin_play);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: begin_play
+      }
+      {
         // Function: tick
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(tick);
@@ -551,6 +560,24 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
+    }
+
+    void GameplaySystemInstance::begin_play()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_begin_play
+      GameplaySystem l_System = get_gameplay_system();
+      if (l_System.is_script()) {
+        Scripting::ClassInstance l_ClassInstance =
+            get_value().script.instance;
+
+        l_ClassInstance.call_method("void begin_play()");
+        return;
+      }
+
+      LOW_LOG_WARN
+          << "Gameplay system does not have valid begin_play method."
+          << LOW_LOG_END;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_begin_play
     }
 
     void GameplaySystemInstance::tick(float p_Delta)

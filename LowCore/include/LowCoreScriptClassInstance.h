@@ -302,10 +302,11 @@ namespace Low {
       bool ClassInstance::call_method(const char *p_Declaration,
                                       TArgs &&...p_Args)
       {
-        const void *l_Args[] = {(const void *)&p_Args...};
+        const void *l_Args[] = {(const void *)&p_Args..., nullptr};
         const char *l_TypeKeys[] = {
             Detail::ScriptArgTraits<std::remove_cv_t<
-                std::remove_reference_t<TArgs>>>::key()...};
+                std::remove_reference_t<TArgs>>>::key()...,
+            nullptr};
 
         return call_method_internal(p_Declaration, l_Args, l_TypeKeys,
                                     sizeof...(TArgs));

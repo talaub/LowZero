@@ -711,6 +711,7 @@ namespace Low {
         l_Instance.set_reload_index(p_ScriptClass.get_reload_index());
 
         l_Instance.set_ptr(l_Instance.spawn());
+        fill_member_fields(l_Instance);
 
         return l_Instance;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_make

@@ -246,6 +246,8 @@ types:
       gameplay_system:
         type: uint64_t
     functions:
+      begin_play:
+        return_type: void
       tick:
         return_type: void
         parameters:

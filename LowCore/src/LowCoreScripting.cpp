@@ -1,11 +1,13 @@
 #include "LowCoreScripting.h"
 
 #include "LowCoreEventManager.h"
+#include "LowCoreEntity.h"
 #include "LowCoreGameplaySystem.h"
 #include "LowCoreScriptAsset.h"
 #include "LowCoreScriptModule.h"
 #include "LowCoreScriptClass.h"
 #include "LowCoreUiController.h"
+#include "LowCoreUiElement.h"
 #include "LowUtilAssert.h"
 #include "LowUtilFileIO.h"
 #include "LowUtilLogger.h"
@@ -14,7 +16,9 @@
 #include <angelscript.h>
 #include <scriptbuilder/scriptbuilder.h>
 
+#include <cctype>
 #include <iostream>
+#include <string>
 
 namespace Low {
   namespace Core {
@@ -64,6 +68,381 @@ namespace Low {
         }
 
         return false;
+      }
+
+      static Util::String trim_metadata_value(const Util::String &p_Value)
+      {
+        size_t l_Begin = 0;
+        size_t l_End = p_Value.size();
+
+        while (l_Begin < l_End &&
+               std::isspace(
+                   static_cast<unsigned char>(p_Value[l_Begin]))) {
+          ++l_Begin;
+        }
+        while (l_End > l_Begin &&
+               std::isspace(
+                   static_cast<unsigned char>(p_Value[l_End - 1]))) {
+          --l_End;
+        }
+
+        return p_Value.substr(l_Begin, l_End - l_Begin);
+      }
+
+      static bool parse_find_by_name_metadata(
+          const Util::String &p_Metadata, Low::Util::Name &p_Name)
+      {
+        Util::String l_Metadata = trim_metadata_value(p_Metadata);
+        const Util::String l_Prefix = "FindByName";
+
+        if (l_Metadata.rfind(l_Prefix, 0) != 0) {
+          return false;
+        }
+
+        const size_t l_Open = l_Metadata.find('(');
+        const size_t l_Close = l_Metadata.rfind(')');
+        if (l_Open == Util::String::npos ||
+            l_Close == Util::String::npos || l_Close <= l_Open) {
+          return false;
+        }
+
+        Util::String l_Value =
+            trim_metadata_value(l_Metadata.substr(
+                l_Open + 1, l_Close - l_Open - 1));
+
+        if (l_Value.size() >= 2 &&
+            ((l_Value.front() == '"' && l_Value.back() == '"') ||
+             (l_Value.front() == '\'' && l_Value.back() == '\''))) {
+          l_Value = l_Value.substr(1, l_Value.size() - 2);
+        }
+
+        if (l_Value.empty()) {
+          return false;
+        }
+
+        p_Name = Low::Util::Name(l_Value.c_str());
+        return true;
+      }
+
+      enum class MemberFieldFillType
+      {
+        FindByName
+      };
+
+      struct MemberFieldFillMetadata
+      {
+        MemberFieldFillType type;
+        u32 propertyIndex;
+        Low::Util::Name value;
+      };
+
+      static Low::Util::Map<u64,
+                            Low::Util::List<MemberFieldFillMetadata>>
+          g_MemberFieldFillMetadata;
+
+      static void clear_member_field_metadata(ScriptClass p_Class)
+      {
+        g_MemberFieldFillMetadata.erase(p_Class.get_id());
+      }
+
+      static void add_find_by_name_metadata(ScriptClass p_Class,
+                                            u32 p_PropertyIndex,
+                                            Low::Util::Name p_Name)
+      {
+        MemberFieldFillMetadata l_Metadata;
+        l_Metadata.type = MemberFieldFillType::FindByName;
+        l_Metadata.propertyIndex = p_PropertyIndex;
+        l_Metadata.value = p_Name;
+
+        g_MemberFieldFillMetadata[p_Class.get_id()].push_back(
+            l_Metadata);
+      }
+
+      static std::string
+      get_member_type_namespace(asITypeInfo *p_PropertyType)
+      {
+        const char *l_TypeNamespace = p_PropertyType->GetNamespace();
+        std::string l_Namespace =
+            l_TypeNamespace ? l_TypeNamespace : "";
+        if (!l_Namespace.empty()) {
+          l_Namespace += "::";
+        }
+        l_Namespace += p_PropertyType->GetName();
+        return l_Namespace;
+      }
+
+      static bool assign_member_field_handle(
+          asIScriptObject *p_Object, asITypeInfo *p_Type,
+          u32 p_PropertyIndex, Low::Util::Handle p_Handle)
+      {
+        void *l_PropertyAddress =
+            p_Object->GetAddressOfProperty(p_PropertyIndex);
+        if (!l_PropertyAddress) {
+          return false;
+        }
+
+        *(Low::Util::Handle *)l_PropertyAddress = p_Handle;
+        return true;
+      }
+
+      static bool get_member_field_low_type_id(
+          asITypeInfo *p_PropertyType, u16 &p_TypeId)
+      {
+        asIScriptEngine *l_Engine = p_PropertyType->GetEngine();
+        const std::string l_Namespace =
+            get_member_type_namespace(p_PropertyType);
+
+        l_Engine->SetDefaultNamespace(l_Namespace.c_str());
+        asIScriptFunction *l_Function =
+            l_Engine->GetGlobalFunctionByDecl("u16 get_TYPE_ID()");
+        if (!l_Function) {
+          l_Function = l_Engine->GetGlobalFunctionByDecl(
+              "uint16 get_TYPE_ID()");
+        }
+        l_Engine->SetDefaultNamespace("");
+
+        if (!l_Function) {
+          return false;
+        }
+
+        asIScriptContext *l_Context = l_Engine->RequestContext();
+        if (!l_Context) {
+          return false;
+        }
+
+        if (l_Context->Prepare(l_Function) < 0) {
+          l_Engine->ReturnContext(l_Context);
+          return false;
+        }
+
+        const int l_Result = l_Context->Execute();
+        if (l_Result != asEXECUTION_FINISHED) {
+          l_Engine->ReturnContext(l_Context);
+          return false;
+        }
+
+        p_TypeId = static_cast<u16>(l_Context->GetReturnWord());
+        l_Engine->ReturnContext(l_Context);
+        return true;
+      }
+
+      static bool fill_component_member_field_find_by_name(
+          asIScriptObject *p_Object, asITypeInfo *p_Type,
+          const MemberFieldFillMetadata &p_Metadata,
+          Low::Util::RTTI::TypeInfo &p_PropertyTypeInfo)
+      {
+        const char *l_PropertyName = nullptr;
+        p_Type->GetProperty(p_Metadata.propertyIndex,
+                            &l_PropertyName);
+
+        Low::Util::Handle l_Component = Low::Util::Handle::DEAD;
+        if (p_PropertyTypeInfo.component) {
+          Entity l_Entity = Entity::find_by_name(p_Metadata.value);
+          if (l_Entity.is_alive()) {
+            l_Component =
+                l_Entity.get_component(p_PropertyTypeInfo.typeId);
+          }
+        } else if (p_PropertyTypeInfo.uiComponent) {
+          UI::Element l_Element =
+              UI::Element::find_by_name(p_Metadata.value);
+          if (l_Element.is_alive()) {
+            l_Component =
+                l_Element.get_component(p_PropertyTypeInfo.typeId);
+          }
+        } else {
+          return false;
+        }
+
+        if (!p_PropertyTypeInfo.is_alive(l_Component)) {
+          LOW_LOG_WARN
+              << "[FindByName] Could not find "
+              << p_PropertyTypeInfo.name << " component on "
+              << (p_PropertyTypeInfo.component ? "Entity"
+                                               : "UI::Element")
+              << " named " << p_Metadata.value << " for "
+              << p_Type->GetName() << "."
+              << (l_PropertyName ? l_PropertyName : "<unknown>")
+              << LOW_LOG_END;
+          return false;
+        }
+
+        return assign_member_field_handle(
+            p_Object, p_Type, p_Metadata.propertyIndex, l_Component);
+      }
+
+      static bool fill_member_field_find_by_name(
+          asIScriptObject *p_Object, asITypeInfo *p_Type,
+          const MemberFieldFillMetadata &p_Metadata)
+      {
+        if (p_Metadata.propertyIndex >= p_Type->GetPropertyCount()) {
+          return false;
+        }
+
+        const char *l_PropertyName = nullptr;
+        int l_AngelScriptPropertyTypeId = 0;
+        if (p_Type->GetProperty(p_Metadata.propertyIndex,
+                                &l_PropertyName,
+                                &l_AngelScriptPropertyTypeId) < 0) {
+          return false;
+        }
+
+        asIScriptEngine *l_Engine = p_Type->GetEngine();
+        asITypeInfo *l_PropertyType =
+            l_Engine->GetTypeInfoById(l_AngelScriptPropertyTypeId);
+        if (!l_PropertyType ||
+            l_PropertyType->GetSize() != sizeof(Low::Util::Handle)) {
+          LOW_LOG_WARN
+              << "[FindByName] " << p_Type->GetName() << "."
+              << (l_PropertyName ? l_PropertyName : "<unknown>")
+              << " is not a handle value type." << LOW_LOG_END;
+          return false;
+        }
+
+        u16 l_PropertyTypeId = 0;
+        if (get_member_field_low_type_id(l_PropertyType,
+                                         l_PropertyTypeId) &&
+            Low::Util::Handle::is_registered_type(
+                l_PropertyTypeId)) {
+          Low::Util::RTTI::TypeInfo &l_PropertyTypeInfo =
+              Low::Util::Handle::get_type_info(l_PropertyTypeId);
+
+          if (l_PropertyTypeInfo.component ||
+              l_PropertyTypeInfo.uiComponent) {
+            return fill_component_member_field_find_by_name(
+                p_Object, p_Type, p_Metadata, l_PropertyTypeInfo);
+          }
+        }
+
+        const std::string l_Namespace =
+            get_member_type_namespace(l_PropertyType);
+        const std::string l_Declaration =
+            std::string(l_PropertyType->GetName()) +
+            " find_by_name(Name)";
+
+        l_Engine->SetDefaultNamespace(l_Namespace.c_str());
+        asIScriptFunction *l_Function =
+            l_Engine->GetGlobalFunctionByDecl(l_Declaration.c_str());
+        l_Engine->SetDefaultNamespace("");
+
+        if (!l_Function) {
+          LOW_LOG_WARN
+              << "[FindByName] " << p_Type->GetName() << "."
+              << (l_PropertyName ? l_PropertyName : "<unknown>")
+              << " type has no find_by_name(Name) function."
+              << LOW_LOG_END;
+          return false;
+        }
+
+        asIScriptContext *l_Context = l_Engine->RequestContext();
+        if (!l_Context) {
+          return false;
+        }
+
+        if (l_Context->Prepare(l_Function) < 0 ||
+            l_Context->SetArgObject(0, (void *)&p_Metadata.value) <
+                0) {
+          l_Engine->ReturnContext(l_Context);
+          return false;
+        }
+
+        const int l_Result = l_Context->Execute();
+        if (l_Result != asEXECUTION_FINISHED) {
+          l_Engine->ReturnContext(l_Context);
+          LOW_LOG_WARN
+              << "[FindByName] Failed to resolve "
+              << p_Type->GetName() << "."
+              << (l_PropertyName ? l_PropertyName : "<unknown>")
+              << LOW_LOG_END;
+          return false;
+        }
+
+        void *l_ReturnObject = l_Context->GetReturnObject();
+        if (!l_ReturnObject) {
+          l_Engine->ReturnContext(l_Context);
+          return false;
+        }
+
+        Low::Util::Handle l_Handle =
+            *(Low::Util::Handle *)l_ReturnObject;
+
+        l_Engine->ReturnContext(l_Context);
+
+        if (!l_Handle.is_registered_type() ||
+            !Low::Util::Handle::get_type_info(l_Handle.get_type())
+                 .is_alive(l_Handle)) {
+          LOW_LOG_WARN
+              << "[FindByName] Could not find "
+              << l_PropertyType->GetName() << " named "
+              << p_Metadata.value << " for " << p_Type->GetName()
+              << "."
+              << (l_PropertyName ? l_PropertyName : "<unknown>")
+              << LOW_LOG_END;
+          return false;
+        }
+
+        return assign_member_field_handle(
+            p_Object, p_Type, p_Metadata.propertyIndex, l_Handle);
+      }
+
+      bool fill_member_fields(ClassInstance p_Instance)
+      {
+        if (!p_Instance.is_alive()) {
+          return false;
+        }
+
+        ScriptClass l_Class = p_Instance.get_script_class();
+        auto l_MetadataIt =
+            g_MemberFieldFillMetadata.find(l_Class.get_id());
+        if (l_MetadataIt == g_MemberFieldFillMetadata.end()) {
+          return true;
+        }
+
+        asIScriptObject *l_Object =
+            (asIScriptObject *)p_Instance.get_ptr();
+        asITypeInfo *l_Type = (asITypeInfo *)l_Class.as_class();
+        if (!l_Object || !l_Type) {
+          return false;
+        }
+
+        bool l_Success = true;
+        for (const MemberFieldFillMetadata &i_Metadata :
+             l_MetadataIt->second) {
+          switch (i_Metadata.type) {
+          case MemberFieldFillType::FindByName:
+            l_Success =
+                fill_member_field_find_by_name(l_Object, l_Type,
+                                               i_Metadata) &&
+                l_Success;
+            break;
+          default:
+            LOW_ASSERT(false,
+                       "Unsupported script member fill metadata");
+            break;
+          }
+        }
+
+        return l_Success;
+      }
+
+      static void collect_member_field_metadata(
+          ScriptClass p_Class, asITypeInfo *p_Type,
+          CScriptBuilder &p_Builder)
+      {
+        clear_member_field_metadata(p_Class);
+
+        const asUINT l_PropertyCount = p_Type->GetPropertyCount();
+        for (asUINT i = 0; i < l_PropertyCount; ++i) {
+          auto l_Metadata = p_Builder.GetMetadataForTypeProperty(
+              p_Type->GetTypeId(), i);
+
+          for (const auto &i_Metadata : l_Metadata) {
+            Low::Util::Name i_Name;
+            if (parse_find_by_name_metadata(
+                    Util::String(i_Metadata.c_str()), i_Name)) {
+              add_find_by_name_metadata(p_Class, i, i_Name);
+            }
+          }
+        }
       }
 
       static bool is_ticking_signature(asIScriptEngine *p_Engine,
@@ -143,6 +522,7 @@ namespace Low {
           i_Class.set_as_class((char *)i_Type);
           i_Class.set_reload_index(p_Module.get_reload_index());
 
+          collect_member_field_metadata(i_Class, i_Type, p_Builder);
           handle_class(i_Class);
         }
 

@@ -1172,6 +1172,10 @@ namespace Low {
         r = p_Engine->RegisterInterfaceMethod(
             "GameplaySystem", "void tick(float p_Delta)");
         LOW_ASSERT(r >= 0, "Failed to register GameplaySystem::tick");
+        r = p_Engine->RegisterInterfaceMethod("GameplaySystem",
+                                              "void begin_play()");
+        LOW_ASSERT(r >= 0,
+                   "Failed to register GameplaySystem::begin_play");
       }
       // END REGISTER INTERFACES
 
