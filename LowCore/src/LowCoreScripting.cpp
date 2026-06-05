@@ -1,5 +1,7 @@
 #include "LowCoreScripting.h"
 
+#include "LowCoreEventManager.h"
+#include "LowCoreGameplaySystem.h"
 #include "LowCoreScriptAsset.h"
 #include "LowCoreScriptModule.h"
 #include "LowCoreScriptClass.h"
@@ -83,6 +85,9 @@ namespace Low {
       {
         asITypeInfo *l_UiControllerInterface =
             g_Engine->GetTypeInfoByName("UiController");
+        asITypeInfo *l_GameplaySystemInterface =
+            g_Engine->GetTypeInfoByName("GameplaySystem");
+
         asITypeInfo *l_Type = (asITypeInfo *)p_Class.as_class();
 
         if (l_Type->Implements(l_UiControllerInterface)) {
@@ -93,6 +98,15 @@ namespace Low {
                 p_Class.get_name(), p_Class);
           }
           l_Controller.update_instances();
+        }
+        if (l_Type->Implements(l_GameplaySystemInterface)) {
+          GameplaySystem l_System =
+              GameplaySystem::find_by_scriptclass(p_Class);
+          if (!l_System.is_alive()) {
+            l_System = GameplaySystem::make_script(p_Class.get_name(),
+                                                   p_Class);
+          }
+          // l_System.update_instances();
         }
       }
 

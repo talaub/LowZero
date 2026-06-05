@@ -56,6 +56,9 @@ namespace Low {
       typedef void (*Saver)(Low::Util::Handle);
       typedef bool (*SimpleCheck)(Low::Util::Handle);
       typedef void (*SimpleCall)(Low::Util::Handle);
+      typedef void (*RuntimeFileEventHandler)(
+          Low::Util::Handle, const Low::Util::String,
+          const FileEventType);
 
       struct AssetFile
       {
@@ -156,6 +159,7 @@ namespace Low {
         SimpleCheck isLoadable;
         StoreSettings storeSettings;
         SimpleCall postRegister;
+        RuntimeFileEventHandler fileEvent;
       };
 
       struct TypeRegistratorBuilder
@@ -176,6 +180,7 @@ namespace Low {
           m_Registrator.autoInitialize = false;
           m_Registrator.initializeOnStartup = false;
           m_Registrator.postRegister = nullptr;
+          m_Registrator.fileEvent = nullptr;
         }
 
         TypeRegistratorBuilder &
@@ -194,6 +199,13 @@ namespace Low {
         TypeRegistratorBuilder &post_register(const SimpleCall p_Call)
         {
           m_Registrator.postRegister = p_Call;
+          return *this;
+        }
+
+        TypeRegistratorBuilder &
+        file_event(const RuntimeFileEventHandler p_Call)
+        {
+          m_Registrator.fileEvent = p_Call;
           return *this;
         }
 

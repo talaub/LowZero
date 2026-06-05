@@ -81,6 +81,10 @@ namespace Low {
 
           GpuSubmesh i_GpuSubmesh = i_Draw.drawCommand.get_submesh();
 
+          if (!i_GpuSubmesh.is_alive()) {
+            continue;
+          }
+
           LOW_ASSERT(i_GpuSubmesh.is_alive(),
                      "Submesh of mesh entry not alive anymore. "
                      "This should not happen if the corresponding "

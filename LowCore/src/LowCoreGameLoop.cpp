@@ -1,6 +1,7 @@
 #include "LowCoreGameLoop.h"
 
 #include "LowCore.h"
+#include "LowCoreGameplaySystem.h"
 #include "LowCoreRegionSystem.h"
 #include "LowCoreTransformSystem.h"
 #include "LowCoreLightSystem.h"
@@ -11,6 +12,8 @@
 #include "LowCoreNavmeshSystem.h"
 #include "LowCoreCflatScripting.h"
 #include "LowCoreCameraSystem.h"
+#include "LowCoreGameplaySystem.h"
+#include "LowCoreGameplaySystemInstance.h"
 
 #include "LowCoreInput.h"
 #include "LowCoreScriptAsset.h"
@@ -119,6 +122,16 @@ namespace Low {
         }
 
         Scripting::tick(p_Delta, get_engine_state());
+
+        if (get_engine_state() == Util::EngineState::PLAYING) {
+          for (u32 i = 0; i < GameplaySystemInstance::living_count();
+               ++i) {
+            GameplaySystemInstance i_Instance =
+                GameplaySystemInstance::living_instances()[i];
+
+            i_Instance.tick(p_Delta);
+          }
+        }
 
         g_TestCounter += p_Delta;
 

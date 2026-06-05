@@ -64,6 +64,14 @@ namespace Low {
       return PathHelper::normalize(p_Path);
     }
 
+    static bool is_asset_cache_path(const String &p_Path)
+    {
+      return FileSystem::is_file_in_directory(
+          std::filesystem::path(p_Path.c_str()),
+          std::filesystem::path(project_asset_cache_path().get().c_str()),
+          true);
+    }
+
     static AssetRecord *
     find_asset_record_by_path(const String &p_Path)
     {
@@ -230,6 +238,10 @@ namespace Low {
       }
 
       for (auto i_Path : l_Paths) {
+        if (is_asset_cache_path(i_Path)) {
+          continue;
+        }
+
         const Util::String l_ImportedPath =
             p_AuthoringType.importer(PathHelper::normalize(i_Path));
         if (!l_ImportedPath.empty()) {
@@ -321,15 +333,22 @@ namespace Low {
                 AssetManager::delete_bundle(l_Bundle, l_Health);
               }
             }
+
+            return true;
           } else if (i_Type.importer) {
             const Util::String l_ImportedPath =
                 i_Type.importer(p_FullEventPath);
 
+            if (l_ImportedPath.empty()) {
+              continue;
+            }
+
             AssetManager::TypeRegistrator l_RuntimeAssetType;
-            if (!l_ImportedPath.empty() &&
-                find_asset_type(i_Type.typeId, l_RuntimeAssetType)) {
+            if (find_asset_type(i_Type.typeId, l_RuntimeAssetType)) {
               initialize_asset(l_RuntimeAssetType, l_ImportedPath);
             }
+
+            return true;
           }
 
           return true;
@@ -374,6 +393,10 @@ namespace Low {
           PathHelper::normalize(get_project().dataPath + '/' +
                                 p_Event.path.string().c_str());
 
+      if (is_asset_cache_path(l_FullEventPath)) {
+        return;
+      }
+
       if (process_authoring_file_event(p_Event, l_FullEventPath)) {
         return;
       }
@@ -392,7 +415,15 @@ namespace Low {
                         i_Dir.recursive);
 
                 if (i_IsValidInitDir) {
-                  if (!find_asset_record_by_path(l_FullEventPath)) {
+                  AssetRecord *l_Record =
+                      find_asset_record_by_path(l_FullEventPath);
+                  if (l_Record) {
+                    if (i_Type.fileEvent) {
+                      i_Type.fileEvent(
+                          l_Record->handle, l_FullEventPath,
+                          convert_file_event_type(p_Event.type));
+                    }
+                  } else {
                     initialize_asset(i_Type, l_FullEventPath);
                   }
                 }

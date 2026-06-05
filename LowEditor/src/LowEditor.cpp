@@ -439,26 +439,121 @@ namespace Low {
       return l_SidecarPath;
     }
 
-    static Util::String import_script_asset(
+    static Util::String normalize_script_absolute_path(
         const Util::String p_Path)
     {
-      Core::ScriptAsset l_Asset = Util::Handle::DEAD;
-      bool l_Reimport = false;
+      std::filesystem::path l_Path(p_Path.c_str());
+      if (!l_Path.is_absolute()) {
+        l_Path = std::filesystem::path(
+                     Util::get_project().rootPath.c_str()) /
+                 l_Path;
+      }
 
-      const Util::String l_NormalizedPath =
-          Util::PathHelper::normalize(p_Path);
+      return Util::PathHelper::normalize(
+          std::filesystem::weakly_canonical(l_Path).string().c_str());
+    }
+
+    static Util::String get_script_source_storage_path(
+        const Util::String p_Path)
+    {
+      std::filesystem::path l_Path(p_Path.c_str());
+      std::filesystem::path l_DataPath(
+          Util::get_project().dataPath.c_str());
+
+      if (!l_Path.is_absolute()) {
+        l_Path = std::filesystem::path(
+                     Util::get_project().rootPath.c_str()) /
+                 l_Path;
+      }
+      if (!l_DataPath.is_absolute()) {
+        l_DataPath = std::filesystem::path(
+                         Util::get_project().rootPath.c_str()) /
+                     l_DataPath;
+      }
+
+      l_Path = std::filesystem::weakly_canonical(l_Path);
+      l_DataPath = std::filesystem::weakly_canonical(l_DataPath);
+
+      if (Util::FileSystem::is_file_in_directory(l_Path, l_DataPath,
+                                                 true)) {
+        return Util::PathHelper::normalize(
+            std::filesystem::relative(l_Path, l_DataPath)
+                .string()
+                .c_str());
+      }
+
+      return Util::PathHelper::normalize(l_Path.string().c_str());
+    }
+
+    static Util::String get_script_source_compare_path(
+        const Util::String p_SourcePath)
+    {
+      std::filesystem::path l_Path(p_SourcePath.c_str());
+      if (!l_Path.is_absolute()) {
+        std::filesystem::path l_DataRelative =
+            std::filesystem::path(Util::get_project().dataPath.c_str()) /
+            l_Path;
+        if (Util::FileIO::file_exists_sync(
+                l_DataRelative.string().c_str())) {
+          l_Path = l_DataRelative;
+        } else {
+          l_Path = std::filesystem::path(
+                       Util::get_project().rootPath.c_str()) /
+                   l_Path;
+        }
+      }
+
+      return normalize_script_absolute_path(
+          Util::PathHelper::normalize(l_Path.string().c_str()));
+    }
+
+    static Core::ScriptAsset find_script_asset_by_source_path(
+        const Util::String p_Path)
+    {
+      const Util::String l_ComparePath =
+          get_script_source_compare_path(p_Path);
 
       for (u32 i = 0; i < Core::ScriptAsset::living_count(); ++i) {
         Core::ScriptAsset i_Script =
             Core::ScriptAsset::living_instances()[i];
-        const Util::String i_NormalizedPath =
-            Util::PathHelper::normalize(i_Script.get_source_path());
-        if (i_NormalizedPath == l_NormalizedPath) {
-          l_Asset = i_Script;
-          l_Reimport = true;
-          break;
+        if (get_script_source_compare_path(
+                i_Script.get_source_path()) == l_ComparePath) {
+          return i_Script;
         }
       }
+
+      Util::List<Util::String> l_SidecarPaths;
+      Util::FileSystem::collect_files_with_suffix(
+          Util::get_project().assetCachePath.c_str(),
+          ".script.yaml", l_SidecarPaths, false);
+
+      for (Util::String i_SidecarPath : l_SidecarPaths) {
+        Util::Serial::Node i_Node =
+            Util::Serial::load_yaml_file(i_SidecarPath.c_str());
+        if (!i_Node["source"] ||
+            get_script_source_compare_path(
+                i_Node["source"].as<Util::String>()) !=
+                l_ComparePath) {
+          continue;
+        }
+
+        Core::ScriptAsset i_Asset =
+            Core::ScriptAsset::deserialize(i_Node,
+                                           Util::Handle::DEAD);
+        Util::AssetManager::_register(i_Asset.get_id(),
+                                      i_SidecarPath);
+        return i_Asset;
+      }
+
+      return Util::Handle::DEAD;
+    }
+
+    static Util::String import_script_asset(
+        const Util::String p_Path)
+    {
+      Core::ScriptAsset l_Asset =
+          find_script_asset_by_source_path(p_Path);
+      const bool l_Reimport = l_Asset.is_alive();
 
       const Util::String l_FileName =
           Util::PathHelper::get_base_name_no_ext(p_Path);
@@ -472,15 +567,26 @@ namespace Low {
       const Util::String l_SidecarPath =
           get_script_sidecar_path(l_Asset);
 
+      const Util::String l_StoragePath =
+          get_script_source_storage_path(p_Path);
+
       if (l_Reimport) {
+        if (l_Asset.get_source_path() != l_StoragePath) {
+          l_Asset.set_source_path(l_StoragePath);
+
+          Util::Serial::Node l_OutNode;
+          l_Asset.serialize(l_OutNode);
+          Util::Serial::write_yaml_file(l_SidecarPath.c_str(),
+                                        l_OutNode);
+        }
         Core::Scripting::build_module(l_Asset.get_module());
       } else {
-        l_Asset.set_source_path(l_NormalizedPath);
-        Util::Serial::Node l_OutNode;
-        l_Asset.serialize(l_OutNode);
+        l_Asset.set_source_path(l_StoragePath);
         l_Asset.set_module(
             Core::Scripting::Module::find_by_name(N(low.misc)));
 
+        Util::Serial::Node l_OutNode;
+        l_Asset.serialize(l_OutNode);
         Util::Serial::write_yaml_file(l_SidecarPath.c_str(),
                                       l_OutNode);
 

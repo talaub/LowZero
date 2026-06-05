@@ -59,6 +59,8 @@ LowCore:
   Tween: 121
   Pose: 122
   Clip: 123
+  GameplaySystem: 124
+  GameplaySystemInstance: 125
 LowRenderer2:
   GraphicsPipeline: 32
   Pipeline: 45

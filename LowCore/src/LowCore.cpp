@@ -24,6 +24,9 @@
 #include "LowCoreAnimationPose.h"
 #include "LowCoreTween.h"
 #include "LowCoreTweenEase.h"
+#include "LowCoreEventManager.h"
+#include "LowCoreGameplaySystem.h"
+#include "LowCoreGameplaySystemInstance.h"
 
 #include "LowCoreScriptClass.h"
 #include "LowCoreScriptAsset.h"
@@ -143,6 +146,8 @@ namespace Low {
       Entity::initialize();
       GameMode::initialize();
       Tween::initialize();
+      GameplaySystem::initialize();
+      GameplaySystemInstance::initialize();
     }
 
     static void initialize_ui_component_types()
@@ -330,6 +335,8 @@ namespace Low {
 
     static void cleanup_base_types()
     {
+      GameplaySystemInstance::cleanup();
+      GameplaySystem::cleanup();
       Tween::cleanup();
       GameMode::cleanup();
       Entity::cleanup();
@@ -420,6 +427,15 @@ namespace Low {
           Renderer::get_editor_renderview().get_camera_direction();
 
       g_CurrentEngineState = Util::EngineState::PLAYING;
+
+      EventManager::dispatch_event(N(LOW_PLAYMODE_BEGIN));
+
+      for (u32 i = 0; i < GameplaySystem::living_count(); ++i) {
+        GameplaySystem i_System =
+            GameplaySystem::living_instances()[i];
+
+        i_System.spawn_instance();
+      }
     }
 
     void exit_playmode()
@@ -436,6 +452,17 @@ namespace Low {
           g_StoredData.cameraDirection);
 
       g_StoredData.scene.load();
+
+      {
+        Util::List<GameplaySystemInstance> l_GameplaySystemInstances =
+            GameplaySystemInstance::ms_LivingInstances;
+        for (GameplaySystemInstance i_Instance :
+             l_GameplaySystemInstances) {
+          i_Instance.destroy();
+        }
+      }
+
+      EventManager::dispatch_event(N(LOW_PLAYMODE_END));
     }
 
     FileSystemWatchers &get_filesystem_watchers()

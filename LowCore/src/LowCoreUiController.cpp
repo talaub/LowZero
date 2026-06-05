@@ -63,8 +63,6 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
 
-        LOW_LOG_DEBUG << "Create UI controller: '" << p_Name << "'"
-                      << LOW_LOG_END;
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;

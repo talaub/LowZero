@@ -68,7 +68,8 @@ namespace Low {
       // END REGISTER RUNTIME
       // ------------------------------------------------------
       // BEGIN REGISTER INPUT
-      static bool input_is_key_down(Low::Util::KeyboardButton p_Button)
+      static bool
+      input_is_key_down(Low::Util::KeyboardButton p_Button)
       {
         return Low::Core::Input::keyboard_button_down(p_Button);
       }
@@ -79,14 +80,15 @@ namespace Low {
         LOW_ASSERT(r >= 0, "Failed to set Input namespace");
 
         r = p_Engine->RegisterEnum("KeyboardButton");
-        LOW_ASSERT(r >= 0, "Failed to register Input::KeyboardButton");
+        LOW_ASSERT(r >= 0,
+                   "Failed to register Input::KeyboardButton");
 
-#define LOW_AS_REGISTER_KEYBOARD_BUTTON(x)                          \
-  r = p_Engine->RegisterEnumValue(                                  \
-      "KeyboardButton", #x,                                         \
-      static_cast<int>(Low::Util::KeyboardButton::x));              \
-  LOW_ASSERT(r >= 0,                                                \
-             "Failed to register Input::KeyboardButton::" #x)
+#define LOW_AS_REGISTER_KEYBOARD_BUTTON(x)                           \
+  r = p_Engine->RegisterEnumValue(                                   \
+      "KeyboardButton", #x,                                          \
+      static_cast<int>(Low::Util::KeyboardButton::x));               \
+  LOW_ASSERT(r >= 0, "Failed to register "                           \
+                     "Input::KeyboardButton::" #x)
 
         LOW_AS_REGISTER_KEYBOARD_BUTTON(Q);
         LOW_AS_REGISTER_KEYBOARD_BUTTON(W);
@@ -309,8 +311,9 @@ namespace Low {
         new (p_Memory) Low::Math::UVector2(p_X, p_Y);
       }
 
-      static void uvector2_scalar_construct(const u32 p_Value,
-                                            Low::Math::UVector2 *p_Memory)
+      static void
+      uvector2_scalar_construct(const u32 p_Value,
+                                Low::Math::UVector2 *p_Memory)
       {
         new (p_Memory) Low::Math::UVector2(p_Value);
       }
@@ -328,8 +331,9 @@ namespace Low {
         new (p_Memory) Low::Math::Vector2(p_X, p_Y);
       }
 
-      static void vector2_scalar_construct(const float p_Value,
-                                           Low::Math::Vector2 *p_Memory)
+      static void
+      vector2_scalar_construct(const float p_Value,
+                               Low::Math::Vector2 *p_Memory)
       {
         new (p_Memory) Low::Math::Vector2(p_Value);
       }
@@ -347,8 +351,9 @@ namespace Low {
         new (p_Memory) Low::Math::Vector3(p_X, p_Y, p_Z);
       }
 
-      static void vector3_scalar_construct(const float p_Value,
-                                           Low::Math::Vector3 *p_Memory)
+      static void
+      vector3_scalar_construct(const float p_Value,
+                               Low::Math::Vector3 *p_Memory)
       {
         new (p_Memory) Low::Math::Vector3(p_Value);
       }
@@ -366,8 +371,9 @@ namespace Low {
         new (p_Memory) Low::Math::Vector4(p_X, p_Y, p_Z, p_W);
       }
 
-      static void vector4_scalar_construct(const float p_Value,
-                                           Low::Math::Vector4 *p_Memory)
+      static void
+      vector4_scalar_construct(const float p_Value,
+                               Low::Math::Vector4 *p_Memory)
       {
         new (p_Memory) Low::Math::Vector4(p_Value);
       }
@@ -592,16 +598,16 @@ namespace Low {
               "UVector2", asBEHAVE_CONSTRUCT, "void f(u32 value)",
               asFUNCTION(uvector2_scalar_construct),
               asCALL_CDECL_OBJLAST);
-          LOW_ASSERT(r >= 0,
-                     "Failed to register UVector2 scalar constructor");
+          LOW_ASSERT(
+              r >= 0,
+              "Failed to register UVector2 scalar constructor");
 
           r = p_Engine->RegisterObjectMethod(
               "UVector2", "UVector2 opAdd(const UVector2 &in) const",
               asFUNCTION(uvector2_add_generic), asCALL_GENERIC);
           LOW_ASSERT(r >= 0, "Failed to register UVector2::opAdd");
           r = p_Engine->RegisterObjectMethod(
-              "UVector2",
-              "UVector2& opAddAssign(const UVector2 &in)",
+              "UVector2", "UVector2& opAddAssign(const UVector2 &in)",
               asFUNCTION(uvector2_add_assign), asCALL_CDECL_OBJLAST);
           LOW_ASSERT(r >= 0,
                      "Failed to register UVector2::opAddAssign");
@@ -760,8 +766,7 @@ namespace Low {
           r = p_Engine->RegisterGlobalFunction(
               "Vector3 get_forward() property",
               asFUNCTION(vector3_forward), asCALL_CDECL);
-          LOW_ASSERT(r >= 0,
-                     "Failed to register Vector3::forward");
+          LOW_ASSERT(r >= 0, "Failed to register Vector3::forward");
 
           r = p_Engine->RegisterGlobalFunction(
               "Vector3 get_back() property", asFUNCTION(vector3_back),
@@ -878,9 +883,8 @@ namespace Low {
               "Quaternion from_direction(const Vector3 &in, "
               "const Vector3 &in)",
               asFUNCTION(quaternion_from_direction), asCALL_CDECL);
-          LOW_ASSERT(
-              r >= 0,
-              "Failed to register Quaternion::from_direction");
+          LOW_ASSERT(r >= 0,
+                     "Failed to register Quaternion::from_direction");
 
           r = p_Engine->RegisterGlobalFunction(
               "Quaternion slerp(const Quaternion &in, "
@@ -1156,6 +1160,19 @@ namespace Low {
         LOW_ASSERT(r >= 0,
                    "Failed to register UiController::on_click");
       }
+      static void
+      register_gameplay_system_interface(asIScriptEngine *p_Engine)
+      {
+        int r = 0;
+
+        r = p_Engine->RegisterInterface("GameplaySystem");
+        LOW_ASSERT(r >= 0,
+                   "Failed to register interface GameplaySystem");
+
+        r = p_Engine->RegisterInterfaceMethod(
+            "GameplaySystem", "void tick(float p_Delta)");
+        LOW_ASSERT(r >= 0, "Failed to register GameplaySystem::tick");
+      }
       // END REGISTER INTERFACES
 
       static void register_base_types(asIScriptEngine *p_Engine)
@@ -1177,6 +1194,7 @@ namespace Low {
       void register_interfaces(asIScriptEngine *p_Engine)
       {
         register_ui_controller_interface(p_Engine);
+        register_gameplay_system_interface(p_Engine);
       }
     } // namespace Scripting
   } // namespace Core

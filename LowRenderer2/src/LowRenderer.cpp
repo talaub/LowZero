@@ -511,6 +511,25 @@ namespace Low {
 
                   return i_EditorImage.get_id();
                 })
+            .file_event([](Util::Handle p_Handle,
+                           const Util::String p_Path,
+                           const Util::AssetManager::FileEventType
+                               p_EventType) {
+              if (p_EventType !=
+                  Util::AssetManager::FileEventType::Modified) {
+                return;
+              }
+
+              EditorImage l_EditorImage = p_Handle.get_id();
+              if (!l_EditorImage.is_alive()) {
+                return;
+              }
+
+              l_EditorImage.set_path(Util::PathHelper::normalize(
+                  p_Path));
+              l_EditorImage.set_state(TextureState::UNLOADED);
+              ResourceManager::load_editor_image(l_EditorImage);
+            })
             .no_saving();
 
         Util::AssetManager::register_asset_type(l_Builder.build());

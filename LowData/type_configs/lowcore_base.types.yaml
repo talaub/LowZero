@@ -190,3 +190,64 @@ types:
       tick_function_name:
         type: Util::String
         editor_editable: true
+
+  GameplaySystem:
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    no_auto_duplicate: true
+    private_make: true
+    properties:
+      value:
+        type: GameplaySystemValue
+      type:
+        type: GameplaySystemType
+        private_setter: true
+        no_ref: true
+    functions:
+      make_code:
+        static: true
+        return_type: Low::Core::GameplaySystem
+        return_handle: true
+        parameters:
+          - name: name
+            type: Low::Util::Name
+      make_script:
+        static: true
+        return_type: Low::Core::GameplaySystem
+        return_handle: true
+        parameters:
+          - name: name
+            type: Low::Util::Name
+          - name: class
+            type: Low::Core::Scripting::Class
+            handle: true
+      spawn_instance:
+        return_type: Low::Core::GameplaySystemInstance
+        return_handle: true
+      find_by_scriptclass:
+        static: true
+        return_type: Low::Core::GameplaySystem
+        return_handle: true
+        parameters:
+          - name: scriptClass
+            type: Low::Core::Scripting::Class
+            handle: true
+      is_script:
+        return_type: bool
+        constant: true
+        const: true
+  GameplaySystemInstance:
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    no_auto_duplicate: true
+    properties:
+      value:
+        type: GameplaySystemInstanceValue
+      gameplay_system:
+        type: uint64_t
+    functions:
+      tick:
+        return_type: void
+        parameters:
+          - name: delta
+            type: float
