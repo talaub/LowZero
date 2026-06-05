@@ -123,16 +123,6 @@ namespace Low {
 
         Scripting::tick(p_Delta, get_engine_state());
 
-        if (get_engine_state() == Util::EngineState::PLAYING) {
-          for (u32 i = 0; i < GameplaySystemInstance::living_count();
-               ++i) {
-            GameplaySystemInstance i_Instance =
-                GameplaySystemInstance::living_instances()[i];
-
-            i_Instance.tick(p_Delta);
-          }
-        }
-
         g_TestCounter += p_Delta;
 
         if (g_TestCounter > 1.0f) {
@@ -182,6 +172,17 @@ namespace Low {
         UI::System::Text::tick(p_Delta, get_engine_state());
 
         Scripting::tick_as(p_Delta);
+
+        if (get_engine_state() == Util::EngineState::PLAYING) {
+          for (u32 i = 0; i < GameplaySystemInstance::living_count();
+               ++i) {
+            GameplaySystemInstance i_Instance =
+                GameplaySystemInstance::living_instances()[i];
+
+            i_Instance.tick(p_Delta);
+          }
+        }
+
         System::MeshRenderer::late_tick(p_Delta, get_engine_state());
 
         l_FirstRun = false;

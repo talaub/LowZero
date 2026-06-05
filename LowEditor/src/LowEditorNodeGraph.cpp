@@ -1,13 +1,17 @@
 #include "LowEditorNodeGraph.h"
+#include "LowEditorFonts.h"
 #include "LowEditorGui.h"
+#include "LowEditorThemes.h"
 #include "LowMath.h"
 #include "LowUtilString.h"
+#include "IconsLucide.h"
 
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
 #include <cstdio>
 #include <imgui.h>
+#include "imgui_internal.h"
 
 namespace Low {
   namespace Editor {
@@ -80,7 +84,9 @@ namespace Low {
         sync_view_targets();
       }
 
-      if (l_Hovered && ImGui::GetIO().MouseWheel != 0.0f) {
+      if (l_Hovered &&
+          !ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId) &&
+          ImGui::GetIO().MouseWheel != 0.0f) {
         const ImVec2 l_MousePos = ImGui::GetIO().MousePos;
         const ImVec2 l_CanvasMousePos =
             screen_to_canvas(l_MousePos, m_CanvasP0);
@@ -730,18 +736,26 @@ namespace Low {
         ImGui::OpenPopup("NodeGraphCreateNode");
       }
 
-      ImGui::SetNextWindowSize(ImVec2(320.0f, 260.0f),
-                               ImGuiCond_Appearing);
-      if (ImGui::BeginPopup("NodeGraphCreateNode")) {
+      ImGui::SetNextWindowSize(ImVec2(300.0f, 380.0f),
+                               ImGuiCond_Always);
+      ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
+                          ImVec2(8.0f, 8.0f));
+      if (ImGui::BeginPopup("NodeGraphCreateNode",
+                            ImGuiWindowFlags_NoScrollbar |
+                                ImGuiWindowFlags_NoScrollWithMouse)) {
+        ImGui::PopStyleVar();
+
         if (create_node_popup_just_opened) {
           ImGui::SetKeyboardFocusHere();
           create_node_popup_just_opened = false;
         }
 
+        ImGui::SetNextItemWidth(-1.0f);
         Gui::SearchField(
             "##nodegraph_create_node_search", create_node_search,
             IM_ARRAYSIZE(create_node_search), ImVec2(0.0f, 3.0f));
-        ImGui::Separator();
+
+        ImGui::Spacing();
 
         Util::String l_Search = create_node_search;
         l_Search.make_lower();
@@ -773,40 +787,178 @@ namespace Low {
           l_CategorizedEntries[i_Entry.category].push_back(i_Entry);
         }
 
+        const float l_ListH =
+            ImGui::GetContentRegionAvail().y - 2.0f;
+        ImGui::BeginChild("##spawn_list",
+                          ImVec2(0.0f, l_ListH), false,
+                          ImGuiWindowFlags_NoSavedSettings);
+
         if (l_CategorizedEntries.empty()) {
-          ImGui::TextDisabled("No nodes found");
+          ImGui::Dummy(ImVec2(0.0f, 6.0f));
+          ImGui::Indent(6.0f);
+          ImGui::TextDisabled(ICON_LC_SEARCH "  No nodes found");
+          ImGui::Unindent(6.0f);
         } else {
+          ImDrawList *l_DrawList =
+              ImGui::GetWindowDrawList();
+          const Theme &l_Theme = theme_get_current();
+          const float l_EntryH = 28.0f;
+          const float l_Rounding = 4.0f;
+
+          bool l_First = true;
           for (auto it = l_CategorizedEntries.begin();
                it != l_CategorizedEntries.end(); ++it) {
-            if (!ImGui::TreeNode(it->first.c_str())) {
+
+            if (!l_First) {
+              ImGui::Dummy(ImVec2(0.0f, 4.0f));
+            }
+            l_First = false;
+
+            // Category header (collapsible)
+            ImGui::Dummy(ImVec2(0.0f, 2.0f));
+            const ImGuiID l_CatId = ImGui::GetID(
+                it->first.c_str());
+            bool *l_CatOpen =
+                ImGui::GetStateStorage()->GetBoolRef(
+                    l_CatId, true);
+
+            const float l_CatAvailW =
+                ImGui::GetContentRegionAvail().x;
+            const float l_CatH = 22.0f;
+            const ImVec2 l_CatStart =
+                ImGui::GetCursorScreenPos();
+
+            const bool l_CatClicked =
+                ImGui::InvisibleButton(
+                    it->first.c_str(),
+                    ImVec2(l_CatAvailW, l_CatH));
+            if (l_CatClicked) {
+              *l_CatOpen = !*l_CatOpen;
+            }
+
+            const float l_CatMidY =
+                l_CatStart.y +
+                (l_CatH - ImGui::GetTextLineHeight()) *
+                    0.5f;
+            const char *l_CatChevron =
+                *l_CatOpen ? ICON_LC_CHEVRON_DOWN
+                           : ICON_LC_CHEVRON_RIGHT;
+            l_DrawList->AddText(
+                ImVec2(l_CatStart.x, l_CatMidY),
+                ImGui::GetColorU32(ImGuiCol_TextDisabled),
+                l_CatChevron);
+            const float l_ChevW =
+                ImGui::CalcTextSize(l_CatChevron).x +
+                4.0f;
+
+            // Category name — regular weight, normal size
+            l_DrawList->AddText(
+                ImVec2(l_CatStart.x + l_ChevW, l_CatMidY),
+                ImGui::GetColorU32(ImGuiCol_Text),
+                it->first.c_str());
+
+            // Separator line after name
+            const float l_CatTextW =
+                ImGui::CalcTextSize(it->first.c_str()).x;
+            const ImVec2 l_LineStart(
+                l_CatStart.x + l_ChevW + l_CatTextW + 6.0f,
+                l_CatStart.y + l_CatH * 0.5f);
+            const ImVec2 l_LineEnd(
+                l_CatStart.x + l_CatAvailW,
+                l_LineStart.y);
+            l_DrawList->AddLine(
+                l_LineStart, l_LineEnd,
+                ImGui::GetColorU32(ImGuiCol_Separator),
+                1.0f);
+
+            if (!*l_CatOpen) {
               continue;
             }
 
-            for (const NodeGraphSpawnEntry &i_Entry : it->second) {
-              Util::String l_Label = i_Entry.title;
-              if (!i_Entry.subtitle.empty()) {
-                l_Label += "##";
-                l_Label += i_Entry.id.c_str();
+            ImGui::Dummy(ImVec2(0.0f, 2.0f));
+
+            // Entries
+            for (const NodeGraphSpawnEntry &i_Entry :
+                 it->second) {
+              const float l_AvailW =
+                  ImGui::GetContentRegionAvail().x;
+              const ImVec2 l_Start =
+                  ImGui::GetCursorScreenPos();
+              const ImVec2 l_End(l_Start.x + l_AvailW,
+                                 l_Start.y + l_EntryH);
+
+              ImGui::PushID(i_Entry.id.m_Index);
+              const bool l_Clicked =
+                  ImGui::InvisibleButton(
+                      "##entry",
+                      ImVec2(l_AvailW, l_EntryH));
+              const bool l_Hovered =
+                  ImGui::IsItemHovered();
+              ImGui::PopID();
+
+              if (l_Hovered) {
+                l_DrawList->AddRectFilled(
+                    l_Start, l_End,
+                    color_to_imcolor(l_Theme.headerHover),
+                    l_Rounding);
               }
 
-              if (ImGui::MenuItem(l_Label.c_str())) {
-                l_Spawner->spawn_entry(p_Context, i_Entry.id,
-                                       create_node_position);
+              const float l_MidY =
+                  l_Start.y +
+                  (l_EntryH -
+                   ImGui::GetTextLineHeight()) *
+                      0.5f;
+
+              // Subtitle — smaller light font, right-aligned
+              ImGui::PushFont(
+                  Fonts::UI(12, Fonts::Weight::Light));
+              const ImVec2 l_SubSize =
+                  i_Entry.subtitle.empty()
+                      ? ImVec2(0.0f, 0.0f)
+                      : ImGui::CalcTextSize(
+                            i_Entry.subtitle.c_str());
+              ImGui::PopFont();
+
+              const float l_SubX =
+                  l_End.x - l_SubSize.x - 6.0f;
+              const ImVec2 l_TitleClip(
+                  l_SubX - 8.0f, l_End.y);
+
+              ImGui::RenderTextEllipsis(
+                  l_DrawList,
+                  ImVec2(l_Start.x + 8.0f, l_MidY),
+                  l_TitleClip, l_TitleClip.x,
+                  i_Entry.title.c_str(), nullptr,
+                  nullptr);
+
+              if (!i_Entry.subtitle.empty()) {
+                const float l_SubMidY =
+                    l_Start.y +
+                    (l_EntryH - l_SubSize.y) * 0.5f;
+                ImGui::PushFont(
+                    Fonts::UI(12, Fonts::Weight::Light));
+                l_DrawList->AddText(
+                    ImVec2(l_SubX, l_SubMidY),
+                    ImGui::GetColorU32(
+                        ImGuiCol_TextDisabled),
+                    i_Entry.subtitle.c_str());
+                ImGui::PopFont();
+              }
+
+              if (l_Clicked) {
+                l_Spawner->spawn_entry(
+                    p_Context, i_Entry.id,
+                    create_node_position);
                 ImGui::CloseCurrentPopup();
               }
-
-              if (!i_Entry.subtitle.empty() &&
-                  ImGui::IsItemHovered(
-                      ImGuiHoveredFlags_AllowWhenDisabled)) {
-                ImGui::SetTooltip("%s", i_Entry.subtitle.c_str());
-              }
             }
-
-            ImGui::TreePop();
           }
         }
 
+        ImGui::EndChild();
         ImGui::EndPopup();
+      } else {
+        ImGui::PopStyleVar();
       }
     }
 
