@@ -549,13 +549,6 @@ namespace Low {
           .add_asset_suffix(".meshresource.yaml");
       l_Builder.add_initialize_directory(Util::get_project().dataPath,
                                          true);
-      l_Builder.add_raw_suffix(".obj")
-          .add_raw_suffix(".glb")
-          .add_raw_suffix(".fbx");
-      l_Builder
-          .add_import_directory(Util::get_project().dataPath, true,
-                                true)
-          .import_on_startup(true);
 
       l_Builder
           .initializer([](const Util::String p_Path) -> Util::Handle {
@@ -587,37 +580,7 @@ namespace Low {
             }
             Util::Serial::write_yaml_file(
                 l_Resource.get_sidecar_path().c_str(), l_Node);
-          })
-          .importer([](const Util::String p_Path) -> Util::String {
-            std::filesystem::path l_FilePath(p_Path.c_str());
-            const Util::String l_Output =
-                l_FilePath.replace_extension("").string().c_str();
-            if (!ResourceImporter::import_mesh(p_Path, l_Output)) {
-              LOW_LOG_ERROR << "Failed to import mesh."
-                            << LOW_LOG_END;
-              return "";
-            }
-
-            return l_Output + ".meshresource.yaml";
           });
-
-      l_Builder.raw_deleter([](const Util::String p_Path) {
-        std::filesystem::path l_FilePath(p_Path.c_str());
-
-        for (u32 i = 0; i < MeshResource::living_count(); ++i) {
-          MeshResource i_Resource =
-              MeshResource::living_instances()[i];
-
-          if (i_Resource.get_source_file() == p_Path) {
-            Util::FileIO::delete_sync(i_Resource.get_path().c_str());
-            break;
-          }
-        }
-      });
-
-      l_Builder.deleter([](const Util::String p_Path) {
-        std::filesystem::path l_FilePath(p_Path.c_str());
-      });
 
       Util::AssetManager::register_asset_type(l_Builder.build());
 #endif
@@ -652,11 +615,6 @@ namespace Low {
             .add_asset_suffix(".texresource.yaml");
         l_Builder.add_initialize_directory(
             Util::get_project().dataPath, true);
-        l_Builder.add_raw_suffix(".png");
-        l_Builder
-            .add_import_directory(Util::get_project().dataPath, true,
-                                  true)
-            .import_on_startup(true);
 
         l_Builder
             .initializer(
@@ -679,56 +637,7 @@ namespace Low {
                             i_ResourceConfig));
                   }
                 })
-            .no_saving()
-            .importer([](const Util::String p_Path) -> Util::String {
-              std::filesystem::path l_FilePath(p_Path.c_str());
-
-              if (Util::FileSystem::is_file_in_directory(
-                      l_FilePath,
-                      std::filesystem::path(
-                          Util::get_project()
-                              .editorImagesPath.c_str()),
-                      true)) {
-                return "";
-              }
-              const Util::String l_Output =
-                  l_FilePath.replace_extension("").string().c_str();
-              if (!ResourceImporter::import_texture(p_Path,
-                                                    l_Output)) {
-                LOW_LOG_ERROR << "Failed to import texture."
-                              << LOW_LOG_END;
-                return "";
-              }
-
-              return l_Output + ".texresource.yaml";
-            });
-
-        l_Builder.raw_deleter([](const Util::String p_Path) {
-          std::filesystem::path l_FilePath(p_Path.c_str());
-
-          if (Util::FileSystem::is_file_in_directory(
-                  l_FilePath,
-                  std::filesystem::path(
-                      Util::get_project().editorImagesPath.c_str()),
-                  true)) {
-            return;
-          }
-
-          for (u32 i = 0; i < TextureResource::living_count(); ++i) {
-            TextureResource i_Resource =
-                TextureResource::living_instances()[i];
-
-            if (i_Resource.get_source_file() == p_Path) {
-              Util::FileIO::delete_sync(
-                  i_Resource.get_path().c_str());
-              break;
-            }
-          }
-        });
-
-        l_Builder.deleter([](const Util::String p_Path) {
-          std::filesystem::path l_FilePath(p_Path.c_str());
-        });
+            .no_saving();
 
         Util::AssetManager::register_asset_type(l_Builder.build());
       }

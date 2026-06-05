@@ -2,6 +2,7 @@
 
 #include "LowUtilAssert.h"
 #include "LowUtilContainers.h"
+#include "LowUtilFileIO.h"
 #include "LowUtilFileSystem.h"
 #include "LowUtil.h"
 #include "LowUtilHandle.h"
@@ -20,6 +21,8 @@
 namespace Low {
   namespace Util {
     List<AssetManager::TypeRegistrator> g_AssetTypes;
+    List<AssetManager::AuthoringTypeRegistrator>
+        g_AssetAuthoringTypes;
 
     struct AssetRecord
     {
@@ -136,6 +139,36 @@ namespace Low {
       return false;
     }
 
+    static bool find_asset_authoring_type(
+        const u16 p_TypeId,
+        AssetManager::AuthoringTypeRegistrator &p_OutAssetType)
+    {
+      for (AssetManager::AuthoringTypeRegistrator &i_AssetType :
+           g_AssetAuthoringTypes) {
+        if (i_AssetType.typeId == p_TypeId) {
+          p_OutAssetType = i_AssetType;
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    static void
+    upsert_asset_authoring_type(
+        const AssetManager::AuthoringTypeRegistrator &p_Registrator)
+    {
+      for (AssetManager::AuthoringTypeRegistrator &i_AssetType :
+           g_AssetAuthoringTypes) {
+        if (i_AssetType.typeId == p_Registrator.typeId) {
+          i_AssetType = p_Registrator;
+          return;
+        }
+      }
+
+      g_AssetAuthoringTypes.push_back(p_Registrator);
+    }
+
     static void
     initialize_asset(const AssetManager::TypeRegistrator &p_AssetType,
                      const Util::String p_Path)
@@ -150,39 +183,6 @@ namespace Low {
         LOW_ASSERT(
             false,
             "Trying to initialize asset put no initializer found.");
-      }
-    }
-
-    static void
-    import(const AssetManager::TypeRegistrator &p_AssetType,
-           const String &p_Path)
-    {
-      const bool l_IsAssetPath =
-          Util::FileSystem::is_file_in_directory(
-              p_Path, Util::project_asset_cache_path());
-      const bool l_IsManaged = Util::FileSystem::is_file_in_directory(
-          p_Path, Util::project_managed_path());
-      const bool l_IsVsOut = Util::FileSystem::is_file_in_directory(
-          p_Path, Util::project_visual_script_out_path());
-      const bool l_IsEditorImage =
-          Util::FileSystem::is_file_in_directory(
-              p_Path, Util::project_editor_images_path());
-
-      if (l_IsAssetPath || l_IsManaged || l_IsVsOut ||
-          l_IsEditorImage) {
-        return;
-      }
-
-      AM_LOG_DEBUG << "Importing " << p_AssetType.name << " from '"
-                   << p_Path << "'" << LOW_LOG_END;
-      const Util::String l_ImportedPath =
-          p_AssetType.importer(Util::String(p_Path.c_str()));
-
-      if (!l_ImportedPath.empty()) {
-        AM_LOG_DEBUG << "Import successful" << LOW_LOG_END;
-        initialize_asset(p_AssetType, l_ImportedPath);
-      } else {
-        AM_LOG_DEBUG << "Import aborted" << LOW_LOG_END;
       }
     }
 
@@ -206,6 +206,139 @@ namespace Low {
       }
     }
 
+    static void run_authoring_startup_import(
+        const AssetManager::AuthoringTypeRegistrator
+            &p_AuthoringType)
+    {
+      if (!p_AuthoringType.importOnStartup ||
+          !p_AuthoringType.importer) {
+        return;
+      }
+
+      AssetManager::TypeRegistrator l_RuntimeAssetType;
+      if (!find_asset_type(p_AuthoringType.typeId,
+                           l_RuntimeAssetType)) {
+        return;
+      }
+
+      List<String> l_Paths;
+      for (auto it : p_AuthoringType.importDirectories) {
+        for (auto sit : p_AuthoringType.rawSuffixes) {
+          Util::FileSystem::collect_files_with_suffix(
+              it.path.c_str(), sit.c_str(), l_Paths, it.recursive);
+        }
+      }
+
+      for (auto i_Path : l_Paths) {
+        const Util::String l_ImportedPath =
+            p_AuthoringType.importer(PathHelper::normalize(i_Path));
+        if (!l_ImportedPath.empty()) {
+          initialize_asset(l_RuntimeAssetType, l_ImportedPath);
+        }
+      }
+
+    }
+
+    static AssetManager::FileEventType convert_file_event_type(
+        const FileSystem::Watcher::EventType p_Type)
+    {
+      switch (p_Type) {
+      case FileSystem::Watcher::EventType::Added:
+        return AssetManager::FileEventType::Added;
+      case FileSystem::Watcher::EventType::Modified:
+        return AssetManager::FileEventType::Modified;
+      case FileSystem::Watcher::EventType::Removed:
+        return AssetManager::FileEventType::Removed;
+      case FileSystem::Watcher::EventType::Overflow:
+        return AssetManager::FileEventType::Modified;
+      }
+
+      return AssetManager::FileEventType::Modified;
+    }
+
+    static bool process_authoring_file_event(
+        const FileSystem::Watcher::Event &p_Event,
+        const String &p_FullEventPath)
+    {
+      for (auto i_Type : g_AssetAuthoringTypes) {
+        bool i_IsRawAsset = false;
+        for (auto i_RawSuffix : i_Type.rawSuffixes) {
+          if (StringHelper::ends_with(p_FullEventPath,
+                                      i_RawSuffix)) {
+            i_IsRawAsset = true;
+            break;
+          }
+        }
+
+        if (!i_IsRawAsset) {
+          continue;
+        }
+
+        for (auto i_ImportDir : i_Type.importDirectories) {
+          if (!i_ImportDir.autoscan) {
+            continue;
+          }
+
+          const bool i_IsValidImportDir =
+              FileSystem::is_file_in_directory(
+                  std::filesystem::path(p_FullEventPath.c_str()),
+                  std::filesystem::path(i_ImportDir.path.c_str()),
+                  i_ImportDir.recursive);
+
+          if (!i_IsValidImportDir) {
+            continue;
+          }
+
+          if (p_Event.type ==
+              FileSystem::Watcher::EventType::Removed) {
+            AssetManager::AssetBundle l_Bundle;
+            if (i_Type.describeFromPath &&
+                i_Type.describeFromPath(p_FullEventPath,
+                                        l_Bundle)) {
+              AssetManager::AssetFile l_File;
+              l_File.path = p_FullEventPath;
+              l_File.role = AssetManager::AssetFileRole::Source;
+
+              if (i_Type.fileEvent) {
+                i_Type.fileEvent(
+                    l_Bundle, l_File,
+                    convert_file_event_type(p_Event.type));
+              }
+
+              AssetManager::AssetHealth l_Health =
+                  AssetManager::diagnose_bundle(l_Bundle);
+
+              if (l_Health.state ==
+                      AssetManager::AssetHealthState::
+                          MissingDerivedFile ||
+                  l_Health.state ==
+                      AssetManager::AssetHealthState::
+                          RequiresReimport ||
+                  l_Health.state ==
+                      AssetManager::AssetHealthState::Stale) {
+                AssetManager::repair_bundle(l_Bundle, l_Health);
+              } else if (!l_Health.is_ok()) {
+                AssetManager::delete_bundle(l_Bundle, l_Health);
+              }
+            }
+          } else if (i_Type.importer) {
+            const Util::String l_ImportedPath =
+                i_Type.importer(p_FullEventPath);
+
+            AssetManager::TypeRegistrator l_RuntimeAssetType;
+            if (!l_ImportedPath.empty() &&
+                find_asset_type(i_Type.typeId, l_RuntimeAssetType)) {
+              initialize_asset(l_RuntimeAssetType, l_ImportedPath);
+            }
+          }
+
+          return true;
+        }
+      }
+
+      return false;
+    }
+
     void AssetManager::register_asset_type(
         const AssetManager::TypeRegistrator &p_Registrator)
     {
@@ -215,19 +348,13 @@ namespace Low {
         initialize_assets(p_Registrator);
       }
 
-      if (p_Registrator.importOnStartup) {
-        List<String> l_Paths;
-        for (auto it : p_Registrator.importDirectories) {
-          for (auto sit : p_Registrator.rawSuffixes) {
-            Util::FileSystem::collect_files_with_suffix(
-                it.path.c_str(), sit.c_str(), l_Paths, it.recursive);
-          }
-        }
+    }
 
-        for (auto i_Path : l_Paths) {
-          import(p_Registrator, PathHelper::normalize(i_Path));
-        }
-      }
+    void AssetManager::register_asset_authoring_type(
+        const AssetManager::AuthoringTypeRegistrator &p_Registrator)
+    {
+      upsert_asset_authoring_type(p_Registrator);
+      run_authoring_startup_import(p_Registrator);
     }
 
     void AssetManager::initialize()
@@ -247,18 +374,12 @@ namespace Low {
           PathHelper::normalize(get_project().dataPath + '/' +
                                 p_Event.path.string().c_str());
 
+      if (process_authoring_file_event(p_Event, l_FullEventPath)) {
+        return;
+      }
+
       for (auto i_Type : g_AssetTypes) {
-        bool i_IsImport = false;
-
-        for (auto i_RawSuffix : i_Type.rawSuffixes) {
-          if (StringHelper::ends_with(l_FullEventPath,
-                                      i_RawSuffix)) {
-            i_IsImport = true;
-            break;
-          }
-        }
-
-        if (!i_IsImport && i_Type.autoInitialize &&
+        if (i_Type.autoInitialize &&
             p_Event.type != FileSystem::Watcher::EventType::Removed) {
           for (auto i_Suffix : i_Type.assetSuffixes) {
             if (StringHelper::ends_with(l_FullEventPath, i_Suffix)) {
@@ -276,34 +397,6 @@ namespace Low {
                   }
                 }
               }
-              break;
-            }
-          }
-        }
-
-        if (i_IsImport) {
-          for (auto i_ImportDir : i_Type.importDirectories) {
-            if (!i_ImportDir.autoscan) {
-              continue;
-            }
-
-            const bool i_IsValidImportDir =
-                FileSystem::is_file_in_directory(
-                    std::filesystem::path(l_FullEventPath.c_str()),
-                    std::filesystem::path(i_ImportDir.path.c_str()),
-                    i_ImportDir.recursive);
-
-            if (i_IsValidImportDir) {
-              if (p_Event.type ==
-                  FileSystem::Watcher::EventType::Removed) {
-                i_Type.rawDeleter(l_FullEventPath);
-              } else {
-                String i_Path = PathHelper::normalize(
-                    i_ImportDir.path + "/" +
-                    p_Event.path.string().c_str());
-                import(i_Type, i_Path);
-              }
-
               break;
             }
           }
@@ -404,6 +497,133 @@ namespace Low {
       }
 
       return Handle::DEAD;
+    }
+
+    bool AssetManager::_find_authoring_type(
+        const u16 p_TypeId,
+        AuthoringTypeRegistrator &p_OutRegistrator)
+    {
+      return find_asset_authoring_type(p_TypeId, p_OutRegistrator);
+    }
+
+    bool AssetManager::_describe_bundle_from_handle(
+        Util::Handle p_Handle, AssetBundle &p_OutBundle)
+    {
+      AuthoringTypeRegistrator l_AssetType;
+      if (!find_asset_authoring_type(p_Handle.get_type(),
+                                     l_AssetType)) {
+        return false;
+      }
+
+      if (!l_AssetType.describeFromHandle) {
+        return false;
+      }
+
+      return l_AssetType.describeFromHandle(p_Handle, p_OutBundle);
+    }
+
+    bool AssetManager::_describe_bundle_from_path(
+        const Util::String p_Path, AssetBundle &p_OutBundle)
+    {
+      const Util::String l_Path = normalize_asset_path(p_Path);
+
+      if (AssetRecord *l_Record = find_asset_record_by_path(l_Path)) {
+        if (_describe_bundle_from_handle(l_Record->handle,
+                                         p_OutBundle)) {
+          return true;
+        }
+      }
+
+      for (AuthoringTypeRegistrator &i_AssetType :
+           g_AssetAuthoringTypes) {
+        if (i_AssetType.describeFromPath &&
+            i_AssetType.describeFromPath(l_Path, p_OutBundle)) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    AssetManager::AssetHealth AssetManager::diagnose_bundle(
+        const AssetBundle &p_Bundle)
+    {
+      AuthoringTypeRegistrator l_AssetType;
+      if (find_asset_authoring_type(p_Bundle.typeId,
+                                    l_AssetType) &&
+          l_AssetType.diagnose) {
+        return l_AssetType.diagnose(p_Bundle);
+      }
+
+      AssetHealth l_Health;
+      l_Health.state = AssetHealthState::Ok;
+
+      for (const AssetFile &i_File : p_Bundle.files) {
+        if (FileIO::file_exists_sync(i_File.path.c_str())) {
+          continue;
+        }
+
+        l_Health.missingFiles.push_back(i_File.path);
+
+        switch (i_File.role) {
+        case AssetFileRole::Primary:
+          l_Health.state = AssetHealthState::MissingPrimaryFile;
+          break;
+        case AssetFileRole::Source:
+          l_Health.state = AssetHealthState::MissingSourceFile;
+          break;
+        case AssetFileRole::Manifest:
+          l_Health.state = AssetHealthState::MissingManifest;
+          break;
+        case AssetFileRole::Derived:
+          if (l_Health.state == AssetHealthState::Ok) {
+            l_Health.state = AssetHealthState::MissingDerivedFile;
+          }
+          break;
+        case AssetFileRole::Alias:
+          if (l_Health.state == AssetHealthState::Ok) {
+            l_Health.state = AssetHealthState::Broken;
+          }
+          break;
+        }
+      }
+
+      if (!l_Health.missingFiles.empty() &&
+          l_Health.message.empty()) {
+        l_Health.message = "Asset bundle has missing files.";
+      }
+
+      return l_Health;
+    }
+
+    void AssetManager::repair_bundle(const AssetBundle &p_Bundle,
+                                     const AssetHealth &p_Health)
+    {
+      AuthoringTypeRegistrator l_AssetType;
+      if (!find_asset_authoring_type(p_Bundle.typeId,
+                                     l_AssetType) ||
+          !l_AssetType.repair) {
+        AM_LOG_WARN << "No repair callback registered for asset type "
+                    << p_Bundle.typeId << LOW_LOG_END;
+        return;
+      }
+
+      l_AssetType.repair(p_Bundle, p_Health);
+    }
+
+    void AssetManager::delete_bundle(const AssetBundle &p_Bundle,
+                                     const AssetHealth &p_Health)
+    {
+      AuthoringTypeRegistrator l_AssetType;
+      if (!find_asset_authoring_type(p_Bundle.typeId,
+                                     l_AssetType) ||
+          !l_AssetType.deleteAsset) {
+        AM_LOG_WARN << "No delete callback registered for asset type "
+                    << p_Bundle.typeId << LOW_LOG_END;
+        return;
+      }
+
+      l_AssetType.deleteAsset(p_Bundle, p_Health);
     }
 
     Handle AssetManager::_create(const u16 p_TypeId,

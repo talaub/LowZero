@@ -350,56 +350,6 @@ namespace Low {
 
               return l_Asset.get_id();
             });
-        l_Builder.add_raw_suffix(".as");
-        l_Builder.add_import_directory(Util::get_project().dataPath,
-                                       true, true);
-        l_Builder.importer([](const Util::String p_Path)
-                               -> Util::String {
-          ScriptAsset l_Asset = Util::Handle::DEAD;
-          bool l_Reimport = false;
-
-          const Util::String l_NormalizedPath =
-              Util::PathHelper::normalize(p_Path);
-
-          for (u32 i = 0; i < ScriptAsset::living_count(); ++i) {
-            ScriptAsset i_Script = ScriptAsset::living_instances()[i];
-            const Util::String i_NormalizedPath =
-                Util::PathHelper::normalize(
-                    i_Script.get_source_path());
-            if (i_NormalizedPath == l_NormalizedPath) {
-              l_Asset = i_Script;
-              l_Reimport = true;
-              break;
-            }
-          }
-
-          const Util::String l_FileName =
-              Util::PathHelper::get_base_name_no_ext(p_Path);
-          if (!l_Asset.is_alive()) {
-            l_Asset = ScriptAsset::make(LOW_NAME(l_FileName.c_str()));
-            l_Asset.set_generator(AssetGenerator::USERAUTHORED);
-          }
-          Util::String l_SidecarPath =
-              Util::get_project().assetCachePath;
-          l_SidecarPath +=
-              "/" + Util::hash_to_string(l_Asset.get_unique_id()) +
-              ".script.yaml";
-
-          if (l_Reimport) {
-            build_module(l_Asset.get_module());
-          } else {
-            l_Asset.set_source_path(l_NormalizedPath);
-            Util::Serial::Node l_OutNode;
-            l_Asset.serialize(l_OutNode);
-            l_Asset.set_module(Module::find_by_name(N(low.misc)));
-
-            Util::Serial::write_yaml_file(l_SidecarPath.c_str(),
-                                          l_OutNode);
-
-            build_module(l_Asset.get_module());
-          }
-          return l_SidecarPath;
-        });
 
         Util::AssetManager::register_asset_type(l_Builder.build());
         // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
