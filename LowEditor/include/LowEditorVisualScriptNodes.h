@@ -55,6 +55,15 @@ namespace Low {
       namespace GameplaySystemNodes {
         LOW_EDITOR_API void register_nodes(Graph &p_Graph);
       } // namespace GameplaySystemNodes
+
+      namespace FunctionNodes {
+        struct LOW_EDITOR_API CallFunctionNodeData : public NodeUserData
+        {
+          Util::String function_name;
+        };
+
+        LOW_EDITOR_API void register_nodes(Graph &p_Graph);
+      } // namespace FunctionNodes
     } // namespace VisualScript
   } // namespace Editor
 } // namespace Low

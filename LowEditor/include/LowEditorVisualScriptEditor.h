@@ -20,6 +20,15 @@ namespace Low {
         }
       };
 
+      struct FunctionGraph
+      {
+        Util::Name id;
+        Util::String name;
+        Graph graph;
+        NodeGraphCanvas canvas;
+        NodeGraphEditorState state;
+      };
+
       struct Document
       {
         Util::String path;
@@ -33,6 +42,10 @@ namespace Low {
         NodeGraphEditorController controller;
         NodeGraphCanvas canvas;
         NodeGraphEditorState state;
+
+        Util::List<FunctionGraph> functions;
+        NodeGraphCanvas event_graph_canvas;
+        NodeGraphEditorState event_graph_state;
 
         Document() : schema(graph), renderer(graph)
         {
@@ -187,6 +200,11 @@ namespace Low {
         bool embedded = false;
         bool sidebar_left = true;
 
+        int active_function_index = -1;
+        NodeGraphCanvas event_graph_canvas;
+        NodeGraphEditorState event_graph_state;
+        char new_function_name[64] = "";
+
         Editor() = default;
         Editor(Document &p_Document) : document(&p_Document)
         {
@@ -199,6 +217,38 @@ namespace Low {
         {
           document = &p_Document;
           document->initialize();
+          active_function_index = -1;
+        }
+
+        void switch_to_event_graph();
+        void switch_to_function(int p_Index);
+
+        Graph &get_active_graph()
+        {
+          if (document && active_function_index >= 0 &&
+              active_function_index <
+                  (int)document->functions.size()) {
+            return document->functions[active_function_index].graph;
+          }
+          return document->graph;
+        }
+
+        void refresh_active_graph_ptrs()
+        {
+          if (!document) {
+            return;
+          }
+          if (active_function_index >= 0 &&
+              active_function_index <
+                  (int)document->functions.size()) {
+            document->schema.set_graph(
+                document->functions[active_function_index].graph);
+            document->renderer.set_graph(
+                document->functions[active_function_index].graph);
+          } else {
+            document->schema.set_graph(document->graph);
+            document->renderer.set_graph(document->graph);
+          }
         }
 
         void unload_document()

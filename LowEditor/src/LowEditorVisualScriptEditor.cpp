@@ -57,6 +57,7 @@ namespace Low {
           MathNodes::register_nodes(p_Graph);
           OperatorNodes::register_nodes(p_Graph);
           SyntaxNodes::register_nodes(p_Graph);
+          FunctionNodes::register_nodes(p_Graph);
         }
 
         static ContextRegistry *g_ContextRegistry = nullptr;
@@ -171,6 +172,25 @@ namespace Low {
           graph.deserialize(l_Root);
         }
 
+        functions.clear();
+        if (l_Root["functions"]) {
+          for (auto [_, i_FuncNode] : l_Root["functions"]) {
+            FunctionGraph l_Func;
+            if (i_FuncNode["id"]) {
+              l_Func.id = i_FuncNode["id"].as<Util::Name>();
+            }
+            if (i_FuncNode["name"]) {
+              l_Func.name = i_FuncNode["name"].as<Util::String>();
+            }
+            register_common_node_libraries(l_Func.graph);
+            FunctionNodes::register_nodes(l_Func.graph);
+            if (i_FuncNode["graph"]) {
+              l_Func.graph.deserialize(i_FuncNode["graph"]);
+            }
+            functions.push_back(l_Func);
+          }
+        }
+
         path = p_Path;
         return true;
       }
@@ -204,6 +224,18 @@ namespace Low {
           compile_settings->serialize(l_Root["compile_settings"]);
         }
         graph.serialize(l_Root["graph"]);
+
+        if (!functions.empty()) {
+          Util::Serial::Node l_FunctionsNode;
+          for (const FunctionGraph &i_Func : functions) {
+            Util::Serial::Node l_FuncNode;
+            l_FuncNode["id"] = i_Func.id;
+            l_FuncNode["name"] = i_Func.name;
+            i_Func.graph.serialize(l_FuncNode["graph"]);
+            l_FunctionsNode.push_back(l_FuncNode);
+          }
+          l_Root["functions"] = l_FunctionsNode;
+        }
 
         Util::Serial::write_yaml_file(p_Path.c_str(), l_Root);
         path = p_Path;
@@ -698,6 +730,51 @@ namespace Low {
           }
         }
 
+        static ImU32 get_pin_type_accent(PinType p_Type)
+        {
+          switch (p_Type) {
+          case PinType::Bool:
+            return IM_COL32(220, 48, 48, 255);
+          case PinType::Number:
+            return IM_COL32(147, 226, 74, 255);
+          case PinType::String:
+            return IM_COL32(124, 21, 153, 255);
+          case PinType::Handle:
+            return IM_COL32(51, 150, 215, 255);
+          case PinType::Vector2:
+            return IM_COL32(68, 150, 126, 255);
+          case PinType::Vector3:
+            return IM_COL32(68, 201, 156, 255);
+          case PinType::Vector4:
+          case PinType::Quaternion:
+            return IM_COL32(76, 200, 196, 255);
+          default:
+            return IM_COL32(120, 120, 120, 255);
+          }
+        }
+
+        static const char *get_pin_type_icon(PinType p_Type)
+        {
+          switch (p_Type) {
+          case PinType::Bool:
+            return ICON_LC_CIRCLE_DOT;
+          case PinType::Number:
+            return ICON_LC_HASH;
+          case PinType::String:
+            return ICON_LC_TYPE;
+          case PinType::Handle:
+            return ICON_LC_BOX;
+          case PinType::Vector2:
+          case PinType::Vector3:
+            return ICON_LC_MOVE_3D;
+          case PinType::Vector4:
+          case PinType::Quaternion:
+            return ICON_LC_ROTATE_3D;
+          default:
+            return ICON_LC_HASH;
+          }
+        }
+
         static void render_variables_sidebar(Editor &p_Editor)
         {
           if (!p_Editor.document) {
@@ -710,50 +787,148 @@ namespace Low {
 
           render_add_variable_form(p_Editor);
 
-          ImGui::Dummy(ImVec2(0.0f, 8.0f));
-          ImGui::Separator();
+          ImGui::Dummy(ImVec2(0.0f, 6.0f));
 
           Graph &l_Graph = p_Editor.document->graph;
           Util::String l_DeleteVariable;
+
+          const float l_HdrH = 32.0f;
+          const float l_DeleteW = 28.0f;
+          const float l_AccentW = 3.0f;
+          const float l_Rounding = 5.0f;
 
           for (u32 i = 0; i < l_Graph.variables.size(); ++i) {
             Variable &i_Variable = l_Graph.variables[i];
             ImGui::PushID((int)i);
 
-            const bool l_HeaderOpen = ImGui::CollapsingHeader(
-                i_Variable.name.c_str(),
-                ImGuiTreeNodeFlags_DefaultOpen);
+            const float l_AvailW =
+                ImGui::GetContentRegionAvail().x;
+            const ImVec2 l_Start = ImGui::GetCursorScreenPos();
+            const ImVec2 l_End(l_Start.x + l_AvailW,
+                               l_Start.y + l_HdrH);
+
+            bool *l_IsOpen = ImGui::GetStateStorage()->GetBoolRef(
+                ImGui::GetID("##varopen"), false);
+
+            const bool l_HdrClicked = ImGui::InvisibleButton(
+                "##varhdr",
+                ImVec2(l_AvailW - l_DeleteW, l_HdrH));
+            const bool l_HdrHovered = ImGui::IsItemHovered();
+            if (l_HdrClicked) {
+              *l_IsOpen = !*l_IsOpen;
+            }
 
             if (ImGui::BeginDragDropSource(
                     ImGuiDragDropFlags_SourceAllowNullID)) {
-              ImGui::SetDragDropPayload(g_VariableDragDropPayloadType,
-                                        i_Variable.name.c_str(),
-                                        i_Variable.name.size() + 1);
-              ImGui::Text("Variable: %s", i_Variable.name.c_str());
+              ImGui::SetDragDropPayload(
+                  g_VariableDragDropPayloadType,
+                  i_Variable.name.c_str(),
+                  i_Variable.name.size() + 1);
+              ImGui::Text("Variable: %s",
+                          i_Variable.name.c_str());
               ImGui::EndDragDropSource();
             }
 
-            if (l_HeaderOpen) {
-              ImGui::TextDisabled(
-                  "%s", get_pin_type_label(i_Variable.type));
+            ImGui::SameLine(0.0f, 0.0f);
+            const bool l_DelClicked = ImGui::InvisibleButton(
+                "##vardel", ImVec2(l_DeleteW, l_HdrH));
+            const bool l_DelHovered = ImGui::IsItemHovered();
+            if (l_DelClicked) {
+              l_DeleteVariable = i_Variable.name;
+            }
+
+            ImDrawList *l_DrawList =
+                ImGui::GetWindowDrawList();
+            const Theme &l_Theme = theme_get_current();
+            const ImU32 l_Accent =
+                get_pin_type_accent(i_Variable.type);
+
+            const ImU32 l_Bg =
+                (*l_IsOpen || l_HdrHovered || l_DelHovered)
+                    ? (ImU32)color_to_imcolor(l_Theme.headerHover)
+                    : (ImU32)color_to_imcolor(l_Theme.input);
+
+            l_DrawList->AddRectFilled(l_Start, l_End, l_Bg,
+                                      l_Rounding);
+            l_DrawList->AddRect(l_Start, l_End,
+                                color_to_imcolor(l_Theme.border),
+                                l_Rounding);
+            l_DrawList->AddRectFilled(
+                l_Start,
+                ImVec2(l_Start.x + l_AccentW, l_End.y),
+                l_Accent, l_Rounding,
+                ImDrawFlags_RoundCornersLeft);
+
+            const float l_MidY =
+                l_Start.y +
+                (l_HdrH - ImGui::GetTextLineHeight()) * 0.5f;
+
+            // Expand chevron
+            const char *l_Chevron = *l_IsOpen
+                                        ? ICON_LC_CHEVRON_DOWN
+                                        : ICON_LC_CHEVRON_RIGHT;
+            const ImVec2 l_ChevronPos(
+                l_Start.x + l_AccentW + 5.0f, l_MidY);
+            const ImU32 l_DimText = ImGui::GetColorU32(
+                ImGuiCol_TextDisabled);
+            l_DrawList->AddText(l_ChevronPos, l_DimText,
+                                l_Chevron);
+            const float l_ChevronW =
+                ImGui::CalcTextSize(l_Chevron).x;
+
+            // Type icon (accent colored)
+            const char *l_Icon =
+                get_pin_type_icon(i_Variable.type);
+            const ImVec2 l_IconPos(
+                l_ChevronPos.x + l_ChevronW + 4.0f, l_MidY);
+            l_DrawList->AddText(l_IconPos, l_Accent, l_Icon);
+            const float l_IconW =
+                ImGui::CalcTextSize(l_Icon).x;
+
+            // Variable name
+            const ImVec2 l_NamePos(
+                l_IconPos.x + l_IconW + 5.0f, l_MidY);
+            const ImVec2 l_NameClip(
+                l_End.x - l_DeleteW - 4.0f, l_End.y);
+            ImGui::RenderTextEllipsis(
+                l_DrawList, l_NamePos, l_NameClip,
+                l_NameClip.x, i_Variable.name.c_str(),
+                nullptr, nullptr);
+
+            // Trash icon
+            const float l_TrashX =
+                l_End.x - l_DeleteW +
+                (l_DeleteW -
+                 ImGui::CalcTextSize(ICON_LC_TRASH_2).x) *
+                    0.5f;
+            const ImU32 l_TrashColor =
+                l_DelHovered ? IM_COL32(220, 80, 80, 255)
+                             : IM_COL32(180, 80, 80, 140);
+            l_DrawList->AddText(ImVec2(l_TrashX, l_MidY),
+                                l_TrashColor, ICON_LC_TRASH_2);
+
+            // Expanded default value editor
+            if (*l_IsOpen) {
+              ImGui::Indent(8.0f);
+              ImGui::Dummy(ImVec2(0.0f, 3.0f));
 
               if (i_Variable.type == PinType::Handle &&
-                         ((u64)i_Variable.handle_type) != 0) {
-                ImGui::SameLine();
+                  ((u64)i_Variable.handle_type) != 0) {
                 ImGui::TextDisabled(
-                    "(%s)",
-                    ((Util::String)i_Variable.handle_type).c_str());
+                    "%s",
+                    ((Util::String)i_Variable.handle_type)
+                        .c_str());
               }
 
               ImGui::PushItemWidth(-1.0f);
               render_variable_default_editor(i_Variable);
               ImGui::PopItemWidth();
 
-              if (Gui::DeleteButton()) {
-                l_DeleteVariable = i_Variable.name;
-              }
+              ImGui::Dummy(ImVec2(0.0f, 3.0f));
+              ImGui::Unindent(8.0f);
             }
 
+            ImGui::Dummy(ImVec2(0.0f, 3.0f));
             ImGui::PopID();
           }
 
@@ -867,6 +1042,52 @@ namespace Low {
           }
         }
 
+        static const char *g_FunctionDragDropPayloadType =
+            "VS_FUNCTION";
+
+        static void append_function_drop_actions(
+            Editor &p_Editor, const void *p_Data, u32 p_DataSize,
+            const Math::Vector2 &p_CanvasPosition,
+            Util::List<CanvasDropAction> &p_Actions)
+        {
+          if (!p_Data || !p_DataSize) {
+            return;
+          }
+          const char *l_FuncName =
+              static_cast<const char *>(p_Data);
+
+          Graph &l_ActiveGraph = p_Editor.get_active_graph();
+          if (!l_ActiveGraph.find_node_class(N(vs_function_call))) {
+            return;
+          }
+
+          Util::String l_FuncNameStr = l_FuncName;
+          CanvasDropAction l_Action;
+          l_Action.label =
+              Util::String("Call ") + l_FuncNameStr;
+          l_Action.execute = [&p_Editor, &l_ActiveGraph,
+                               l_FuncNameStr,
+                               p_CanvasPosition]() {
+            NodeGraphMutationResult<Low::Editor::Node> l_Result =
+                l_ActiveGraph.create_node(
+                    N(vs_function_call), p_CanvasPosition,
+                    &p_Editor.document->schema);
+            if (!l_Result.succeeded() || !l_Result.value) {
+              return;
+            }
+            FunctionNodes::CallFunctionNodeData *l_Data =
+                l_ActiveGraph.get_node_user_data<
+                    FunctionNodes::CallFunctionNodeData>(
+                    l_Result.value->id);
+            if (l_Data) {
+              l_Data->function_name = l_FuncNameStr;
+              l_ActiveGraph.refresh_node_display_metadata(
+                  l_Result.value->id);
+            }
+          };
+          p_Actions.push_back(l_Action);
+        }
+
         static void append_canvas_drop_actions(
             Editor &p_Editor, const char *p_PayloadType,
             const void *p_Data, u32 p_DataSize,
@@ -881,6 +1102,13 @@ namespace Low {
               0) {
             append_variable_drop_actions(p_Editor, p_Data, p_DataSize,
                                          p_CanvasPosition, p_Actions);
+          }
+
+          if (strcmp(p_PayloadType,
+                     g_FunctionDragDropPayloadType) == 0) {
+            append_function_drop_actions(p_Editor, p_Data,
+                                          p_DataSize, p_CanvasPosition,
+                                          p_Actions);
           }
 
           const ContextDefinition *l_Context =
@@ -920,7 +1148,244 @@ namespace Low {
             p_Editor.pending_canvas_drop_actions.clear();
           }
         }
+        static const ImU32 g_EventGraphAccentColor =
+            IM_COL32(210, 130, 40, 255);
+        static const ImU32 g_FunctionAccentColor =
+            IM_COL32(100, 160, 220, 255);
+
+        static bool render_graph_entry(
+            const char *p_Label, const char *p_Icon,
+            ImU32 p_AccentColor, bool p_Active,
+            bool p_ShowDelete, bool &p_DeleteClicked)
+        {
+          const float l_Height = 32.0f;
+          const float l_DeleteW = p_ShowDelete ? 28.0f : 0.0f;
+          const float l_Rounding = 5.0f;
+          const float l_AccentW = 3.0f;
+          const float l_AvailW =
+              ImGui::GetContentRegionAvail().x;
+
+          const ImVec2 l_Start = ImGui::GetCursorScreenPos();
+          const ImVec2 l_End(l_Start.x + l_AvailW,
+                             l_Start.y + l_Height);
+
+          const bool l_Clicked = ImGui::InvisibleButton(
+              "##row", ImVec2(l_AvailW - l_DeleteW, l_Height));
+          const bool l_RowHovered = ImGui::IsItemHovered();
+
+          if (p_ShowDelete) {
+            if (ImGui::BeginDragDropSource(
+                    ImGuiDragDropFlags_SourceAllowNullID)) {
+              ImGui::SetDragDropPayload(
+                  g_FunctionDragDropPayloadType, p_Label,
+                  strlen(p_Label) + 1);
+              ImGui::Text("Call: %s", p_Label);
+              ImGui::EndDragDropSource();
+            }
+          }
+
+          p_DeleteClicked = false;
+          bool l_DelHovered = false;
+          if (p_ShowDelete) {
+            ImGui::SameLine(0.0f, 0.0f);
+            p_DeleteClicked = ImGui::InvisibleButton(
+                "##del", ImVec2(l_DeleteW, l_Height));
+            l_DelHovered = ImGui::IsItemHovered();
+          }
+
+          ImDrawList *l_DrawList = ImGui::GetWindowDrawList();
+          const Theme &l_Theme = theme_get_current();
+
+          const ImU32 l_Bg =
+              p_Active
+                  ? (ImU32)IM_COL32(55, 58, 72, 255)
+                  : (l_RowHovered || l_DelHovered)
+                  ? (ImU32)color_to_imcolor(l_Theme.headerHover)
+                  : (ImU32)color_to_imcolor(l_Theme.input);
+
+          l_DrawList->AddRectFilled(l_Start, l_End, l_Bg,
+                                    l_Rounding);
+          l_DrawList->AddRect(l_Start, l_End,
+                              color_to_imcolor(l_Theme.border),
+                              l_Rounding);
+          l_DrawList->AddRectFilled(
+              l_Start,
+              ImVec2(l_Start.x + l_AccentW, l_End.y),
+              p_AccentColor, l_Rounding,
+              ImDrawFlags_RoundCornersLeft);
+
+          const float l_MidY =
+              l_Start.y +
+              (l_Height - ImGui::GetTextLineHeight()) * 0.5f;
+          const ImVec2 l_IconPos(
+              l_Start.x + l_AccentW + 8.0f, l_MidY);
+          l_DrawList->AddText(
+              l_IconPos,
+              ImGui::GetColorU32(ImGuiCol_Text), p_Icon);
+          const float l_IconW =
+              ImGui::CalcTextSize(p_Icon).x;
+
+          const ImVec2 l_TextPos(
+              l_IconPos.x + l_IconW + 6.0f, l_MidY);
+          const ImVec2 l_TextClip(
+              l_End.x - l_DeleteW - 4.0f, l_End.y);
+          ImGui::RenderTextEllipsis(l_DrawList, l_TextPos,
+                                    l_TextClip, l_TextClip.x,
+                                    p_Label, nullptr, nullptr);
+
+          if (p_ShowDelete) {
+            const float l_TrashX =
+                l_End.x - l_DeleteW +
+                (l_DeleteW -
+                 ImGui::CalcTextSize(ICON_LC_TRASH_2).x) *
+                    0.5f;
+            const ImU32 l_TrashColor =
+                l_DelHovered
+                    ? IM_COL32(220, 80, 80, 255)
+                    : IM_COL32(180, 80, 80, 140);
+            l_DrawList->AddText(
+                ImVec2(l_TrashX, l_MidY), l_TrashColor,
+                ICON_LC_TRASH_2);
+          }
+
+          ImGui::Dummy(ImVec2(0.0f, 3.0f));
+          return l_Clicked;
+        }
+
+        static void render_functions_sidebar(Editor &p_Editor)
+        {
+          if (!p_Editor.document) {
+            return;
+          }
+
+          ImGui::Dummy(ImVec2(0.0f, 8.0f));
+          ImGui::Separator();
+          ImGui::Dummy(ImVec2(0.0f, 6.0f));
+          ImGui::TextUnformatted("Functions");
+          ImGui::Separator();
+          ImGui::Dummy(ImVec2(0.0f, 6.0f));
+
+          Gui::InputText("##new_function_name",
+                         p_Editor.new_function_name, 64);
+          ImGui::SameLine();
+          if (Gui::AddButton("Add") &&
+              p_Editor.new_function_name[0] != '\0') {
+            FunctionGraph l_Func;
+            l_Func.id = Util::Name(p_Editor.new_function_name);
+            l_Func.name = p_Editor.new_function_name;
+            register_common_node_libraries(l_Func.graph);
+            FunctionNodes::register_nodes(l_Func.graph);
+
+            p_Editor.document->functions.push_back(l_Func);
+            p_Editor.refresh_active_graph_ptrs();
+
+            int l_NewIdx =
+                (int)p_Editor.document->functions.size() - 1;
+            p_Editor.document->functions[l_NewIdx]
+                .graph.create_node(N(vs_function_entry),
+                                   Math::Vector2(100.0f, 100.0f),
+                                   nullptr);
+            p_Editor.new_function_name[0] = '\0';
+          }
+
+          ImGui::Dummy(ImVec2(0.0f, 6.0f));
+
+          // Event Graph entry
+          bool l_Unused = false;
+          ImGui::PushID("evtgraph");
+          if (render_graph_entry(
+                  "Event Graph", ICON_LC_ZAP,
+                  g_EventGraphAccentColor,
+                  p_Editor.active_function_index < 0, false,
+                  l_Unused)) {
+            p_Editor.switch_to_event_graph();
+          }
+          ImGui::PopID();
+
+          // User functions
+          int l_DeleteIdx = -1;
+          for (int i = 0;
+               i < (int)p_Editor.document->functions.size();
+               ++i) {
+            FunctionGraph &i_Func =
+                p_Editor.document->functions[i];
+            ImGui::PushID(i);
+
+            bool l_DelClicked = false;
+            if (render_graph_entry(
+                    i_Func.name.c_str(),
+                    ICON_LC_SQUARE_FUNCTION,
+                    g_FunctionAccentColor,
+                    p_Editor.active_function_index == i, true,
+                    l_DelClicked)) {
+              p_Editor.switch_to_function(i);
+            }
+            if (l_DelClicked) {
+              l_DeleteIdx = i;
+            }
+
+            ImGui::PopID();
+          }
+
+          if (l_DeleteIdx >= 0) {
+            if (p_Editor.active_function_index == l_DeleteIdx) {
+              p_Editor.switch_to_event_graph();
+            } else if (p_Editor.active_function_index >
+                       l_DeleteIdx) {
+              p_Editor.active_function_index--;
+            }
+            p_Editor.document->functions.erase(
+                p_Editor.document->functions.begin() +
+                l_DeleteIdx);
+            p_Editor.refresh_active_graph_ptrs();
+          }
+        }
+
       } // namespace
+
+      void Editor::switch_to_event_graph()
+      {
+        if (!document || active_function_index < 0) {
+          return;
+        }
+        document->functions[active_function_index].canvas =
+            document->canvas;
+        document->functions[active_function_index].state =
+            document->state;
+        document->canvas = event_graph_canvas;
+        document->state = event_graph_state;
+        document->schema.set_graph(document->graph);
+        document->renderer.set_graph(document->graph);
+        active_function_index = -1;
+      }
+
+      void Editor::switch_to_function(int p_Index)
+      {
+        if (!document || p_Index < 0 ||
+            p_Index >= (int)document->functions.size()) {
+          return;
+        }
+        if (active_function_index == p_Index) {
+          return;
+        }
+        if (active_function_index < 0) {
+          event_graph_canvas = document->canvas;
+          event_graph_state = document->state;
+        } else {
+          document->functions[active_function_index].canvas =
+              document->canvas;
+          document->functions[active_function_index].state =
+              document->state;
+        }
+        active_function_index = p_Index;
+        document->canvas =
+            document->functions[p_Index].canvas;
+        document->state = document->functions[p_Index].state;
+        document->schema.set_graph(
+            document->functions[p_Index].graph);
+        document->renderer.set_graph(
+            document->functions[p_Index].graph);
+      }
 
       void Editor::render(const float p_Delta)
       {
@@ -955,6 +1420,7 @@ namespace Low {
                             ImVec2(sidebar_width, 0.0f), true,
                             ImGuiWindowFlags_NoSavedSettings);
           render_variables_sidebar(*this);
+          render_functions_sidebar(*this);
           ImGui::EndChild();
         };
 
@@ -993,7 +1459,7 @@ namespace Low {
 
           if (document->canvas.begin(p_Label, p_Size)) {
             NodeGraphEditorContext l_GraphContext{
-                document->graph.graph,
+                get_active_graph().graph,
                 document->canvas,
                 &document->schema,
                 &document->state,
@@ -1009,6 +1475,7 @@ namespace Low {
 
           Util::List<Util::String> l_PayloadTypes;
           l_PayloadTypes.push_back(g_VariableDragDropPayloadType);
+          l_PayloadTypes.push_back(g_FunctionDragDropPayloadType);
 
           const ContextDefinition *l_Context =
               document->context.is_valid()

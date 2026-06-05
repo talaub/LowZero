@@ -342,6 +342,14 @@ namespace Low {
           return false;
         }
 
+        virtual bool is_deletable(const Graph &p_Graph,
+                                  NodeId p_NodeId) const
+        {
+          (void)p_Graph;
+          (void)p_NodeId;
+          return true;
+        }
+
         virtual Util::String get_compact_title(const Graph &p_Graph,
                                                NodeId p_NodeId) const
         {
@@ -709,6 +717,10 @@ namespace Low {
       LOW_EDITOR_API Pin make_dynamic_pin_metadata(
           Util::String p_DisplayName,
           PinContainerType p_ContainerType = PinContainerType::None);
+
+      LOW_EDITOR_API Util::String
+      make_vs_identifier(const Util::String &p_Value,
+                         const Util::String &p_Fallback);
     } // namespace VisualScript
   } // namespace Editor
 } // namespace Low

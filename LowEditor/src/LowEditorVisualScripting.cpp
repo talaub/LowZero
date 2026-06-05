@@ -570,6 +570,48 @@ namespace Low {
         main_code.append("\n");
       }
 
+      static void compile_user_functions(Document &p_Document,
+                                        CompileContext &p_Context)
+      {
+        for (FunctionGraph &i_Func : p_Document.functions) {
+          if (i_Func.name.empty()) {
+            continue;
+          }
+
+          const Util::String l_FuncName =
+              make_script_identifier(i_Func.name, "function");
+          p_Context.begin_block(Util::String("void ") + l_FuncName +
+                                "()");
+
+          for (const Low::Editor::Node &i_Node :
+               i_Func.graph.graph.nodes) {
+            const Node *l_Meta = i_Func.graph.find_node(i_Node.id);
+            if (!l_Meta ||
+                l_Meta->node_class != N(vs_function_entry)) {
+              continue;
+            }
+            Util::List<Low::Editor::Pin *> l_Pins =
+                i_Func.graph.graph.get_node_pins(i_Node.id);
+            for (const Low::Editor::Pin *i_Pin : l_Pins) {
+              const Pin *l_PinMeta =
+                  i_Func.graph.find_pin(i_Pin->id);
+              if (!l_PinMeta ||
+                  l_PinMeta->type != PinType::Execution ||
+                  i_Pin->direction != PinDirection::Output) {
+                continue;
+              }
+              i_Func.graph.continue_compilation(l_PinMeta->pin,
+                                                p_Context);
+              break;
+            }
+            break;
+          }
+
+          p_Context.end_block();
+          p_Context.main_code.append("\n");
+        }
+      }
+
       void UiControllerCompileProfileSettings::serialize(
           Util::Serial::Node &p_Node) const
       {
@@ -788,6 +830,8 @@ namespace Low {
             "on_mouse_exit",
             UiControllerNodes::InteractionType::MouseExit);
 
+        compile_user_functions(p_Document, p_Context);
+
         p_Context.end_block(";");
       }
 
@@ -884,6 +928,8 @@ namespace Low {
           p_Context.end_block();
           p_Context.main_code.append("\n");
         }
+
+        compile_user_functions(p_Document, p_Context);
 
         p_Context.end_block(";");
       }
@@ -1115,6 +1161,8 @@ namespace Low {
           p_Context.main_code.append("\n");
         }
 
+        compile_user_functions(p_Document, p_Context);
+
         p_Context.end_block(";");
       }
 
@@ -1237,6 +1285,15 @@ namespace Low {
 
       bool Graph::remove_node(NodeId p_NodeId)
       {
+        const Node *l_NodeMeta = find_node(p_NodeId);
+        if (l_NodeMeta) {
+          const NodeClass *l_NodeClass =
+              find_node_class(l_NodeMeta->node_class);
+          if (l_NodeClass && !l_NodeClass->is_deletable(*this, p_NodeId)) {
+            return false;
+          }
+        }
+
         Util::List<PinId> l_PinIdsToRemove;
 
         for (auto it = pin_metadata.begin(); it != pin_metadata.end();
@@ -3242,6 +3299,12 @@ namespace Low {
         l_Pin.container_type = p_ContainerType;
         l_Pin.default_value = default_value_for_pin(l_Pin);
         return l_Pin;
+      }
+
+      Util::String make_vs_identifier(const Util::String &p_Value,
+                                      const Util::String &p_Fallback)
+      {
+        return make_script_identifier(p_Value, p_Fallback);
       }
     } // namespace VisualScript
   } // namespace Editor
