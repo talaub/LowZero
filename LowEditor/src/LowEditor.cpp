@@ -26,6 +26,7 @@
 #include "LowEditorMainWindow.h"
 #include "LowEditorThemes.h"
 #include "LowEditorCommonOperations.h"
+#include "LowEditorAssetCreation.h"
 #include "LowEditorDetailsWidget.h"
 #include "LowEditorEditingWidget.h"
 #include "LowEditorTypeEditor.h"
@@ -1584,6 +1585,12 @@ namespace Low {
             Renderer::Skeleton::type_id());
         TypeEditor::register_type<UiWidgetEditor>(
             Core::UI::WidgetAsset::type_id());
+      }
+      {
+        AssetCreation::register_default<Core::UI::WidgetAsset>(
+            "New UI-Widget", N(Widget), AssetType::UiWidget);
+        AssetCreation::register_default<Renderer::Material>(
+            "New Material", N(Material), AssetType::Material);
       }
       {
         /*

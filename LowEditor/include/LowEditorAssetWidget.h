@@ -2,6 +2,8 @@
 
 #include "LowEditorWidget.h"
 
+#include "LowEditorAssetCreation.h"
+
 #include "LowUtilHandle.h"
 #include "LowUtilFileSystem.h"
 
@@ -24,6 +26,9 @@ namespace Low {
 
       Util::FileSystem::WatchHandle m_DataWatcher;
       Util::Handle m_ContextMenuHandle;
+      AssetCreation::Action *m_PendingCreationAction;
+      Util::String m_CreationDirectoryPath;
+      Util::Name m_CreationName;
 
       void
       render_directory_list(const Util::FileSystem::DirectoryWatcher

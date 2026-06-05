@@ -14,6 +14,7 @@
 #include "LowRendererTextureState.h"
 #include "LowRendererMesh.h"
 #include "LowRendererResourceManager.h"
+#include "LowRendererEditorImage.h"
 #include "LowUtilFileSystem.h"
 #include "LowUtilHandle.h"
 #include "LowUtilLogger.h"
@@ -34,6 +35,105 @@ namespace Low {
   namespace Editor {
 
     const ImVec2 g_Margin(14.0f, 8.0f);
+
+    static bool render_asset_creation_menu_entry(
+        AssetCreation::Action &p_Action,
+        const AssetCreation::Context &p_Context)
+    {
+      bool l_Enabled = true;
+      if (p_Action.is_enabled) {
+        l_Enabled = p_Action.is_enabled(p_Context);
+      }
+
+      const ImVec2 l_Start = ImGui::GetCursorScreenPos();
+      const float l_Width = ImGui::GetContentRegionAvail().x;
+      const float l_Height = 54.0f;
+      const float l_PreviewSize = 44.0f;
+      const float l_Rounding = 5.0f;
+
+      ImGui::PushID((int)p_Action.id.m_Index);
+      const bool l_Clicked =
+          ImGui::InvisibleButton("creation_entry",
+                                 ImVec2(l_Width, l_Height)) &&
+          l_Enabled;
+      const bool l_Hovered = ImGui::IsItemHovered() && l_Enabled;
+      ImGui::PopID();
+
+      ImDrawList *l_DrawList = ImGui::GetWindowDrawList();
+      const Theme &l_Theme = theme_get_current();
+      const ImVec2 l_End(l_Start.x + l_Width,
+                         l_Start.y + l_Height);
+
+      const ImU32 l_Background =
+          l_Hovered ? color_to_imcolor(l_Theme.headerHover)
+                    : color_to_imcolor(l_Theme.input);
+      const ImU32 l_TextColor =
+          ImGui::GetColorU32(l_Enabled ? ImGuiCol_Text
+                                       : ImGuiCol_TextDisabled);
+
+      l_DrawList->AddRectFilled(l_Start, l_End, l_Background,
+                                l_Rounding);
+      l_DrawList->AddRect(l_Start, l_End,
+                          color_to_imcolor(l_Theme.border),
+                          l_Rounding);
+      l_DrawList->AddRectFilled(
+          l_Start, ImVec2(l_Start.x + 3.0f, l_End.y),
+          color_to_imcolor(get_color_for_asset_type(
+              p_Action.assetType)),
+          l_Rounding, ImDrawFlags_RoundCornersLeft);
+
+      const ImVec2 l_IconMin(l_Start.x + 10.0f,
+                             l_Start.y + 5.0f);
+      const ImVec2 l_IconMax(l_IconMin.x + l_PreviewSize,
+                             l_IconMin.y + l_PreviewSize);
+
+      Renderer::EditorImage l_Image =
+          get_editor_image_for_asset_type(p_Action.assetType);
+      if (l_Image.is_alive() &&
+          l_Image.get_state() == Renderer::TextureState::LOADED &&
+          l_Image.get_gpu().is_imgui_texture_initialized()) {
+        l_DrawList->AddImage(l_Image.get_gpu().get_imgui_texture_id(),
+                             l_IconMin, l_IconMax);
+      } else {
+        Util::String l_Fallback =
+            p_Action.icon.empty() ? "+" : p_Action.icon;
+        const ImVec2 l_TextSize =
+            ImGui::CalcTextSize(l_Fallback.c_str());
+        l_DrawList->AddText(
+            ImVec2(l_IconMin.x +
+                       ((l_PreviewSize - l_TextSize.x) * 0.5f),
+                   l_IconMin.y +
+                       ((l_PreviewSize - l_TextSize.y) * 0.5f)),
+            l_TextColor, l_Fallback.c_str());
+      }
+
+      const float l_TextX = l_IconMax.x + 10.0f;
+      const ImVec2 l_NamePos(l_TextX, l_Start.y + 8.0f);
+      const ImVec2 l_NameClipMax(l_End.x - 10.0f,
+                                 l_NamePos.y +
+                                     ImGui::GetTextLineHeight());
+      ImGui::RenderTextEllipsis(
+          l_DrawList, l_NamePos, l_NameClipMax, l_NameClipMax.x,
+          p_Action.label.c_str(), nullptr, nullptr);
+
+      const Util::String l_TypeName = Util::StringHelper::to_upper(
+          get_asset_type_name(p_Action.assetType));
+      ImVec4 l_TypeColor = ImGui::GetStyleColorVec4(ImGuiCol_Text);
+      l_TypeColor.w = 0.3f;
+      ImGui::PushFont(Fonts::UI(14, Fonts::Weight::Light));
+      l_DrawList->AddText(ImVec2(l_TextX, l_Start.y + 31.0f),
+                          ImColor(l_TypeColor), l_TypeName.c_str());
+      ImGui::PopFont();
+
+      if (!l_Enabled) {
+        l_DrawList->AddRectFilled(l_Start, l_End,
+                                  ImGui::GetColorU32(
+                                      ImGuiCol_ModalWindowDimBg),
+                                  l_Rounding);
+      }
+
+      return l_Clicked;
+    }
 
     void AssetWidget::save_prefab_asset(Util::Handle p_Handle)
     {
@@ -59,7 +159,8 @@ namespace Low {
 
     AssetWidget::AssetWidget()
         : m_UpdateCounter(UPDATE_INTERVAL),
-          m_ContextMenuHandle(Util::Handle::DEAD)
+          m_ContextMenuHandle(Util::Handle::DEAD),
+          m_PendingCreationAction(nullptr)
     {
       m_DataWatcher = Util::FileSystem::watch_directory(
           Util::get_project().dataPath,
@@ -346,25 +447,126 @@ namespace Low {
         ImGui::OpenPopup("WINDOWCONTEXT");
       }
 
+      bool l_OpenNameDialog = false;
+      bool l_OpenCustomDialog = false;
+
+      ImGui::SetNextWindowSize(ImVec2(280.0f, 0.0f),
+                               ImGuiCond_Appearing);
       if (ImGui::BeginPopup("WINDOWCONTEXT")) {
-        // TODO: Change this. Asset creation options should be
-        // registered from outside and not harcoded here.
-        if (ImGui::MenuItem("New UI-Widget")) {
-          using namespace Low::Util::FileSystem;
-          DirectoryWatcher &l_Watcher =
-              get_directory_watcher(m_SelectedDirectory);
-          Util::AssetManager::create<Core::UI::WidgetAsset>(
-              N(Testwidget), l_Watcher.path);
+        using namespace Low::Util::FileSystem;
+        DirectoryWatcher &l_Watcher =
+            get_directory_watcher(m_SelectedDirectory);
+
+        AssetCreation::Context l_Context;
+        l_Context.directoryPath = l_Watcher.path;
+
+        Util::List<AssetCreation::Action *> l_Actions;
+        AssetCreation::collect_actions(l_Context, l_Actions);
+
+        if (l_Actions.empty()) {
+          ImGui::MenuItem("No creation actions", nullptr, false,
+                          false);
         }
-        if (ImGui::MenuItem("New Material")) {
-          using namespace Low::Util::FileSystem;
-          DirectoryWatcher &l_Watcher =
-              get_directory_watcher(m_SelectedDirectory);
-          Util::AssetManager::create<Renderer::Material>(
-              N(Material), l_Watcher.path);
+
+        for (AssetCreation::Action *i_Action : l_Actions) {
+          if (render_asset_creation_menu_entry(*i_Action,
+                                               l_Context)) {
+            m_PendingCreationAction = i_Action;
+            m_CreationDirectoryPath = l_Context.directoryPath;
+
+            const char *l_DefaultName =
+                i_Action->defaultName.is_valid()
+                    ? i_Action->defaultName.c_str()
+                    : "Asset";
+            m_CreationName = LOW_NAME(l_DefaultName);
+
+            if (i_Action->render_dialog) {
+              l_OpenCustomDialog = true;
+            } else {
+              l_OpenNameDialog = true;
+            }
+          }
+          ImGui::Dummy(ImVec2(0.0f, 4.0f));
         }
         ImGui::EndPopup();
       }
+
+      if (l_OpenNameDialog) {
+        ImGui::OpenPopup("Create Asset");
+      }
+      if (l_OpenCustomDialog) {
+        ImGui::OpenPopup("AssetCreationCustomDialog");
+      }
+
+      if (m_PendingCreationAction) {
+        ImGuiViewport *l_Viewport = ImGui::GetMainViewport();
+        ImGui::SetNextWindowPos(l_Viewport->GetCenter(),
+                                ImGuiCond_Appearing,
+                                ImVec2(0.5f, 0.5f));
+        ImGui::SetNextWindowSize(ImVec2(420.0f, 0.0f),
+                                 ImGuiCond_Appearing);
+      }
+
+      if (m_PendingCreationAction &&
+          ImGui::BeginPopupModal(
+              "Create Asset", nullptr,
+              ImGuiWindowFlags_AlwaysAutoResize |
+                  ImGuiWindowFlags_NoSavedSettings)) {
+        ImGui::TextUnformatted(m_PendingCreationAction->label.c_str());
+        ImGui::Spacing();
+
+        Gui::NameInput("Name", m_CreationName, 128);
+        const bool l_SubmitName =
+            ImGui::IsItemFocused() &&
+            (ImGui::IsKeyPressed(ImGuiKey_Enter) ||
+             ImGui::IsKeyPressed(ImGuiKey_KeypadEnter));
+
+        ImGui::Spacing();
+
+        const bool l_CanCreate =
+            m_CreationName.is_valid() &&
+            m_CreationName.c_str()[0] != '\0';
+        if (ImGui::Button("Create") && l_CanCreate) {
+          AssetCreation::Context l_Context;
+          l_Context.directoryPath = m_CreationDirectoryPath;
+          if (m_PendingCreationAction->create) {
+            m_PendingCreationAction->create(
+                l_Context, m_CreationName);
+          }
+          m_PendingCreationAction = nullptr;
+          ImGui::CloseCurrentPopup();
+        }
+        if (l_SubmitName && l_CanCreate &&
+            m_PendingCreationAction) {
+          AssetCreation::Context l_Context;
+          l_Context.directoryPath = m_CreationDirectoryPath;
+          if (m_PendingCreationAction->create) {
+            m_PendingCreationAction->create(l_Context,
+                                            m_CreationName);
+          }
+          m_PendingCreationAction = nullptr;
+          ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel")) {
+          m_PendingCreationAction = nullptr;
+          ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
+      }
+
+      if (m_PendingCreationAction &&
+          ImGui::BeginPopup("AssetCreationCustomDialog")) {
+        if (m_PendingCreationAction->render_dialog) {
+          AssetCreation::DialogContext l_Context;
+          l_Context.context.directoryPath = m_CreationDirectoryPath;
+          l_Context.popupId = "AssetCreationCustomDialog";
+          m_PendingCreationAction->render_dialog(l_Context);
+        }
+        ImGui::EndPopup();
+      }
+
       ImGui::EndChild();
 
       ImGui::End();
