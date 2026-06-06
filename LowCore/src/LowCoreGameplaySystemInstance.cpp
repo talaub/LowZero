@@ -72,6 +72,14 @@ namespace Low {
 
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        GameplaySystem l_System = get_gameplay_system();
+        if (l_System.is_alive() && l_System.is_script()) {
+          Scripting::ClassInstance l_ClassInstance =
+              get_value().script.instance;
+          if (l_ClassInstance.is_alive()) {
+            l_ClassInstance.destroy();
+          }
+        }
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 

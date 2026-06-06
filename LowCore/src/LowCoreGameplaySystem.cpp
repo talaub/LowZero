@@ -12,6 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+#include "LowCore.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -658,6 +659,39 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_is_script
       return get_type() == GameplaySystemType::Script;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_is_script
+    }
+
+    void GameplaySystem::update_instances()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_instances
+      if (!is_script()) {
+        return;
+      }
+
+      Low::Util::List<GameplaySystemInstance> l_Instances =
+          GameplaySystemInstance::ms_LivingInstances;
+
+      for (GameplaySystemInstance i_Instance : l_Instances) {
+        if (!i_Instance.is_alive() ||
+            i_Instance.get_gameplay_system() != get_id()) {
+          continue;
+        }
+
+        Scripting::ClassInstance l_OldClassInstance =
+            i_Instance.get_value().script.instance;
+        if (l_OldClassInstance.is_alive()) {
+          l_OldClassInstance.destroy();
+        }
+
+        i_Instance.get_value().script.instance =
+            get_value().script.sclass.spawn_instance(
+                i_Instance.get_name());
+
+        if (get_engine_state() == Util::EngineState::PLAYING) {
+          i_Instance.begin_play();
+        }
+      }
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_update_instances
     }
 
     uint32_t GameplaySystem::create_instance(u32 &p_PageIndex,

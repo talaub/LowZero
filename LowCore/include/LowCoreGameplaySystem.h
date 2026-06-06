@@ -183,6 +183,7 @@ namespace Low {
       static Low::Core::GameplaySystem
       find_by_scriptclass(Low::Core::Scripting::Class p_ScriptClass);
       bool is_script() const;
+      void update_instances();
       static bool get_page_for_index(const u32 p_Index,
                                      u32 &p_PageIndex,
                                      u32 &p_SlotIndex);

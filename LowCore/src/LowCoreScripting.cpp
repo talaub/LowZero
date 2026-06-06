@@ -489,7 +489,7 @@ namespace Low {
             l_System = GameplaySystem::make_script(p_Class.get_name(),
                                                    p_Class);
           }
-          // l_System.update_instances();
+          l_System.update_instances();
         }
       }
 

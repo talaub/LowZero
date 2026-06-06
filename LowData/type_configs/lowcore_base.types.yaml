@@ -236,6 +236,8 @@ types:
         return_type: bool
         constant: true
         const: true
+      update_instances:
+        return_type: void
   GameplaySystemInstance:
     no_auto_serialize: true
     no_auto_deserialize: true

@@ -74,8 +74,10 @@ namespace Low {
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
-          asIScriptObject *l_Object = (asIScriptObject *)get_ptr();
-          l_Object->Release();
+          asIScriptObject *l_Object = (asIScriptObject *)_ptr();
+          if (l_Object) {
+            l_Object->Release();
+          }
           // LOW_CODEGEN::END::CUSTOM:DESTROY
         }
 
@@ -664,6 +666,7 @@ namespace Low {
             l_OldPtr->Release();
           }
           set_ptr(spawn());
+          fill_member_fields(*this);
         }
 
         return _ptr();
