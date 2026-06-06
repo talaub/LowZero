@@ -343,7 +343,7 @@ namespace Low {
       l_Builder.create_script_asset(
           LOW_NAME(l_FileName.c_str()),
           Core::Scripting::Module::find_by_name(N(ui.controller)),
-          ".vs_out/" + l_FileName + ".as");
+          l_Builder.get_document().output_path);
 
       Util::resolve_handle_reference_by_name(
           m_Handle, N(controller), LOW_NAME(l_ClassName.c_str()));

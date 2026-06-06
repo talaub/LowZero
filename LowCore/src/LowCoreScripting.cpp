@@ -10,6 +10,7 @@
 #include "LowCoreUiElement.h"
 #include "LowUtilAssert.h"
 #include "LowUtilFileIO.h"
+#include "LowUtilHandle.h"
 #include "LowUtilLogger.h"
 #include "angelscript.h"
 
@@ -70,7 +71,8 @@ namespace Low {
         return false;
       }
 
-      static Util::String trim_metadata_value(const Util::String &p_Value)
+      static Util::String
+      trim_metadata_value(const Util::String &p_Value)
       {
         size_t l_Begin = 0;
         size_t l_End = p_Value.size();
@@ -89,8 +91,9 @@ namespace Low {
         return p_Value.substr(l_Begin, l_End - l_Begin);
       }
 
-      static bool parse_find_by_name_metadata(
-          const Util::String &p_Metadata, Low::Util::Name &p_Name)
+      static bool
+      parse_find_by_name_metadata(const Util::String &p_Metadata,
+                                  Low::Util::Name &p_Name)
       {
         Util::String l_Metadata = trim_metadata_value(p_Metadata);
         const Util::String l_Prefix = "FindByName";
@@ -106,9 +109,8 @@ namespace Low {
           return false;
         }
 
-        Util::String l_Value =
-            trim_metadata_value(l_Metadata.substr(
-                l_Open + 1, l_Close - l_Open - 1));
+        Util::String l_Value = trim_metadata_value(
+            l_Metadata.substr(l_Open + 1, l_Close - l_Open - 1));
 
         if (l_Value.size() >= 2 &&
             ((l_Value.front() == '"' && l_Value.back() == '"') ||
@@ -185,8 +187,9 @@ namespace Low {
         return true;
       }
 
-      static bool get_member_field_low_type_id(
-          asITypeInfo *p_PropertyType, u16 &p_TypeId)
+      static bool
+      get_member_field_low_type_id(asITypeInfo *p_PropertyType,
+                                   u16 &p_TypeId)
       {
         asIScriptEngine *l_Engine = p_PropertyType->GetEngine();
         const std::string l_Namespace =
@@ -254,15 +257,16 @@ namespace Low {
         }
 
         if (!p_PropertyTypeInfo.is_alive(l_Component)) {
-          LOW_LOG_WARN
-              << "[FindByName] Could not find "
-              << p_PropertyTypeInfo.name << " component on "
-              << (p_PropertyTypeInfo.component ? "Entity"
-                                               : "UI::Element")
-              << " named " << p_Metadata.value << " for "
-              << p_Type->GetName() << "."
-              << (l_PropertyName ? l_PropertyName : "<unknown>")
-              << LOW_LOG_END;
+          LOW_LOG_WARN << "[FindByName] Could not find "
+                       << p_PropertyTypeInfo.name << " component on "
+                       << (p_PropertyTypeInfo.component
+                               ? "Entity"
+                               : "UI::Element")
+                       << " named " << p_Metadata.value << " for "
+                       << p_Type->GetName() << "."
+                       << (l_PropertyName ? l_PropertyName
+                                          : "<unknown>")
+                       << LOW_LOG_END;
           return false;
         }
 
@@ -291,18 +295,18 @@ namespace Low {
             l_Engine->GetTypeInfoById(l_AngelScriptPropertyTypeId);
         if (!l_PropertyType ||
             l_PropertyType->GetSize() != sizeof(Low::Util::Handle)) {
-          LOW_LOG_WARN
-              << "[FindByName] " << p_Type->GetName() << "."
-              << (l_PropertyName ? l_PropertyName : "<unknown>")
-              << " is not a handle value type." << LOW_LOG_END;
+          LOW_LOG_WARN << "[FindByName] " << p_Type->GetName() << "."
+                       << (l_PropertyName ? l_PropertyName
+                                          : "<unknown>")
+                       << " is not a handle value type."
+                       << LOW_LOG_END;
           return false;
         }
 
         u16 l_PropertyTypeId = 0;
         if (get_member_field_low_type_id(l_PropertyType,
                                          l_PropertyTypeId) &&
-            Low::Util::Handle::is_registered_type(
-                l_PropertyTypeId)) {
+            Low::Util::Handle::is_registered_type(l_PropertyTypeId)) {
           Low::Util::RTTI::TypeInfo &l_PropertyTypeInfo =
               Low::Util::Handle::get_type_info(l_PropertyTypeId);
 
@@ -325,11 +329,11 @@ namespace Low {
         l_Engine->SetDefaultNamespace("");
 
         if (!l_Function) {
-          LOW_LOG_WARN
-              << "[FindByName] " << p_Type->GetName() << "."
-              << (l_PropertyName ? l_PropertyName : "<unknown>")
-              << " type has no find_by_name(Name) function."
-              << LOW_LOG_END;
+          LOW_LOG_WARN << "[FindByName] " << p_Type->GetName() << "."
+                       << (l_PropertyName ? l_PropertyName
+                                          : "<unknown>")
+                       << " type has no find_by_name(Name) function."
+                       << LOW_LOG_END;
           return false;
         }
 
@@ -348,11 +352,11 @@ namespace Low {
         const int l_Result = l_Context->Execute();
         if (l_Result != asEXECUTION_FINISHED) {
           l_Engine->ReturnContext(l_Context);
-          LOW_LOG_WARN
-              << "[FindByName] Failed to resolve "
-              << p_Type->GetName() << "."
-              << (l_PropertyName ? l_PropertyName : "<unknown>")
-              << LOW_LOG_END;
+          LOW_LOG_WARN << "[FindByName] Failed to resolve "
+                       << p_Type->GetName() << "."
+                       << (l_PropertyName ? l_PropertyName
+                                          : "<unknown>")
+                       << LOW_LOG_END;
           return false;
         }
 
@@ -370,13 +374,13 @@ namespace Low {
         if (!l_Handle.is_registered_type() ||
             !Low::Util::Handle::get_type_info(l_Handle.get_type())
                  .is_alive(l_Handle)) {
-          LOW_LOG_WARN
-              << "[FindByName] Could not find "
-              << l_PropertyType->GetName() << " named "
-              << p_Metadata.value << " for " << p_Type->GetName()
-              << "."
-              << (l_PropertyName ? l_PropertyName : "<unknown>")
-              << LOW_LOG_END;
+          LOW_LOG_WARN << "[FindByName] Could not find "
+                       << l_PropertyType->GetName() << " named "
+                       << p_Metadata.value << " for "
+                       << p_Type->GetName() << "."
+                       << (l_PropertyName ? l_PropertyName
+                                          : "<unknown>")
+                       << LOW_LOG_END;
           return false;
         }
 
@@ -409,10 +413,9 @@ namespace Low {
              l_MetadataIt->second) {
           switch (i_Metadata.type) {
           case MemberFieldFillType::FindByName:
-            l_Success =
-                fill_member_field_find_by_name(l_Object, l_Type,
-                                               i_Metadata) &&
-                l_Success;
+            l_Success = fill_member_field_find_by_name(
+                            l_Object, l_Type, i_Metadata) &&
+                        l_Success;
             break;
           default:
             LOW_ASSERT(false,
@@ -424,9 +427,10 @@ namespace Low {
         return l_Success;
       }
 
-      static void collect_member_field_metadata(
-          ScriptClass p_Class, asITypeInfo *p_Type,
-          CScriptBuilder &p_Builder)
+      static void
+      collect_member_field_metadata(ScriptClass p_Class,
+                                    asITypeInfo *p_Type,
+                                    CScriptBuilder &p_Builder)
       {
         clear_member_field_metadata(p_Class);
 
@@ -573,62 +577,6 @@ namespace Low {
         }
       }
 
-      /*
-      void build_module(Module p_Module)
-      {
-        LOW_LOG_DEBUG << "Building module " << p_Module.get_name()
-                      << LOW_LOG_END;
-
-        if (!p_Module.get_as_module()) {
-          p_Module.set_as_module((char *)g_Engine->GetModule(
-              p_Module.get_name().c_str(), asGM_ALWAYS_CREATE));
-        }
-
-        asIScriptModule *l_AsModule =
-            (asIScriptModule *)p_Module.get_as_module();
-
-        LOW_ASSERT(l_AsModule,
-                   "Failed to create AngelScript module.");
-
-        for (auto it = p_Module.get_scripts().begin();
-             it != p_Module.get_scripts().end();) {
-          ScriptAsset i_Script = *it;
-          if (!i_Script.is_alive()) {
-            it = p_Module.get_scripts().erase(it);
-            continue;
-          }
-          if (!Util::FileIO::file_exists_sync(
-                  i_Script.get_full_path().c_str())) {
-            i_Script.destroy();
-            it = p_Module.get_scripts().erase(it);
-            continue;
-          }
-
-          Util::String i_SourceCode;
-          LOW_ASSERT(
-              load_script_to_file(i_Script.get_full_path().c_str(),
-                                  i_SourceCode),
-              "Failed to load AngelScript source code.");
-
-          int i_Result = l_AsModule->AddScriptSection(
-              "main", i_SourceCode.c_str(),
-              static_cast<unsigned int>(i_SourceCode.size()));
-          LOW_ASSERT(i_Result >= 0, "Failed to add script section.");
-          ++it;
-        }
-
-        int l_Result = l_AsModule->Build();
-        LOW_ASSERT(l_Result >= 0,
-                   "Failed to build AngelScript module.");
-
-        LOW_LOG_INFO << "Created AngelScript module '"
-                     << p_Module.get_name() << "'." << LOW_LOG_END;
-
-        p_Module.set_as_module((char *)l_AsModule);
-
-        fill_ticking_functions(p_Module);
-      }
-      */
       void build_module(Module p_Module)
       {
         LOW_LOG_DEBUG << "Building module " << p_Module.get_name()
@@ -673,9 +621,13 @@ namespace Low {
           ++it;
         }
 
+        Core::EventManager::dispatch_event(
+            N(LOW_SCRIPTING_COMPILE),
+            Util::Variant::from_handle(p_Module));
+
         l_Result = l_Builder.BuildModule();
-        LOW_ASSERT(l_Result >= 0,
-                   "Failed to build AngelScript module.");
+        LOW_ASSERT_ERROR_RETURN(
+            l_Result >= 0, "Failed to build AngelScript module.");
 
         asIScriptModule *l_AsModule = l_Builder.GetModule();
 
@@ -696,17 +648,41 @@ namespace Low {
       static void message_callback(const asSMessageInfo *p_Message,
                                    void *p_Param)
       {
-        const char *l_Type = "ERR";
-        if (p_Message->type == asMSGTYPE_WARNING) {
-          l_Type = "WARN";
-        } else if (p_Message->type == asMSGTYPE_INFORMATION) {
-          l_Type = "INFO";
+        EventMessage l_Message;
+        l_Message.type = EventType::Error;
+        if (p_Message->type == asMSGTYPE_INFORMATION) {
+          l_Message.type = EventType::Info;
+        } else if (p_Message->type == asMSGTYPE_WARNING) {
+          l_Message.type = EventType::Warn;
+        }
+        l_Message.col = p_Message->col;
+        l_Message.row = p_Message->row;
+
+        l_Message.msg = p_Message->message;
+        l_Message.msg.trim();
+
+        if (l_Message.msg.empty()) {
+          return;
         }
 
-        LOW_LOG_INFO << "[AngelScript][" << l_Type << "] "
-                     << p_Message->section << " (" << p_Message->row
-                     << ", " << p_Message->col
-                     << "): " << p_Message->message << LOW_LOG_END;
+        l_Message.script = Util::Handle::DEAD;
+
+        const Util::String l_SectionString = p_Message->section;
+
+        for (u32 i = 0; i < ScriptAsset::living_count(); ++i) {
+          ScriptAsset i_Script = ScriptAsset::living_instances()[i];
+
+          if (i_Script.get_full_path() == l_SectionString) {
+            l_Message.script = i_Script;
+            break;
+          }
+        }
+
+        Core::EventManager::dispatch_event(
+            N(LOW_SCRIPTING_MESSAGE), (u32)l_Message.type,
+            l_Message.row, l_Message.col,
+            Util::Variant(l_Message.msg),
+            Util::Variant::from_handle(l_Message.script));
       }
 
       static bool init_modules()

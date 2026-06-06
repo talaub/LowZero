@@ -459,6 +459,24 @@ namespace Low {
     static Util::String get_script_source_storage_path(
         const Util::String p_Path)
     {
+      Util::String l_NormalizedPath =
+          Util::PathHelper::normalize(p_Path);
+      Util::String l_NormalizedDataPath =
+          Util::PathHelper::normalize(Util::get_project().dataPath);
+      while (Util::StringHelper::begins_with(l_NormalizedPath, "./")) {
+        l_NormalizedPath = l_NormalizedPath.substr(2);
+      }
+      while (Util::StringHelper::begins_with(l_NormalizedDataPath,
+                                             "./")) {
+        l_NormalizedDataPath = l_NormalizedDataPath.substr(2);
+      }
+      if (!l_NormalizedDataPath.empty() &&
+          Util::StringHelper::begins_with(
+              l_NormalizedPath, l_NormalizedDataPath + "/")) {
+        return l_NormalizedPath.substr(l_NormalizedDataPath.size() +
+                                       1);
+      }
+
       std::filesystem::path l_Path(p_Path.c_str());
       std::filesystem::path l_DataPath(
           Util::get_project().dataPath.c_str());
@@ -1744,7 +1762,7 @@ namespace Low {
             if (l_Module.is_alive()) {
               l_Builder.create_script_asset(
                   p_Name, l_Module,
-                  ".vs_out/" + l_ClassName + ".as");
+                  l_Builder.get_document().output_path);
             }
 
             l_Builder.save_compile_and_build_module(l_Path);

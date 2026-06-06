@@ -8,6 +8,36 @@
 namespace Low {
   namespace Editor {
     namespace VisualScript {
+      namespace {
+        static Util::String normalize_script_source_path(
+            const Util::String &p_Path)
+        {
+          Util::String l_NormalizedPath =
+              Util::PathHelper::normalize(p_Path);
+          Util::String l_NormalizedDataPath =
+              Util::PathHelper::normalize(Util::get_project().dataPath);
+
+          while (Util::StringHelper::begins_with(l_NormalizedPath,
+                                                 "./")) {
+            l_NormalizedPath = l_NormalizedPath.substr(2);
+          }
+          while (Util::StringHelper::begins_with(
+              l_NormalizedDataPath, "./")) {
+            l_NormalizedDataPath =
+                l_NormalizedDataPath.substr(2);
+          }
+
+          if (!l_NormalizedDataPath.empty() &&
+              Util::StringHelper::begins_with(
+                  l_NormalizedPath, l_NormalizedDataPath + "/")) {
+            return l_NormalizedPath.substr(
+                l_NormalizedDataPath.size() + 1);
+          }
+
+          return Util::PathHelper::normalize(p_Path);
+        }
+      } // namespace
+
       ScriptAssetBuilder::ScriptAssetBuilder()
           : graph_builder(document.graph, &document.schema)
       {
@@ -48,7 +78,8 @@ namespace Low {
         script_asset.set_generator(
             Core::Scripting::AssetGenerator::VISUALSCRIPT);
         script_asset.set_module(p_Module);
-        script_asset.set_source_path(p_SourcePath);
+        script_asset.set_source_path(
+            normalize_script_source_path(p_SourcePath));
 
         script_asset_sidecar_path = Util::get_project().assetCachePath;
         script_asset_sidecar_path += "/";

@@ -2,6 +2,8 @@
 
 #include "LowCoreCflatScripting.h"
 
+#include "LowCoreScriptModule.h"
+#include "LowCoreScripting.h"
 #include "LowUtilContainers.h"
 
 namespace Low {
@@ -11,12 +13,11 @@ namespace Low {
       ScriptingErrorList();
       void render(float p_Delta);
 
-      void error_callback(const Core::Scripting::Error &p_Error);
-      void compilation_callback(
-          const Core::Scripting::Compilation &p_Compilation);
+      void msg_callback(const Core::Scripting::EventMessage &p_Msg);
+      void compilation_callback(const Core::ScriptModule p_Module);
 
     private:
-      Util::List<Core::Scripting::Error> m_Errors;
+      Util::List<Core::Scripting::EventMessage> m_Messages;
     };
   } // namespace Editor
 } // namespace Low

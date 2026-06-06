@@ -4,10 +4,28 @@
 
 #include "LowCoreScriptModule.h"
 #include "LowCoreScriptClassInstance.h"
+#include <vulkan/vulkan_core.h>
+#include "LowCoreScriptAsset.h"
 
 namespace Low {
   namespace Core {
     namespace Scripting {
+      enum class EventType
+      {
+        Error,
+        Info,
+        Warn
+      };
+
+      struct EventMessage
+      {
+        EventType type;
+        int col;
+        int row;
+        Util::String msg;
+        ScriptAsset script;
+      };
+
       void LOW_CORE_API initialize_as();
       void LOW_CORE_API cleanup_as();
       void LOW_CORE_API test_as();
