@@ -3,10 +3,24 @@
 
 #include "LowUtilAssert.h"
 
+#include <new>
+
 #define VARIANT_DATA_SIZE sizeof(Math::Vector4)
 
 namespace Low {
   namespace Util {
+    namespace {
+      static String *variant_string_data(List<u8> &p_Data)
+      {
+        return (String *)p_Data.data();
+      }
+
+      static const String *variant_string_data(const List<u8> &p_Data)
+      {
+        return (const String *)p_Data.data();
+      }
+    } // namespace
+
     Variant::~Variant()
     {
       wipe_data();
@@ -72,7 +86,23 @@ namespace Low {
     Variant::Variant(String p_Value) : m_Type(VariantType::String)
     {
       m_DynamicData.resize(sizeof(String));
-      *((String *)m_DynamicData.data()) = p_Value;
+      new (variant_string_data(m_DynamicData)) String(p_Value);
+    }
+    Variant::Variant(const Variant &p_Value)
+        : m_Type(VariantType::Int32)
+    {
+      m_Int32 = 0;
+      *this = p_Value;
+    }
+    Variant::Variant(Variant &&p_Value) noexcept
+        : m_Type(VariantType::Int32)
+    {
+      m_Int32 = 0;
+      m_Type = p_Value.m_Type;
+      memcpy(&m_Bool, &p_Value.m_Bool, VARIANT_DATA_SIZE);
+      m_DynamicData.swap(p_Value.m_DynamicData);
+      p_Value.m_Type = VariantType::Int32;
+      p_Value.m_Int32 = 0;
     }
 
     Variant &Variant::operator=(const bool p_Value)
@@ -163,17 +193,29 @@ namespace Low {
 
       return *this;
     }
+    Variant &Variant::operator=(const Handle p_Value)
+    {
+      wipe_data();
+      m_Type = VariantType::Handle;
+      m_Uint64 = p_Value.get_id();
+
+      return *this;
+    }
     Variant &Variant::operator=(const String p_Value)
     {
       wipe_data();
       m_Type = VariantType::String;
       m_DynamicData.resize(sizeof(String));
-      *((String *)m_DynamicData.data()) = p_Value;
+      new (variant_string_data(m_DynamicData)) String(p_Value);
 
       return *this;
     }
     Variant &Variant::operator=(const Variant &p_Value)
     {
+      if (this == &p_Value) {
+        return *this;
+      }
+
       wipe_data();
       if (p_Value.m_Type == VariantType::String) {
         *this = p_Value.as_string();
@@ -181,6 +223,21 @@ namespace Low {
         m_Type = p_Value.m_Type;
         memcpy(&m_Bool, &p_Value.m_Bool, VARIANT_DATA_SIZE);
       }
+
+      return *this;
+    }
+    Variant &Variant::operator=(Variant &&p_Value) noexcept
+    {
+      if (this == &p_Value) {
+        return *this;
+      }
+
+      wipe_data();
+      m_Type = p_Value.m_Type;
+      memcpy(&m_Bool, &p_Value.m_Bool, VARIANT_DATA_SIZE);
+      m_DynamicData.swap(p_Value.m_DynamicData);
+      p_Value.m_Type = VariantType::Int32;
+      p_Value.m_Int32 = 0;
 
       return *this;
     }
@@ -332,14 +389,14 @@ namespace Low {
     {
       _LOW_ASSERT(m_Type == VariantType::String);
 
-      return *(String *)m_DynamicData.data();
+      return *variant_string_data(m_DynamicData);
     }
 
     void Variant::wipe_data()
     {
       if (!m_DynamicData.empty()) {
         if (m_Type == VariantType::String) {
-          ((String *)m_DynamicData.data())->clear();
+          variant_string_data(m_DynamicData)->~String();
         }
 
         m_DynamicData.clear();

@@ -64,6 +64,8 @@ namespace Low {
       Variant(Handle p_Value);
       Variant(Name p_Value);
       Variant(String p_Value);
+      Variant(const Variant &p_Value);
+      Variant(Variant &&p_Value) noexcept;
 
       ~Variant();
 
@@ -81,6 +83,7 @@ namespace Low {
       Variant &operator=(const Handle p_Value);
       Variant &operator=(const String p_Value);
       Variant &operator=(const Variant &p_Value);
+      Variant &operator=(Variant &&p_Value) noexcept;
 
       bool operator==(const Variant &p_Other) const;
       bool operator!=(const Variant &p_Other) const;
@@ -116,6 +119,10 @@ namespace Low {
 
     static_assert(std::is_copy_assignable_v<Low::Util::Variant>,
                   "Variant must be copy-assignable");
+    static_assert(std::is_copy_constructible_v<Low::Util::Variant>,
+                  "Variant must be copy-constructible");
+    static_assert(std::is_move_constructible_v<Low::Util::Variant>,
+                  "Variant must be move-constructible");
     namespace Serial {
       void LOW_EXPORT serialize_variant(Node &p_Node,
                                         Low::Util::Variant p_Variant);
