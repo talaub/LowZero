@@ -22,6 +22,14 @@ namespace Low {
       g_Primitives.unitIcoSphere = create_icosphere(1.0f, 1);
       g_Primitives.unitIcoSphere.set_unloadable(true);
       ResourceManager::load_mesh(g_Primitives.unitIcoSphere);
+
+      g_Primitives.unitCylinder = create_cylinder(1.0f, 1.0f);
+      g_Primitives.unitCylinder.set_unloadable(true);
+      ResourceManager::load_mesh(g_Primitives.unitCylinder);
+
+      g_Primitives.unitCapsule = create_capsule(1.0f, 1.0f);
+      g_Primitives.unitCapsule.set_unloadable(true);
+      ResourceManager::load_mesh(g_Primitives.unitCapsule);
     }
 
     Primitives &get_primitives()
@@ -442,6 +450,295 @@ namespace Low {
       return create_mesh(
           N(IcoSphere),
           Util::make_fixed_unique_id("renderer.primitives.icosphere"),
+          l_Vertices, l_Indices);
+    }
+
+    Mesh create_cylinder(const float p_Radius, const float p_Height)
+    {
+      constexpr u32 l_Segments = 32;
+
+      const float l_Radius = glm::max(p_Radius, 0.0f);
+      const float l_Height = glm::max(p_Height, 0.0f);
+      const float l_HalfHeight = l_Height * 0.5f;
+
+      Util::List<Util::Resource::Vertex> l_Vertices;
+      Util::List<u32> l_Indices;
+      l_Vertices.reserve((l_Segments * 4) + 2);
+      l_Indices.reserve(l_Segments * 12);
+
+      for (u32 i_Segment = 0; i_Segment < l_Segments; ++i_Segment) {
+        const float l_U =
+            static_cast<float>(i_Segment) /
+            static_cast<float>(l_Segments);
+        const float l_Angle = l_U * glm::pi<float>() * 2.0f;
+        const float l_Cos = glm::cos(l_Angle);
+        const float l_Sin = glm::sin(l_Angle);
+        const Math::Vector3 l_Normal(l_Cos, 0.0f, l_Sin);
+        const Math::Vector3 l_Tangent(-l_Sin, 0.0f, l_Cos);
+        const Math::Vector3 l_Bitangent(0.0f, 1.0f, 0.0f);
+
+        l_Vertices.push_back(
+            {Math::Vector3(l_Cos * l_Radius, l_HalfHeight,
+                           l_Sin * l_Radius),
+             Math::Vector2(l_U, 0.0f), l_Normal, l_Tangent,
+             l_Bitangent});
+        l_Vertices.push_back(
+            {Math::Vector3(l_Cos * l_Radius, -l_HalfHeight,
+                           l_Sin * l_Radius),
+             Math::Vector2(l_U, 1.0f), l_Normal, l_Tangent,
+             l_Bitangent});
+      }
+
+      for (u32 i_Segment = 0; i_Segment < l_Segments; ++i_Segment) {
+        const u32 l_NextSegment = (i_Segment + 1) % l_Segments;
+        const u32 l_TopA = i_Segment * 2;
+        const u32 l_BottomA = l_TopA + 1;
+        const u32 l_TopB = l_NextSegment * 2;
+        const u32 l_BottomB = l_TopB + 1;
+
+        l_Indices.push_back(l_TopA);
+        l_Indices.push_back(l_TopB);
+        l_Indices.push_back(l_BottomA);
+
+        l_Indices.push_back(l_TopB);
+        l_Indices.push_back(l_BottomB);
+        l_Indices.push_back(l_BottomA);
+      }
+
+      const u32 l_TopCenter = static_cast<u32>(l_Vertices.size());
+      l_Vertices.push_back(
+          {Math::Vector3(0.0f, l_HalfHeight, 0.0f),
+           Math::Vector2(0.5f, 0.5f),
+           Math::Vector3(0.0f, 1.0f, 0.0f),
+           Math::Vector3(1.0f, 0.0f, 0.0f),
+           Math::Vector3(0.0f, 0.0f, -1.0f)});
+
+      const u32 l_TopStart = static_cast<u32>(l_Vertices.size());
+      for (u32 i_Segment = 0; i_Segment < l_Segments; ++i_Segment) {
+        const float l_U =
+            static_cast<float>(i_Segment) /
+            static_cast<float>(l_Segments);
+        const float l_Angle = l_U * glm::pi<float>() * 2.0f;
+        const float l_Cos = glm::cos(l_Angle);
+        const float l_Sin = glm::sin(l_Angle);
+
+        l_Vertices.push_back(
+            {Math::Vector3(l_Cos * l_Radius, l_HalfHeight,
+                           l_Sin * l_Radius),
+             Math::Vector2((l_Cos * 0.5f) + 0.5f,
+                           (l_Sin * -0.5f) + 0.5f),
+             Math::Vector3(0.0f, 1.0f, 0.0f),
+             Math::Vector3(1.0f, 0.0f, 0.0f),
+             Math::Vector3(0.0f, 0.0f, -1.0f)});
+      }
+
+      const u32 l_BottomCenter = static_cast<u32>(l_Vertices.size());
+      l_Vertices.push_back(
+          {Math::Vector3(0.0f, -l_HalfHeight, 0.0f),
+           Math::Vector2(0.5f, 0.5f),
+           Math::Vector3(0.0f, -1.0f, 0.0f),
+           Math::Vector3(1.0f, 0.0f, 0.0f),
+           Math::Vector3(0.0f, 0.0f, 1.0f)});
+
+      const u32 l_BottomStart = static_cast<u32>(l_Vertices.size());
+      for (u32 i_Segment = 0; i_Segment < l_Segments; ++i_Segment) {
+        const float l_U =
+            static_cast<float>(i_Segment) /
+            static_cast<float>(l_Segments);
+        const float l_Angle = l_U * glm::pi<float>() * 2.0f;
+        const float l_Cos = glm::cos(l_Angle);
+        const float l_Sin = glm::sin(l_Angle);
+
+        l_Vertices.push_back(
+            {Math::Vector3(l_Cos * l_Radius, -l_HalfHeight,
+                           l_Sin * l_Radius),
+             Math::Vector2((l_Cos * 0.5f) + 0.5f,
+                           (l_Sin * 0.5f) + 0.5f),
+             Math::Vector3(0.0f, -1.0f, 0.0f),
+             Math::Vector3(1.0f, 0.0f, 0.0f),
+             Math::Vector3(0.0f, 0.0f, 1.0f)});
+      }
+
+      for (u32 i_Segment = 0; i_Segment < l_Segments; ++i_Segment) {
+        const u32 l_NextSegment = (i_Segment + 1) % l_Segments;
+
+        l_Indices.push_back(l_TopCenter);
+        l_Indices.push_back(l_TopStart + l_NextSegment);
+        l_Indices.push_back(l_TopStart + i_Segment);
+
+        l_Indices.push_back(l_BottomCenter);
+        l_Indices.push_back(l_BottomStart + i_Segment);
+        l_Indices.push_back(l_BottomStart + l_NextSegment);
+      }
+
+      return create_mesh(
+          N(Cylinder),
+          Util::make_fixed_unique_id("renderer.primitives.cylinder"),
+          l_Vertices, l_Indices);
+    }
+
+    Mesh create_capsule(const float p_Radius, const float p_Height)
+    {
+      constexpr u32 l_Segments = 32;
+      constexpr u32 l_HemisphereRings = 8;
+
+      const float l_Radius = glm::max(p_Radius, 0.0f);
+      const float l_MinHeight = l_Radius * 2.0f;
+      const float l_Height = glm::max(p_Height, l_MinHeight);
+      const float l_CylinderHeight = l_Height - l_MinHeight;
+      const float l_HalfCylinderHeight = l_CylinderHeight * 0.5f;
+      const float l_HalfHeight = l_Height * 0.5f;
+
+      Util::List<Util::Resource::Vertex> l_Vertices;
+      Util::List<u32> l_Indices;
+      l_Vertices.reserve((l_HemisphereRings * 2 + 1) * l_Segments +
+                         2);
+      l_Indices.reserve((l_HemisphereRings * 2) * l_Segments * 6);
+
+      struct Ring
+      {
+        u32 start;
+        u32 count;
+      };
+
+      Util::List<Ring> l_Rings;
+      l_Rings.reserve(l_HemisphereRings * 2 + 1);
+
+      auto l_AddVertex =
+          [&](const Math::Vector3 &p_Position,
+              const Math::Vector3 &p_Normal, const float p_U,
+              const float p_V) -> u32 {
+        Math::Vector3 l_Normal = glm::normalize(p_Normal);
+        Math::Vector3 l_Up(0.0f, 1.0f, 0.0f);
+        if (glm::abs(glm::dot(l_Up, l_Normal)) > 0.99f) {
+          l_Up = Math::Vector3(1.0f, 0.0f, 0.0f);
+        }
+
+        Math::Vector3 l_Tangent =
+            glm::normalize(glm::cross(l_Up, l_Normal));
+        Math::Vector3 l_Bitangent =
+            glm::normalize(glm::cross(l_Normal, l_Tangent));
+
+        Util::Resource::Vertex l_Vertex{};
+        l_Vertex.position = p_Position;
+        l_Vertex.texture_coordinates = Math::Vector2(p_U, p_V);
+        l_Vertex.normal = l_Normal;
+        l_Vertex.tangent = l_Tangent;
+        l_Vertex.bitangent = l_Bitangent;
+
+        const u32 l_Index = static_cast<u32>(l_Vertices.size());
+        l_Vertices.push_back(l_Vertex);
+        return l_Index;
+      };
+
+      auto l_VFromY = [&](const float p_Y) -> float {
+        if (l_Height <= 0.0f) {
+          return 0.0f;
+        }
+        return 1.0f - ((p_Y + l_HalfHeight) / l_Height);
+      };
+
+      const u32 l_TopPole = l_AddVertex(
+          Math::Vector3(0.0f, l_HalfHeight, 0.0f),
+          Math::Vector3(0.0f, 1.0f, 0.0f), 0.5f, 0.0f);
+
+      for (u32 i_Ring = 1; i_Ring <= l_HemisphereRings; ++i_Ring) {
+        const float l_Theta =
+            (glm::pi<float>() * 0.5f * static_cast<float>(i_Ring)) /
+            static_cast<float>(l_HemisphereRings);
+        const float l_RingRadius = glm::sin(l_Theta) * l_Radius;
+        const float l_NormalY = glm::cos(l_Theta);
+        const float l_Y = l_HalfCylinderHeight + l_NormalY * l_Radius;
+
+        Ring l_Ring{static_cast<u32>(l_Vertices.size()), l_Segments};
+        for (u32 i_Segment = 0; i_Segment < l_Segments; ++i_Segment) {
+          const float l_U =
+              static_cast<float>(i_Segment) /
+              static_cast<float>(l_Segments);
+          const float l_Angle = l_U * glm::pi<float>() * 2.0f;
+          const float l_Cos = glm::cos(l_Angle);
+          const float l_Sin = glm::sin(l_Angle);
+          const Math::Vector3 l_Normal(l_Cos * glm::sin(l_Theta),
+                                       l_NormalY,
+                                       l_Sin * glm::sin(l_Theta));
+          const Math::Vector3 l_Position(l_Cos * l_RingRadius, l_Y,
+                                         l_Sin * l_RingRadius);
+          l_AddVertex(l_Position, l_Normal, l_U, l_VFromY(l_Y));
+        }
+        l_Rings.push_back(l_Ring);
+      }
+
+      for (u32 i_Ring = 1; i_Ring <= l_HemisphereRings; ++i_Ring) {
+        const float l_Theta =
+            (glm::pi<float>() * 0.5f) +
+            (glm::pi<float>() * 0.5f * static_cast<float>(i_Ring)) /
+                static_cast<float>(l_HemisphereRings);
+        const float l_RingRadius = glm::sin(l_Theta) * l_Radius;
+        const float l_NormalY = glm::cos(l_Theta);
+        const float l_Y = -l_HalfCylinderHeight + l_NormalY * l_Radius;
+
+        Ring l_Ring{static_cast<u32>(l_Vertices.size()), l_Segments};
+        for (u32 i_Segment = 0; i_Segment < l_Segments; ++i_Segment) {
+          const float l_U =
+              static_cast<float>(i_Segment) /
+              static_cast<float>(l_Segments);
+          const float l_Angle = l_U * glm::pi<float>() * 2.0f;
+          const float l_Cos = glm::cos(l_Angle);
+          const float l_Sin = glm::sin(l_Angle);
+          const Math::Vector3 l_Normal(l_Cos * glm::sin(l_Theta),
+                                       l_NormalY,
+                                       l_Sin * glm::sin(l_Theta));
+          const Math::Vector3 l_Position(l_Cos * l_RingRadius, l_Y,
+                                         l_Sin * l_RingRadius);
+          l_AddVertex(l_Position, l_Normal, l_U, l_VFromY(l_Y));
+        }
+        l_Rings.push_back(l_Ring);
+      }
+
+      const u32 l_BottomPole = l_AddVertex(
+          Math::Vector3(0.0f, -l_HalfHeight, 0.0f),
+          Math::Vector3(0.0f, -1.0f, 0.0f), 0.5f, 1.0f);
+
+      for (u32 i_Segment = 0; i_Segment < l_Segments; ++i_Segment) {
+        const u32 l_NextSegment = (i_Segment + 1) % l_Segments;
+        const Ring &l_TopRing = l_Rings[0];
+        l_Indices.push_back(l_TopPole);
+        l_Indices.push_back(l_TopRing.start + l_NextSegment);
+        l_Indices.push_back(l_TopRing.start + i_Segment);
+      }
+
+      for (u32 i_Ring = 0; i_Ring + 1 < l_Rings.size(); ++i_Ring) {
+        const Ring &l_Upper = l_Rings[i_Ring];
+        const Ring &l_Lower = l_Rings[i_Ring + 1];
+
+        for (u32 i_Segment = 0; i_Segment < l_Segments; ++i_Segment) {
+          const u32 l_NextSegment = (i_Segment + 1) % l_Segments;
+          const u32 l_UpperA = l_Upper.start + i_Segment;
+          const u32 l_UpperB = l_Upper.start + l_NextSegment;
+          const u32 l_LowerA = l_Lower.start + i_Segment;
+          const u32 l_LowerB = l_Lower.start + l_NextSegment;
+
+          l_Indices.push_back(l_UpperA);
+          l_Indices.push_back(l_UpperB);
+          l_Indices.push_back(l_LowerA);
+
+          l_Indices.push_back(l_UpperB);
+          l_Indices.push_back(l_LowerB);
+          l_Indices.push_back(l_LowerA);
+        }
+      }
+
+      const Ring &l_BottomRing = l_Rings[l_Rings.size() - 1];
+      for (u32 i_Segment = 0; i_Segment < l_Segments; ++i_Segment) {
+        const u32 l_NextSegment = (i_Segment + 1) % l_Segments;
+        l_Indices.push_back(l_BottomRing.start + i_Segment);
+        l_Indices.push_back(l_BottomRing.start + l_NextSegment);
+        l_Indices.push_back(l_BottomPole);
+      }
+
+      return create_mesh(
+          N(Capsule),
+          Util::make_fixed_unique_id("renderer.primitives.capsule"),
           l_Vertices, l_Indices);
     }
   } // namespace Renderer

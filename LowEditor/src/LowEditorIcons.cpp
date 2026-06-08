@@ -18,9 +18,11 @@ namespace Low {
       static const Util::Name l_Sun = N(sun);
       static const Util::Name l_Bulb = N(bulb);
       static const Util::Name l_Cylinder = N(cylinder);
+      static const Util::Name l_Sphere = N(sphere);
       static const Util::Name l_Floppy = N(floppy);
       static const Util::Name l_Robot = N(robot);
       static const Util::Name l_Skeleton = N(skeleton);
+      static const Util::Name l_Person = N(person);
 
       if (p_IconName == l_Cube) {
         return LOW_EDITOR_ICON_CUBE;
@@ -50,12 +52,16 @@ namespace Low {
         return LOW_EDITOR_ICON_BULB;
       } else if (p_IconName == l_Cylinder) {
         return LOW_EDITOR_ICON_CYLINDER;
+      } else if (p_IconName == l_Sphere) {
+        return LOW_EDITOR_ICON_SPHERE;
       } else if (p_IconName == l_Floppy) {
         return LOW_EDITOR_ICON_FLOPPY;
       } else if (p_IconName == l_Robot) {
         return LOW_EDITOR_ICON_ROBOT;
       } else if (p_IconName == l_Skeleton) {
         return LOW_EDITOR_ICON_SKELETON;
+      } else if (p_IconName == l_Person) {
+        return LOW_EDITOR_ICON_PERSON;
       }
 
       return LOW_EDITOR_ICON_MISSING;

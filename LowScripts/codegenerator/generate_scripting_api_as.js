@@ -334,9 +334,15 @@ function generate_type_api(p_Type, db) {
       }
 
       if (i_Prop.setter_exposed_scripting) {
-        t += line(
-          `r = p_Engine->RegisterObjectMethod("${p_Type.scripting_name}", "void set_${i_PropName}(${i_Prop.type.scripting}) property", asMETHOD(${l_TypeString}, ${i_Prop.setter_name}), asCALL_THISCALL);`,
-        );
+        if (i_Prop.type.handle) {
+          t += line(
+            `r = p_Engine->RegisterObjectMethod("${p_Type.scripting_name}", "void set_${i_PropName}(${i_Prop.type.scripting}) property", asMETHOD(${l_TypeString}, ${i_Prop.setter_name}), asCALL_THISCALL);`,
+          );
+        } else {
+          t += line(
+            `r = p_Engine->RegisterObjectMethod("${p_Type.scripting_name}", "void set_${i_PropName}(${i_Prop.type.scripting}) property", asMETHODPR(${l_TypeString}, ${i_Prop.setter_name}, (${i_Prop.type.string}), void), asCALL_THISCALL);`,
+          );
+        }
         t += line(
           `LOW_ASSERT(r >= 0, "Failed to expose property setter for ${i_PropName} of ${l_TypeString}.");`,
         );

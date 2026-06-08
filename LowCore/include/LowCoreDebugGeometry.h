@@ -35,6 +35,10 @@ namespace Low {
                                         Math::Color p_Color,
                                         bool p_DepthTest,
                                         bool p_Wireframe);
+      LOW_CORE_API void render_capsule(Math::Cylinder p_Capsule,
+                                       Math::Color p_Color,
+                                       bool p_DepthTest,
+                                       bool p_Wireframe);
       LOW_CORE_API void render_cone(Math::Cone p_Cone,
                                     Math::Color p_Color,
                                     bool p_DepthTest,

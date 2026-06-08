@@ -1,23 +1,15 @@
 #include "LowCorePhysics.h"
 
-#include "LowMath.h"
-
-#include "LowUtilAssert.h"
-#include "LowUtilLogger.h"
-#include "LowUtilProfiler.h"
-#include "LowUtilConfig.h"
-
-#include "LowCorePhysicsObjects.h"
-#include "LowCoreRigidbody.h"
-#include "LowCoreTransform.h"
-#include "LowCoreDebugGeometry.h"
-
-#include "physx/include/PxPhysics.h"
-#include "physx/include/PxPhysicsAPI.h"
-
 namespace Low {
   namespace Core {
     namespace Physics {
+
+      bool raycast(Math::Vector3 p_Origin, Math::Vector3 p_Direction,
+                   float p_MaxDistance, RaycastHit &p_Hit)
+      {
+        return false;
+      }
+
     } // namespace Physics
-  }   // namespace Core
+  } // namespace Core
 } // namespace Low

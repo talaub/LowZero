@@ -235,41 +235,200 @@ types:
       icon: physics
     header_imports:
       - LowMath.h
-      - LowCorePhysicsObjects.h
-    source_imports:
-      - LowCorePhysicsSystem.h
-      - LowCoreTransform.h
+      - LowCorePhysicsBody.h
+      - LowCorePhysicsBodyMotionType.h
     properties:
-      fixed:
-        type: bool
+      motion_type:
+        type: Low::Core::Physics::BodyMotionType
+        enum: true
         editor_editable: true
+        dirty_flag: dirty
       gravity:
         type: bool
         editor_editable: true
+        dirty_flag: dirty
       mass:
         type: float
         expose_scripting: true
         editor_editable: true
+        dirty_flag: dirty
+      body:
+        type: Low::Core::Physics::Body
+        handle: true
+        private_setter: true
+        skip_serialization: true
+        skip_deserialization: true
       initialized:
         type: bool
         private_setter: true
         skip_serialization: true
         skip_deserialization: true
         expose_scripting: true
-      rigid_dynamic:
-        type: PhysicsRigidDynamic
-        no_setter: true
-        skip_serialization: true
-        skip_deserialization: true
-      physics_shape:
-        type: PhysicsShape
-        private_getter: true
-        no_setter: true
-        skip_serialization: true
-        skip_deserialization: true
-      shape:
-        type: Math::Shape
+    functions:
+      rebuild:
+        return_type: void
+
+  BoxCollider:
+    component: true
+    scripting_expose: false
+    editor:
+      icon: cube
+    header_imports:
+      - LowMath.h
+      - LowCorePhysicsShape.h
+      - LowCorePhysicsBody.h
+    properties:
+      center:
+        type: Low::Math::Vector3
         editor_editable: true
+        dirty_flag: dirty
+      half_extents:
+        type: Low::Math::Vector3
+        editor_editable: true
+        dirty_flag: dirty
+      trigger:
+        type: bool
+        editor_editable: true
+      shape:
+        type: Low::Core::Physics::Shape
+        handle: true
+        private_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+      static_body:
+        type: Low::Core::Physics::Body
+        handle: true
+        private_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+      initialized:
+        type: bool
+        private_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+    functions:
+      rebuild:
+        return_type: void
+
+  SphereCollider:
+    component: true
+    scripting_expose: false
+    editor:
+      icon: sphere
+    header_imports:
+      - LowMath.h
+      - LowCorePhysicsShape.h
+      - LowCorePhysicsBody.h
+    properties:
+      center:
+        type: Low::Math::Vector3
+        editor_editable: true
+        dirty_flag: dirty
+      radius:
+        type: float
+        editor_editable: true
+        dirty_flag: dirty
+      trigger:
+        type: bool
+        editor_editable: true
+      shape:
+        type: Low::Core::Physics::Shape
+        handle: true
+        private_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+      static_body:
+        type: Low::Core::Physics::Body
+        handle: true
+        private_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+      initialized:
+        type: bool
+        private_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+    functions:
+      rebuild:
+        return_type: void
+
+  CharacterController:
+    component: true
+    scripting_expose: true
+    editor:
+      icon: person
+    header_imports:
+      - LowMath.h
+      - LowCorePhysicsCapsuleController.h
+    properties:
+      center:
+        type: Low::Math::Vector3
+        editor_editable: true
+        expose_scripting: true
+        dirty_flag: dirty
+      height:
+        type: float
+        editor_editable: true
+        expose_scripting: true
+        dirty_flag: dirty
+      radius:
+        type: float
+        editor_editable: true
+        expose_scripting: true
+        dirty_flag: dirty
+      skin_width:
+        type: float
+        editor_editable: true
+        expose_scripting: true
+        dirty_flag: dirty
+      slope_limit:
+        type: float
+        editor_editable: true
+        expose_scripting: true
+        dirty_flag: dirty
+      step_offset:
+        type: float
+        editor_editable: true
+        expose_scripting: true
+        dirty_flag: dirty
+      velocity:
+        type: Low::Math::Vector3
+        editor_editable: false
+        expose_scripting: true
+        skip_serialization: true
+        skip_deserialization: true
+      capsule_controller:
+        type: Low::Core::Physics::CapsuleController
+        handle: true
+        private_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+      initialized:
+        type: bool
+        private_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+    virtual_properties:
+      grounded:
+        type: bool
+        editor_editable: false
+        expose_scripting: true
+        no_setter: true
+    functions:
+      move:
+        return_type: void
+        expose_scripting: true
+        parameters:
+          - name: delta
+            type: Low::Math::Vector3
+      teleport:
+        return_type: void
+        expose_scripting: true
+        parameters:
+          - name: position
+            type: Low::Math::Vector3
+      rebuild:
+        return_type: void
 
   PrefabInstance:
     component: true

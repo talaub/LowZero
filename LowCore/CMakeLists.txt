@@ -10,6 +10,10 @@ file(GLOB_RECURSE ANIMATION_SOURCES "animation/src/*.cpp")
 file(GLOB_RECURSE ANIMATION_INCLUDES "animation/include/*.h")
 file(GLOB_RECURSE ANIMATION_PRIVATE_INCLUDES
      "animation/private_include/*.h")
+file(GLOB_RECURSE PHYSICS_SOURCES "physics/src/*.cpp")
+file(GLOB_RECURSE PHYSICS_INCLUDES "physics/include/*.h")
+file(GLOB_RECURSE PHYSICS_PRIVATE_INCLUDES
+     "physics/private_include/*.h")
 
 file(GLOB CFLAT_SOURCES "${CFLAT_PATH}/*.cpp")
 file(GLOB CFLAT_INCLUDES "${CFLAT_PATH}/*.h")
@@ -49,6 +53,47 @@ target_link_libraries(LowCoreAnimation PRIVATE
   LowRenderer2
 )
 
+add_library(LowCorePhysics STATIC
+  ${PHYSICS_SOURCES}
+  ${PHYSICS_INCLUDES}
+  ${PHYSICS_PRIVATE_INCLUDES}
+)
+
+set_target_properties(LowCorePhysics PROPERTIES
+  POSITION_INDEPENDENT_CODE ON
+)
+
+add_dependencies(LowCorePhysics
+  LowUtil
+  LowMath
+  LowRenderer2
+  Jolt
+)
+
+source_group("Physics Source Files" FILES ${PHYSICS_SOURCES})
+source_group("Physics Header Files" FILES ${PHYSICS_INCLUDES})
+source_group("Physics Private Header Files"
+             FILES ${PHYSICS_PRIVATE_INCLUDES})
+
+target_include_directories(LowCorePhysics PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/physics/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/physics/private_include
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+target_compile_definitions(LowCorePhysics PRIVATE
+  lowcore_EXPORTS
+  LOW_MODULE_NAME="lowcore"
+  LOW_CORE_PHYSICS_INTERNAL
+)
+
+target_link_libraries(LowCorePhysics PRIVATE
+  LowUtil
+  LowMath
+  LowRenderer2
+  Jolt
+)
+
 
 add_library(LowCore SHARED
   ${CFLAT_SOURCES}
@@ -63,6 +108,7 @@ source_group("Cflat Header Files" FILES ${CFLAT_INCLUDES})
 
 add_dependencies(LowCore
   LowCoreAnimation
+  LowCorePhysics
   LowUtil
   LowMath
   LowRenderer2
@@ -77,6 +123,7 @@ add_dependencies(LowCore
 set(LOWCORE_INCLUDE_DIRS
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/animation/include"
+  "${CMAKE_CURRENT_SOURCE_DIR}/physics/include"
   "${CFLAT_PATH}"
 )
 
@@ -92,6 +139,7 @@ target_compile_definitions(LowCore PRIVATE
 target_include_directories(LowCore PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/animation/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/physics/include>
   $<BUILD_INTERFACE:${CFLAT_PATH}>
   $<INSTALL_INTERFACE:include>
 )
@@ -120,6 +168,7 @@ target_link_libraries(LowCore PRIVATE
   LowUtil
   LowMath
   LowRenderer2
+  LowCorePhysics
   physx
   Recast
   Detour

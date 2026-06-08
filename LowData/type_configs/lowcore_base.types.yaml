@@ -168,6 +168,10 @@ types:
       loaded:
         type: bool
         private_setter: true
+      physics_world:
+        type: Low::Core::Physics::World
+        handle: true
+        private_setter: true
     functions:
       load:
         return_type: void

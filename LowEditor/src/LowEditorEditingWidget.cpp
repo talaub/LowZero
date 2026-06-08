@@ -30,6 +30,9 @@
 #include "LowCoreDirectionalLight.h"
 #include "LowCorePointLight.h"
 #include "LowCoreRigidbody.h"
+#include "LowCoreBoxCollider.h"
+#include "LowCoreSphereCollider.h"
+#include "LowCoreCharacterController.h"
 #include "LowCoreNavmeshAgent.h"
 #include "LowCoreCamera.h"
 #include "LowCoreAnimator.h"
@@ -657,7 +660,7 @@ namespace Low {
       }
     }
 
-    static void render_rigidbody_debug_geometry(
+    static void render_collider_debug_geometry(
         float p_Delta, RenderViewWidget &p_RenderViewWidget)
     {
       LOW_SELECTION(l_SelectedHandles);
@@ -669,28 +672,65 @@ namespace Low {
           continue;
         }
 
-        if (!i_Entity.has_component(
-                Core::Component::Rigidbody::type_id())) {
-          continue;
-        }
-
         Core::Component::Transform l_Transform =
             i_Entity.get_transform();
-        Core::Component::Rigidbody l_Rigidbody =
-            i_Entity.get_component(
-                Core::Component::Rigidbody::type_id());
 
         Math::Color l_DrawColor(0.0f, 1.0f, 0.0f, 1.0f);
+        Math::Color l_CharacterControllerDrawColor(0.0f, 0.75f, 1.0f,
+                                                   1.0f);
 
-        if (l_Rigidbody.get_shape().type == Math::ShapeType::BOX) {
-          Math::Box l_Box = l_Rigidbody.get_shape().box;
+        if (i_Entity.has_component(
+                Core::Component::BoxCollider::type_id())) {
+          Core::Component::BoxCollider l_BoxCollider =
+              i_Entity.get_component(
+                  Core::Component::BoxCollider::type_id());
+
+          Math::Box l_Box;
+          Math::Vector3 l_WorldScale = l_Transform.get_world_scale();
           l_Box.position =
-              l_Rigidbody.get_rigid_dynamic().get_position();
-          l_Box.rotation =
-              l_Rigidbody.get_rigid_dynamic().get_rotation();
+              l_Transform.get_world_position() +
+              (l_Transform.get_world_rotation() *
+               (l_BoxCollider.get_center() * l_WorldScale));
+          l_Box.rotation = l_Transform.get_world_rotation();
+          l_Box.halfExtents =
+              l_BoxCollider.get_half_extents() * l_WorldScale;
 
           Core::DebugGeometry::render_box(l_Box, l_DrawColor, false,
                                           true);
+        }
+
+        if (i_Entity.has_component(
+                Core::Component::SphereCollider::type_id())) {
+          Core::Component::SphereCollider l_SphereCollider =
+              i_Entity.get_component(
+                  Core::Component::SphereCollider::type_id());
+
+          Math::Sphere l_Sphere;
+          l_Sphere.position = l_Transform.get_world_position() +
+                              (l_Transform.get_world_rotation() *
+                               l_SphereCollider.get_center());
+          l_Sphere.radius = l_SphereCollider.get_radius();
+
+          Core::DebugGeometry::render_sphere(l_Sphere, l_DrawColor,
+                                             false, true);
+        }
+
+        if (i_Entity.has_component(
+                Core::Component::CharacterController::type_id())) {
+          Core::Component::CharacterController l_CharacterController =
+              i_Entity.get_component(
+                  Core::Component::CharacterController::type_id());
+
+          Math::Cylinder l_Capsule;
+          l_Capsule.position = l_Transform.get_world_position() +
+                               (l_Transform.get_world_rotation() *
+                                l_CharacterController.get_center());
+          l_Capsule.rotation = l_Transform.get_world_rotation();
+          l_Capsule.radius = l_CharacterController.get_radius();
+          l_Capsule.height = l_CharacterController.get_height();
+
+          Core::DebugGeometry::render_capsule(
+              l_Capsule, l_CharacterControllerDrawColor, false, true);
         }
       }
     }
@@ -876,7 +916,7 @@ namespace Low {
         return;
       }
 
-      render_rigidbody_debug_geometry(p_Delta, p_RenderViewWidget);
+      render_collider_debug_geometry(p_Delta, p_RenderViewWidget);
       render_navmeshagent_debug_geometry(p_Delta, p_RenderViewWidget);
       render_pointlight_debug_geometry(p_Delta, p_RenderViewWidget);
 

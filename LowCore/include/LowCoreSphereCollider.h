@@ -10,30 +10,29 @@
 #include "LowCoreEntity.h"
 
 #include "LowMath.h"
+#include "LowCorePhysicsShape.h"
 #include "LowCorePhysicsBody.h"
-#include "LowCorePhysicsBodyMotionType.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
   namespace Core {
     namespace Component {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      struct LOW_CORE_API Rigidbody : public Low::Util::Handle
+      struct LOW_CORE_API SphereCollider : public Low::Util::Handle
       {
       public:
         struct Data
         {
         public:
-          Low::Core::Physics::BodyMotionType motion_type;
-          bool gravity;
-          float mass;
-          Low::Core::Physics::Body body;
+          Low::Math::Vector3 center;
+          float radius;
+          bool trigger;
+          Low::Core::Physics::Shape shape;
+          Low::Core::Physics::Body static_body;
           bool initialized;
           Low::Core::Entity entity;
           Low::Util::UniqueId unique_id;
@@ -51,7 +50,7 @@ namespace Low {
       public:
         static Low::Util::List<Low::Util::Instances::Page *> ms_Pages;
 
-        static Low::Util::List<Rigidbody> ms_LivingInstances;
+        static Low::Util::List<SphereCollider> ms_LivingInstances;
 
         const static Low::Util::TypeIdentifier IDENTIFIER;
 
@@ -60,11 +59,11 @@ namespace Low {
           return ms_TypeId;
         }
 
-        static Rigidbody make(Low::Core::Entity p_Entity);
+        static SphereCollider make(Low::Core::Entity p_Entity);
         static Low::Util::Handle _make(Low::Util::Handle p_Entity);
-        static Rigidbody make(Low::Core::Entity p_Entity,
-                              Low::Util::UniqueId p_UniqueId);
-        explicit Rigidbody(const Rigidbody &p_Copy)
+        static SphereCollider make(Low::Core::Entity p_Entity,
+                                   Low::Util::UniqueId p_UniqueId);
+        explicit SphereCollider(const SphereCollider &p_Copy)
             : Low::Util::Handle(p_Copy.m_Id)
         {
         }
@@ -74,34 +73,35 @@ namespace Low {
         static void initialize();
         static void cleanup();
 
-        Rigidbody(u64 p_Id) : Low::Util::Handle(p_Id)
+        SphereCollider(u64 p_Id) : Low::Util::Handle(p_Id)
         {
         }
-        Rigidbody() : Low::Util::Handle()
+        SphereCollider() : Low::Util::Handle()
         {
         }
-        Rigidbody(Low::Util::Handle p_Handle)
+        SphereCollider(Low::Util::Handle p_Handle)
             : Low::Util::Handle(p_Handle.get_id())
         {
         }
 
         using Handle::operator=;
 
-        Rigidbody &operator=(const Rigidbody &) = default;
-        Rigidbody &operator=(Rigidbody &&) noexcept = default;
+        SphereCollider &operator=(const SphereCollider &) = default;
+        SphereCollider &
+        operator=(SphereCollider &&) noexcept = default;
 
         static uint32_t living_count()
         {
           return static_cast<uint32_t>(ms_LivingInstances.size());
         }
-        static Rigidbody *living_instances()
+        static SphereCollider *living_instances()
         {
           return ms_LivingInstances.data();
         }
 
-        static Rigidbody create_handle_by_index(u32 p_Index);
+        static SphereCollider create_handle_by_index(u32 p_Index);
 
-        static Rigidbody find_by_index(uint32_t p_Index);
+        static SphereCollider find_by_index(uint32_t p_Index);
         static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
         bool is_alive() const;
@@ -124,9 +124,9 @@ namespace Low {
 
         void serialize(Low::Util::Serial::Node &p_Node) const;
 
-        Rigidbody duplicate(Low::Core::Entity p_Entity) const;
-        static Rigidbody duplicate(Rigidbody p_Handle,
-                                   Low::Core::Entity p_Entity);
+        SphereCollider duplicate(Low::Core::Entity p_Entity) const;
+        static SphereCollider duplicate(SphereCollider p_Handle,
+                                        Low::Core::Entity p_Entity);
         static Low::Util::Handle
         _duplicate(Low::Util::Handle p_Handle,
                    Low::Util::Handle p_Entity);
@@ -138,29 +138,34 @@ namespace Low {
                     Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
-          Rigidbody l_Handle = p_Handle.get_id();
+          SphereCollider l_Handle = p_Handle.get_id();
           return l_Handle.is_alive();
         }
 
         static void destroy(Low::Util::Handle p_Handle)
         {
           _LOW_ASSERT(is_alive(p_Handle));
-          Rigidbody l_Rigidbody = p_Handle.get_id();
-          l_Rigidbody.destroy();
+          SphereCollider l_SphereCollider = p_Handle.get_id();
+          l_SphereCollider.destroy();
         }
 
-        Low::Core::Physics::BodyMotionType get_motion_type() const;
-        void
-        set_motion_type(Low::Core::Physics::BodyMotionType p_Value);
+        Low::Math::Vector3 get_center() const;
+        void set_center(Low::Math::Vector3 p_Value);
+        void set_center(float p_X, float p_Y, float p_Z);
+        void set_center_x(float p_Value);
+        void set_center_y(float p_Value);
+        void set_center_z(float p_Value);
 
-        bool is_gravity() const;
-        void set_gravity(bool p_Value);
-        void toggle_gravity();
+        float get_radius() const;
+        void set_radius(float p_Value);
 
-        float get_mass() const;
-        void set_mass(float p_Value);
+        bool is_trigger() const;
+        void set_trigger(bool p_Value);
+        void toggle_trigger();
 
-        Low::Core::Physics::Body get_body() const;
+        Low::Core::Physics::Shape get_shape() const;
+
+        Low::Core::Physics::Body get_static_body() const;
 
         bool is_initialized() const;
 
@@ -185,20 +190,20 @@ namespace Low {
         static u32 create_instance(u32 &p_PageIndex,
                                    u32 &p_SlotIndex);
         static u32 create_page();
-        void set_body(Low::Core::Physics::Body p_Value);
+        void set_shape(Low::Core::Physics::Shape p_Value);
+        void set_static_body(Low::Core::Physics::Body p_Value);
         void set_initialized(bool p_Value);
         void toggle_initialized();
         void set_unique_id(Low::Util::UniqueId p_Value);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
       public:
-        static Low::Util::Set<Low::Core::Component::Rigidbody>
+        static Low::Util::Set<Low::Core::Component::SphereCollider>
             ms_Dirty;
         // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
       };
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
-
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
     } // namespace Component
@@ -206,5 +211,4 @@ namespace Low {
 } // namespace Low
 
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE
-
 // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_HEADER_CODE

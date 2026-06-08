@@ -1,0 +1,167 @@
+module: LowCore
+source_path: physics/src
+header_path: physics/include
+prefix: LowCorePhysics
+namespace:
+  - Low
+  - Core
+  - Physics
+dll_macro: LOW_CORE_API
+types:
+  Shape:
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    no_auto_duplicate: true
+    private_make: true
+    header_imports:
+      - LowMath.h
+      - LowCorePhysicsWorld.h
+    properties:
+      backend_id:
+        type: uint64_t
+        private_setter: true
+      world:
+        type: World
+        handle: true
+        private_setter: true
+    functions:
+      make:
+        static: true
+        return_type: Shape
+        return_handle: true
+        parameters:
+          - name: world
+            type: World
+            handle: true
+          - name: shape
+            type: Low::Math::Shape
+
+  Body:
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    no_auto_duplicate: true
+    private_make: true
+    header_imports:
+      - LowMath.h
+      - LowCorePhysicsWorld.h
+      - LowCorePhysicsShape.h
+      - LowCorePhysicsBodyMotionType.h
+    properties:
+      backend_id:
+        type: uint64_t
+        private_setter: true
+      world:
+        type: World
+        handle: true
+        private_setter: true
+      shape:
+        type: Shape
+        handle: true
+        private_setter: true
+    virtual_properties:
+      position:
+        type: Low::Math::Vector3
+      rotation:
+        type: Low::Math::Quaternion
+      transform:
+        type: Low::Math::Matrix4x4
+      linear_velocity:
+        type: Low::Math::Vector3
+      angular_velocity:
+        type: Low::Math::Vector3
+    functions:
+      make:
+        static: true
+        return_type: Body
+        return_handle: true
+        parameters:
+          - name: world
+            type: World
+            handle: true
+          - name: shape
+            type: Shape
+            handle: true
+          - name: position
+            type: Low::Math::Vector3
+          - name: rotation
+            type: Low::Math::Quaternion
+          - name: motionType
+            type: BodyMotionType
+            enum: true
+          - name: mass
+            type: float
+          - name: gravity
+            type: bool
+
+  CapsuleController:
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    no_auto_duplicate: true
+    private_make: true
+    header_imports:
+      - LowMath.h
+      - LowCorePhysicsWorld.h
+    properties:
+      backend_id:
+        type: uint64_t
+        private_setter: true
+      world:
+        type: World
+        handle: true
+        private_setter: true
+    virtual_properties:
+      position:
+        type: Low::Math::Vector3
+      rotation:
+        type: Low::Math::Quaternion
+    functions:
+      make:
+        static: true
+        return_type: CapsuleController
+        return_handle: true
+        parameters:
+          - name: world
+            type: World
+            handle: true
+          - name: position
+            type: Low::Math::Vector3
+          - name: rotation
+            type: Low::Math::Quaternion
+          - name: height
+            type: float
+          - name: radius
+            type: float
+          - name: slopeLimit
+            type: float
+          - name: stepOffset
+            type: float
+          - name: skinWidth
+            type: float
+      move:
+        return_type: void
+        parameters:
+          - name: delta
+            type: Low::Math::Vector3
+          - name: deltaTime
+            type: float
+      is_grounded:
+        return_type: bool
+
+  World:
+    scripting_expose: true
+    scripting_name: PhysicsWorld
+    header_imports:
+      - LowMath.h
+    properties:
+      world_ptr:
+        type: void*
+        private_setter: true
+    virtual_properties:
+      gravity:
+        type: Low::Math::Vector3
+    functions:
+      simulate:
+        return_type: void
+        parameters:
+          - name: delta
+            type: float

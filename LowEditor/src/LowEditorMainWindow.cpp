@@ -57,7 +57,6 @@
 #include "LowCoreDebugGeometry.h"
 #include "LowCoreRigidbody.h"
 #include "LowCorePrefabInstance.h"
-#include "LowCorePhysicsSystem.h"
 
 #include <array>
 #include <cctype>

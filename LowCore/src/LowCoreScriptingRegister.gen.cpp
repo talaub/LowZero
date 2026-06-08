@@ -6,7 +6,9 @@
 #include "LowCoreEntity.h"
 #include "LowCoreTransform.h"
 #include "LowCoreAnimator.h"
+#include "LowCoreCharacterController.h"
 #include "LowCoreCamera.h"
+#include "LowCorePhysicsWorld.h"
 #include "LowCoreScriptModule.h"
 #include "LowCoreScriptAsset.h"
 #include "LowCoreUiWidgetAsset.h"
@@ -153,7 +155,8 @@ static void expose_LowCore_Clip(asIScriptEngine *p_Engine)
                      "Low::Core::Animation::Clip.");
   r = p_Engine->RegisterObjectMethod(
       "AnimationClip", "void set_name(Name) property",
-      asMETHOD(Low::Core::Animation::Clip, set_name),
+      asMETHODPR(Low::Core::Animation::Clip, set_name,
+                 (Low::Util::Name), void),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for name of "
                      "Low::Core::Animation::Clip.");
@@ -362,7 +365,8 @@ static void expose_LowCore_Pose(asIScriptEngine *p_Engine)
                      "Low::Core::Animation::Pose.");
   r = p_Engine->RegisterObjectMethod(
       "Pose", "void set_name(Name) property",
-      asMETHOD(Low::Core::Animation::Pose, set_name),
+      asMETHODPR(Low::Core::Animation::Pose, set_name,
+                 (Low::Util::Name), void),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for name of "
                      "Low::Core::Animation::Pose.");
@@ -541,7 +545,9 @@ static void expose_LowCore_Region(asIScriptEngine *p_Engine)
                      "Low::Core::Region.");
   r = p_Engine->RegisterObjectMethod(
       "Region", "void set_name(Name) property",
-      asMETHOD(Low::Core::Region, set_name), asCALL_THISCALL);
+      asMETHODPR(Low::Core::Region, set_name, (Low::Util::Name),
+                 void),
+      asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for name of "
                      "Low::Core::Region.");
 
@@ -727,7 +733,9 @@ static void expose_LowCore_Entity(asIScriptEngine *p_Engine)
                      "Low::Core::Entity.");
   r = p_Engine->RegisterObjectMethod(
       "Entity", "void set_name(Name) property",
-      asMETHOD(Low::Core::Entity, set_name), asCALL_THISCALL);
+      asMETHODPR(Low::Core::Entity, set_name, (Low::Util::Name),
+                 void),
+      asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for name of "
                      "Low::Core::Entity.");
   r = p_Engine->RegisterObjectMethod(
@@ -940,7 +948,8 @@ static void expose_LowCore_Transform(asIScriptEngine *p_Engine)
                      "Low::Core::Component::Transform.");
   r = p_Engine->RegisterObjectMethod(
       "Transform", "void set_parent(u64) property",
-      asMETHOD(Low::Core::Component::Transform, set_parent),
+      asMETHODPR(Low::Core::Component::Transform, set_parent,
+                 (uint64_t), void),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for parent of "
                      "Low::Core::Component::Transform.");
@@ -1136,8 +1145,8 @@ static void expose_LowCore_Animator(asIScriptEngine *p_Engine)
              "animation_progress of Low::Core::Component::Animator.");
   r = p_Engine->RegisterObjectMethod(
       "Animator", "void set_animation_progress(float) property",
-      asMETHOD(Low::Core::Component::Animator,
-               set_animation_progress),
+      asMETHODPR(Low::Core::Component::Animator,
+                 set_animation_progress, (float), void),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0,
              "Failed to expose property setter for "
@@ -1183,6 +1192,285 @@ static void expose_LowCore_Animator(asIScriptEngine *p_Engine)
   LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
   // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:ANIMATOR:EXPOSE
   // LOW_CODEGEN::END::CUSTOM:LOWCORE:ANIMATOR:EXPOSE
+}
+
+// --------------------------
+static void LowCore_CharacterController_default_construct(
+    Low::Core::Component::CharacterController *p_Memory)
+{
+  new (p_Memory) Low::Core::Component::CharacterController;
+}
+static void LowCore_CharacterController_id_construct(
+    u64 p_Id, Low::Core::Component::CharacterController *p_Memory)
+{
+  new (p_Memory) Low::Core::Component::CharacterController(p_Id);
+}
+static void LowCore_CharacterController_copy_construct(
+    const Low::Core::Component::CharacterController &p_Other,
+    Low::Core::Component::CharacterController *p_Memory)
+{
+  new (p_Memory) Low::Core::Component::CharacterController(p_Other);
+}
+static Low::Core::Component::CharacterController &
+LowCore_CharacterController_assign(
+    const Low::Core::Component::CharacterController &p_Other,
+    Low::Core::Component::CharacterController *p_Self)
+{
+  *p_Self = p_Other;
+  return *p_Self;
+}
+static void LowCore_CharacterController_destruct(
+    Low::Core::Component::CharacterController *p_Memory)
+{
+  using namespace Low::Core::Component;
+  p_Memory->~CharacterController();
+}
+static u32 LowCore_CharacterController_living_count()
+{
+  return Low::Core::Component::CharacterController::living_count();
+}
+static u16 LowCore_CharacterController_type_id()
+{
+  return Low::Core::Component::CharacterController::type_id();
+}
+static void LowCore_CharacterController_func_move(
+    Low::Core::Component::CharacterController p_This,
+    Low::Math::Vector3 p_Delta)
+{
+  p_This.move(p_Delta);
+}
+static void LowCore_CharacterController_func_teleport(
+    Low::Core::Component::CharacterController p_This,
+    Low::Math::Vector3 p_Position)
+{
+  p_This.teleport(p_Position);
+}
+static bool LowCore_CharacterController_func_is_grounded(
+    Low::Core::Component::CharacterController p_This)
+{
+  return p_This.is_grounded();
+}
+// LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:CHARACTERCONTROLLER:HELPERS
+// LOW_CODEGEN::END::CUSTOM:LOWCORE:CHARACTERCONTROLLER:HELPERS
+
+static void
+register_LowCore_CharacterController(asIScriptEngine *p_Engine)
+{
+  int r = 0;
+  r = p_Engine->RegisterObjectType(
+      "CharacterController",
+      sizeof(Low::Core::Component::CharacterController),
+      asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose "
+             "Low::Core::Component::CharacterController type.");
+}
+static void
+expose_LowCore_CharacterController(asIScriptEngine *p_Engine)
+{
+  int r = 0;
+  r = p_Engine->RegisterObjectBehaviour(
+      "CharacterController", asBEHAVE_CONSTRUCT, "void f()",
+      asFUNCTION(LowCore_CharacterController_default_construct),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose default constructor of "
+                     "Low::Core::Component::CharacterController.");
+
+  r = p_Engine->RegisterObjectBehaviour(
+      "CharacterController", asBEHAVE_CONSTRUCT, "void f(u64 id)",
+      asFUNCTION(LowCore_CharacterController_id_construct),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose id constructor of "
+                     "Low::Core::Component::CharacterController.");
+
+  r = p_Engine->RegisterObjectBehaviour(
+      "CharacterController", asBEHAVE_CONSTRUCT,
+      "void f(const CharacterController& in)",
+      asFUNCTION(LowCore_CharacterController_copy_construct),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose copy constructor of "
+                     "Low::Core::Component::CharacterController.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "CharacterController",
+      "CharacterController& opAssign(const CharacterController& in)",
+      asFUNCTION(LowCore_CharacterController_assign),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose assignment operator of "
+                     "Low::Core::Component::CharacterController.");
+
+  r = p_Engine->RegisterObjectBehaviour(
+      "CharacterController", asBEHAVE_DESTRUCT, "void f()",
+      asFUNCTION(LowCore_CharacterController_destruct),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose destructor of "
+                     "Low::Core::Component::CharacterController.");
+  r = p_Engine->RegisterObjectMethod(
+      "CharacterController", "bool get_is_alive() const property",
+      asMETHODPR(Low::Core::Component::CharacterController, is_alive,
+                 () const, bool),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose is_alive getter for "
+                     "Low::Core::Component::CharacterController.");
+  r = p_Engine->RegisterObjectMethod(
+      "CharacterController", "void destroy()",
+      asMETHODPR(Low::Core::Component::CharacterController, destroy,
+                 (), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose destroy for "
+                     "Low::Core::Component::CharacterController.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "CharacterController", "Vector3 get_center() const property",
+      asMETHOD(Low::Core::Component::CharacterController, get_center),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property getter for center of "
+                     "Low::Core::Component::CharacterController.");
+  r = p_Engine->RegisterObjectMethod(
+      "CharacterController", "void set_center(Vector3) property",
+      asMETHODPR(Low::Core::Component::CharacterController,
+                 set_center, (Low::Math::Vector3), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property setter for center of "
+                     "Low::Core::Component::CharacterController.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "CharacterController", "float get_height() const property",
+      asMETHOD(Low::Core::Component::CharacterController, get_height),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property getter for height of "
+                     "Low::Core::Component::CharacterController.");
+  r = p_Engine->RegisterObjectMethod(
+      "CharacterController", "void set_height(float) property",
+      asMETHODPR(Low::Core::Component::CharacterController,
+                 set_height, (float), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property setter for height of "
+                     "Low::Core::Component::CharacterController.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "CharacterController", "float get_radius() const property",
+      asMETHOD(Low::Core::Component::CharacterController, get_radius),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property getter for radius of "
+                     "Low::Core::Component::CharacterController.");
+  r = p_Engine->RegisterObjectMethod(
+      "CharacterController", "void set_radius(float) property",
+      asMETHODPR(Low::Core::Component::CharacterController,
+                 set_radius, (float), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property setter for radius of "
+                     "Low::Core::Component::CharacterController.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "CharacterController", "float get_skin_width() const property",
+      asMETHOD(Low::Core::Component::CharacterController,
+               get_skin_width),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose property getter for skin_width of "
+             "Low::Core::Component::CharacterController.");
+  r = p_Engine->RegisterObjectMethod(
+      "CharacterController", "void set_skin_width(float) property",
+      asMETHODPR(Low::Core::Component::CharacterController,
+                 set_skin_width, (float), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose property setter for skin_width of "
+             "Low::Core::Component::CharacterController.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "CharacterController", "float get_slope_limit() const property",
+      asMETHOD(Low::Core::Component::CharacterController,
+               get_slope_limit),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose property getter for slope_limit of "
+             "Low::Core::Component::CharacterController.");
+  r = p_Engine->RegisterObjectMethod(
+      "CharacterController", "void set_slope_limit(float) property",
+      asMETHODPR(Low::Core::Component::CharacterController,
+                 set_slope_limit, (float), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose property setter for slope_limit of "
+             "Low::Core::Component::CharacterController.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "CharacterController", "float get_step_offset() const property",
+      asMETHOD(Low::Core::Component::CharacterController,
+               get_step_offset),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose property getter for step_offset of "
+             "Low::Core::Component::CharacterController.");
+  r = p_Engine->RegisterObjectMethod(
+      "CharacterController", "void set_step_offset(float) property",
+      asMETHODPR(Low::Core::Component::CharacterController,
+                 set_step_offset, (float), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose property setter for step_offset of "
+             "Low::Core::Component::CharacterController.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "CharacterController", "Vector3 get_velocity() const property",
+      asMETHOD(Low::Core::Component::CharacterController,
+               get_velocity),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property getter for velocity "
+                     "of Low::Core::Component::CharacterController.");
+  r = p_Engine->RegisterObjectMethod(
+      "CharacterController", "void set_velocity(Vector3) property",
+      asMETHODPR(Low::Core::Component::CharacterController,
+                 set_velocity, (Low::Math::Vector3), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property setter for velocity "
+                     "of Low::Core::Component::CharacterController.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "CharacterController", "Entity get_entity() const property",
+      asMETHOD(Low::Core::Component::CharacterController, get_entity),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property getter for entity of "
+                     "Low::Core::Component::CharacterController.");
+  r = p_Engine->RegisterObjectMethod(
+      "CharacterController", "void set_entity(Entity) property",
+      asMETHOD(Low::Core::Component::CharacterController, set_entity),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property setter for entity of "
+                     "Low::Core::Component::CharacterController.");
+  r = p_Engine->RegisterObjectMethod(
+      "CharacterController", "void move(Vector3) ",
+      asFUNCTION(LowCore_CharacterController_func_move),
+      asCALL_CDECL_OBJFIRST);
+  LOW_ASSERT(r >= 0, "Failed to expose function move of "
+                     "Low::Core::Component::CharacterController.");
+  r = p_Engine->RegisterObjectMethod(
+      "CharacterController", "void teleport(Vector3) ",
+      asFUNCTION(LowCore_CharacterController_func_teleport),
+      asCALL_CDECL_OBJFIRST);
+  LOW_ASSERT(r >= 0, "Failed to expose function teleport of "
+                     "Low::Core::Component::CharacterController.");
+  r = p_Engine->RegisterObjectMethod(
+      "CharacterController", "bool is_grounded() ",
+      asFUNCTION(LowCore_CharacterController_func_is_grounded),
+      asCALL_CDECL_OBJFIRST);
+  LOW_ASSERT(r >= 0, "Failed to expose function is_grounded of "
+                     "Low::Core::Component::CharacterController.");
+
+  r = p_Engine->SetDefaultNamespace("CharacterController");
+  LOW_ASSERT(r >= 0, "Failed to set namespace for "
+                     "Low::Core::Component::CharacterController.");
+  r = p_Engine->RegisterGlobalFunction(
+      "u16 get_TYPE_ID() property",
+      asFUNCTION(LowCore_CharacterController_type_id), asCALL_CDECL);
+  LOW_ASSERT(r >= 0, "Failed to expose TYPE_ID for "
+                     "Low::Core::Component::CharacterController.");
+  r = p_Engine->SetDefaultNamespace("");
+  LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
+  // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:CHARACTERCONTROLLER:EXPOSE
+  // LOW_CODEGEN::END::CUSTOM:LOWCORE:CHARACTERCONTROLLER:EXPOSE
 }
 
 // --------------------------
@@ -1302,7 +1590,8 @@ static void expose_LowCore_Camera(asIScriptEngine *p_Engine)
                      "Low::Core::Component::Camera.");
   r = p_Engine->RegisterObjectMethod(
       "Camera", "void set_fov(float) property",
-      asMETHOD(Low::Core::Component::Camera, set_fov),
+      asMETHODPR(Low::Core::Component::Camera, set_fov, (float),
+                 void),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for fov of "
                      "Low::Core::Component::Camera.");
@@ -1335,6 +1624,156 @@ static void expose_LowCore_Camera(asIScriptEngine *p_Engine)
   // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:CAMERA:EXPOSE
 
   // LOW_CODEGEN::END::CUSTOM:LOWCORE:CAMERA:EXPOSE
+}
+
+// --------------------------
+static void
+LowCore_World_default_construct(Low::Core::Physics::World *p_Memory)
+{
+  new (p_Memory) Low::Core::Physics::World;
+}
+static void
+LowCore_World_id_construct(u64 p_Id,
+                           Low::Core::Physics::World *p_Memory)
+{
+  new (p_Memory) Low::Core::Physics::World(p_Id);
+}
+static void
+LowCore_World_copy_construct(const Low::Core::Physics::World &p_Other,
+                             Low::Core::Physics::World *p_Memory)
+{
+  new (p_Memory) Low::Core::Physics::World(p_Other);
+}
+static Low::Core::Physics::World &
+LowCore_World_assign(const Low::Core::Physics::World &p_Other,
+                     Low::Core::Physics::World *p_Self)
+{
+  *p_Self = p_Other;
+  return *p_Self;
+}
+static void
+LowCore_World_destruct(Low::Core::Physics::World *p_Memory)
+{
+  using namespace Low::Core::Physics;
+  p_Memory->~World();
+}
+static Low::Core::Physics::World
+LowCore_World_genmake(Low::Util::Name p_Name)
+{
+  return Low::Core::Physics::World::make(p_Name);
+}
+static Low::Core::Physics::World
+LowCore_World_genfindbyname(Low::Util::Name p_Name)
+{
+  return Low::Core::Physics::World::find_by_name(p_Name);
+}
+static u32 LowCore_World_living_count()
+{
+  return Low::Core::Physics::World::living_count();
+}
+static u16 LowCore_World_type_id()
+{
+  return Low::Core::Physics::World::type_id();
+}
+// LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:WORLD:HELPERS
+// LOW_CODEGEN::END::CUSTOM:LOWCORE:WORLD:HELPERS
+
+static void register_LowCore_World(asIScriptEngine *p_Engine)
+{
+  int r = 0;
+  r = p_Engine->RegisterObjectType(
+      "PhysicsWorld", sizeof(Low::Core::Physics::World),
+      asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose Low::Core::Physics::World type.");
+}
+static void expose_LowCore_World(asIScriptEngine *p_Engine)
+{
+  int r = 0;
+  r = p_Engine->RegisterObjectBehaviour(
+      "PhysicsWorld", asBEHAVE_CONSTRUCT, "void f()",
+      asFUNCTION(LowCore_World_default_construct),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose default constructor of "
+                     "Low::Core::Physics::World.");
+
+  r = p_Engine->RegisterObjectBehaviour(
+      "PhysicsWorld", asBEHAVE_CONSTRUCT, "void f(u64 id)",
+      asFUNCTION(LowCore_World_id_construct), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose id constructor of "
+                     "Low::Core::Physics::World.");
+
+  r = p_Engine->RegisterObjectBehaviour(
+      "PhysicsWorld", asBEHAVE_CONSTRUCT,
+      "void f(const PhysicsWorld& in)",
+      asFUNCTION(LowCore_World_copy_construct), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose copy constructor of "
+                     "Low::Core::Physics::World.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "PhysicsWorld",
+      "PhysicsWorld& opAssign(const PhysicsWorld& in)",
+      asFUNCTION(LowCore_World_assign), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose assignment operator of "
+                     "Low::Core::Physics::World.");
+
+  r = p_Engine->RegisterObjectBehaviour(
+      "PhysicsWorld", asBEHAVE_DESTRUCT, "void f()",
+      asFUNCTION(LowCore_World_destruct), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose destructor of Low::Core::Physics::World.");
+  r = p_Engine->RegisterObjectMethod(
+      "PhysicsWorld", "bool get_is_alive() const property",
+      asMETHODPR(Low::Core::Physics::World, is_alive, () const, bool),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose is_alive getter for "
+                     "Low::Core::Physics::World.");
+  r = p_Engine->RegisterObjectMethod(
+      "PhysicsWorld", "void destroy()",
+      asMETHODPR(Low::Core::Physics::World, destroy, (), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose destroy for Low::Core::Physics::World.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "PhysicsWorld", "Name get_name() const property",
+      asMETHOD(Low::Core::Physics::World, get_name), asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property getter for name of "
+                     "Low::Core::Physics::World.");
+  r = p_Engine->RegisterObjectMethod(
+      "PhysicsWorld", "void set_name(Name) property",
+      asMETHODPR(Low::Core::Physics::World, set_name,
+                 (Low::Util::Name), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property setter for name of "
+                     "Low::Core::Physics::World.");
+
+  r = p_Engine->SetDefaultNamespace("PhysicsWorld");
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to set namespace for Low::Core::Physics::World.");
+  r = p_Engine->RegisterGlobalFunction(
+      "u16 get_TYPE_ID() property", asFUNCTION(LowCore_World_type_id),
+      asCALL_CDECL);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose TYPE_ID for Low::Core::Physics::World.");
+  r = p_Engine->RegisterGlobalFunction(
+      "PhysicsWorld make(Name)", asFUNCTION(LowCore_World_genmake),
+      asCALL_CDECL);
+  LOW_ASSERT(r >= 0, "Failed to expose generic make function for "
+                     "Low::Core::Physics::World.");
+  r = p_Engine->RegisterGlobalFunction(
+      "PhysicsWorld find_by_name(Name)",
+      asFUNCTION(LowCore_World_genfindbyname), asCALL_CDECL);
+  LOW_ASSERT(r >= 0, "Failed to expose generic find by name function "
+                     "for Low::Core::Physics::World.");
+  r = p_Engine->SetDefaultNamespace("");
+  LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
+  // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:WORLD:EXPOSE
+  // LOW_CODEGEN::END::CUSTOM:LOWCORE:WORLD:EXPOSE
 }
 
 // --------------------------
@@ -1457,7 +1896,8 @@ static void expose_LowCore_Module(asIScriptEngine *p_Engine)
                      "Low::Core::Scripting::Module.");
   r = p_Engine->RegisterObjectMethod(
       "Module", "void set_name(Name) property",
-      asMETHOD(Low::Core::Scripting::Module, set_name),
+      asMETHODPR(Low::Core::Scripting::Module, set_name,
+                 (Low::Util::Name), void),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for name of "
                      "Low::Core::Scripting::Module.");
@@ -1608,7 +2048,8 @@ static void expose_LowCore_Asset(asIScriptEngine *p_Engine)
                      "Low::Core::Scripting::Asset.");
   r = p_Engine->RegisterObjectMethod(
       "Asset", "void set_name(Name) property",
-      asMETHOD(Low::Core::Scripting::Asset, set_name),
+      asMETHODPR(Low::Core::Scripting::Asset, set_name,
+                 (Low::Util::Name), void),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for name of "
                      "Low::Core::Scripting::Asset.");
@@ -1762,7 +2203,8 @@ static void expose_LowCore_WidgetAsset(asIScriptEngine *p_Engine)
                      "Low::Core::UI::WidgetAsset.");
   r = p_Engine->RegisterObjectMethod(
       "WidgetAsset", "void set_name(Name) property",
-      asMETHOD(Low::Core::UI::WidgetAsset, set_name),
+      asMETHODPR(Low::Core::UI::WidgetAsset, set_name,
+                 (Low::Util::Name), void),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for name of "
                      "Low::Core::UI::WidgetAsset.");
@@ -1917,7 +2359,8 @@ static void expose_LowCore_WidgetInstance(asIScriptEngine *p_Engine)
                      "Low::Core::UI::WidgetInstance.");
   r = p_Engine->RegisterObjectMethod(
       "WidgetInstance", "void set_name(Name) property",
-      asMETHOD(Low::Core::UI::WidgetInstance, set_name),
+      asMETHODPR(Low::Core::UI::WidgetInstance, set_name,
+                 (Low::Util::Name), void),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for name of "
                      "Low::Core::UI::WidgetInstance.");
@@ -2135,7 +2578,9 @@ static void expose_LowCore_View(asIScriptEngine *p_Engine)
                      "Low::Core::UI::View.");
   r = p_Engine->RegisterObjectMethod(
       "View", "void set_name(Name) property",
-      asMETHOD(Low::Core::UI::View, set_name), asCALL_THISCALL);
+      asMETHODPR(Low::Core::UI::View, set_name, (Low::Util::Name),
+                 void),
+      asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for name of "
                      "Low::Core::UI::View.");
   r = p_Engine->RegisterObjectMethod(
@@ -2342,7 +2787,8 @@ static void expose_LowCore_Element(asIScriptEngine *p_Engine)
                      "click_passthrough of Low::Core::UI::Element.");
   r = p_Engine->RegisterObjectMethod(
       "Element", "void set_click_passthrough(bool) property",
-      asMETHOD(Low::Core::UI::Element, set_click_passthrough),
+      asMETHODPR(Low::Core::UI::Element, set_click_passthrough,
+                 (bool), void),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for "
                      "click_passthrough of Low::Core::UI::Element.");
@@ -2355,7 +2801,8 @@ static void expose_LowCore_Element(asIScriptEngine *p_Engine)
                      "of Low::Core::UI::Element.");
   r = p_Engine->RegisterObjectMethod(
       "Element", "void set_local_id(u64) property",
-      asMETHOD(Low::Core::UI::Element, set_local_id),
+      asMETHODPR(Low::Core::UI::Element, set_local_id, (uint64_t),
+                 void),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for local_id "
                      "of Low::Core::UI::Element.");
@@ -2367,7 +2814,9 @@ static void expose_LowCore_Element(asIScriptEngine *p_Engine)
                      "Low::Core::UI::Element.");
   r = p_Engine->RegisterObjectMethod(
       "Element", "void set_name(Name) property",
-      asMETHOD(Low::Core::UI::Element, set_name), asCALL_THISCALL);
+      asMETHODPR(Low::Core::UI::Element, set_name, (Low::Util::Name),
+                 void),
+      asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for name of "
                      "Low::Core::UI::Element.");
   r = p_Engine->RegisterObjectMethod(
@@ -2800,7 +3249,8 @@ static void expose_LowCore_Text(asIScriptEngine *p_Engine)
                      "Low::Core::UI::Component::Text.");
   r = p_Engine->RegisterObjectMethod(
       "Text", "void set_color(Vector4) property",
-      asMETHOD(Low::Core::UI::Component::Text, set_color),
+      asMETHODPR(Low::Core::UI::Component::Text, set_color,
+                 (Low::Math::Color), void),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for color of "
                      "Low::Core::UI::Component::Text.");
@@ -2813,7 +3263,8 @@ static void expose_LowCore_Text(asIScriptEngine *p_Engine)
                      "Low::Core::UI::Component::Text.");
   r = p_Engine->RegisterObjectMethod(
       "Text", "void set_size(float) property",
-      asMETHOD(Low::Core::UI::Component::Text, set_size),
+      asMETHODPR(Low::Core::UI::Component::Text, set_size, (float),
+                 void),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for size of "
                      "Low::Core::UI::Component::Text.");
@@ -2967,7 +3418,9 @@ static void expose_LowRenderer2_Skeleton(asIScriptEngine *p_Engine)
                      "Low::Renderer::Skeleton.");
   r = p_Engine->RegisterObjectMethod(
       "Skeleton", "void set_name(Name) property",
-      asMETHOD(Low::Renderer::Skeleton, set_name), asCALL_THISCALL);
+      asMETHODPR(Low::Renderer::Skeleton, set_name, (Low::Util::Name),
+                 void),
+      asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for name of "
                      "Low::Renderer::Skeleton.");
 
@@ -3004,7 +3457,9 @@ namespace Low::Core {
     register_LowCore_Entity(p_Engine);
     register_LowCore_Transform(p_Engine);
     register_LowCore_Animator(p_Engine);
+    register_LowCore_CharacterController(p_Engine);
     register_LowCore_Camera(p_Engine);
+    register_LowCore_World(p_Engine);
     register_LowCore_Module(p_Engine);
     register_LowCore_Asset(p_Engine);
     register_LowCore_WidgetAsset(p_Engine);
@@ -3025,7 +3480,9 @@ namespace Low::Core {
     expose_LowCore_Entity(p_Engine);
     expose_LowCore_Transform(p_Engine);
     expose_LowCore_Animator(p_Engine);
+    expose_LowCore_CharacterController(p_Engine);
     expose_LowCore_Camera(p_Engine);
+    expose_LowCore_World(p_Engine);
     expose_LowCore_Module(p_Engine);
     expose_LowCore_Asset(p_Engine);
     expose_LowCore_WidgetAsset(p_Engine);

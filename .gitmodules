@@ -73,3 +73,6 @@
 [submodule "LowDependencies/angelscript"]
 	path = LowDependencies/angelscript
 	url = https://github.com/anjo76/angelscript
+[submodule "LowDependencies/jolt"]
+	path = LowDependencies/jolt
+	url = https://github.com/jrouwe/JoltPhysics.git

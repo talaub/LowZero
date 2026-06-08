@@ -6,9 +6,9 @@
 #include "LowCoreTransformSystem.h"
 #include "LowCoreLightSystem.h"
 #include "LowCoreMeshRendererSystem.h"
+#include "LowCorePhysicsSystem.h"
 #include "LowCoreTaskScheduler.h"
 #include "LowCoreTransform.h"
-#include "LowCorePhysicsSystem.h"
 #include "LowCoreNavmeshSystem.h"
 #include "LowCoreCflatScripting.h"
 #include "LowCoreCameraSystem.h"
@@ -117,7 +117,6 @@ namespace Low {
         System::Camera::tick(p_Delta, get_engine_state());
         System::Tween::tick(p_Delta, get_engine_state());
         if (!l_FirstRun) {
-          System::Physics::tick(p_Delta, get_engine_state());
           // System::Navmesh::tick(p_Delta, get_engine_state());
         }
 
@@ -183,6 +182,7 @@ namespace Low {
           }
         }
 
+        System::Physics::tick(p_Delta, get_engine_state());
         System::MeshRenderer::late_tick(p_Delta, get_engine_state());
 
         l_FirstRun = false;
@@ -293,7 +293,6 @@ namespace Low {
 
       void initialize()
       {
-        System::Physics::initialize();
       }
 
       void start()

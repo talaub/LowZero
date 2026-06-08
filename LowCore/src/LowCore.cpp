@@ -9,11 +9,13 @@
 #include "LowCoreDirectionalLight.h"
 #include "LowCorePointLight.h"
 #include "LowCoreRigidbody.h"
+#include "LowCoreBoxCollider.h"
+#include "LowCoreSphereCollider.h"
+#include "LowCoreCharacterController.h"
 #include "LowCoreMeshRenderer.h"
 #include "LowCoreDebugGeometry.h"
 #include "LowCorePrefab.h"
 #include "LowCoreGameLoop.h"
-#include "LowCorePhysicsSystem.h"
 #include "LowCorePrefabInstance.h"
 #include "LowCoreCflatScripting.h"
 #include "LowCoreNavmeshAgent.h"
@@ -27,6 +29,11 @@
 #include "LowCoreEventManager.h"
 #include "LowCoreGameplaySystem.h"
 #include "LowCoreGameplaySystemInstance.h"
+#include "LowCorePhysicsShape.h"
+#include "LowCorePhysicsBody.h"
+#include "LowCorePhysicsWorld.h"
+#include "LowCorePhysicsCapsuleController.h"
+#include "LowCorePhysicsBodyMotionType.h"
 
 #include "LowCoreScriptClass.h"
 #include "LowCoreScriptAsset.h"
@@ -132,7 +139,10 @@ namespace Low {
       Component::Animator::initialize();
       Component::DirectionalLight::initialize();
       Component::PointLight::initialize();
+      Component::BoxCollider::initialize();
+      Component::SphereCollider::initialize();
       Component::Rigidbody::initialize();
+      Component::CharacterController::initialize();
       Component::PrefabInstance::initialize();
       Component::NavmeshAgent::initialize();
       Component::Camera::initialize();
@@ -180,9 +190,19 @@ namespace Low {
       Scripting::Module::make(N(gameplay.system));
     }
 
+    static void initialize_physics_types()
+    {
+      Physics::BodyMotionTypeEnumHelper::initialize();
+      Physics::Body::initialize();
+      Physics::Shape::initialize();
+      Physics::World::initialize();
+      Physics::CapsuleController::initialize();
+    }
+
     static void initialize_types()
     {
       initialize_asset_types();
+      initialize_physics_types();
       initialize_base_types();
       initialize_component_types();
       initialize_ui_types();
@@ -324,7 +344,10 @@ namespace Low {
       Component::Camera::cleanup();
       Component::NavmeshAgent::cleanup();
       Component::PrefabInstance::cleanup();
+      Component::CharacterController::cleanup();
       Component::Rigidbody::cleanup();
+      Component::SphereCollider::cleanup();
+      Component::BoxCollider::cleanup();
       Component::PointLight::cleanup();
       Component::DirectionalLight::cleanup();
       Component::Transform::cleanup();
@@ -375,8 +398,18 @@ namespace Low {
       Scripting::AssetGeneratorEnumHelper::cleanup();
     }
 
+    static void cleanup_physics_types()
+    {
+      Physics::Body::cleanup();
+      Physics::Shape::cleanup();
+      Physics::CapsuleController::cleanup();
+      Physics::World::cleanup();
+      Physics::BodyMotionTypeEnumHelper::cleanup();
+    }
+
     static void cleanup_types()
     {
+      cleanup_physics_types();
       cleanup_component_types();
       cleanup_base_types();
       cleanup_asset_types();

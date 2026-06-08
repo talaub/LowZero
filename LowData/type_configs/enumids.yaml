@@ -13,3 +13,4 @@ LowCore:
   ScriptAssetGenerator: 8
   AssetGenerator: 9
   TweenEase: 13
+  BodyMotionType: 14

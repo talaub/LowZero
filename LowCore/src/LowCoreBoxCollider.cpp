@@ -1,4 +1,4 @@
-#include "LowCoreRigidbody.h"
+#include "LowCoreBoxCollider.h"
 
 #include <algorithm>
 
@@ -13,8 +13,7 @@
 
 #include "LowCorePrefabInstance.h"
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
-#include "LowCoreBoxCollider.h"
-#include "LowCoreSphereCollider.h"
+#include "LowCoreRigidbody.h"
 #include "LowCoreTransform.h"
 #include "LowCoreRegion.h"
 #include "LowCoreScene.h"
@@ -24,8 +23,8 @@ namespace Low {
   namespace Core {
     namespace Component {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-      Low::Util::Set<Low::Core::Component::Rigidbody>
-          Low::Core::Component::Rigidbody::ms_Dirty;
+      Low::Util::Set<Low::Core::Component::BoxCollider>
+          Low::Core::Component::BoxCollider::ms_Dirty;
 
       static Low::Core::Physics::World
       get_physics_world(Low::Core::Entity p_Entity)
@@ -41,19 +40,29 @@ namespace Low {
         return l_World;
       }
 
+      static Low::Math::Vector3
+      get_world_collider_position(Low::Core::Entity p_Entity,
+                                  Low::Math::Vector3 p_Center)
+      {
+        Low::Core::Component::Transform l_Transform =
+            p_Entity.get_transform();
+        _LOW_ASSERT(l_Transform.is_alive());
+        return l_Transform.get_world_position() +
+               (l_Transform.get_world_rotation() * p_Center);
+      }
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      u16 Rigidbody::ms_TypeId = 0;
+      u16 BoxCollider::ms_TypeId = 0;
       const Low::Util::TypeIdentifier
-          Rigidbody::IDENTIFIER(LOW_NAME(1181529166),
-                                LOW_NAME(2193485588));
-      uint32_t Rigidbody::ms_Capacity = 0u;
-      uint32_t Rigidbody::ms_PageSize = 0u;
-      Low::Util::List<Rigidbody> Rigidbody::ms_LivingInstances;
+          BoxCollider::IDENTIFIER(LOW_NAME(1181529166),
+                                  LOW_NAME(3630028570));
+      uint32_t BoxCollider::ms_Capacity = 0u;
+      uint32_t BoxCollider::ms_PageSize = 0u;
+      Low::Util::List<BoxCollider> BoxCollider::ms_LivingInstances;
       Low::Util::List<Low::Util::Instances::Page *>
-          Rigidbody::ms_Pages;
+          BoxCollider::ms_Pages;
 
-      Low::Util::Handle Rigidbody::_make(Low::Util::Handle p_Entity)
+      Low::Util::Handle BoxCollider::_make(Low::Util::Handle p_Entity)
       {
         Low::Core::Entity l_Entity = p_Entity.get_id();
         LOW_ASSERT(l_Entity.is_alive(),
@@ -61,39 +70,38 @@ namespace Low {
         return make(l_Entity).get_id();
       }
 
-      Rigidbody Rigidbody::make(Low::Core::Entity p_Entity)
+      BoxCollider BoxCollider::make(Low::Core::Entity p_Entity)
       {
         return make(p_Entity, 0ull);
       }
 
-      Rigidbody Rigidbody::make(Low::Core::Entity p_Entity,
-                                Low::Util::UniqueId p_UniqueId)
+      BoxCollider BoxCollider::make(Low::Core::Entity p_Entity,
+                                    Low::Util::UniqueId p_UniqueId)
       {
         u32 l_PageIndex = 0;
         u32 l_SlotIndex = 0;
         uint32_t l_Index = create_instance(l_PageIndex, l_SlotIndex);
 
-        Rigidbody l_Handle;
+        BoxCollider l_Handle;
         l_Handle.m_Data.m_Index = l_Index;
         l_Handle.m_Data.m_Generation =
             ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-        l_Handle.m_Data.m_Type = Rigidbody::ms_TypeId;
+        l_Handle.m_Data.m_Type = BoxCollider::ms_TypeId;
 
-        new (
-            ACCESSOR_TYPE_SOA_PTR(l_Handle, Rigidbody, motion_type,
-                                  Low::Core::Physics::BodyMotionType))
-            Low::Core::Physics::BodyMotionType();
-        ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, gravity, bool) = false;
-        ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, mass, float) = 0.0f;
-        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Rigidbody, body,
+        ACCESSOR_TYPE_SOA(l_Handle, BoxCollider, trigger, bool) =
+            false;
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, BoxCollider, shape,
+                                   Low::Core::Physics::Shape))
+            Low::Core::Physics::Shape();
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, BoxCollider, static_body,
                                    Low::Core::Physics::Body))
             Low::Core::Physics::Body();
-        ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, initialized, bool) =
+        ACCESSOR_TYPE_SOA(l_Handle, BoxCollider, initialized, bool) =
             false;
-        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Rigidbody, entity,
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, BoxCollider, entity,
                                    Low::Core::Entity))
             Low::Core::Entity();
-        ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, dirty, bool) = false;
+        ACCESSOR_TYPE_SOA(l_Handle, BoxCollider, dirty, bool) = false;
 
         l_Handle.set_entity(p_Entity);
         p_Entity.add_component(l_Handle);
@@ -110,25 +118,39 @@ namespace Low {
                                       l_Handle.get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
-        ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, motion_type,
-                          Low::Core::Physics::BodyMotionType) =
-            Low::Core::Physics::BodyMotionType::DYNAMIC;
-        ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, gravity, bool) = true;
-        ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, mass, float) = 1.0f;
+        ACCESSOR_TYPE_SOA(l_Handle, BoxCollider, center,
+                          Low::Math::Vector3) =
+            Low::Math::Vector3(0.0f);
+        ACCESSOR_TYPE_SOA(l_Handle, BoxCollider, half_extents,
+                          Low::Math::Vector3) =
+            Low::Math::Vector3(0.5f);
+
         l_Handle.mark_dirty();
+
+        {
+          Low::Core::Component::Transform l_Transform =
+              p_Entity.get_transform();
+          if (l_Transform.is_alive()) {
+            l_Transform.observe(N(world_scale_changed),
+                                l_Handle.get_id());
+          }
+        }
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
       }
 
-      void Rigidbody::destroy()
+      void BoxCollider::destroy()
       {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-          if (get_body().is_alive()) {
-            get_body().destroy();
+          if (get_static_body().is_alive()) {
+            get_static_body().destroy();
+          }
+          if (get_shape().is_alive()) {
+            get_shape().destroy();
           }
           set_initialized(false);
           // LOW_CODEGEN::END::CUSTOM:DESTROY
@@ -157,17 +179,16 @@ namespace Low {
         }
       }
 
-      void Rigidbody::initialize()
+      void BoxCollider::initialize()
       {
         const Low::Util::TypeIdentifier l_IdentifierNames(
-            N(LowCore), N(Rigidbody));
+            N(LowCore), N(BoxCollider));
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
-
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
-        ms_Capacity =
-            Low::Util::Config::get_capacity(N(LowCore), N(Rigidbody));
+        ms_Capacity = Low::Util::Config::get_capacity(N(LowCore),
+                                                      N(BoxCollider));
 
         ms_PageSize = Low::Math::Util::clamp(
             Low::Math::Util::next_power_of_two(ms_Capacity), 8, 32);
@@ -177,7 +198,7 @@ namespace Low {
             Low::Util::Instances::Page *i_Page =
                 new Low::Util::Instances::Page;
             Low::Util::Instances::initialize_page(
-                i_Page, Rigidbody::Data::get_size(), ms_PageSize);
+                i_Page, BoxCollider::Data::get_size(), ms_PageSize);
             ms_Pages.push_back(i_Page);
             l_Capacity += ms_PageSize;
           }
@@ -185,142 +206,174 @@ namespace Low {
         }
 
         Low::Util::RTTI::TypeInfo l_TypeInfo;
-        l_TypeInfo.name = N(Rigidbody);
+        l_TypeInfo.name = N(BoxCollider);
         l_TypeInfo.typeId = ms_TypeId;
         l_TypeInfo.get_capacity = &get_capacity;
-        l_TypeInfo.is_alive = &Rigidbody::is_alive;
-        l_TypeInfo.destroy = &Rigidbody::destroy;
-        l_TypeInfo.serialize = &Rigidbody::serialize;
-        l_TypeInfo.deserialize = &Rigidbody::deserialize;
-        l_TypeInfo.find_by_index = &Rigidbody::_find_by_index;
-        l_TypeInfo.notify = &Rigidbody::_notify;
+        l_TypeInfo.is_alive = &BoxCollider::is_alive;
+        l_TypeInfo.destroy = &BoxCollider::destroy;
+        l_TypeInfo.serialize = &BoxCollider::serialize;
+        l_TypeInfo.deserialize = &BoxCollider::deserialize;
+        l_TypeInfo.find_by_index = &BoxCollider::_find_by_index;
+        l_TypeInfo.notify = &BoxCollider::_notify;
         l_TypeInfo.post_load = nullptr;
         l_TypeInfo.make_default = nullptr;
-        l_TypeInfo.make_component = &Rigidbody::_make;
+        l_TypeInfo.make_component = &BoxCollider::_make;
         l_TypeInfo.duplicate_default = nullptr;
-        l_TypeInfo.duplicate_component = &Rigidbody::_duplicate;
+        l_TypeInfo.duplicate_component = &BoxCollider::_duplicate;
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
-                &Rigidbody::living_instances);
-        l_TypeInfo.get_living_count = &Rigidbody::living_count;
+                &BoxCollider::living_instances);
+        l_TypeInfo.get_living_count = &BoxCollider::living_count;
         l_TypeInfo.component = true;
         l_TypeInfo.uiComponent = false;
         {
-          // Property: motion_type
+          // Property: center
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-          l_PropertyInfo.name = N(motion_type);
+          l_PropertyInfo.name = N(center);
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
-              offsetof(Rigidbody::Data, motion_type);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
-          l_PropertyInfo.handleType = Low::Core::Physics::
-              BodyMotionTypeEnumHelper::get_enum_id();
+              offsetof(BoxCollider::Data, center);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::VECTOR3;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
-            Rigidbody l_Handle = p_Handle.get_id();
-            l_Handle.get_motion_type();
+            BoxCollider l_Handle = p_Handle.get_id();
+            l_Handle.get_center();
             return (void *)&ACCESSOR_TYPE_SOA(
-                p_Handle, Rigidbody, motion_type,
-                Low::Core::Physics::BodyMotionType);
+                p_Handle, BoxCollider, center, Low::Math::Vector3);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            Rigidbody l_Handle = p_Handle.get_id();
-            l_Handle.set_motion_type(
-                *(Low::Core::Physics::BodyMotionType *)p_Data);
+            BoxCollider l_Handle = p_Handle.get_id();
+            l_Handle.set_center(*(Low::Math::Vector3 *)p_Data);
           };
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
-            Rigidbody l_Handle = p_Handle.get_id();
-            *((Low::Core::Physics::BodyMotionType *)p_Data) =
-                l_Handle.get_motion_type();
+            BoxCollider l_Handle = p_Handle.get_id();
+            *((Low::Math::Vector3 *)p_Data) = l_Handle.get_center();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-          // End property: motion_type
+          // End property: center
         }
         {
-          // Property: gravity
+          // Property: half_extents
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-          l_PropertyInfo.name = N(gravity);
+          l_PropertyInfo.name = N(half_extents);
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
-              offsetof(Rigidbody::Data, gravity);
+              offsetof(BoxCollider::Data, half_extents);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::VECTOR3;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            BoxCollider l_Handle = p_Handle.get_id();
+            l_Handle.get_half_extents();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, BoxCollider,
+                                              half_extents,
+                                              Low::Math::Vector3);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            BoxCollider l_Handle = p_Handle.get_id();
+            l_Handle.set_half_extents(*(Low::Math::Vector3 *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            BoxCollider l_Handle = p_Handle.get_id();
+            *((Low::Math::Vector3 *)p_Data) =
+                l_Handle.get_half_extents();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: half_extents
+        }
+        {
+          // Property: trigger
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(trigger);
+          l_PropertyInfo.editorProperty = true;
+          l_PropertyInfo.dataOffset =
+              offsetof(BoxCollider::Data, trigger);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
-            Rigidbody l_Handle = p_Handle.get_id();
-            l_Handle.is_gravity();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody,
-                                              gravity, bool);
+            BoxCollider l_Handle = p_Handle.get_id();
+            l_Handle.is_trigger();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, BoxCollider,
+                                              trigger, bool);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            Rigidbody l_Handle = p_Handle.get_id();
-            l_Handle.set_gravity(*(bool *)p_Data);
+            BoxCollider l_Handle = p_Handle.get_id();
+            l_Handle.set_trigger(*(bool *)p_Data);
           };
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
-            Rigidbody l_Handle = p_Handle.get_id();
-            *((bool *)p_Data) = l_Handle.is_gravity();
+            BoxCollider l_Handle = p_Handle.get_id();
+            *((bool *)p_Data) = l_Handle.is_trigger();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-          // End property: gravity
+          // End property: trigger
         }
         {
-          // Property: mass
+          // Property: shape
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-          l_PropertyInfo.name = N(mass);
-          l_PropertyInfo.editorProperty = true;
-          l_PropertyInfo.dataOffset = offsetof(Rigidbody::Data, mass);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
-          l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get_return =
-              [](Low::Util::Handle p_Handle) -> void const * {
-            Rigidbody l_Handle = p_Handle.get_id();
-            l_Handle.get_mass();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody,
-                                              mass, float);
-          };
-          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                  const void *p_Data) -> void {
-            Rigidbody l_Handle = p_Handle.get_id();
-            l_Handle.set_mass(*(float *)p_Data);
-          };
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
-                                  void *p_Data) {
-            Rigidbody l_Handle = p_Handle.get_id();
-            *((float *)p_Data) = l_Handle.get_mass();
-          };
-          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-          // End property: mass
-        }
-        {
-          // Property: body
-          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-          l_PropertyInfo.name = N(body);
+          l_PropertyInfo.name = N(shape);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(Rigidbody::Data, body);
+          l_PropertyInfo.dataOffset =
+              offsetof(BoxCollider::Data, shape);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
-              Low::Core::Physics::Body::IDENTIFIER;
+              Low::Core::Physics::Shape::IDENTIFIER;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
-            Rigidbody l_Handle = p_Handle.get_id();
-            l_Handle.get_body();
+            BoxCollider l_Handle = p_Handle.get_id();
+            l_Handle.get_shape();
             return (void *)&ACCESSOR_TYPE_SOA(
-                p_Handle, Rigidbody, body, Low::Core::Physics::Body);
+                p_Handle, BoxCollider, shape,
+                Low::Core::Physics::Shape);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
-            Rigidbody l_Handle = p_Handle.get_id();
-            *((Low::Core::Physics::Body *)p_Data) =
-                l_Handle.get_body();
+            BoxCollider l_Handle = p_Handle.get_id();
+            *((Low::Core::Physics::Shape *)p_Data) =
+                l_Handle.get_shape();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-          // End property: body
+          // End property: shape
+        }
+        {
+          // Property: static_body
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(static_body);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(BoxCollider::Data, static_body);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_PropertyInfo.handleType =
+              Low::Core::Physics::Body::IDENTIFIER;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            BoxCollider l_Handle = p_Handle.get_id();
+            l_Handle.get_static_body();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, BoxCollider, static_body,
+                Low::Core::Physics::Body);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            BoxCollider l_Handle = p_Handle.get_id();
+            *((Low::Core::Physics::Body *)p_Data) =
+                l_Handle.get_static_body();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: static_body
         }
         {
           // Property: initialized
@@ -328,21 +381,21 @@ namespace Low {
           l_PropertyInfo.name = N(initialized);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(Rigidbody::Data, initialized);
+              offsetof(BoxCollider::Data, initialized);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
-            Rigidbody l_Handle = p_Handle.get_id();
+            BoxCollider l_Handle = p_Handle.get_id();
             l_Handle.is_initialized();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody,
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, BoxCollider,
                                               initialized, bool);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
-            Rigidbody l_Handle = p_Handle.get_id();
+            BoxCollider l_Handle = p_Handle.get_id();
             *((bool *)p_Data) = l_Handle.is_initialized();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -354,24 +407,24 @@ namespace Low {
           l_PropertyInfo.name = N(entity);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(Rigidbody::Data, entity);
+              offsetof(BoxCollider::Data, entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::IDENTIFIER;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
-            Rigidbody l_Handle = p_Handle.get_id();
+            BoxCollider l_Handle = p_Handle.get_id();
             l_Handle.get_entity();
             return (void *)&ACCESSOR_TYPE_SOA(
-                p_Handle, Rigidbody, entity, Low::Core::Entity);
+                p_Handle, BoxCollider, entity, Low::Core::Entity);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            Rigidbody l_Handle = p_Handle.get_id();
+            BoxCollider l_Handle = p_Handle.get_id();
             l_Handle.set_entity(*(Low::Core::Entity *)p_Data);
           };
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
-            Rigidbody l_Handle = p_Handle.get_id();
+            BoxCollider l_Handle = p_Handle.get_id();
             *((Low::Core::Entity *)p_Data) = l_Handle.get_entity();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -383,21 +436,22 @@ namespace Low {
           l_PropertyInfo.name = N(unique_id);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(Rigidbody::Data, unique_id);
+              offsetof(BoxCollider::Data, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
-            Rigidbody l_Handle = p_Handle.get_id();
+            BoxCollider l_Handle = p_Handle.get_id();
             l_Handle.get_unique_id();
-            return (void *)&ACCESSOR_TYPE_SOA(
-                p_Handle, Rigidbody, unique_id, Low::Util::UniqueId);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, BoxCollider,
+                                              unique_id,
+                                              Low::Util::UniqueId);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
-            Rigidbody l_Handle = p_Handle.get_id();
+            BoxCollider l_Handle = p_Handle.get_id();
             *((Low::Util::UniqueId *)p_Data) =
                 l_Handle.get_unique_id();
           };
@@ -410,24 +464,24 @@ namespace Low {
           l_PropertyInfo.name = N(dirty);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(Rigidbody::Data, dirty);
+              offsetof(BoxCollider::Data, dirty);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
-            Rigidbody l_Handle = p_Handle.get_id();
+            BoxCollider l_Handle = p_Handle.get_id();
             l_Handle.is_dirty();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody,
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, BoxCollider,
                                               dirty, bool);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            Rigidbody l_Handle = p_Handle.get_id();
+            BoxCollider l_Handle = p_Handle.get_id();
             l_Handle.set_dirty(*(bool *)p_Data);
           };
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
-            Rigidbody l_Handle = p_Handle.get_id();
+            BoxCollider l_Handle = p_Handle.get_id();
             *((bool *)p_Data) = l_Handle.is_dirty();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -445,13 +499,12 @@ namespace Low {
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
         // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
-
         // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
       }
 
-      void Rigidbody::cleanup()
+      void BoxCollider::cleanup()
       {
-        Low::Util::List<Rigidbody> l_Instances = ms_LivingInstances;
+        Low::Util::List<BoxCollider> l_Instances = ms_LivingInstances;
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
@@ -466,18 +519,18 @@ namespace Low {
         ms_Capacity = 0;
       }
 
-      Low::Util::Handle Rigidbody::_find_by_index(uint32_t p_Index)
+      Low::Util::Handle BoxCollider::_find_by_index(uint32_t p_Index)
       {
         return find_by_index(p_Index).get_id();
       }
 
-      Rigidbody Rigidbody::find_by_index(uint32_t p_Index)
+      BoxCollider BoxCollider::find_by_index(uint32_t p_Index)
       {
         LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
 
-        Rigidbody l_Handle;
+        BoxCollider l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
-        l_Handle.m_Data.m_Type = Rigidbody::ms_TypeId;
+        l_Handle.m_Data.m_Type = BoxCollider::ms_TypeId;
 
         u32 l_PageIndex = 0;
         u32 l_SlotIndex = 0;
@@ -491,23 +544,23 @@ namespace Low {
         return l_Handle;
       }
 
-      Rigidbody Rigidbody::create_handle_by_index(u32 p_Index)
+      BoxCollider BoxCollider::create_handle_by_index(u32 p_Index)
       {
         if (p_Index < get_capacity()) {
           return find_by_index(p_Index);
         }
 
-        Rigidbody l_Handle;
+        BoxCollider l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
         l_Handle.m_Data.m_Generation = 0;
-        l_Handle.m_Data.m_Type = Rigidbody::ms_TypeId;
+        l_Handle.m_Data.m_Type = BoxCollider::ms_TypeId;
 
         return l_Handle;
       }
 
-      bool Rigidbody::is_alive() const
+      bool BoxCollider::is_alive() const
       {
-        if (m_Data.m_Type != Rigidbody::ms_TypeId) {
+        if (m_Data.m_Type != BoxCollider::ms_TypeId) {
           return false;
         }
         u32 l_PageIndex = 0;
@@ -517,81 +570,80 @@ namespace Low {
           return false;
         }
         Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
-        return m_Data.m_Type == Rigidbody::ms_TypeId &&
+        return m_Data.m_Type == BoxCollider::ms_TypeId &&
                l_Page->slots[l_SlotIndex].m_Occupied &&
                l_Page->slots[l_SlotIndex].m_Generation ==
                    m_Data.m_Generation;
       }
 
-      uint32_t Rigidbody::get_capacity()
+      uint32_t BoxCollider::get_capacity()
       {
         return ms_Capacity;
       }
 
-      Rigidbody Rigidbody::duplicate(Low::Core::Entity p_Entity) const
+      BoxCollider
+      BoxCollider::duplicate(Low::Core::Entity p_Entity) const
       {
         _LOW_ASSERT(is_alive());
 
-        Rigidbody l_Handle = make(p_Entity);
-        l_Handle.set_motion_type(get_motion_type());
-        l_Handle.set_gravity(is_gravity());
-        l_Handle.set_mass(get_mass());
-        if (get_body().is_alive()) {
-          l_Handle.set_body(get_body());
+        BoxCollider l_Handle = make(p_Entity);
+        l_Handle.set_center(get_center());
+        l_Handle.set_half_extents(get_half_extents());
+        l_Handle.set_trigger(is_trigger());
+        if (get_shape().is_alive()) {
+          l_Handle.set_shape(get_shape());
+        }
+        if (get_static_body().is_alive()) {
+          l_Handle.set_static_body(get_static_body());
         }
         l_Handle.set_initialized(is_initialized());
         l_Handle.set_dirty(is_dirty());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
-
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
         return l_Handle;
       }
 
-      Rigidbody Rigidbody::duplicate(Rigidbody p_Handle,
-                                     Low::Core::Entity p_Entity)
+      BoxCollider BoxCollider::duplicate(BoxCollider p_Handle,
+                                         Low::Core::Entity p_Entity)
       {
         return p_Handle.duplicate(p_Entity);
       }
 
       Low::Util::Handle
-      Rigidbody::_duplicate(Low::Util::Handle p_Handle,
-                            Low::Util::Handle p_Entity)
+      BoxCollider::_duplicate(Low::Util::Handle p_Handle,
+                              Low::Util::Handle p_Entity)
       {
-        Rigidbody l_Rigidbody = p_Handle.get_id();
+        BoxCollider l_BoxCollider = p_Handle.get_id();
         Low::Core::Entity l_Entity = p_Entity.get_id();
-        return l_Rigidbody.duplicate(l_Entity);
+        return l_BoxCollider.duplicate(l_Entity);
       }
 
-      void Rigidbody::serialize(Low::Util::Serial::Node &p_Node) const
+      void
+      BoxCollider::serialize(Low::Util::Serial::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
-        Low::Util::Serial::serialize_enum(
-            p_Node["motion_type"],
-            Low::Core::Physics::BodyMotionTypeEnumHelper::
-                get_enum_id(),
-            static_cast<uint8_t>(get_motion_type()));
-        p_Node["gravity"] = is_gravity();
-        p_Node["mass"] = get_mass();
+        p_Node["center"] = get_center();
+        p_Node["half_extents"] = get_half_extents();
+        p_Node["trigger"] = is_trigger();
         p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
-
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
-      void Rigidbody::serialize(Low::Util::Handle p_Handle,
-                                Low::Util::Serial::Node &p_Node)
+      void BoxCollider::serialize(Low::Util::Handle p_Handle,
+                                  Low::Util::Serial::Node &p_Node)
       {
-        Rigidbody l_Rigidbody = p_Handle.get_id();
-        l_Rigidbody.serialize(p_Node);
+        BoxCollider l_BoxCollider = p_Handle.get_id();
+        l_BoxCollider.serialize(p_Node);
       }
 
       Low::Util::Handle
-      Rigidbody::deserialize(Low::Util::Serial::Node &p_Node,
-                             Low::Util::Handle p_Creator)
+      BoxCollider::deserialize(Low::Util::Serial::Node &p_Node,
+                               Low::Util::Handle p_Creator)
       {
         Low::Util::UniqueId l_HandleUniqueId = 0ull;
         if (p_Node["unique_id"]) {
@@ -601,20 +653,19 @@ namespace Low {
               p_Node["_unique_id"].as<Low::Util::String>());
         }
 
-        Rigidbody l_Handle =
-            Rigidbody::make(p_Creator.get_id(), l_HandleUniqueId);
+        BoxCollider l_Handle =
+            BoxCollider::make(p_Creator.get_id(), l_HandleUniqueId);
 
-        if (p_Node["motion_type"]) {
-          l_Handle.set_motion_type(
-              static_cast<Low::Core::Physics::BodyMotionType>(
-                  Low::Util::Serial::deserialize_enum(
-                      p_Node["motion_type"])));
+        if (p_Node["center"]) {
+          l_Handle.set_center(
+              p_Node["center"].as<Low::Math::Vector3>());
         }
-        if (p_Node["gravity"]) {
-          l_Handle.set_gravity(p_Node["gravity"].as<bool>());
+        if (p_Node["half_extents"]) {
+          l_Handle.set_half_extents(
+              p_Node["half_extents"].as<Low::Math::Vector3>());
         }
-        if (p_Node["mass"]) {
-          l_Handle.set_mass(p_Node["mass"].as<float>());
+        if (p_Node["trigger"]) {
+          l_Handle.set_trigger(p_Node["trigger"].as<bool>());
         }
         if (p_Node["unique_id"]) {
           l_Handle.set_unique_id(
@@ -622,13 +673,12 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
-
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
         return l_Handle;
       }
 
-      void Rigidbody::broadcast_observable(
+      void BoxCollider::broadcast_observable(
           Low::Util::Name p_Observable) const
       {
         Low::Util::ObserverKey l_Key;
@@ -639,10 +689,10 @@ namespace Low {
       }
 
       u64
-      Rigidbody::observe(Low::Util::Name p_Observable,
-                         Low::Util::Function<void(Low::Util::Handle,
-                                                  Low::Util::Name)>
-                             p_Observer) const
+      BoxCollider::observe(Low::Util::Name p_Observable,
+                           Low::Util::Function<void(Low::Util::Handle,
+                                                    Low::Util::Name)>
+                               p_Observer) const
       {
         Low::Util::ObserverKey l_Key;
         l_Key.handleId = get_id();
@@ -651,8 +701,8 @@ namespace Low {
         return Low::Util::observe(l_Key, p_Observer);
       }
 
-      u64 Rigidbody::observe(Low::Util::Name p_Observable,
-                             Low::Util::Handle p_Observer) const
+      u64 BoxCollider::observe(Low::Util::Name p_Observable,
+                               Low::Util::Handle p_Observer) const
       {
         Low::Util::ObserverKey l_Key;
         l_Key.handleId = get_id();
@@ -661,48 +711,73 @@ namespace Low {
         return Low::Util::observe(l_Key, p_Observer);
       }
 
-      void Rigidbody::notify(Low::Util::Handle p_Observed,
-                             Low::Util::Name p_Observable)
+      void BoxCollider::notify(Low::Util::Handle p_Observed,
+                               Low::Util::Name p_Observable)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
-
+        if (p_Observable == N(world_scale_changed)) {
+          mark_dirty();
+        }
         // LOW_CODEGEN::END::CUSTOM:NOTIFY
       }
 
-      void Rigidbody::_notify(Low::Util::Handle p_Observer,
-                              Low::Util::Handle p_Observed,
-                              Low::Util::Name p_Observable)
+      void BoxCollider::_notify(Low::Util::Handle p_Observer,
+                                Low::Util::Handle p_Observed,
+                                Low::Util::Name p_Observable)
       {
-        Rigidbody l_Rigidbody = p_Observer.get_id();
-        l_Rigidbody.notify(p_Observed, p_Observable);
+        BoxCollider l_BoxCollider = p_Observer.get_id();
+        l_BoxCollider.notify(p_Observed, p_Observable);
       }
 
-      Low::Core::Physics::BodyMotionType
-      Rigidbody::get_motion_type() const
+      Low::Math::Vector3 BoxCollider::get_center() const
       {
         _LOW_ASSERT(is_alive());
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_motion_type
-        // LOW_CODEGEN::END::CUSTOM:GETTER_motion_type
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_center
+        // LOW_CODEGEN::END::CUSTOM:GETTER_center
 
-        return TYPE_SOA(Rigidbody, motion_type,
-                        Low::Core::Physics::BodyMotionType);
+        return TYPE_SOA(BoxCollider, center, Low::Math::Vector3);
       }
-      void Rigidbody::set_motion_type(
-          Low::Core::Physics::BodyMotionType p_Value)
+      void BoxCollider::set_center(float p_X, float p_Y, float p_Z)
+      {
+        Low::Math::Vector3 p_Val(p_X, p_Y, p_Z);
+        set_center(p_Val);
+      }
+
+      void BoxCollider::set_center_x(float p_Value)
+      {
+        Low::Math::Vector3 l_Value = get_center();
+        l_Value.x = p_Value;
+        set_center(l_Value);
+      }
+
+      void BoxCollider::set_center_y(float p_Value)
+      {
+        Low::Math::Vector3 l_Value = get_center();
+        l_Value.y = p_Value;
+        set_center(l_Value);
+      }
+
+      void BoxCollider::set_center_z(float p_Value)
+      {
+        Low::Math::Vector3 l_Value = get_center();
+        l_Value.z = p_Value;
+        set_center(l_Value);
+      }
+
+      void BoxCollider::set_center(Low::Math::Vector3 p_Value)
       {
         _LOW_ASSERT(is_alive());
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_motion_type
-        // LOW_CODEGEN::END::CUSTOM:PRESETTER_motion_type
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_center
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_center
 
-        if (get_motion_type() != p_Value) {
+        if (get_center() != p_Value) {
           // Set dirty flags
           mark_dirty();
 
           // Set new value
-          TYPE_SOA(Rigidbody, motion_type,
-                   Low::Core::Physics::BodyMotionType) = p_Value;
+          TYPE_SOA(BoxCollider, center, Low::Math::Vector3) = p_Value;
           {
             Low::Core::Entity l_Entity = get_entity();
             if (l_Entity.has_component(
@@ -714,253 +789,294 @@ namespace Low {
                           type_id());
               Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
               if (l_Prefab.is_alive()) {
-                l_Instance.override(ms_TypeId, N(motion_type),
+                l_Instance.override(
+                    ms_TypeId, N(center),
+                    !l_Prefab.compare_property(*this, N(center)));
+              }
+            }
+          }
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_center
+          // LOW_CODEGEN::END::CUSTOM:SETTER_center
+
+          broadcast_observable(N(center));
+        }
+      }
+
+      Low::Math::Vector3 BoxCollider::get_half_extents() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_half_extents
+        // LOW_CODEGEN::END::CUSTOM:GETTER_half_extents
+
+        return TYPE_SOA(BoxCollider, half_extents,
+                        Low::Math::Vector3);
+      }
+      void BoxCollider::set_half_extents(float p_X, float p_Y,
+                                         float p_Z)
+      {
+        Low::Math::Vector3 p_Val(p_X, p_Y, p_Z);
+        set_half_extents(p_Val);
+      }
+
+      void BoxCollider::set_half_extents_x(float p_Value)
+      {
+        Low::Math::Vector3 l_Value = get_half_extents();
+        l_Value.x = p_Value;
+        set_half_extents(l_Value);
+      }
+
+      void BoxCollider::set_half_extents_y(float p_Value)
+      {
+        Low::Math::Vector3 l_Value = get_half_extents();
+        l_Value.y = p_Value;
+        set_half_extents(l_Value);
+      }
+
+      void BoxCollider::set_half_extents_z(float p_Value)
+      {
+        Low::Math::Vector3 l_Value = get_half_extents();
+        l_Value.z = p_Value;
+        set_half_extents(l_Value);
+      }
+
+      void BoxCollider::set_half_extents(Low::Math::Vector3 p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_half_extents
+        p_Value = glm::max(p_Value, Low::Math::Vector3(0.001f));
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_half_extents
+
+        if (get_half_extents() != p_Value) {
+          // Set dirty flags
+          mark_dirty();
+
+          // Set new value
+          TYPE_SOA(BoxCollider, half_extents, Low::Math::Vector3) =
+              p_Value;
+          {
+            Low::Core::Entity l_Entity = get_entity();
+            if (l_Entity.has_component(
+                    Low::Core::Component::PrefabInstance::
+                        type_id())) {
+              Low::Core::Component::PrefabInstance l_Instance =
+                  l_Entity.get_component(
+                      Low::Core::Component::PrefabInstance::
+                          type_id());
+              Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
+              if (l_Prefab.is_alive()) {
+                l_Instance.override(ms_TypeId, N(half_extents),
                                     !l_Prefab.compare_property(
-                                        *this, N(motion_type)));
+                                        *this, N(half_extents)));
               }
             }
           }
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_motion_type
-          rebuild();
-          // LOW_CODEGEN::END::CUSTOM:SETTER_motion_type
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_half_extents
+          // LOW_CODEGEN::END::CUSTOM:SETTER_half_extents
 
-          broadcast_observable(N(motion_type));
+          broadcast_observable(N(half_extents));
         }
       }
 
-      bool Rigidbody::is_gravity() const
+      bool BoxCollider::is_trigger() const
       {
         _LOW_ASSERT(is_alive());
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gravity
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_trigger
+        // LOW_CODEGEN::END::CUSTOM:GETTER_trigger
 
-        // LOW_CODEGEN::END::CUSTOM:GETTER_gravity
-
-        return TYPE_SOA(Rigidbody, gravity, bool);
+        return TYPE_SOA(BoxCollider, trigger, bool);
       }
-      void Rigidbody::toggle_gravity()
+      void BoxCollider::toggle_trigger()
       {
-        set_gravity(!is_gravity());
+        set_trigger(!is_trigger());
       }
 
-      void Rigidbody::set_gravity(bool p_Value)
-      {
-        _LOW_ASSERT(is_alive());
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gravity
-
-        // LOW_CODEGEN::END::CUSTOM:PRESETTER_gravity
-
-        if (is_gravity() != p_Value) {
-          // Set dirty flags
-          mark_dirty();
-
-          // Set new value
-          TYPE_SOA(Rigidbody, gravity, bool) = p_Value;
-          {
-            Low::Core::Entity l_Entity = get_entity();
-            if (l_Entity.has_component(
-                    Low::Core::Component::PrefabInstance::
-                        type_id())) {
-              Low::Core::Component::PrefabInstance l_Instance =
-                  l_Entity.get_component(
-                      Low::Core::Component::PrefabInstance::
-                          type_id());
-              Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
-              if (l_Prefab.is_alive()) {
-                l_Instance.override(
-                    ms_TypeId, N(gravity),
-                    !l_Prefab.compare_property(*this, N(gravity)));
-              }
-            }
-          }
-
-          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gravity
-          // LOW_CODEGEN::END::CUSTOM:SETTER_gravity
-
-          broadcast_observable(N(gravity));
-        }
-      }
-
-      float Rigidbody::get_mass() const
+      void BoxCollider::set_trigger(bool p_Value)
       {
         _LOW_ASSERT(is_alive());
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mass
-
-        // LOW_CODEGEN::END::CUSTOM:GETTER_mass
-
-        return TYPE_SOA(Rigidbody, mass, float);
-      }
-      void Rigidbody::set_mass(float p_Value)
-      {
-        _LOW_ASSERT(is_alive());
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mass
-
-        // LOW_CODEGEN::END::CUSTOM:PRESETTER_mass
-
-        if (get_mass() != p_Value) {
-          // Set dirty flags
-          mark_dirty();
-
-          // Set new value
-          TYPE_SOA(Rigidbody, mass, float) = p_Value;
-          {
-            Low::Core::Entity l_Entity = get_entity();
-            if (l_Entity.has_component(
-                    Low::Core::Component::PrefabInstance::
-                        type_id())) {
-              Low::Core::Component::PrefabInstance l_Instance =
-                  l_Entity.get_component(
-                      Low::Core::Component::PrefabInstance::
-                          type_id());
-              Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
-              if (l_Prefab.is_alive()) {
-                l_Instance.override(
-                    ms_TypeId, N(mass),
-                    !l_Prefab.compare_property(*this, N(mass)));
-              }
-            }
-          }
-
-          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mass
-          // LOW_CODEGEN::END::CUSTOM:SETTER_mass
-
-          broadcast_observable(N(mass));
-        }
-      }
-
-      Low::Core::Physics::Body Rigidbody::get_body() const
-      {
-        _LOW_ASSERT(is_alive());
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_body
-        // LOW_CODEGEN::END::CUSTOM:GETTER_body
-
-        return TYPE_SOA(Rigidbody, body, Low::Core::Physics::Body);
-      }
-      void Rigidbody::set_body(Low::Core::Physics::Body p_Value)
-      {
-        _LOW_ASSERT(is_alive());
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_body
-        // LOW_CODEGEN::END::CUSTOM:PRESETTER_body
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_trigger
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_trigger
 
         // Set new value
-        TYPE_SOA(Rigidbody, body, Low::Core::Physics::Body) = p_Value;
+        TYPE_SOA(BoxCollider, trigger, bool) = p_Value;
+        {
+          Low::Core::Entity l_Entity = get_entity();
+          if (l_Entity.has_component(
+                  Low::Core::Component::PrefabInstance::type_id())) {
+            Low::Core::Component::PrefabInstance l_Instance =
+                l_Entity.get_component(
+                    Low::Core::Component::PrefabInstance::type_id());
+            Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
+            if (l_Prefab.is_alive()) {
+              l_Instance.override(
+                  ms_TypeId, N(trigger),
+                  !l_Prefab.compare_property(*this, N(trigger)));
+            }
+          }
+        }
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_body
-        // LOW_CODEGEN::END::CUSTOM:SETTER_body
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_trigger
+        // LOW_CODEGEN::END::CUSTOM:SETTER_trigger
 
-        broadcast_observable(N(body));
+        broadcast_observable(N(trigger));
       }
 
-      bool Rigidbody::is_initialized() const
+      Low::Core::Physics::Shape BoxCollider::get_shape() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_shape
+        // LOW_CODEGEN::END::CUSTOM:GETTER_shape
+
+        return TYPE_SOA(BoxCollider, shape,
+                        Low::Core::Physics::Shape);
+      }
+      void BoxCollider::set_shape(Low::Core::Physics::Shape p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_shape
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_shape
+
+        // Set new value
+        TYPE_SOA(BoxCollider, shape, Low::Core::Physics::Shape) =
+            p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_shape
+        // LOW_CODEGEN::END::CUSTOM:SETTER_shape
+
+        broadcast_observable(N(shape));
+      }
+
+      Low::Core::Physics::Body BoxCollider::get_static_body() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_static_body
+        // LOW_CODEGEN::END::CUSTOM:GETTER_static_body
+
+        return TYPE_SOA(BoxCollider, static_body,
+                        Low::Core::Physics::Body);
+      }
+      void
+      BoxCollider::set_static_body(Low::Core::Physics::Body p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_static_body
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_static_body
+
+        // Set new value
+        TYPE_SOA(BoxCollider, static_body, Low::Core::Physics::Body) =
+            p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_static_body
+        // LOW_CODEGEN::END::CUSTOM:SETTER_static_body
+
+        broadcast_observable(N(static_body));
+      }
+
+      bool BoxCollider::is_initialized() const
       {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_initialized
-
         // LOW_CODEGEN::END::CUSTOM:GETTER_initialized
 
-        return TYPE_SOA(Rigidbody, initialized, bool);
+        return TYPE_SOA(BoxCollider, initialized, bool);
       }
-      void Rigidbody::toggle_initialized()
+      void BoxCollider::toggle_initialized()
       {
         set_initialized(!is_initialized());
       }
 
-      void Rigidbody::set_initialized(bool p_Value)
+      void BoxCollider::set_initialized(bool p_Value)
       {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_initialized
-
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_initialized
 
         // Set new value
-        TYPE_SOA(Rigidbody, initialized, bool) = p_Value;
+        TYPE_SOA(BoxCollider, initialized, bool) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_initialized
-
         // LOW_CODEGEN::END::CUSTOM:SETTER_initialized
 
         broadcast_observable(N(initialized));
       }
 
-      Low::Core::Entity Rigidbody::get_entity() const
+      Low::Core::Entity BoxCollider::get_entity() const
       {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_entity
-
         // LOW_CODEGEN::END::CUSTOM:GETTER_entity
 
-        return TYPE_SOA(Rigidbody, entity, Low::Core::Entity);
+        return TYPE_SOA(BoxCollider, entity, Low::Core::Entity);
       }
-      void Rigidbody::set_entity(Low::Core::Entity p_Value)
+      void BoxCollider::set_entity(Low::Core::Entity p_Value)
       {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_entity
-
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_entity
 
         // Set new value
-        TYPE_SOA(Rigidbody, entity, Low::Core::Entity) = p_Value;
+        TYPE_SOA(BoxCollider, entity, Low::Core::Entity) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
-
         // LOW_CODEGEN::END::CUSTOM:SETTER_entity
 
         broadcast_observable(N(entity));
       }
 
-      Low::Util::UniqueId Rigidbody::get_unique_id() const
+      Low::Util::UniqueId BoxCollider::get_unique_id() const
       {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
-
         // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
-        return TYPE_SOA(Rigidbody, unique_id, Low::Util::UniqueId);
+        return TYPE_SOA(BoxCollider, unique_id, Low::Util::UniqueId);
       }
-      void Rigidbody::set_unique_id(Low::Util::UniqueId p_Value)
+      void BoxCollider::set_unique_id(Low::Util::UniqueId p_Value)
       {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
-
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
         // Set new value
-        TYPE_SOA(Rigidbody, unique_id, Low::Util::UniqueId) = p_Value;
+        TYPE_SOA(BoxCollider, unique_id, Low::Util::UniqueId) =
+            p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
-
         // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
 
         broadcast_observable(N(unique_id));
       }
 
-      bool Rigidbody::is_dirty() const
+      bool BoxCollider::is_dirty() const
       {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dirty
         // LOW_CODEGEN::END::CUSTOM:GETTER_dirty
 
-        return TYPE_SOA(Rigidbody, dirty, bool);
+        return TYPE_SOA(BoxCollider, dirty, bool);
       }
-      void Rigidbody::toggle_dirty()
+      void BoxCollider::toggle_dirty()
       {
         set_dirty(!is_dirty());
       }
 
-      void Rigidbody::set_dirty(bool p_Value)
+      void BoxCollider::set_dirty(bool p_Value)
       {
         _LOW_ASSERT(is_alive());
 
@@ -968,7 +1084,7 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
 
         // Set new value
-        TYPE_SOA(Rigidbody, dirty, bool) = p_Value;
+        TYPE_SOA(BoxCollider, dirty, bool) = p_Value;
 
         if (p_Value) {
           mark_dirty();
@@ -980,85 +1096,73 @@ namespace Low {
         broadcast_observable(N(dirty));
       }
 
-      void Rigidbody::mark_dirty()
+      void BoxCollider::mark_dirty()
       {
         if (!is_dirty()) {
-          TYPE_SOA(Rigidbody, dirty, bool) = true;
+          TYPE_SOA(BoxCollider, dirty, bool) = true;
           // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
           ms_Dirty.insert(get_id());
           // LOW_CODEGEN::END::CUSTOM:MARK_dirty
         }
       }
 
-      void Rigidbody::rebuild()
+      void BoxCollider::rebuild()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_rebuild
         _LOW_ASSERT(is_alive());
 
-        if (get_body().is_alive()) {
-          get_body().destroy();
-          set_body(Low::Core::Physics::Body());
+        if (get_static_body().is_alive()) {
+          get_static_body().destroy();
+          set_static_body(Low::Core::Physics::Body());
+        }
+        if (get_shape().is_alive()) {
+          get_shape().destroy();
+          set_shape(Low::Core::Physics::Shape());
         }
 
         Low::Core::Entity l_Entity = get_entity();
-        _LOW_ASSERT(l_Entity.is_alive());
-
-        Low::Core::Physics::Shape l_Shape;
-        Low::Math::Vector3 l_Center(0.0f);
-
-        if (l_Entity.has_component(BoxCollider::type_id())) {
-          BoxCollider l_Collider =
-              l_Entity.get_component(BoxCollider::type_id());
-          if (!l_Collider.get_shape().is_alive()) {
-            set_initialized(false);
-            return;
-          }
-          if (l_Collider.get_static_body().is_alive()) {
-            l_Collider.get_static_body().destroy();
-          }
-          l_Shape = l_Collider.get_shape();
-          l_Center = l_Collider.get_center();
-        } else if (l_Entity.has_component(
-                       SphereCollider::type_id())) {
-          SphereCollider l_Collider =
-              l_Entity.get_component(SphereCollider::type_id());
-          if (!l_Collider.get_shape().is_alive()) {
-            set_initialized(false);
-            return;
-          }
-          if (l_Collider.get_static_body().is_alive()) {
-            l_Collider.get_static_body().destroy();
-          }
-          l_Shape = l_Collider.get_shape();
-          l_Center = l_Collider.get_center();
-        } else {
-          set_initialized(false);
-          return;
-        }
-
         Low::Core::Component::Transform l_Transform =
             l_Entity.get_transform();
-        _LOW_ASSERT(l_Transform.is_alive());
+        Low::Math::Vector3 l_WorldScale =
+            l_Transform.get_world_scale();
 
         Low::Core::Physics::World l_World =
             get_physics_world(l_Entity);
 
-        Low::Math::Vector3 l_Position =
-            l_Transform.get_world_position() +
-            (l_Transform.get_world_rotation() * l_Center);
+        Low::Math::Shape l_Shape;
+        l_Shape.type = Low::Math::ShapeType::BOX;
+        l_Shape.box.position = get_center();
+        l_Shape.box.rotation =
+            Low::Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f);
+        l_Shape.box.halfExtents = get_half_extents() * l_WorldScale;
 
-        Low::Core::Physics::Body l_Body =
-            Low::Core::Physics::Body::make(
-                l_World, l_Shape, l_Position,
-                l_Transform.get_world_rotation(), get_motion_type(),
-                get_mass(), is_gravity());
-        set_body(l_Body);
+        Low::Core::Physics::Shape l_PhysicsShape =
+            Low::Core::Physics::Shape::make(l_World, l_Shape);
+        set_shape(l_PhysicsShape);
+
+        if (l_Entity.has_component(Rigidbody::type_id())) {
+          Rigidbody l_Rigidbody =
+              l_Entity.get_component(Rigidbody::type_id());
+          l_Rigidbody.rebuild();
+        } else {
+          _LOW_ASSERT(l_Transform.is_alive());
+
+          Low::Core::Physics::Body l_Body =
+              Low::Core::Physics::Body::make(
+                  l_World, l_PhysicsShape,
+                  get_world_collider_position(l_Entity, get_center()),
+                  l_Transform.get_world_rotation(),
+                  Low::Core::Physics::BodyMotionType::STATIC, 1.0f,
+                  false);
+          set_static_body(l_Body);
+        }
+
         set_initialized(true);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_rebuild
       }
 
-      uint32_t Rigidbody::create_instance(u32 &p_PageIndex,
-                                          u32 &p_SlotIndex)
+      uint32_t BoxCollider::create_instance(u32 &p_PageIndex,
+                                            u32 &p_SlotIndex)
       {
         u32 l_Index = 0;
         u32 l_PageIndex = 0;
@@ -1092,25 +1196,25 @@ namespace Low {
         return l_Index;
       }
 
-      u32 Rigidbody::create_page()
+      u32 BoxCollider::create_page()
       {
         const u32 l_Capacity = get_capacity();
         LOW_ASSERT((l_Capacity + ms_PageSize) < LOW_UINT32_MAX,
-                   "Could not increase capacity for Rigidbody.");
+                   "Could not increase capacity for BoxCollider.");
 
         Low::Util::Instances::Page *l_Page =
             new Low::Util::Instances::Page;
         Low::Util::Instances::initialize_page(
-            l_Page, Rigidbody::Data::get_size(), ms_PageSize);
+            l_Page, BoxCollider::Data::get_size(), ms_PageSize);
         ms_Pages.push_back(l_Page);
 
         ms_Capacity = l_Capacity + l_Page->size;
         return ms_Pages.size() - 1;
       }
 
-      bool Rigidbody::get_page_for_index(const u32 p_Index,
-                                         u32 &p_PageIndex,
-                                         u32 &p_SlotIndex)
+      bool BoxCollider::get_page_for_index(const u32 p_Index,
+                                           u32 &p_PageIndex,
+                                           u32 &p_SlotIndex)
       {
         if (p_Index >= get_capacity()) {
           p_PageIndex = LOW_UINT32_MAX;
@@ -1126,7 +1230,6 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
-
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Component

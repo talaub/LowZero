@@ -61,6 +61,13 @@ LowCore:
   Clip: 123
   GameplaySystem: 124
   GameplaySystemInstance: 125
+  World: 126
+  Shape: 127
+  Body: 128
+  BoxCollider: 129
+  SphereCollider: 130
+  CharacterController: 131
+  CapsuleController: 132
 LowRenderer2:
   GraphicsPipeline: 32
   Pipeline: 45

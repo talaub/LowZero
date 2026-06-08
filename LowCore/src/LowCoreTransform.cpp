@@ -1542,7 +1542,7 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot calculate world "
                                "position of dead transform");
 
-        if (!is_world_dirty() || is_world_updated()) {
+        if (!is_world_dirty()) {
           return;
         }
 
@@ -1596,7 +1596,13 @@ namespace Low {
 
         set_world_position(l_Position);
         set_world_rotation(l_Rotation);
+
+        const Low::Math::Vector3 l_OldWorldScale =
+            TYPE_SOA(Transform, world_scale, Low::Math::Vector3);
         set_world_scale(l_Scale);
+        if (l_OldWorldScale != l_Scale) {
+          broadcast_observable(N(world_scale_changed));
+        }
 
         set_world_dirty(false);
         set_world_updated(true);

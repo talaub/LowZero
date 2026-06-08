@@ -29,11 +29,12 @@ namespace Low {
                            p_Position);
       }
 
-      void render_mesh(Renderer::RenderView p_RenderView,
-                       Renderer::Mesh p_Mesh,
-                       const Math::Color p_Color,
-                       const Math::Matrix4x4 p_Transformation,
-                       const bool p_DepthTest, const bool p_Wireframe)
+      static void render_mesh(Renderer::RenderView p_RenderView,
+                              Renderer::Mesh p_Mesh,
+                              const Math::Color p_Color,
+                              const Math::Matrix4x4 p_Transformation,
+                              const bool p_DepthTest,
+                              const bool p_Wireframe)
       {
         Renderer::DebugGeometryDraw l_Draw;
         l_Draw.depthTest = p_DepthTest;
@@ -51,7 +52,7 @@ namespace Low {
         Math::Matrix4x4 l_Transform =
             glm::translate(glm::mat4(1.0f), p_Box.position) *
             glm::toMat4(p_Box.rotation) *
-            glm::scale(glm::mat4(1.0f), p_Box.halfExtents * 2.0f);
+            glm::scale(glm::mat4(1.0f), p_Box.halfExtents);
 
         render_mesh(Renderer::get_editor_renderview(),
                     Renderer::get_primitives().unitCube, p_Color,
@@ -76,18 +77,53 @@ namespace Low {
                            Math::Color p_Color, bool p_DepthTest,
                            bool p_Wireframe)
       {
-        // TODO: FIX
         Math::Matrix4x4 l_Transform =
             glm::translate(glm::mat4(1.0f), p_Cylinder.position) *
             glm::toMat4(p_Cylinder.rotation) *
             glm::scale(glm::mat4(1.0f),
                        Math::Vector3(p_Cylinder.radius,
-                                     p_Cylinder.height / 2.0f,
+                                     p_Cylinder.height,
                                      p_Cylinder.radius));
 
         render_mesh(Renderer::get_editor_renderview(),
-                    Renderer::get_primitives().unitCube, p_Color,
+                    Renderer::get_primitives().unitCylinder, p_Color,
                     l_Transform, p_DepthTest, p_Wireframe);
+      }
+
+      void render_capsule(Math::Cylinder p_Capsule,
+                          Math::Color p_Color, bool p_DepthTest,
+                          bool p_Wireframe)
+      {
+        const float l_Radius = glm::max(p_Capsule.radius, 0.0f);
+        const float l_CylinderHeight =
+            glm::max(p_Capsule.height - (l_Radius * 2.0f), 0.0f);
+        const Math::Vector3 l_Direction =
+            Math::VectorUtil::rotate_by_quaternion(
+                LOW_VECTOR3_UP, p_Capsule.rotation);
+        const Math::Vector3 l_CapOffset =
+            l_Direction * (l_CylinderHeight * 0.5f);
+
+        if (l_CylinderHeight > LOW_MATH_EPSILON) {
+          Math::Cylinder l_Body;
+          l_Body.position = p_Capsule.position;
+          l_Body.rotation = p_Capsule.rotation;
+          l_Body.radius = l_Radius;
+          l_Body.height = l_CylinderHeight;
+
+          render_cylinder(l_Body, p_Color, p_DepthTest, p_Wireframe);
+        }
+
+        Math::Sphere l_Cap;
+        l_Cap.radius = l_Radius;
+        l_Cap.position = p_Capsule.position + l_CapOffset;
+        render_sphere(l_Cap, p_Color, p_DepthTest, p_Wireframe);
+
+        if (l_CylinderHeight <= LOW_MATH_EPSILON) {
+          return;
+        }
+
+        l_Cap.position = p_Capsule.position - l_CapOffset;
+        render_sphere(l_Cap, p_Color, p_DepthTest, p_Wireframe);
       }
 
       void render_cone(Math::Cone p_Cone, Math::Color p_Color,
@@ -183,56 +219,23 @@ namespace Low {
                        Math::Color p_Color, bool p_DepthTest,
                        bool p_Wireframe, float p_Thickness)
       {
-        {
-          float x = p_Start.x;
-          p_Start.x = p_Start.z * -1.0f;
-          p_Start.z = x;
+        float l_Distance = Math::VectorUtil::distance(p_Start, p_End);
+        if (l_Distance <= LOW_MATH_EPSILON) {
+          return;
         }
-        {
-          float x = p_End.x;
-          p_End.x = p_End.z * -1.0f;
-          p_End.z = x;
-        }
+
+        Math::Vector3 l_Direction =
+            Math::VectorUtil::normalize(p_End - p_Start);
 
         Math::Cylinder l_Cylinder;
-
-        Math::Vector3 l_Diff = p_End - p_Start;
-        l_Diff = Math::VectorUtil::normalize(l_Diff);
-
-        float l_Distance = Math::VectorUtil::distance(p_Start, p_End);
-
-        Low::Math::Vector3 l_Up(0.0f, 1.0f, 0.0f);
-        l_Up = Math::VectorUtil::normalize(l_Up);
-
-        Math::Vector3 l_RotatedDiff = l_Diff;
-        {
-          float x = l_RotatedDiff.x;
-          l_RotatedDiff.x = l_RotatedDiff.z * -1.0f;
-          l_RotatedDiff.z = x * -2.0f;
-        }
-
         l_Cylinder.position =
-            p_Start + (l_RotatedDiff * (l_Distance * 0.5f));
-        l_Cylinder.height = l_Distance * 0.5f;
+            p_Start + (l_Direction * (l_Distance * 0.5f));
+        l_Cylinder.rotation =
+            Math::VectorUtil::between(LOW_VECTOR3_UP, l_Direction);
         l_Cylinder.radius = p_Thickness;
-        l_Diff.y *= -1.0f;
-        l_Cylinder.rotation = Math::VectorUtil::between(l_Up, l_Diff);
-        // render_cylinder(l_Cylinder, p_Color, p_DepthTest,
-        // p_Wireframe);
+        l_Cylinder.height = l_Distance;
 
-        Math::Cylinder p_Cylinder = l_Cylinder;
-
-        Math::Matrix4x4 l_Transform =
-            glm::translate(glm::mat4(1.0f), p_Cylinder.position) *
-            glm::toMat4(p_Cylinder.rotation) *
-            glm::scale(glm::mat4(1.0f),
-                       Math::Vector3(p_Cylinder.radius,
-                                     p_Cylinder.height,
-                                     p_Cylinder.radius));
-
-        render_mesh(Renderer::get_editor_renderview(),
-                    Renderer::get_primitives().unitCube, p_Color,
-                    l_Transform, p_DepthTest, p_Wireframe);
+        render_cylinder(l_Cylinder, p_Color, p_DepthTest, p_Wireframe);
       }
 
       glm::mat4 generateModelMatrix(const glm::vec3 &v0,

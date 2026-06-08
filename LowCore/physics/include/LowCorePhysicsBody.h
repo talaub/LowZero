@@ -7,37 +7,30 @@
 #include "LowUtilContainers.h"
 #include "LowUtilSerialization.h"
 
-#include "LowCoreEntity.h"
-
 #include "LowMath.h"
-#include "LowCorePhysicsBody.h"
+#include "LowCorePhysicsWorld.h"
+#include "LowCorePhysicsShape.h"
 #include "LowCorePhysicsBodyMotionType.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
   namespace Core {
-    namespace Component {
+    namespace Physics {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      struct LOW_CORE_API Rigidbody : public Low::Util::Handle
+      struct LOW_CORE_API Body : public Low::Util::Handle
       {
       public:
         struct Data
         {
         public:
-          Low::Core::Physics::BodyMotionType motion_type;
-          bool gravity;
-          float mass;
-          Low::Core::Physics::Body body;
-          bool initialized;
-          Low::Core::Entity entity;
-          Low::Util::UniqueId unique_id;
-          bool dirty;
+          uint64_t backend_id;
+          World world;
+          Shape shape;
+          Low::Util::Name name;
 
           static size_t get_size()
           {
@@ -51,7 +44,7 @@ namespace Low {
       public:
         static Low::Util::List<Low::Util::Instances::Page *> ms_Pages;
 
-        static Low::Util::List<Rigidbody> ms_LivingInstances;
+        static Low::Util::List<Body> ms_LivingInstances;
 
         const static Low::Util::TypeIdentifier IDENTIFIER;
 
@@ -60,11 +53,12 @@ namespace Low {
           return ms_TypeId;
         }
 
-        static Rigidbody make(Low::Core::Entity p_Entity);
-        static Low::Util::Handle _make(Low::Util::Handle p_Entity);
-        static Rigidbody make(Low::Core::Entity p_Entity,
-                              Low::Util::UniqueId p_UniqueId);
-        explicit Rigidbody(const Rigidbody &p_Copy)
+      private:
+        static Body make(Low::Util::Name p_Name);
+        static Low::Util::Handle _make(Low::Util::Name p_Name);
+
+      public:
+        explicit Body(const Body &p_Copy)
             : Low::Util::Handle(p_Copy.m_Id)
         {
         }
@@ -74,34 +68,34 @@ namespace Low {
         static void initialize();
         static void cleanup();
 
-        Rigidbody(u64 p_Id) : Low::Util::Handle(p_Id)
+        Body(u64 p_Id) : Low::Util::Handle(p_Id)
         {
         }
-        Rigidbody() : Low::Util::Handle()
+        Body() : Low::Util::Handle()
         {
         }
-        Rigidbody(Low::Util::Handle p_Handle)
+        Body(Low::Util::Handle p_Handle)
             : Low::Util::Handle(p_Handle.get_id())
         {
         }
 
         using Handle::operator=;
 
-        Rigidbody &operator=(const Rigidbody &) = default;
-        Rigidbody &operator=(Rigidbody &&) noexcept = default;
+        Body &operator=(const Body &) = default;
+        Body &operator=(Body &&) noexcept = default;
 
         static uint32_t living_count()
         {
           return static_cast<uint32_t>(ms_LivingInstances.size());
         }
-        static Rigidbody *living_instances()
+        static Body *living_instances()
         {
           return ms_LivingInstances.data();
         }
 
-        static Rigidbody create_handle_by_index(u32 p_Index);
+        static Body create_handle_by_index(u32 p_Index);
 
-        static Rigidbody find_by_index(uint32_t p_Index);
+        static Body find_by_index(uint32_t p_Index);
         static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
         bool is_alive() const;
@@ -124,12 +118,15 @@ namespace Low {
 
         void serialize(Low::Util::Serial::Node &p_Node) const;
 
-        Rigidbody duplicate(Low::Core::Entity p_Entity) const;
-        static Rigidbody duplicate(Rigidbody p_Handle,
-                                   Low::Core::Entity p_Entity);
+        Body duplicate(Low::Util::Name p_Name) const;
+        static Body duplicate(Body p_Handle, Low::Util::Name p_Name);
         static Low::Util::Handle
         _duplicate(Low::Util::Handle p_Handle,
-                   Low::Util::Handle p_Entity);
+                   Low::Util::Name p_Name);
+
+        static Body find_by_name(Low::Util::Name p_Name);
+        static Low::Util::Handle
+        _find_by_name(Low::Util::Name p_Name);
 
         static void serialize(Low::Util::Handle p_Handle,
                               Low::Util::Serial::Node &p_Node);
@@ -138,43 +135,41 @@ namespace Low {
                     Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
-          Rigidbody l_Handle = p_Handle.get_id();
+          Body l_Handle = p_Handle.get_id();
           return l_Handle.is_alive();
         }
 
         static void destroy(Low::Util::Handle p_Handle)
         {
           _LOW_ASSERT(is_alive(p_Handle));
-          Rigidbody l_Rigidbody = p_Handle.get_id();
-          l_Rigidbody.destroy();
+          Body l_Body = p_Handle.get_id();
+          l_Body.destroy();
         }
 
-        Low::Core::Physics::BodyMotionType get_motion_type() const;
-        void
-        set_motion_type(Low::Core::Physics::BodyMotionType p_Value);
+        uint64_t get_backend_id() const;
 
-        bool is_gravity() const;
-        void set_gravity(bool p_Value);
-        void toggle_gravity();
+        World get_world() const;
 
-        float get_mass() const;
-        void set_mass(float p_Value);
+        Shape get_shape() const;
 
-        Low::Core::Physics::Body get_body() const;
+        Low::Util::Name get_name() const;
+        void set_name(Low::Util::Name p_Value);
 
-        bool is_initialized() const;
-
-        Low::Core::Entity get_entity() const;
-        void set_entity(Low::Core::Entity p_Value);
-
-        Low::Util::UniqueId get_unique_id() const;
-
-        bool is_dirty() const;
-        void set_dirty(bool p_Value);
-        void toggle_dirty();
-        void mark_dirty();
-
-        void rebuild();
+        static Body make(World p_World, Shape p_Shape,
+                         Low::Math::Vector3 p_Position,
+                         Low::Math::Quaternion p_Rotation,
+                         BodyMotionType p_MotionType, float p_Mass,
+                         bool p_Gravity);
+        Low::Math::Vector3 get_position();
+        void set_position(Low::Math::Vector3 p_Value);
+        Low::Math::Quaternion get_rotation();
+        void set_rotation(Low::Math::Quaternion p_Value);
+        Low::Math::Matrix4x4 &get_transform();
+        void set_transform(Low::Math::Matrix4x4 &p_Value);
+        Low::Math::Vector3 get_linear_velocity();
+        void set_linear_velocity(Low::Math::Vector3 p_Value);
+        Low::Math::Vector3 get_angular_velocity();
+        void set_angular_velocity(Low::Math::Vector3 p_Value);
         static bool get_page_for_index(const u32 p_Index,
                                        u32 &p_PageIndex,
                                        u32 &p_SlotIndex);
@@ -185,26 +180,25 @@ namespace Low {
         static u32 create_instance(u32 &p_PageIndex,
                                    u32 &p_SlotIndex);
         static u32 create_page();
-        void set_body(Low::Core::Physics::Body p_Value);
-        void set_initialized(bool p_Value);
-        void toggle_initialized();
-        void set_unique_id(Low::Util::UniqueId p_Value);
+        void set_backend_id(uint64_t p_Value);
+        void set_world(World p_Value);
+        void set_shape(Shape p_Value);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
-      public:
-        static Low::Util::Set<Low::Core::Component::Rigidbody>
-            ms_Dirty;
         // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
       };
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
-
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
-    } // namespace Component
+    } // namespace Physics
   } // namespace Core
 } // namespace Low
 
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE
-
+namespace Low {
+  namespace Core {
+    typedef Physics::Body PhysicsBody;
+  }
+} // namespace Low
 // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_HEADER_CODE

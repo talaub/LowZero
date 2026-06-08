@@ -59,6 +59,9 @@ namespace Low {
                                  Low::Util::Set<Util::UniqueId>))
           Low::Util::Set<Util::UniqueId>();
       ACCESSOR_TYPE_SOA(l_Handle, Scene, loaded, bool) = false;
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Scene, physics_world,
+                                 Low::Core::Physics::World))
+          Low::Core::Physics::World();
       ACCESSOR_TYPE_SOA(l_Handle, Scene, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -76,7 +79,7 @@ namespace Low {
                                     l_Handle.get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
-
+      l_Handle.set_physics_world(PhysicsWorld::make(p_Name));
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -88,7 +91,9 @@ namespace Low {
 
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-
+        if (get_physics_world().is_alive()) {
+          get_physics_world().destroy();
+        }
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 
@@ -215,6 +220,35 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: loaded
+      }
+      {
+        // Property: physics_world
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(physics_world);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(Scene::Data, physics_world);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType =
+            Low::Core::Physics::World::IDENTIFIER;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          Scene l_Handle = p_Handle.get_id();
+          l_Handle.get_physics_world();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, Scene, physics_world,
+              Low::Core::Physics::World);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Scene l_Handle = p_Handle.get_id();
+          *((Low::Core::Physics::World *)p_Data) =
+              l_Handle.get_physics_world();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: physics_world
       }
       {
         // Property: unique_id
@@ -432,6 +466,9 @@ namespace Low {
 
       Scene l_Handle = make(p_Name);
       l_Handle.set_loaded(is_loaded());
+      if (get_physics_world().is_alive()) {
+        l_Handle.set_physics_world(get_physics_world());
+      }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
 
@@ -589,6 +626,33 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_loaded
 
       broadcast_observable(N(loaded));
+    }
+
+    Low::Core::Physics::World Scene::get_physics_world() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_physics_world
+      // LOW_CODEGEN::END::CUSTOM:GETTER_physics_world
+
+      return TYPE_SOA(Scene, physics_world,
+                      Low::Core::Physics::World);
+    }
+    void Scene::set_physics_world(Low::Core::Physics::World p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_physics_world
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_physics_world
+
+      // Set new value
+      TYPE_SOA(Scene, physics_world, Low::Core::Physics::World) =
+          p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_physics_world
+      // LOW_CODEGEN::END::CUSTOM:SETTER_physics_world
+
+      broadcast_observable(N(physics_world));
     }
 
     Low::Util::UniqueId Scene::get_unique_id() const

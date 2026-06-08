@@ -1,0 +1,15 @@
+module: LowCore
+source_path: physics/src
+header_path: physics/include
+prefix: LowCorePhysics
+namespace:
+  - Low
+  - Core
+  - Physics
+dll_macro: LOW_CORE_API
+enums:
+  BodyMotionType:
+    options:
+      - name: Static
+      - name: Kinematic
+      - name: Dynamic

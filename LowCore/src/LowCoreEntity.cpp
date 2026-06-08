@@ -957,6 +957,11 @@ namespace Low {
 
       for (auto it = get_components().begin();
            it != get_components().end(); ++it) {
+        Util::RTTI::TypeInfo &i_TypeInfo =
+            Util::Handle::get_type_info(it->first);
+        if (!i_TypeInfo.is_alive(it->second.get_id())) {
+          continue;
+        }
         Util::Serial::Node i_Node;
         i_Node["type"] =
             (Util::String)Util::Handle::identifier(it->first);
@@ -964,8 +969,6 @@ namespace Low {
           i_Node["handle"] = it->second.get_id();
         }
 
-        Util::RTTI::TypeInfo &i_TypeInfo =
-            Util::Handle::get_type_info(it->first);
         Util::Serial::Node i_PropertiesNode;
         i_TypeInfo.serialize(it->second, i_PropertiesNode);
         i_Node["properties"] = i_PropertiesNode;

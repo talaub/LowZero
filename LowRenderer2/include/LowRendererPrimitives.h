@@ -13,6 +13,8 @@ namespace Low {
       Mesh unitQuad;
       Mesh unitCube;
       Mesh unitIcoSphere;
+      Mesh unitCylinder;
+      Mesh unitCapsule;
     };
 
     LOW_RENDERER2_API Primitives &get_primitives();
@@ -21,5 +23,9 @@ namespace Low {
     LOW_RENDERER2_API Mesh create_cube(Math::Vector3 p_HalfExtents);
     LOW_RENDERER2_API Mesh create_icosphere(float p_Radius,
                                             u32 p_Subdivisions);
+    LOW_RENDERER2_API Mesh create_cylinder(const float p_Radius,
+                                           const float p_Height);
+    LOW_RENDERER2_API Mesh create_capsule(const float p_Radius,
+                                          const float p_Height);
   } // namespace Renderer
 } // namespace Low
