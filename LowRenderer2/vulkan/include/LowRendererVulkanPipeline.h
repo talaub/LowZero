@@ -49,6 +49,7 @@ namespace Low {
 
           ShaderVariant vertexShader;
           ShaderVariant fragmentShader;
+          bool dynamicLineWidth;
 
           GraphicsPipelineBuilder()
           {
@@ -66,6 +67,7 @@ namespace Low {
           void set_input_topology(VkPrimitiveTopology p_Topology);
           void set_polygon_mode(VkPolygonMode p_Mode,
                                 float p_LineWidth = 1.0f);
+          void enable_dynamic_line_width();
           void set_cull_mode(VkCullModeFlags p_CullMode,
                              VkFrontFace p_FrontFace);
           void set_multismapling_none();

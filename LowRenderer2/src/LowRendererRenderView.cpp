@@ -123,6 +123,14 @@ namespace Low {
           Low::Util::List<Low::Renderer::DebugGeometryDraw>))
           Low::Util::List<Low::Renderer::DebugGeometryDraw>();
       new (ACCESSOR_TYPE_SOA_PTR(
+          l_Handle, RenderView, debug_geometry_lines,
+          Low::Util::List<Low::Renderer::DebugLineDraw>))
+          Low::Util::List<Low::Renderer::DebugLineDraw>();
+      new (ACCESSOR_TYPE_SOA_PTR(
+          l_Handle, RenderView, debug_geometry_triangles,
+          Low::Util::List<Low::Renderer::DebugTriangleDraw>))
+          Low::Util::List<Low::Renderer::DebugTriangleDraw>();
+      new (ACCESSOR_TYPE_SOA_PTR(
           l_Handle, RenderView, highlight_draws_solid,
           Low::Util::List<Low::Renderer::HighlightDrawSolid>))
           Low::Util::List<Low::Renderer::HighlightDrawSolid>();
@@ -1234,6 +1242,62 @@ namespace Low {
         // End property: debug_geometry
       }
       {
+        // Property: debug_geometry_lines
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(debug_geometry_lines);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderView::Data, debug_geometry_lines);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.get_debug_geometry_lines();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, RenderView, debug_geometry_lines,
+              Low::Util::List<Low::Renderer::DebugLineDraw>);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          *((Low::Util::List<Low::Renderer::DebugLineDraw> *)p_Data) =
+              l_Handle.get_debug_geometry_lines();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: debug_geometry_lines
+      }
+      {
+        // Property: debug_geometry_triangles
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(debug_geometry_triangles);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderView::Data, debug_geometry_triangles);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.get_debug_geometry_triangles();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, RenderView, debug_geometry_triangles,
+              Low::Util::List<Low::Renderer::DebugTriangleDraw>);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          *((Low::Util::List<Low::Renderer::DebugTriangleDraw> *)
+                p_Data) = l_Handle.get_debug_geometry_triangles();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: debug_geometry_triangles
+      }
+      {
         // Property: highlight_draws_solid
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(highlight_draws_solid);
@@ -1479,6 +1543,40 @@ namespace Low {
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: make_default
+      }
+      {
+        // Function: has_step
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(has_step);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_FunctionInfo.handleType = 0;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Step);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::HANDLE;
+          l_ParameterInfo.handleType =
+              Low::Renderer::RenderStep::type_id();
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: has_step
+      }
+      {
+        // Function: has_step_by_name
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(has_step_by_name);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_FunctionInfo.handleType = 0;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_StepName);
+          l_ParameterInfo.type = Low::Util::RTTI::PropertyType::NAME;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: has_step_by_name
       }
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
@@ -2732,6 +2830,31 @@ namespace Low {
           Low::Util::List<Low::Renderer::DebugGeometryDraw>);
     }
 
+    Low::Util::List<Low::Renderer::DebugLineDraw> &
+    RenderView::get_debug_geometry_lines() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_debug_geometry_lines
+      // LOW_CODEGEN::END::CUSTOM:GETTER_debug_geometry_lines
+
+      return TYPE_SOA(RenderView, debug_geometry_lines,
+                      Low::Util::List<Low::Renderer::DebugLineDraw>);
+    }
+
+    Low::Util::List<Low::Renderer::DebugTriangleDraw> &
+    RenderView::get_debug_geometry_triangles() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_debug_geometry_triangles
+      // LOW_CODEGEN::END::CUSTOM:GETTER_debug_geometry_triangles
+
+      return TYPE_SOA(
+          RenderView, debug_geometry_triangles,
+          Low::Util::List<Low::Renderer::DebugTriangleDraw>);
+    }
+
     Low::Util::List<Low::Renderer::HighlightDrawSolid> &
     RenderView::get_highlight_draws_solid() const
     {
@@ -2964,6 +3087,31 @@ namespace Low {
 
       return l_RenderView;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_default
+    }
+
+    bool RenderView::has_step(Low::Renderer::RenderStep p_Step) const
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_has_step
+      for (RenderStep i_Step : get_steps()) {
+        if (i_Step == p_Step) {
+          return true;
+        }
+      }
+      return false;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_has_step
+    }
+
+    bool
+    RenderView::has_step_by_name(Low::Util::Name p_StepName) const
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_has_step_by_name
+      for (RenderStep i_Step : get_steps()) {
+        if (i_Step.get_name() == p_StepName) {
+          return true;
+        }
+      }
+      return false;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_has_step_by_name
     }
 
     uint32_t RenderView::create_instance(u32 &p_PageIndex,

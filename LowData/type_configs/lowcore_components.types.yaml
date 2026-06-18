@@ -282,10 +282,54 @@ types:
         type: Low::Math::Vector3
         editor_editable: true
         dirty_flag: dirty
+      rotation:
+        type: Low::Math::Quaternion
+        editor_editable: true
+        dirty_flag: dirty
       half_extents:
         type: Low::Math::Vector3
         editor_editable: true
         dirty_flag: dirty
+      trigger:
+        type: bool
+        editor_editable: true
+      shape:
+        type: Low::Core::Physics::Shape
+        handle: true
+        private_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+      static_body:
+        type: Low::Core::Physics::Body
+        handle: true
+        private_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+      initialized:
+        type: bool
+        private_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+    functions:
+      rebuild:
+        return_type: void
+
+  ConvexHullCollider:
+    component: true
+    scripting_expose: false
+    editor:
+      icon: physics
+    header_imports:
+      - LowMath.h
+      - LowCorePhysicsShape.h
+      - LowCorePhysicsBody.h
+    dirty_flags:
+      dirty:
+        no_data: false
+    properties:
+      points:
+        type: Low::Util::List<Low::Math::Vector3>
+        editor_editable: true
       trigger:
         type: bool
         editor_editable: true

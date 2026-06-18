@@ -61,12 +61,13 @@ namespace Low {
     template <typename T> using Future = std::future<T>;
     template <typename T> using Function = std::function<T>;
     template <typename T> using SharedPtr = std::shared_ptr<T>;
+    template <typename T> using WeakPtr = std::weak_ptr<T>;
+    template <typename T> using UniquePtr = std::unique_ptr<T>;
 
     template <typename T, typename... TArgs>
     SharedPtr<T> make_shared(TArgs &&...p_Args)
     {
-      return std::make_shared<T>(
-          std::forward<TArgs>(p_Args)...);
+      return std::make_shared<T>(std::forward<TArgs>(p_Args)...);
     }
 
   } // namespace Util

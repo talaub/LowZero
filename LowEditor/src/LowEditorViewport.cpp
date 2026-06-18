@@ -9,6 +9,7 @@
 #include "LowRendererSkinningSystem.h"
 #include "LowRendererTextureState.h"
 #include "LowEditorGui.h"
+#include "LowUtilGlobals.h"
 #include <imgui.h>
 
 namespace Low {
@@ -39,10 +40,10 @@ namespace Low {
              p_Margin;
     }
 
-    static bool setup_bind_pose(
-        Renderer::SkeletalRenderObject p_RenderObject,
-        Renderer::SkinningPose p_Pose,
-        Util::List<Math::Matrix4x4> &p_OutGlobalPose)
+    static bool
+    setup_bind_pose(Renderer::SkeletalRenderObject p_RenderObject,
+                    Renderer::SkinningPose p_Pose,
+                    Util::List<Math::Matrix4x4> &p_OutGlobalPose)
     {
       if (!p_RenderObject.is_alive() || !p_Pose.is_alive() ||
           !p_Pose.get_skeleton().is_alive()) {
@@ -67,9 +68,8 @@ namespace Low {
 
       for (u32 i = 0u; i < (u32)l_Bones.size(); ++i) {
         p_OutGlobalPose[i] = l_Bones[i].global_bind_transform;
-        l_PoseMatrices[i] =
-            l_Bones[i].global_bind_transform *
-            l_Bones[i].inverse_bind_matrix;
+        l_PoseMatrices[i] = l_Bones[i].global_bind_transform *
+                            l_Bones[i].inverse_bind_matrix;
       }
 
       p_Pose.mark_dirty();
@@ -79,7 +79,8 @@ namespace Low {
     Viewport::Viewport(const Math::UVector2 p_Dimensions)
         : m_RenderScene(Renderer::RenderScene::make(N(Viewport))),
           m_RenderView(Renderer::RenderView::make(N(Viewport))),
-          m_ViewportHovered(false)
+          m_ViewportHovered(false), m_ViewportFocused(false),
+          m_OwnsRenderResources(true)
     {
       m_RenderView.set_render_scene(m_RenderScene);
       m_RenderView.set_dimensions(p_Dimensions);
@@ -93,6 +94,16 @@ namespace Low {
       m_RenderView.add_step_by_name(RENDERSTEP_SSGI_NAME);
     }
 
+    Viewport::Viewport(Renderer::RenderView p_RenderView)
+        : m_RenderScene(Util::Handle::DEAD),
+          m_RenderView(p_RenderView), m_ViewportHovered(false),
+          m_ViewportFocused(false), m_OwnsRenderResources(false)
+    {
+      if (m_RenderView.is_alive()) {
+        m_LastFrameDimensions = m_RenderView.get_dimensions();
+      }
+    }
+
     Viewport::~Viewport()
     {
       for (Renderer::RenderObject i_RenderObject : m_RenderObjects) {
@@ -102,12 +113,22 @@ namespace Low {
       }
       m_RenderObjects.clear();
 
-      if (m_RenderView.is_alive()) {
+      if (m_OwnsRenderResources && m_RenderView.is_alive()) {
         m_RenderView.destroy();
       }
-      if (m_RenderScene.is_alive()) {
+      if (m_OwnsRenderResources && m_RenderScene.is_alive()) {
         m_RenderScene.destroy();
       }
+    }
+
+    Renderer::Texture Viewport::get_out_texture() const
+    {
+      Renderer::Texture l_Tex = m_RenderView.get_tonemapped_image();
+      if (!m_RenderView.has_step_by_name(
+              RENDERSTEP_TONEMAPPING_NAME)) {
+        l_Tex = m_RenderView.get_lit_image();
+      }
+      return l_Tex;
     }
 
     void
@@ -156,19 +177,42 @@ namespace Low {
 
     bool Viewport::tick(const float p_Delta)
     {
-      return render_viewport(p_Delta);
+      if (!render_viewport(p_Delta)) {
+        return false;
+      }
+
+      EditingLayerContext l_Context{p_Delta, *this};
+      m_EditingLayers.tick(l_Context);
+
+      return true;
     }
 
     bool Viewport::render_viewport(const float p_Delta)
     {
-      if (!get_out_texture().is_alive()) {
+      if (!m_RenderView.is_alive()) {
         return false;
       }
 
       const Math::UVector2 l_Dimensions =
           m_RenderView.get_dimensions();
+      m_LastFrameDimensions = l_Dimensions;
+
+      m_ViewportFocused = ImGui::IsWindowFocused();
 
       const ImVec2 l_DrawPos = ImGui::GetCursorScreenPos();
+      m_WidgetRectPosition = Math::Vector2(l_DrawPos.x, l_DrawPos.y);
+      Util::Globals::set(
+          N(LOW_SCREEN_OFFSET),
+          Util::Variant(Math::Vector2(l_DrawPos.x, l_DrawPos.y)));
+
+      ImGuiViewport *l_Viewport = ImGui::GetWindowViewport();
+      if (ImGui::GetMainViewport() == l_Viewport) {
+        m_WidgetPosition.x = ImGui::GetWindowPos().x;
+        m_WidgetPosition.y = ImGui::GetWindowPos().y;
+      } else {
+        m_WidgetPosition.x = l_Viewport->Pos.x;
+        m_WidgetPosition.y = l_Viewport->Pos.y;
+      }
 
       Renderer::Texture l_OutTexture = get_out_texture();
       if (l_OutTexture.is_imgui_texture_ready()) {
@@ -179,10 +223,22 @@ namespace Low {
       }
 
       m_ViewportHovered = ImGui::IsItemHovered();
+      m_HoveredRelativePosition = Math::Vector2(2.0f, 2.0f);
+      if (l_Dimensions.x > 0u && l_Dimensions.y > 0u) {
+        ImVec2 l_MousePosition = ImGui::GetMousePos();
+        ImVec2 l_WindowMousePos = {l_MousePosition.x - l_DrawPos.x,
+                                   l_MousePosition.y - l_DrawPos.y};
+        if (l_WindowMousePos.x > 0.0f && l_WindowMousePos.y > 0.0f &&
+            l_WindowMousePos.x < l_Dimensions.x &&
+            l_WindowMousePos.y < l_Dimensions.y) {
+          m_HoveredRelativePosition.x =
+              l_WindowMousePos.x / (float)l_Dimensions.x;
+          m_HoveredRelativePosition.y =
+              l_WindowMousePos.y / (float)l_Dimensions.y;
+        }
+      }
 
-      if (get_out_texture().get_state() !=
-          Renderer::TextureState::LOADED) {
-        return true;
+      if (!l_OutTexture.is_imgui_texture_ready()) {
         ImGui::SetCursorScreenPos(
             l_DrawPos +
             ImVec2(l_Dimensions.x / 2, l_Dimensions.y / 2));
@@ -347,16 +403,14 @@ namespace Low {
 
       if (!m_BindPoseInitialized) {
         m_BindPoseInitialized =
-            setup_bind_pose(m_RenderObject, m_Pose,
-                            m_BindGlobalPose);
+            setup_bind_pose(m_RenderObject, m_Pose, m_BindGlobalPose);
       }
 
       if (m_BindPoseInitialized && !m_BindPoseSubmitted) {
-        m_BindPoseSubmitted =
-            Renderer::SkinningSystem::
-                evaluate_global_pose_for_skeletal_renderobject(
-                    m_RenderObject, m_Pose.get_skeleton(),
-                    m_BindGlobalPose);
+        m_BindPoseSubmitted = Renderer::SkinningSystem::
+            evaluate_global_pose_for_skeletal_renderobject(
+                m_RenderObject, m_Pose.get_skeleton(),
+                m_BindGlobalPose);
       }
 
       if (!m_LowSpotCalculated) {

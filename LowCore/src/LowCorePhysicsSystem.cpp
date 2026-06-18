@@ -1,6 +1,7 @@
 #include "LowCorePhysicsSystem.h"
 
 #include "LowCoreBoxCollider.h"
+#include "LowCoreConvexHullCollider.h"
 #include "LowCoreRigidbody.h"
 #include "LowCoreScene.h"
 #include "LowCoreSphereCollider.h"
@@ -27,9 +28,12 @@ namespace Low {
         }
 
         static void
-        set_body_from_transform(Low::Core::Physics::Body p_Body,
-                                Component::Transform p_Transform,
-                                const Low::Math::Vector3 &p_Center)
+        set_body_from_transform(
+            Low::Core::Physics::Body p_Body,
+            Component::Transform p_Transform,
+            const Low::Math::Vector3 &p_Center,
+            const Low::Math::Quaternion &p_LocalRotation =
+                Low::Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f))
         {
           if (!p_Body.is_alive() || !p_Transform.is_alive()) {
             return;
@@ -38,7 +42,8 @@ namespace Low {
           p_Body.set_position(
               p_Transform.get_world_position() +
               (p_Transform.get_world_rotation() * p_Center));
-          p_Body.set_rotation(p_Transform.get_world_rotation());
+          p_Body.set_rotation(p_Transform.get_world_rotation() *
+                              p_LocalRotation);
         }
 
         static void
@@ -130,7 +135,8 @@ namespace Low {
 
             set_body_from_transform(i_Collider.get_static_body(),
                                     i_Entity.get_transform(),
-                                    get_box_center(i_Collider));
+                                    get_box_center(i_Collider),
+                                    i_Collider.get_rotation());
           }
 
           for (u32 i = 0u;
@@ -152,6 +158,28 @@ namespace Low {
             set_body_from_transform(i_Collider.get_static_body(),
                                     i_Entity.get_transform(),
                                     get_sphere_center(i_Collider));
+          }
+
+          for (u32 i = 0u;
+               i < Component::ConvexHullCollider::living_count();
+               ++i) {
+            Component::ConvexHullCollider i_Collider =
+                Component::ConvexHullCollider::living_instances()[i];
+            if (!i_Collider.is_alive() ||
+                !i_Collider.get_static_body().is_alive()) {
+              continue;
+            }
+
+            Entity i_Entity = i_Collider.get_entity();
+            if (!i_Entity.is_alive() ||
+                i_Entity.has_component(
+                    Component::Rigidbody::type_id())) {
+              continue;
+            }
+
+            set_body_from_transform(i_Collider.get_static_body(),
+                                    i_Entity.get_transform(),
+                                    Low::Math::Vector3(0.0f));
           }
         }
 
@@ -285,6 +313,15 @@ namespace Low {
             }
           }
           Component::SphereCollider::ms_Dirty.clear();
+
+          for (Component::ConvexHullCollider i_Collider :
+               Component::ConvexHullCollider::ms_Dirty) {
+            if (i_Collider.is_alive()) {
+              i_Collider.rebuild();
+              i_Collider.set_dirty(false);
+            }
+          }
+          Component::ConvexHullCollider::ms_Dirty.clear();
 
           for (Component::CharacterController i_CController :
                Component::CharacterController::ms_Dirty) {

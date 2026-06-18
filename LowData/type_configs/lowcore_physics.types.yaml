@@ -24,6 +24,10 @@ types:
         type: World
         handle: true
         private_setter: true
+      type:
+        type: ShapeType
+        no_ref: true
+        private_setter: true
     functions:
       make:
         static: true
@@ -35,6 +39,34 @@ types:
             handle: true
           - name: shape
             type: Low::Math::Shape
+      make_convex_hull:
+        static: true
+        return_type: Shape
+        return_handle: true
+        parameters:
+          - name: world
+            type: World
+            handle: true
+          - name: points
+            type: Util::List<Math::Vector3>
+            const: true
+            constant: true
+      debug_visualize:
+        return_type: void
+        parameters:
+          - name: renderView
+            type: Renderer::RenderView
+            handle: true
+          - name: position
+            type: Math::Vector3
+          - name: rotation
+            type: Math::Quaternion
+          - name: color
+            type: Math::Color
+          - name: wireframe
+            type: bool
+          - name: depthTest
+            type: bool
 
   Body:
     no_auto_serialize: true

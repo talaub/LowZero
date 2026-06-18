@@ -68,6 +68,7 @@ LowCore:
   SphereCollider: 130
   CharacterController: 131
   CapsuleController: 132
+  ConvexHullCollider: 133
 LowRenderer2:
   GraphicsPipeline: 32
   Pipeline: 45

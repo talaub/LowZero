@@ -56,9 +56,9 @@ namespace Low {
       typedef void (*Saver)(Low::Util::Handle);
       typedef bool (*SimpleCheck)(Low::Util::Handle);
       typedef void (*SimpleCall)(Low::Util::Handle);
-      typedef void (*RuntimeFileEventHandler)(
-          Low::Util::Handle, const Low::Util::String,
-          const FileEventType);
+      typedef void (*RuntimeFileEventHandler)(Low::Util::Handle,
+                                              const Low::Util::String,
+                                              const FileEventType);
 
       struct AssetFile
       {
@@ -152,8 +152,8 @@ namespace Low {
         bool initializeOnStartup;
         bool creatable;
         List<String> assetSuffixes;
-        Loader loader;
-        Saver saver;
+        Loader loader = nullptr;
+        Saver saver = nullptr;
         bool supportsLoading;
         bool supportsSaving;
         SimpleCheck isLoadable;
@@ -302,8 +302,7 @@ namespace Low {
 
       public:
         AuthoringTypeRegistratorBuilder(
-            const Name p_Name,
-            const TypeIdentifier p_TypeIdentifier)
+            const Name p_Name, const TypeIdentifier p_TypeIdentifier)
         {
           m_Registrator.name = p_Name;
           m_Registrator.typeId = Handle::type_id(p_TypeIdentifier);

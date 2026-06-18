@@ -2554,10 +2554,230 @@ namespace Low {
         return true;
       }
 
+      struct DebugTrianglePushConstants
+      {
+        alignas(16) Math::Vector4 p0;
+        alignas(16) Math::Vector4 p1;
+        alignas(16) Math::Vector4 p2;
+        alignas(16) Math::Vector4 color;
+      };
+
+      struct DebugLinePushConstants
+      {
+        alignas(16) Math::Vector4 start;
+        alignas(16) Math::Vector4 end;
+        alignas(16) Math::Vector4 color;
+      };
+
+      struct DebugGeometryStepData
+      {
+        PipelineLayout debugTrianglePipelineLayout;
+        Pipeline debugTriangleFillDepthPipeline;
+        Pipeline debugTriangleFillNoDepthPipeline;
+        Pipeline debugTriangleWireDepthPipeline;
+        Pipeline debugTriangleWireNoDepthPipeline;
+        PipelineLayout debugLinePipelineLayout;
+        Pipeline debugLineDepthPipeline;
+        Pipeline debugLineNoDepthPipeline;
+      };
+
+      static Pipeline create_debug_triangle_pipeline(
+          PipelineLayout p_PipelineLayout, bool p_DepthTest,
+          bool p_Fill)
+      {
+        PipelineUtil::GraphicsPipelineBuilder l_Builder;
+        l_Builder.pipelineLayout = p_PipelineLayout;
+        l_Builder.set_shaders("debug_triangle.vert",
+                              "debug_triangle.frag");
+        l_Builder.set_input_topology(
+            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+        l_Builder.set_polygon_mode(p_Fill ? VK_POLYGON_MODE_FILL :
+                                                VK_POLYGON_MODE_LINE,
+                                   3.0f);
+        l_Builder.set_cull_mode(VK_CULL_MODE_NONE,
+                                VK_FRONT_FACE_COUNTER_CLOCKWISE);
+        l_Builder.set_multismapling_none();
+        l_Builder.set_blending_alpha();
+
+        l_Builder.colorAttachmentFormats.clear();
+        l_Builder.colorAttachmentFormats.push_back(
+            VK_FORMAT_R8G8B8A8_UNORM);
+        l_Builder.set_depth_format(VK_FORMAT_D32_SFLOAT);
+
+        if (!p_DepthTest) {
+          l_Builder.disable_depth_test();
+        }
+
+        return l_Builder.register_pipeline();
+      }
+
+      static Pipeline create_debug_line_pipeline(
+          PipelineLayout p_PipelineLayout, bool p_DepthTest)
+      {
+        PipelineUtil::GraphicsPipelineBuilder l_Builder;
+        l_Builder.pipelineLayout = p_PipelineLayout;
+        l_Builder.set_shaders("debug_line.vert", "debug_line.frag");
+        l_Builder.set_input_topology(
+            VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
+        l_Builder.set_polygon_mode(VK_POLYGON_MODE_FILL, 1.0f);
+        l_Builder.enable_dynamic_line_width();
+        l_Builder.set_cull_mode(VK_CULL_MODE_NONE,
+                                VK_FRONT_FACE_COUNTER_CLOCKWISE);
+        l_Builder.set_multismapling_none();
+        l_Builder.set_blending_alpha();
+
+        l_Builder.colorAttachmentFormats.clear();
+        l_Builder.colorAttachmentFormats.push_back(
+            VK_FORMAT_R8G8B8A8_UNORM);
+        l_Builder.set_depth_format(VK_FORMAT_D32_SFLOAT);
+
+        if (!p_DepthTest) {
+          l_Builder.disable_depth_test();
+        }
+
+        return l_Builder.register_pipeline();
+      }
+
+      static void bind_debug_shape_pipeline_descriptors(
+          VkCommandBuffer p_Cmd, Pipeline p_Pipeline,
+          ViewInfo p_ViewInfo)
+      {
+        VkDescriptorSet l_GlobalSet =
+            Global::get_global_descriptor_set();
+        vkCmdBindDescriptorSets(
+            p_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            p_Pipeline.get_layout().get(), 0, 1, &l_GlobalSet, 0,
+            nullptr);
+
+        VkDescriptorSet l_TextureSet =
+            Global::get_current_texture_descriptor_set();
+        vkCmdBindDescriptorSets(
+            p_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            p_Pipeline.get_layout().get(), 1, 1, &l_TextureSet, 0,
+            nullptr);
+
+        VkDescriptorSet l_ViewInfoSet =
+            p_ViewInfo.get_view_data_descriptor_set();
+        vkCmdBindDescriptorSets(
+            p_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            p_Pipeline.get_layout().get(), 2, 1, &l_ViewInfoSet, 0,
+            nullptr);
+      }
+
       bool initialize_debug_geometry_renderstep()
       {
         RenderStep l_RenderStep =
             RenderStep::make(RENDERSTEP_DEBUG_GEOMETRY_NAME);
+
+        l_RenderStep.set_prepare_callback(
+            [](RenderStep p_RenderStep,
+               RenderView p_RenderView) -> bool {
+              DebugGeometryStepData *l_Data =
+                  new DebugGeometryStepData;
+
+              Util::List<VkDescriptorSetLayout>
+                  l_DescriptorSetLayouts;
+              l_DescriptorSetLayouts.push_back(
+                  Global::get_global_descriptor_set_layout());
+              l_DescriptorSetLayouts.push_back(
+                  Global::get_texture_descriptor_set_layout());
+              l_DescriptorSetLayouts.push_back(
+                  Global::get_view_info_descriptor_set_layout());
+
+              VkPipelineLayoutCreateInfo l_Layout{};
+              l_Layout.sType =
+                  VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+              l_Layout.pNext = nullptr;
+              l_Layout.pSetLayouts = l_DescriptorSetLayouts.data();
+              l_Layout.setLayoutCount =
+                  l_DescriptorSetLayouts.size();
+
+              VkPushConstantRange l_PushConstant{};
+              l_PushConstant.offset = 0;
+              l_PushConstant.size =
+                  sizeof(DebugTrianglePushConstants);
+              l_PushConstant.stageFlags =
+                  VK_SHADER_STAGE_ALL_GRAPHICS;
+
+              l_Layout.pPushConstantRanges = &l_PushConstant;
+              l_Layout.pushConstantRangeCount = 1;
+
+              l_Data->debugTrianglePipelineLayout =
+                  PipelineUtil::create_layout(N(DebugTriangle),
+                                              l_Layout);
+              l_Data->debugTriangleFillDepthPipeline =
+                  create_debug_triangle_pipeline(
+                      l_Data->debugTrianglePipelineLayout, true,
+                      true);
+              l_Data->debugTriangleFillNoDepthPipeline =
+                  create_debug_triangle_pipeline(
+                      l_Data->debugTrianglePipelineLayout, false,
+                      true);
+              l_Data->debugTriangleWireDepthPipeline =
+                  create_debug_triangle_pipeline(
+                      l_Data->debugTrianglePipelineLayout, true,
+                      false);
+              l_Data->debugTriangleWireNoDepthPipeline =
+                  create_debug_triangle_pipeline(
+                      l_Data->debugTrianglePipelineLayout, false,
+                      false);
+
+              l_PushConstant.size =
+                  sizeof(DebugLinePushConstants);
+              l_Data->debugLinePipelineLayout =
+                  PipelineUtil::create_layout(N(DebugLine),
+                                              l_Layout);
+              l_Data->debugLineDepthPipeline =
+                  create_debug_line_pipeline(
+                      l_Data->debugLinePipelineLayout, true);
+              l_Data->debugLineNoDepthPipeline =
+                  create_debug_line_pipeline(
+                      l_Data->debugLinePipelineLayout, false);
+
+              p_RenderView.get_step_data()[p_RenderStep.get_index()] =
+                  l_Data;
+              return true;
+            });
+
+        l_RenderStep.set_teardown_callback(
+            [](RenderStep p_RenderStep,
+               RenderView p_RenderView) -> bool {
+              DebugGeometryStepData *l_Data =
+                  (DebugGeometryStepData *)GET_STEP_DATA(
+                      p_RenderView, p_RenderStep);
+              if (l_Data) {
+                if (l_Data->debugTriangleFillDepthPipeline
+                        .is_alive()) {
+                  l_Data->debugTriangleFillDepthPipeline.destroy();
+                }
+                if (l_Data->debugTriangleFillNoDepthPipeline
+                        .is_alive()) {
+                  l_Data->debugTriangleFillNoDepthPipeline.destroy();
+                }
+                if (l_Data->debugTriangleWireDepthPipeline
+                        .is_alive()) {
+                  l_Data->debugTriangleWireDepthPipeline.destroy();
+                }
+                if (l_Data->debugTriangleWireNoDepthPipeline
+                        .is_alive()) {
+                  l_Data->debugTriangleWireNoDepthPipeline.destroy();
+                }
+                if (l_Data->debugTrianglePipelineLayout.is_alive()) {
+                  l_Data->debugTrianglePipelineLayout.destroy();
+                }
+                if (l_Data->debugLineDepthPipeline.is_alive()) {
+                  l_Data->debugLineDepthPipeline.destroy();
+                }
+                if (l_Data->debugLineNoDepthPipeline.is_alive()) {
+                  l_Data->debugLineNoDepthPipeline.destroy();
+                }
+                if (l_Data->debugLinePipelineLayout.is_alive()) {
+                  l_Data->debugLinePipelineLayout.destroy();
+                }
+                delete l_Data;
+              }
+              return true;
+            });
 
         l_RenderStep.set_execute_callback([&](RenderStep p_RenderStep,
                                               float p_Delta,
@@ -2593,60 +2813,66 @@ namespace Low {
             const u64 l_DrawCommandSize =
                 sizeof(DebugGeometryUpload) * l_Uploads.size();
 
-            if (l_DrawCommandSize == 0) {
+            if (l_DrawCommandSize == 0 &&
+                p_RenderView.get_debug_geometry_lines().empty() &&
+                p_RenderView.get_debug_geometry_triangles().empty()) {
               VK_RENDERDOC_SECTION_END();
               return true;
             }
 
-            const u64 l_FrameUploadSpace =
-                l_ViewInfo.request_current_staging_buffer_space(
-                    l_DrawCommandSize, &l_StagingOffset);
+            if (l_DrawCommandSize > 0) {
+              const u64 l_FrameUploadSpace =
+                  l_ViewInfo.request_current_staging_buffer_space(
+                      l_DrawCommandSize, &l_StagingOffset);
 
-            LOWR_VK_ASSERT_RETURN(l_FrameUploadSpace >=
-                                      l_DrawCommandSize,
-                                  "Did not have enough staging "
-                                  "buffer space to upload "
-                                  "debug geometry draw commands.");
+              LOWR_VK_ASSERT_RETURN(l_FrameUploadSpace >=
+                                        l_DrawCommandSize,
+                                    "Did not have enough staging "
+                                    "buffer space to upload "
+                                    "debug geometry draw commands.");
 
-            LOWR_VK_ASSERT_RETURN(
-                l_ViewInfo.write_current_staging_buffer(
-                    l_Uploads.data(), l_FrameUploadSpace,
-                    l_StagingOffset),
-                "Failed to write debug geometry draw command "
-                "data to staging buffer");
+              LOWR_VK_ASSERT_RETURN(
+                  l_ViewInfo.write_current_staging_buffer(
+                      l_Uploads.data(), l_FrameUploadSpace,
+                      l_StagingOffset),
+                  "Failed to write debug geometry draw command "
+                  "data to staging buffer");
 
-            VkBufferCopy l_CopyRegion{};
-            l_CopyRegion.srcOffset = l_StagingOffset;
-            l_CopyRegion.dstOffset = 0;
-            l_CopyRegion.size = l_FrameUploadSpace;
+              VkBufferCopy l_CopyRegion{};
+              l_CopyRegion.srcOffset = l_StagingOffset;
+              l_CopyRegion.dstOffset = 0;
+              l_CopyRegion.size = l_FrameUploadSpace;
 
-            Vulkan::BufferUtil::cmd_buffer_barrier(
-                Vulkan::Global::get_current_command_buffer(),
-                l_ViewInfo.get_debug_geometry_buffer(), l_CopyRegion,
-                VK_PIPELINE_STAGE_2_TRANSFER_BIT |
-                    VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
-                    VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                VK_ACCESS_2_TRANSFER_WRITE_BIT |
-                    VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
-                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                VK_ACCESS_2_TRANSFER_WRITE_BIT);
+              Vulkan::BufferUtil::cmd_buffer_barrier(
+                  Vulkan::Global::get_current_command_buffer(),
+                  l_ViewInfo.get_debug_geometry_buffer(),
+                  l_CopyRegion,
+                  VK_PIPELINE_STAGE_2_TRANSFER_BIT |
+                      VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                      VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                  VK_ACCESS_2_TRANSFER_WRITE_BIT |
+                      VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                  VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                  VK_ACCESS_2_TRANSFER_WRITE_BIT);
 
-            // This probably has to be done on the graphics
-            // queue so we can leave it as is
-            vkCmdCopyBuffer(
-                Vulkan::Global::get_current_command_buffer(),
-                l_ViewInfo.get_current_staging_buffer().buffer.buffer,
-                l_ViewInfo.get_debug_geometry_buffer().buffer, 1,
-                &l_CopyRegion);
+              // This probably has to be done on the graphics
+              // queue so we can leave it as is
+              vkCmdCopyBuffer(
+                  Vulkan::Global::get_current_command_buffer(),
+                  l_ViewInfo.get_current_staging_buffer().buffer
+                      .buffer,
+                  l_ViewInfo.get_debug_geometry_buffer().buffer, 1,
+                  &l_CopyRegion);
 
-            Vulkan::BufferUtil::cmd_buffer_barrier(
-                Vulkan::Global::get_current_command_buffer(),
-                l_ViewInfo.get_debug_geometry_buffer(), l_CopyRegion,
-                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
-                    VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                VK_ACCESS_2_SHADER_STORAGE_READ_BIT);
+              Vulkan::BufferUtil::cmd_buffer_barrier(
+                  Vulkan::Global::get_current_command_buffer(),
+                  l_ViewInfo.get_debug_geometry_buffer(),
+                  l_CopyRegion, VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                  VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                  VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                      VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                  VK_ACCESS_2_SHADER_STORAGE_READ_BIT);
+            }
           }
 
           Image l_DepthImage = p_RenderView.get_gbuffer_depth()
@@ -2761,6 +2987,96 @@ namespace Low {
             vkCmdDrawIndexed(l_Cmd, i_Draw.submesh.get_index_count(),
                              1, i_Draw.submesh.get_index_start(),
                              i_Draw.submesh.get_vertex_start(), 0);
+          }
+
+          DebugGeometryStepData *l_Data =
+              (DebugGeometryStepData *)GET_STEP_DATA(p_RenderView,
+                                                     p_RenderStep);
+          LOWR_VK_ASSERT_RETURN(
+              l_Data,
+              "Failed to draw debug triangles because debug geometry "
+              "step data was not initialized.");
+          Pipeline l_CurrentTrianglePipeline = Util::Handle::DEAD;
+          for (u32 i = 0u;
+               i <
+               p_RenderView.get_debug_geometry_triangles().size();
+               ++i) {
+            DebugTriangleDraw &i_Draw =
+                p_RenderView.get_debug_geometry_triangles()[i];
+
+            Pipeline i_Pipeline = Util::Handle::DEAD;
+            if (i_Draw.fill) {
+              i_Pipeline =
+                  i_Draw.depth_test ?
+                      l_Data->debugTriangleFillDepthPipeline :
+                      l_Data->debugTriangleFillNoDepthPipeline;
+            } else {
+              i_Pipeline =
+                  i_Draw.depth_test ?
+                      l_Data->debugTriangleWireDepthPipeline :
+                      l_Data->debugTriangleWireNoDepthPipeline;
+            }
+
+            if (l_CurrentTrianglePipeline != i_Pipeline) {
+              l_CurrentTrianglePipeline = i_Pipeline;
+              vkCmdBindPipeline(l_Cmd,
+                                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                i_Pipeline.get());
+              bind_debug_shape_pipeline_descriptors(
+                  l_Cmd, i_Pipeline, l_ViewInfo);
+            }
+
+            DebugTrianglePushConstants i_PushConstants{};
+            i_PushConstants.p0 = Math::Vector4(i_Draw.p0, 1.0f);
+            i_PushConstants.p1 = Math::Vector4(i_Draw.p1, 1.0f);
+            i_PushConstants.p2 = Math::Vector4(i_Draw.p2, 1.0f);
+            i_PushConstants.color = i_Draw.color;
+
+            vkCmdPushConstants(
+                l_Cmd, i_Pipeline.get_layout().get(),
+                VK_SHADER_STAGE_ALL_GRAPHICS, 0,
+                sizeof(DebugTrianglePushConstants),
+                &i_PushConstants);
+
+            vkCmdDraw(l_Cmd, 3, 1, 0, 0);
+          }
+
+          Pipeline l_CurrentLinePipeline = Util::Handle::DEAD;
+          for (u32 i = 0u;
+               i < p_RenderView.get_debug_geometry_lines().size();
+               ++i) {
+            DebugLineDraw &i_Draw =
+                p_RenderView.get_debug_geometry_lines()[i];
+
+            Pipeline i_Pipeline =
+                i_Draw.depth_test ? l_Data->debugLineDepthPipeline :
+                                    l_Data->debugLineNoDepthPipeline;
+
+            if (l_CurrentLinePipeline != i_Pipeline) {
+              l_CurrentLinePipeline = i_Pipeline;
+              vkCmdBindPipeline(l_Cmd,
+                                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                i_Pipeline.get());
+              bind_debug_shape_pipeline_descriptors(
+                  l_Cmd, i_Pipeline, l_ViewInfo);
+            }
+
+            const float l_LineWidth =
+                LOW_MATH_MAX(i_Draw.thickness, 1.0f);
+            vkCmdSetLineWidth(l_Cmd, l_LineWidth);
+
+            DebugLinePushConstants i_PushConstants{};
+            i_PushConstants.start =
+                Math::Vector4(i_Draw.start, 1.0f);
+            i_PushConstants.end = Math::Vector4(i_Draw.end, 1.0f);
+            i_PushConstants.color = i_Draw.color;
+
+            vkCmdPushConstants(l_Cmd, i_Pipeline.get_layout().get(),
+                               VK_SHADER_STAGE_ALL_GRAPHICS, 0,
+                               sizeof(DebugLinePushConstants),
+                               &i_PushConstants);
+
+            vkCmdDraw(l_Cmd, 2, 1, 0, 0);
           }
 
           vkCmdEndRendering(l_Cmd);

@@ -10,6 +10,7 @@
 #include "LowEditorThemes.h"
 #include "LowEditorTypeEditor.h"
 #include "LowEditorIcons.h"
+#include "LowEditorEditingLayerHelpers.h"
 #include "LowEditorUiWidget.h"
 #include "LowEditorVisualScriptAssetBuilder.h"
 #include "LowEditorVisualScriptBuilder.h"
@@ -35,7 +36,6 @@
 #include <IconsCodicons.h>
 #include <corecrt_io.h>
 #include <imgui.h>
-#include "ImGuizmo.h"
 #include "glm/matrix.hpp"
 
 #define SEARCH_LENGTH 300
@@ -587,7 +587,6 @@ namespace Low {
     {
       const float l_Delta = LOW_DELTA_TIME;
       const ImVec2 l_Avail = ImGui::GetContentRegionAvail();
-      const ImVec2 l_CursorPos = ImGui::GetCursorScreenPos();
 
       if (m_Viewport->m_Instance.is_alive()) {
         Core::UI::Element l_Root = m_Viewport->m_Instance.get_root();
@@ -623,54 +622,22 @@ namespace Low {
         }
       }
 
-      m_Viewport->tick(LOW_DELTA_TIME);
       m_Viewport->set_dimensions(l_Avail.x, l_Avail.y);
+      m_Viewport->tick(LOW_DELTA_TIME);
 
       if (m_SelectedElement.is_alive()) {
         Core::UI::Component::Display l_Display =
             m_SelectedElement.get_display();
-        Core::UI::Component::Display l_Parent =
-            l_Display.get_parent();
 
-        Math::Matrix4x4 l_ParentModel = build_ui_element_matrix(
-            l_Parent.get_absolute_pixel_position(),
-            l_Parent.get_absolute_rotation(),
-            l_Parent.get_absolute_pixel_scale());
+        TransformGizmoConfig l_GizmoConfig;
+        l_GizmoConfig.operation = TransformGizmoOperation::Translate;
+        l_GizmoConfig.local = false;
+        l_GizmoConfig.set_viewport(
+            *m_Viewport, TransformGizmoViewportMatrices::Ui2D);
 
-        Math::Matrix4x4 l_Model = build_ui_element_matrix(
-            l_Display.get_absolute_pixel_position(),
-            l_Display.get_absolute_rotation(),
-            l_Display.get_absolute_pixel_scale());
-
-        const Math::Matrix4x4 l_View =
-            m_Viewport->m_RenderView.get_ui_view_matrix();
-        const Math::Matrix4x4 l_Projection =
-            m_Viewport->m_RenderView.get_ui_projection_matrix();
-
-        ImGuizmo::SetOrthographic(true);
-        ImGuizmo::SetDrawlist();
-        ImGuizmo::SetRect(l_CursorPos.x, l_CursorPos.y, l_Avail.x,
-                          l_Avail.y);
-
-        const bool l_Changed = ImGuizmo::Manipulate(
-            &l_View[0][0], &l_Projection[0][0], ImGuizmo::TRANSLATE,
-            ImGuizmo::WORLD, &l_Model[0][0], nullptr, nullptr);
-
-        if (l_Changed) {
-          Math::Vector2 l_Pos;
-          Math::Vector2 l_Size;
-          float l_Rot;
-
-          // l_Model = glm::inverse(l_ParentModel) * l_Model;
-
-          decompose_ui_element_matrix(l_Model, l_Pos, l_Rot, l_Size);
-          l_Pos -= l_Parent.get_absolute_pixel_position();
-          l_Rot -= l_Parent.get_absolute_rotation();
-
-          l_Display.pixel_position(l_Pos);
-          l_Display.pixel_scale(l_Size);
-          l_Display.rotation(l_Rot);
-        }
+        Util::List<Core::UI::Component::Display> l_Displays;
+        l_Displays.push_back(l_Display);
+        render_transform_gizmo(l_GizmoConfig, l_Displays);
       }
     }
 

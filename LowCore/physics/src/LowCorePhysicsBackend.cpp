@@ -1,5 +1,6 @@
 #include "LowCorePhysicsBackend.h"
 
+#include "LowCoreDebugGeometry.h"
 #include "LowUtilAssert.h"
 
 #include <Jolt/Jolt.h>
@@ -11,6 +12,7 @@
 #include <Jolt/Physics/Character/CharacterVirtual.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
+#include <Jolt/Physics/Collision/Shape/ConvexHullShape.h>
 #include <Jolt/Physics/Collision/Shape/CylinderShape.h>
 #include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
@@ -20,6 +22,7 @@
 #include <mutex>
 #include <thread>
 #include <unordered_map>
+#include <unordered_set>
 
 JPH_SUPPRESS_WARNINGS
 
@@ -363,6 +366,120 @@ namespace Low {
         l_Handle.id = p_World->next_shape_id++;
         p_World->shapes[l_Handle.id] = l_Shape;
         return l_Handle;
+      }
+
+      ShapeBackendHandle
+      create_convex_hull_shape(WorldBackend *p_World,
+                               const Math::Vector3 *p_Points,
+                               uint32_t p_PointCount)
+      {
+        LOW_ASSERT(p_World,
+                   "Cannot create shape in null physics world");
+        LOW_ASSERT(p_Points && p_PointCount >= 4,
+                   "Convex hull requires at least 4 points");
+
+        JPH::Array<JPH::Vec3> l_JoltPoints;
+        l_JoltPoints.reserve(p_PointCount);
+        for (uint32_t i = 0; i < p_PointCount; ++i) {
+          l_JoltPoints.push_back(to_jolt(p_Points[i]));
+        }
+
+        JPH::ConvexHullShapeSettings l_Settings(l_JoltPoints.data(),
+                                                 (int)l_JoltPoints.size());
+        JPH::Shape::ShapeResult l_Result = l_Settings.Create();
+        LOW_ASSERT(l_Result.IsValid(),
+                   "Could not create Jolt convex hull shape");
+
+        ShapeBackendHandle l_Handle;
+        l_Handle.id = p_World->next_shape_id++;
+        p_World->shapes[l_Handle.id] = l_Result.Get();
+        return l_Handle;
+      }
+
+      ShapeBackendHandle
+      create_convex_hull_shape(WorldBackend *p_World,
+                               const Low::Util::List<Math::Vector3> &p_Points)
+      {
+        return create_convex_hull_shape(p_World, p_Points.data(),
+                                        (uint32_t)p_Points.size());
+      }
+
+      void visualize_convex_hull(
+          WorldBackend *p_World, ShapeBackendHandle p_Shape,
+          Renderer::RenderView p_RenderView,
+          const Math::Vector3 &p_Position,
+          const Math::Quaternion &p_Rotation,
+          const Math::Color &p_Color, bool p_Wireframe,
+          bool p_DepthTest)
+      {
+        LOW_ASSERT(p_World,
+                   "Cannot visualize shape in null physics world");
+
+        auto l_ShapeIt = p_World->shapes.find(p_Shape.id);
+        LOW_ASSERT(l_ShapeIt != p_World->shapes.end(),
+                   "Unknown physics shape handle");
+        LOW_ASSERT(l_ShapeIt->second->GetSubType() ==
+                       JPH::EShapeSubType::ConvexHull,
+                   "Physics shape is not a convex hull");
+
+        const JPH::ConvexHullShape *l_Hull =
+            static_cast<const JPH::ConvexHullShape *>(
+                l_ShapeIt->second.GetPtr());
+        const Math::Vector3 l_CenterOfMass =
+            from_jolt(l_Hull->GetCenterOfMass());
+
+        auto l_GetPoint = [&](uint32_t p_Index) {
+          const Math::Vector3 l_LocalPoint =
+              from_jolt(l_Hull->GetPoint(p_Index)) + l_CenterOfMass;
+          return p_Position + (p_Rotation * l_LocalPoint);
+        };
+
+        std::unordered_set<uint64_t> l_RenderedEdges;
+        for (uint32_t i = 0u; i < l_Hull->GetNumFaces(); ++i) {
+          const uint32_t i_VertexCount =
+              l_Hull->GetNumVerticesInFace(i);
+          if (i_VertexCount < 3u) {
+            continue;
+          }
+
+          JPH::Array<JPH::uint> i_Indices;
+          i_Indices.resize(i_VertexCount);
+          l_Hull->GetFaceVertices(i, i_VertexCount,
+                                  i_Indices.data());
+
+          if (!p_Wireframe) {
+            const Math::Vector3 i_FirstPoint =
+                l_GetPoint(i_Indices[0]);
+            for (uint32_t j = 1u; j + 1u < i_VertexCount; ++j) {
+              DebugGeometry::render_triangle(
+                  p_RenderView, i_FirstPoint,
+                  l_GetPoint(i_Indices[j]),
+                  l_GetPoint(i_Indices[j + 1u]), p_Color,
+                  p_DepthTest, false);
+            }
+          }
+
+          else {
+            for (uint32_t j = 0u; j < i_VertexCount; ++j) {
+              const uint32_t i_Index0 = i_Indices[j];
+              const uint32_t i_Index1 =
+                  i_Indices[(j + 1u) % i_VertexCount];
+              const uint32_t i_MinIndex =
+                  std::min(i_Index0, i_Index1);
+              const uint32_t i_MaxIndex =
+                  std::max(i_Index0, i_Index1);
+              const uint64_t i_EdgeKey =
+                  (static_cast<uint64_t>(i_MinIndex) << 32u) |
+                  i_MaxIndex;
+
+              if (l_RenderedEdges.insert(i_EdgeKey).second) {
+                DebugGeometry::render_line(
+                    p_RenderView, l_GetPoint(i_Index0),
+                    l_GetPoint(i_Index1), p_Color, p_DepthTest);
+              }
+            }
+          }
+        }
       }
 
       void destroy_shape(WorldBackend *p_World,

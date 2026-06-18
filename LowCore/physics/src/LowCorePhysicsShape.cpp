@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "LowCoreDebugGeometry.h"
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
@@ -51,6 +52,8 @@ namespace Low {
 
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Shape, world, World))
             World();
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Shape, type, ShapeType))
+            ShapeType();
         ACCESSOR_TYPE_SOA(l_Handle, Shape, name, Low::Util::Name) =
             Low::Util::Name(0u);
 
@@ -200,6 +203,32 @@ namespace Low {
           // End property: world
         }
         {
+          // Property: type
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(type);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset = offsetof(Shape::Data, type);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            Shape l_Handle = p_Handle.get_id();
+            l_Handle.get_type();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Shape, type,
+                                              ShapeType);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Shape l_Handle = p_Handle.get_id();
+            *((ShapeType *)p_Data) = l_Handle.get_type();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: type
+        }
+        {
           // Property: name
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(name);
@@ -251,6 +280,89 @@ namespace Low {
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
           // End function: make
+        }
+        {
+          // Function: make_convex_hull
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(make_convex_hull);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_FunctionInfo.handleType = Shape::type_id();
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_World);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::HANDLE;
+            l_ParameterInfo.handleType = World::type_id();
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Points);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: make_convex_hull
+        }
+        {
+          // Function: debug_visualize
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(debug_visualize);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_RenderView);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::HANDLE;
+            l_ParameterInfo.handleType =
+                Renderer::RenderView::type_id();
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Position);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::VECTOR3;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Rotation);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::QUATERNION;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Color);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::COLOR;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Wireframe);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::BOOL;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_DepthTest);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::BOOL;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: debug_visualize
         }
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
@@ -501,6 +613,31 @@ namespace Low {
         broadcast_observable(N(world));
       }
 
+      ShapeType Shape::get_type() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_type
+        // LOW_CODEGEN::END::CUSTOM:GETTER_type
+
+        return TYPE_SOA(Shape, type, ShapeType);
+      }
+      void Shape::set_type(ShapeType p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_type
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_type
+
+        // Set new value
+        TYPE_SOA(Shape, type, ShapeType) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_type
+        // LOW_CODEGEN::END::CUSTOM:SETTER_type
+
+        broadcast_observable(N(type));
+      }
+
       Low::Util::Name Shape::get_name() const
       {
         _LOW_ASSERT(is_alive());
@@ -542,8 +679,56 @@ namespace Low {
         l_Shape.set_world(p_World);
         l_Shape.set_backend_id(l_BackendHandle.id);
 
+        if (p_Shape.type == Math::ShapeType::SPHERE) {
+          l_Shape.set_type(ShapeType::Sphere);
+        } else if (p_Shape.type == Math::ShapeType::BOX) {
+          l_Shape.set_type(ShapeType::Box);
+        } else {
+          LOW_ASSERT(false, "Unknown type");
+        }
+
         return l_Shape;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
+      }
+
+      Shape Shape::make_convex_hull(
+          World p_World, const Util::List<Math::Vector3> &p_Points)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_convex_hull
+        _LOW_ASSERT(p_World.is_alive());
+        _LOW_ASSERT(!p_Points.empty());
+
+        ShapeBackendHandle l_BackendHandle = create_convex_hull_shape(
+            BACKEND_WORLD(p_World), p_Points);
+        _LOW_ASSERT(l_BackendHandle.is_valid());
+
+        Shape l_Shape = Shape::make(p_World.get_name());
+        l_Shape.set_world(p_World);
+        l_Shape.set_backend_id(l_BackendHandle.id);
+
+        l_Shape.set_type(ShapeType::ConvexHull);
+
+        return l_Shape;
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_convex_hull
+      }
+
+      void Shape::debug_visualize(Renderer::RenderView p_RenderView,
+                                  Math::Vector3 p_Position,
+                                  Math::Quaternion p_Rotation,
+                                  Math::Color p_Color,
+                                  bool p_Wireframe, bool p_DepthTest)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_debug_visualize
+        if (get_type() == ShapeType::ConvexHull) {
+          visualize_convex_hull(
+              static_cast<WorldBackend *>(
+                  get_world().get_world_ptr()),
+              static_cast<ShapeBackendHandle>(get_backend_id()),
+              p_RenderView, p_Position, p_Rotation, p_Color,
+              p_Wireframe, p_DepthTest);
+        }
+        // TODO: Implement sphere + box
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_debug_visualize
       }
 
       uint32_t Shape::create_instance(u32 &p_PageIndex,

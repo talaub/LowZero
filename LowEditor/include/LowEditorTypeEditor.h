@@ -118,6 +118,7 @@ namespace Low {
                      const Util::String p_Content);
       void show_line(const Util::String p_Label,
                      Util::Function<bool()> p_Function);
+      void default_render(const float p_Delta);
 
     public:
       static void cleanup_registered_types();

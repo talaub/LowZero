@@ -11,6 +11,7 @@
 #include "LowCoreRigidbody.h"
 #include "LowCoreBoxCollider.h"
 #include "LowCoreSphereCollider.h"
+#include "LowCoreConvexHullCollider.h"
 #include "LowCoreCharacterController.h"
 #include "LowCoreMeshRenderer.h"
 #include "LowCoreDebugGeometry.h"
@@ -141,6 +142,7 @@ namespace Low {
       Component::PointLight::initialize();
       Component::BoxCollider::initialize();
       Component::SphereCollider::initialize();
+      Component::ConvexHullCollider::initialize();
       Component::Rigidbody::initialize();
       Component::CharacterController::initialize();
       Component::PrefabInstance::initialize();
@@ -346,6 +348,7 @@ namespace Low {
       Component::PrefabInstance::cleanup();
       Component::CharacterController::cleanup();
       Component::Rigidbody::cleanup();
+      Component::ConvexHullCollider::cleanup();
       Component::SphereCollider::cleanup();
       Component::BoxCollider::cleanup();
       Component::PointLight::cleanup();

@@ -1,5 +1,7 @@
 #include "LowEditor.h"
 
+#include "LowCoreConvexHullCollider.h"
+#include "LowCoreDirectionalLight.h"
 #include "LowRendererEditorImage.h"
 #include "LowRendererMesh.h"
 #include "LowRendererMeshResource.h"
@@ -19,10 +21,20 @@
 #include "LowUtilSerialization.h"
 
 #include "LowCorePrefabInstance.h"
+#include "LowCoreBoxCollider.h"
+#include "LowCoreCharacterController.h"
+#include "LowCoreDebugGeometry.h"
+#include "LowCoreMeshRenderer.h"
+#include "LowCoreNavmeshAgent.h"
+#include "LowCorePointLight.h"
 #include "LowCoreScriptAsset.h"
 #include "LowCoreScripting.h"
 #include "LowCoreScriptModule.h"
+#include "LowCoreSphereCollider.h"
+#include "LowCoreTransform.h"
 #include "LowCoreUiWidgetAsset.h"
+#include "LowCoreCamera.h"
+#include "LowCoreConvexHullCollider.h"
 
 #include "LowEditorMainWindow.h"
 #include "LowEditorThemes.h"
@@ -38,8 +50,11 @@
 #include "LowEditorScriptWidget.h"
 #include "LowEditorSimpleAssetEditors.h"
 #include "LowEditorUiWidgetEditor.h"
+#include "LowEditorViewportRendering.h"
 #include "LowEditorVisualScriptAssetBuilder.h"
 #include "LowEditorVisualScriptEditor.h"
+#include "LowEditorConvexHullColliderTypeEditor.h"
+#include "LowEditorEditingLayerHelpers.h"
 
 #include "Flode.h"
 #include "FlodeEditor.h"
@@ -124,10 +139,366 @@ namespace Low {
       }
     };
 
+    static void register_handle_viewport_renderers()
+    {
+      const float l_BillboardSize = 0.5f;
+
+      {
+        ViewportHandleRenderer l_Renderer;
+        l_Renderer.render =
+            [](const ViewportHandleRenderContext &p_Context) {
+              Core::Entity l_Entity = p_Context.handle.get_id();
+              if (!l_Entity.is_alive()) {
+                return;
+              }
+
+              ViewportEntityRenderer::show(p_Context.render_view,
+                                           l_Entity,
+                                           p_Context.selected);
+            };
+
+        ViewportHandleRenderer::register_renderer<Core::Entity>(
+            100, l_Renderer);
+      }
+
+      {
+        ViewportEntityRenderer l_Renderer;
+        l_Renderer.render =
+            [](const ViewportHandleRenderContext &p_Context) {};
+
+        ViewportEntityRenderer::register_component_renderer<
+            Core::Component::MeshRenderer>(1000, l_Renderer);
+      }
+
+      {
+        ViewportEntityRenderer l_Renderer;
+        l_Renderer.render =
+            [l_BillboardSize](
+                const ViewportHandleRenderContext &p_Context) {
+              Core::Component::Transform l_Transform =
+                  p_Context.handle.get_id();
+              if (!l_Transform.is_alive()) {
+                return;
+              }
+
+              static Renderer::EditorImage l_EntityIcon =
+                  Util::Handle::DEAD;
+              if (!l_EntityIcon.is_alive()) {
+                l_EntityIcon =
+                    Renderer::EditorImage::find_by_name(N(entity));
+              }
+
+              const float l_ScreenSpaceAdjustment =
+                  Core::DebugGeometry::screen_space_multiplier(
+                      p_Context.render_view,
+                      l_Transform.get_world_position());
+
+              Core::DebugGeometry::render_spherical_billboard(
+                  l_Transform.get_world_position(),
+                  l_BillboardSize * l_ScreenSpaceAdjustment,
+                  l_EntityIcon, p_Context.entity);
+            };
+
+        ViewportEntityRenderer::register_component_renderer<
+            Core::Component::Transform>(0, l_Renderer);
+      }
+
+      {
+        ViewportEntityRenderer l_Renderer;
+        l_Renderer.render =
+            [l_BillboardSize](
+                const ViewportHandleRenderContext &p_Context) {
+              Core::Component::Transform l_Transform =
+                  p_Context.entity.get_transform();
+              if (!l_Transform.is_alive()) {
+                return;
+              }
+
+              static Renderer::EditorImage l_Icon =
+                  Util::Handle::DEAD;
+              if (!l_Icon.is_alive()) {
+                l_Icon =
+                    Renderer::EditorImage::find_by_name(N(camera));
+              }
+
+              const float l_ScreenSpaceAdjustment =
+                  Core::DebugGeometry::screen_space_multiplier(
+                      p_Context.render_view,
+                      l_Transform.get_world_position());
+
+              Core::DebugGeometry::render_spherical_billboard(
+                  l_Transform.get_world_position(),
+                  l_BillboardSize * l_ScreenSpaceAdjustment, l_Icon,
+                  p_Context.entity);
+            };
+        l_Renderer.render_selected =
+            [](const ViewportHandleRenderContext &p_Context) {};
+
+        ViewportEntityRenderer::register_component_renderer<
+            Core::Component::Camera>(100, l_Renderer);
+      }
+
+      {
+        ViewportEntityRenderer l_Renderer;
+        l_Renderer.render =
+            [l_BillboardSize](
+                const ViewportHandleRenderContext &p_Context) {
+              Core::Component::Transform l_Transform =
+                  p_Context.entity.get_transform();
+              if (!l_Transform.is_alive()) {
+                return;
+              }
+
+              static Renderer::EditorImage l_Icon =
+                  Util::Handle::DEAD;
+              if (!l_Icon.is_alive()) {
+                l_Icon = Renderer::EditorImage::find_by_name(N(sun));
+              }
+
+              const float l_ScreenSpaceAdjustment =
+                  Core::DebugGeometry::screen_space_multiplier(
+                      p_Context.render_view,
+                      l_Transform.get_world_position());
+
+              Core::DebugGeometry::render_spherical_billboard(
+                  l_Transform.get_world_position(),
+                  l_BillboardSize * l_ScreenSpaceAdjustment, l_Icon,
+                  p_Context.entity);
+            };
+        l_Renderer.render_selected =
+            [](const ViewportHandleRenderContext &p_Context) {};
+
+        ViewportEntityRenderer::register_component_renderer<
+            Core::Component::DirectionalLight>(100, l_Renderer);
+      }
+
+      {
+        ViewportEntityRenderer l_Renderer;
+        l_Renderer.render =
+            [l_BillboardSize](
+                const ViewportHandleRenderContext &p_Context) {
+              Core::Component::Transform l_Transform =
+                  p_Context.entity.get_transform();
+              if (!l_Transform.is_alive()) {
+                return;
+              }
+
+              static Renderer::EditorImage l_PointLightIcon =
+                  Util::Handle::DEAD;
+              if (!l_PointLightIcon.is_alive()) {
+                l_PointLightIcon =
+                    Renderer::EditorImage::find_by_name(
+                        N(point_light));
+              }
+
+              const float l_ScreenSpaceAdjustment =
+                  Core::DebugGeometry::screen_space_multiplier(
+                      p_Context.render_view,
+                      l_Transform.get_world_position());
+
+              Core::DebugGeometry::render_spherical_billboard(
+                  l_Transform.get_world_position(),
+                  l_BillboardSize * l_ScreenSpaceAdjustment,
+                  l_PointLightIcon, p_Context.entity);
+            };
+        l_Renderer.render_selected =
+            [](const ViewportHandleRenderContext &p_Context) {
+              Core::Component::Transform l_Transform =
+                  p_Context.entity.get_transform();
+              Core::Component::PointLight l_PointLight =
+                  p_Context.handle.get_id();
+              if (!l_Transform.is_alive() ||
+                  !l_PointLight.is_alive()) {
+                return;
+              }
+
+              Math::Sphere l_Sphere;
+              l_Sphere.position = l_Transform.get_world_position();
+              l_Sphere.radius = l_PointLight.get_range();
+
+              Core::DebugGeometry::render_sphere(
+                  l_Sphere, Math::Color(1.0f, 1.0f, 0.0f, 1.0f),
+                  false, true);
+            };
+
+        ViewportEntityRenderer::register_component_renderer<
+            Core::Component::PointLight>(100, l_Renderer);
+      }
+
+      {
+        ViewportEntityRenderer l_Renderer;
+        l_Renderer.render_selected =
+            [](const ViewportHandleRenderContext &p_Context) {
+              Core::Component::Transform l_Transform =
+                  p_Context.entity.get_transform();
+              Core::Component::BoxCollider l_BoxCollider =
+                  p_Context.handle.get_id();
+              if (!l_Transform.is_alive() ||
+                  !l_BoxCollider.is_alive()) {
+                return;
+              }
+
+              Math::Box l_Box;
+              Math::Vector3 l_WorldScale =
+                  l_Transform.get_world_scale();
+              l_Box.position =
+                  l_Transform.get_world_position() +
+                  (l_Transform.get_world_rotation() *
+                   (l_BoxCollider.get_center() * l_WorldScale));
+              l_Box.rotation = l_Transform.get_world_rotation() *
+                               l_BoxCollider.get_rotation();
+              l_Box.halfExtents =
+                  l_BoxCollider.get_half_extents() * l_WorldScale;
+
+              Core::DebugGeometry::render_box(
+                  l_Box, Math::Color(0.0f, 1.0f, 0.0f, 1.0f), false,
+                  true);
+            };
+
+        ViewportEntityRenderer::register_component_renderer<
+            Core::Component::BoxCollider>(10, l_Renderer);
+      }
+
+      {
+        ViewportEntityRenderer l_Renderer;
+        l_Renderer.render_selected =
+            [](const ViewportHandleRenderContext &p_Context) {
+              Core::Component::Transform l_Transform =
+                  p_Context.entity.get_transform();
+              Core::Component::SphereCollider l_SphereCollider =
+                  p_Context.handle.get_id();
+              if (!l_Transform.is_alive() ||
+                  !l_SphereCollider.is_alive()) {
+                return;
+              }
+
+              Math::Sphere l_Sphere;
+              l_Sphere.position = l_Transform.get_world_position() +
+                                  (l_Transform.get_world_rotation() *
+                                   l_SphereCollider.get_center());
+              l_Sphere.radius = l_SphereCollider.get_radius();
+
+              Core::DebugGeometry::render_sphere(
+                  l_Sphere, Math::Color(0.0f, 1.0f, 0.0f, 1.0f),
+                  false, true);
+            };
+
+        ViewportEntityRenderer::register_component_renderer<
+            Core::Component::SphereCollider>(10, l_Renderer);
+      }
+
+      {
+        ViewportEntityRenderer l_Renderer;
+        l_Renderer.render_selected =
+            [](const ViewportHandleRenderContext &p_Context) {
+              Core::Component::Transform l_Transform =
+                  p_Context.entity.get_transform();
+              Core::Component::CharacterController
+                  l_CharacterController = p_Context.handle.get_id();
+              if (!l_Transform.is_alive() ||
+                  !l_CharacterController.is_alive()) {
+                return;
+              }
+
+              Math::Cylinder l_Capsule;
+              l_Capsule.position =
+                  l_Transform.get_world_position() +
+                  (l_Transform.get_world_rotation() *
+                   l_CharacterController.get_center());
+              l_Capsule.rotation = l_Transform.get_world_rotation();
+              l_Capsule.radius = l_CharacterController.get_radius();
+              l_Capsule.height = l_CharacterController.get_height();
+
+              Core::DebugGeometry::render_capsule(
+                  l_Capsule, Math::Color(0.0f, 0.75f, 1.0f, 1.0f),
+                  false, true);
+            };
+
+        ViewportEntityRenderer::register_component_renderer<
+            Core::Component::CharacterController>(10, l_Renderer);
+      }
+
+      {
+        ViewportEntityRenderer l_Renderer;
+        l_Renderer.render_selected =
+            [](const ViewportHandleRenderContext &p_Context) {
+              Core::Component::Transform l_Transform =
+                  p_Context.entity.get_transform();
+              Core::Component::NavmeshAgent l_NavmeshAgent =
+                  p_Context.handle.get_id();
+              if (!l_Transform.is_alive() ||
+                  !l_NavmeshAgent.is_alive()) {
+                return;
+              }
+
+              Math::Cylinder l_Cylinder;
+              l_Cylinder.height = l_NavmeshAgent.get_height();
+              l_Cylinder.radius = l_NavmeshAgent.get_radius();
+              l_Cylinder.position = l_Transform.get_world_position();
+              l_Cylinder.position += l_NavmeshAgent.get_offset();
+              l_Cylinder.position.y += l_Cylinder.height / 2.0f;
+              l_Cylinder.rotation =
+                  Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f);
+
+              Core::DebugGeometry::render_cylinder(
+                  l_Cylinder, Math::Color(1.0f, 0.0f, 1.0f, 1.0f),
+                  false, true);
+            };
+
+        ViewportEntityRenderer::register_component_renderer<
+            Core::Component::NavmeshAgent>(10, l_Renderer);
+      }
+
+      {
+        ViewportHandleRenderer l_Renderer;
+        l_Renderer.render =
+            [l_BillboardSize](
+                const ViewportHandleRenderContext &p_Context) {
+              if (!p_Context.selected) {
+                return;
+              }
+
+              Core::Region l_Region = p_Context.handle.get_id();
+              if (!l_Region.is_alive() ||
+                  !l_Region.is_streaming_enabled()) {
+                return;
+              }
+
+              Math::Cylinder l_StreamingCylinder;
+              l_StreamingCylinder.position =
+                  l_Region.get_streaming_position();
+              l_StreamingCylinder.radius =
+                  l_Region.get_streaming_radius();
+              l_StreamingCylinder.height = 75.0f;
+              l_StreamingCylinder.rotation =
+                  Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f);
+
+              Core::DebugGeometry::render_cylinder(
+                  l_StreamingCylinder,
+                  Math::Color(1.0f, 1.0f, 0.0f, 1.0f), true, true);
+              Core::DebugGeometry::render_cylinder(
+                  l_StreamingCylinder,
+                  Math::Color(1.0f, 1.0f, 0.0f, 0.1f), true, false);
+
+              const float l_ScreenSpaceAdjustment =
+                  Core::DebugGeometry::screen_space_multiplier(
+                      p_Context.render_view,
+                      l_Region.get_streaming_position());
+
+              Core::DebugGeometry::render_spherical_billboard(
+                  l_Region.get_streaming_position(),
+                  l_BillboardSize * l_ScreenSpaceAdjustment,
+                  Util::Handle::DEAD, Util::Handle::DEAD);
+            };
+
+        ViewportHandleRenderer::register_renderer<Core::Region>(
+            100, l_Renderer);
+      }
+    }
+
     Util::Queue<EditorJob> g_EditorJobQueue;
 
-    static Util::String import_mesh_asset(
-        const Util::String p_Path)
+    static Util::String import_mesh_asset(const Util::String p_Path)
     {
       std::filesystem::path l_FilePath(p_Path.c_str());
       const Util::String l_Output =
@@ -165,20 +536,16 @@ namespace Low {
 
       p_OutBundle.files.push_back(
           {p_Resource.get_source_file(),
-           Util::AssetManager::AssetFileRole::Source, false,
-           false});
+           Util::AssetManager::AssetFileRole::Source, false, false});
       p_OutBundle.files.push_back(
           {p_Resource.get_path(),
-           Util::AssetManager::AssetFileRole::Manifest, true,
-           true});
+           Util::AssetManager::AssetFileRole::Manifest, true, true});
       p_OutBundle.files.push_back(
           {p_Resource.get_sidecar_path(),
-           Util::AssetManager::AssetFileRole::Derived, true,
-           true});
+           Util::AssetManager::AssetFileRole::Derived, true, true});
       p_OutBundle.files.push_back(
           {p_Resource.get_mesh_path(),
-           Util::AssetManager::AssetFileRole::Derived, true,
-           true});
+           Util::AssetManager::AssetFileRole::Derived, true, true});
 
       return true;
     }
@@ -213,8 +580,8 @@ namespace Low {
                 l_Path ||
             Util::PathHelper::normalize(
                 i_Resource.get_sidecar_path()) == l_Path ||
-            Util::PathHelper::normalize(
-                i_Resource.get_mesh_path()) == l_Path) {
+            Util::PathHelper::normalize(i_Resource.get_mesh_path()) ==
+                l_Path) {
           return describe_mesh_bundle_from_resource(i_Resource,
                                                     p_OutBundle);
         }
@@ -227,12 +594,10 @@ namespace Low {
         const Util::AssetManager::AssetBundle &p_Bundle,
         const Util::AssetManager::AssetHealth &p_Health)
     {
-      if (p_Health.state !=
-              Util::AssetManager::AssetHealthState::
-                  MissingDerivedFile &&
-          p_Health.state !=
-              Util::AssetManager::AssetHealthState::
-                  RequiresReimport &&
+      if (p_Health.state != Util::AssetManager::AssetHealthState::
+                                MissingDerivedFile &&
+          p_Health.state != Util::AssetManager::AssetHealthState::
+                                RequiresReimport &&
           p_Health.state !=
               Util::AssetManager::AssetHealthState::Stale) {
         return;
@@ -274,8 +639,8 @@ namespace Low {
       }
     }
 
-    static Util::String import_texture_asset(
-        const Util::String p_Path)
+    static Util::String
+    import_texture_asset(const Util::String p_Path)
     {
       std::filesystem::path l_FilePath(p_Path.c_str());
 
@@ -322,20 +687,16 @@ namespace Low {
 
       p_OutBundle.files.push_back(
           {p_Resource.get_source_file(),
-           Util::AssetManager::AssetFileRole::Source, false,
-           false});
+           Util::AssetManager::AssetFileRole::Source, false, false});
       p_OutBundle.files.push_back(
           {p_Resource.get_path(),
-           Util::AssetManager::AssetFileRole::Manifest, true,
-           true});
+           Util::AssetManager::AssetFileRole::Manifest, true, true});
       p_OutBundle.files.push_back(
           {p_Resource.get_sidecar_path(),
-           Util::AssetManager::AssetFileRole::Derived, true,
-           true});
+           Util::AssetManager::AssetFileRole::Derived, true, true});
       p_OutBundle.files.push_back(
           {p_Resource.get_texture_path(),
-           Util::AssetManager::AssetFileRole::Derived, true,
-           true});
+           Util::AssetManager::AssetFileRole::Derived, true, true});
 
       return true;
     }
@@ -384,12 +745,10 @@ namespace Low {
         const Util::AssetManager::AssetBundle &p_Bundle,
         const Util::AssetManager::AssetHealth &p_Health)
     {
-      if (p_Health.state !=
-              Util::AssetManager::AssetHealthState::
-                  MissingDerivedFile &&
-          p_Health.state !=
-              Util::AssetManager::AssetHealthState::
-                  RequiresReimport &&
+      if (p_Health.state != Util::AssetManager::AssetHealthState::
+                                MissingDerivedFile &&
+          p_Health.state != Util::AssetManager::AssetHealthState::
+                                RequiresReimport &&
           p_Health.state !=
               Util::AssetManager::AssetHealthState::Stale) {
         return;
@@ -425,15 +784,14 @@ namespace Low {
         Util::FileIO::delete_sync(i_File.path.c_str());
       }
 
-      Renderer::Texture l_Texture =
-          p_Bundle.primaryHandle.get_id();
+      Renderer::Texture l_Texture = p_Bundle.primaryHandle.get_id();
       if (l_Texture.is_alive()) {
         l_Texture.destroy();
       }
     }
 
-    static Util::String get_script_sidecar_path(
-        Core::ScriptAsset p_Asset)
+    static Util::String
+    get_script_sidecar_path(Core::ScriptAsset p_Asset)
     {
       Util::String l_SidecarPath = Util::get_project().assetCachePath;
       l_SidecarPath += "/" +
@@ -442,8 +800,8 @@ namespace Low {
       return l_SidecarPath;
     }
 
-    static Util::String normalize_script_absolute_path(
-        const Util::String p_Path)
+    static Util::String
+    normalize_script_absolute_path(const Util::String p_Path)
     {
       std::filesystem::path l_Path(p_Path.c_str());
       if (!l_Path.is_absolute()) {
@@ -456,14 +814,15 @@ namespace Low {
           std::filesystem::weakly_canonical(l_Path).string().c_str());
     }
 
-    static Util::String get_script_source_storage_path(
-        const Util::String p_Path)
+    static Util::String
+    get_script_source_storage_path(const Util::String p_Path)
     {
       Util::String l_NormalizedPath =
           Util::PathHelper::normalize(p_Path);
       Util::String l_NormalizedDataPath =
           Util::PathHelper::normalize(Util::get_project().dataPath);
-      while (Util::StringHelper::begins_with(l_NormalizedPath, "./")) {
+      while (
+          Util::StringHelper::begins_with(l_NormalizedPath, "./")) {
         l_NormalizedPath = l_NormalizedPath.substr(2);
       }
       while (Util::StringHelper::begins_with(l_NormalizedDataPath,
@@ -506,13 +865,14 @@ namespace Low {
       return Util::PathHelper::normalize(l_Path.string().c_str());
     }
 
-    static Util::String get_script_source_compare_path(
-        const Util::String p_SourcePath)
+    static Util::String
+    get_script_source_compare_path(const Util::String p_SourcePath)
     {
       std::filesystem::path l_Path(p_SourcePath.c_str());
       if (!l_Path.is_absolute()) {
         std::filesystem::path l_DataRelative =
-            std::filesystem::path(Util::get_project().dataPath.c_str()) /
+            std::filesystem::path(
+                Util::get_project().dataPath.c_str()) /
             l_Path;
         if (Util::FileIO::file_exists_sync(
                 l_DataRelative.string().c_str())) {
@@ -528,8 +888,8 @@ namespace Low {
           Util::PathHelper::normalize(l_Path.string().c_str()));
     }
 
-    static Core::ScriptAsset find_script_asset_by_source_path(
-        const Util::String p_Path)
+    static Core::ScriptAsset
+    find_script_asset_by_source_path(const Util::String p_Path)
     {
       const Util::String l_ComparePath =
           get_script_source_compare_path(p_Path);
@@ -545,8 +905,8 @@ namespace Low {
 
       Util::List<Util::String> l_SidecarPaths;
       Util::FileSystem::collect_files_with_suffix(
-          Util::get_project().assetCachePath.c_str(),
-          ".script.yaml", l_SidecarPaths, false);
+          Util::get_project().assetCachePath.c_str(), ".script.yaml",
+          l_SidecarPaths, false);
 
       for (Util::String i_SidecarPath : l_SidecarPaths) {
         Util::Serial::Node i_Node =
@@ -558,9 +918,8 @@ namespace Low {
           continue;
         }
 
-        Core::ScriptAsset i_Asset =
-            Core::ScriptAsset::deserialize(i_Node,
-                                           Util::Handle::DEAD);
+        Core::ScriptAsset i_Asset = Core::ScriptAsset::deserialize(
+            i_Node, Util::Handle::DEAD);
         Util::AssetManager::_register(i_Asset.get_id(),
                                       i_SidecarPath);
         return i_Asset;
@@ -569,8 +928,7 @@ namespace Low {
       return Util::Handle::DEAD;
     }
 
-    static Util::String import_script_asset(
-        const Util::String p_Path)
+    static Util::String import_script_asset(const Util::String p_Path)
     {
       Core::ScriptAsset l_Asset =
           find_script_asset_by_source_path(p_Path);
@@ -633,12 +991,10 @@ namespace Low {
       p_OutBundle.handles.push_back(l_Asset.get_id());
       p_OutBundle.files.push_back(
           {l_Asset.get_source_path(),
-           Util::AssetManager::AssetFileRole::Source, false,
-           false});
+           Util::AssetManager::AssetFileRole::Source, false, false});
       p_OutBundle.files.push_back(
           {get_script_sidecar_path(l_Asset),
-           Util::AssetManager::AssetFileRole::Manifest, true,
-           true});
+           Util::AssetManager::AssetFileRole::Manifest, true, true});
 
       return true;
     }
@@ -652,12 +1008,12 @@ namespace Low {
       for (u32 i = 0; i < Core::ScriptAsset::living_count(); ++i) {
         Core::ScriptAsset i_Asset =
             Core::ScriptAsset::living_instances()[i];
-        if (Util::PathHelper::normalize(
-                i_Asset.get_source_path()) == l_Path ||
+        if (Util::PathHelper::normalize(i_Asset.get_source_path()) ==
+                l_Path ||
             Util::PathHelper::normalize(
                 get_script_sidecar_path(i_Asset)) == l_Path) {
-          return describe_script_bundle_from_handle(
-              i_Asset.get_id(), p_OutBundle);
+          return describe_script_bundle_from_handle(i_Asset.get_id(),
+                                                    p_OutBundle);
         }
       }
 
@@ -669,11 +1025,9 @@ namespace Low {
         const Util::AssetManager::AssetHealth &p_Health)
     {
       if (p_Health.state !=
-              Util::AssetManager::AssetHealthState::
-                  MissingManifest &&
-          p_Health.state !=
-              Util::AssetManager::AssetHealthState::
-                  RequiresReimport &&
+              Util::AssetManager::AssetHealthState::MissingManifest &&
+          p_Health.state != Util::AssetManager::AssetHealthState::
+                                RequiresReimport &&
           p_Health.state !=
               Util::AssetManager::AssetHealthState::Stale) {
         return;
@@ -709,8 +1063,7 @@ namespace Low {
         Util::FileIO::delete_sync(i_File.path.c_str());
       }
 
-      Core::ScriptAsset l_Asset =
-          p_Bundle.primaryHandle.get_id();
+      Core::ScriptAsset l_Asset = p_Bundle.primaryHandle.get_id();
       if (l_Asset.is_alive()) {
         l_Asset.destroy();
       }
@@ -1623,6 +1976,8 @@ namespace Low {
             Renderer::EditorImage::find_by_name(N(point_light)));
       }
 
+      register_handle_viewport_renderers();
+
       {
         g_AssetTypeColor[AssetType::Script] =
             color_from_hex("#41bf5c");
@@ -1712,6 +2067,8 @@ namespace Low {
             Renderer::Skeleton::type_id());
         TypeEditor::register_type<UiWidgetEditor>(
             Core::UI::WidgetAsset::type_id());
+        TypeEditor::register_type<ConvexHullColliderTypeEditor>(
+            Core::Component::ConvexHullCollider::type_id());
       }
       {
         AssetCreation::register_default<Core::UI::WidgetAsset>(
@@ -1744,8 +2101,8 @@ namespace Low {
                 l_Name + "_" + l_UniqueId;
 
             l_Builder.get_document().output_path =
-                Util::project_visual_script_out_path(
-                    l_ClassName + ".as");
+                Util::project_visual_script_out_path(l_ClassName +
+                                                     ".as");
 
             if (GameplaySystemCompileProfileSettings *l_Settings =
                     l_Builder.get_compile_settings<
@@ -1753,8 +2110,7 @@ namespace Low {
               l_Settings->class_name = l_ClassName;
             }
 
-            l_CtxDef.build_default_template(
-                l_Builder.get_document());
+            l_CtxDef.build_default_template(l_Builder.get_document());
 
             Core::Scripting::Module l_Module =
                 Core::Scripting::Module::find_by_name(
@@ -1838,6 +2194,10 @@ namespace Low {
             }
           }
         }
+      }
+
+      {
+        TransformSphere::tick_all();
       }
     }
 

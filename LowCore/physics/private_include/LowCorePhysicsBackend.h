@@ -2,6 +2,8 @@
 
 #include "LowMath.h"
 #include "LowCorePhysicsBodyMotionType.h"
+#include "LowRendererRenderView.h"
+#include "LowUtilContainers.h"
 
 #include <stdint.h>
 
@@ -80,6 +82,20 @@ namespace Low {
       ShapeBackendHandle
       create_shape(WorldBackend *p_World,
                    const ShapeCreateInfo &p_CreateInfo);
+      ShapeBackendHandle
+      create_convex_hull_shape(WorldBackend *p_World,
+                               const Math::Vector3 *p_Points,
+                               uint32_t p_PointCount);
+      ShapeBackendHandle
+      create_convex_hull_shape(WorldBackend *p_World,
+                               const Low::Util::List<Math::Vector3> &p_Points);
+      void visualize_convex_hull(
+          WorldBackend *p_World, ShapeBackendHandle p_Shape,
+          Renderer::RenderView p_RenderView,
+          const Math::Vector3 &p_Position,
+          const Math::Quaternion &p_Rotation,
+          const Math::Color &p_Color, bool p_Wireframe,
+          bool p_DepthTest = true);
       void destroy_shape(WorldBackend *p_World,
                          ShapeBackendHandle p_Shape);
 

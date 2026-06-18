@@ -223,6 +223,8 @@ namespace Low {
           renderInfo.sType =
               VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
 
+          dynamicLineWidth = false;
+
           shaderStages.clear();
         }
 
@@ -325,14 +327,18 @@ namespace Low {
           l_PipelineInfo.pDepthStencilState = &depthStencil;
           l_PipelineInfo.layout = pipelineLayout.get();
 
-          VkDynamicState l_State[] = {VK_DYNAMIC_STATE_VIEWPORT,
-                                      VK_DYNAMIC_STATE_SCISSOR};
+          Util::List<VkDynamicState> l_State;
+          l_State.push_back(VK_DYNAMIC_STATE_VIEWPORT);
+          l_State.push_back(VK_DYNAMIC_STATE_SCISSOR);
+          if (dynamicLineWidth) {
+            l_State.push_back(VK_DYNAMIC_STATE_LINE_WIDTH);
+          }
 
           VkPipelineDynamicStateCreateInfo l_DynamicInfo = {};
           l_DynamicInfo.sType =
               VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-          l_DynamicInfo.pDynamicStates = &l_State[0];
-          l_DynamicInfo.dynamicStateCount = 2;
+          l_DynamicInfo.pDynamicStates = l_State.data();
+          l_DynamicInfo.dynamicStateCount = l_State.size();
 
           l_PipelineInfo.pDynamicState = &l_DynamicInfo;
 
@@ -435,6 +441,11 @@ namespace Low {
         {
           rasterizer.polygonMode = p_Mode;
           rasterizer.lineWidth = p_LineWidth;
+        }
+
+        void GraphicsPipelineBuilder::enable_dynamic_line_width()
+        {
+          dynamicLineWidth = true;
         }
 
         void GraphicsPipelineBuilder::set_cull_mode(

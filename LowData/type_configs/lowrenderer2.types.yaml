@@ -355,6 +355,12 @@ types:
       debug_geometry:
         type: Low::Util::List<Low::Renderer::DebugGeometryDraw>
         no_setter: true
+      debug_geometry_lines:
+        type: Low::Util::List<Low::Renderer::DebugLineDraw>
+        no_setter: true
+      debug_geometry_triangles:
+        type: Low::Util::List<Low::Renderer::DebugTriangleDraw>
+        no_setter: true
       highlight_draws_solid:
         type: Low::Util::List<Low::Renderer::HighlightDrawSolid>
         no_setter: true
@@ -398,6 +404,21 @@ types:
         static: true
         parameters:
           - name: name
+            type: Low::Util::Name
+      has_step:
+        return_type: bool
+        const: true
+        constant: true
+        parameters:
+          - name: step
+            type: Low::Renderer::RenderStep
+            handle: true
+      has_step_by_name:
+        return_type: bool
+        const: true
+        constant: true
+        parameters:
+          - name: stepName
             type: Low::Util::Name
 
   MaterialType:

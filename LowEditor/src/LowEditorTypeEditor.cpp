@@ -112,9 +112,10 @@ namespace Low {
       }
     }
 
-    bool TypeEditor::render_context_menu(
-        const char *p_PopupId, Util::Handle p_Handle,
-        const TypeActionSurface p_Surface)
+    bool
+    TypeEditor::render_context_menu(const char *p_PopupId,
+                                    Util::Handle p_Handle,
+                                    const TypeActionSurface p_Surface)
     {
       if (!ImGui::BeginPopup(p_PopupId)) {
         return false;
@@ -127,11 +128,11 @@ namespace Low {
       Util::List<TypeAction *> l_Actions;
       collect_actions(p_Handle, p_Surface, l_Actions);
 
-      std::sort(l_Actions.begin(), l_Actions.end(),
-                [](const TypeAction *p_Left,
-                   const TypeAction *p_Right) {
-                  return p_Left->priority < p_Right->priority;
-                });
+      std::sort(
+          l_Actions.begin(), l_Actions.end(),
+          [](const TypeAction *p_Left, const TypeAction *p_Right) {
+            return p_Left->priority < p_Right->priority;
+          });
 
       if (l_Actions.empty()) {
         ImGui::MenuItem("No actions", nullptr, false, false);
@@ -268,6 +269,11 @@ namespace Low {
     }
 
     void TypeEditor::render(const float p_Delta)
+    {
+      default_render(p_Delta);
+    }
+
+    void TypeEditor::default_render(const float p_Delta)
     {
       uint32_t l_Id = 0;
       static Util::Name l_EntityName = N(entity);

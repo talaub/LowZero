@@ -34,13 +34,15 @@ namespace Low {
                               const Math::Color p_Color,
                               const Math::Matrix4x4 p_Transformation,
                               const bool p_DepthTest,
-                              const bool p_Wireframe)
+                              const bool p_Wireframe,
+                              u32 p_PickId = LOW_UINT32_MAX)
       {
         Renderer::DebugGeometryDraw l_Draw;
         l_Draw.depthTest = p_DepthTest;
         l_Draw.color = p_Color;
         l_Draw.wireframe = p_Wireframe;
         l_Draw.submesh = p_Mesh.get_gpu().get_submeshes()[0];
+        l_Draw.pickId = p_PickId;
         l_Draw.transform = p_Transformation;
 
         p_RenderView.add_debug_geometry(l_Draw);
@@ -60,7 +62,8 @@ namespace Low {
       }
 
       void render_sphere(Math::Sphere p_Sphere, Math::Color p_Color,
-                         bool p_DepthTest, bool p_Wireframe)
+                         bool p_DepthTest, bool p_Wireframe,
+                         u32 p_PickId)
       {
         Math::Matrix4x4 l_Transform =
             glm::translate(glm::mat4(1.0f), p_Sphere.position) *
@@ -70,7 +73,7 @@ namespace Low {
 
         render_mesh(Renderer::get_editor_renderview(),
                     Renderer::get_primitives().unitIcoSphere, p_Color,
-                    l_Transform, p_DepthTest, p_Wireframe);
+                    l_Transform, p_DepthTest, p_Wireframe, p_PickId);
       }
 
       void render_cylinder(Math::Cylinder p_Cylinder,
@@ -217,25 +220,31 @@ namespace Low {
 
       void render_line(Math::Vector3 p_Start, Math::Vector3 p_End,
                        Math::Color p_Color, bool p_DepthTest,
-                       bool p_Wireframe, float p_Thickness)
+                       float p_Thickness)
       {
-        float l_Distance = Math::VectorUtil::distance(p_Start, p_End);
-        if (l_Distance <= LOW_MATH_EPSILON) {
+        render_line(Renderer::get_editor_renderview(), p_Start,
+                    p_End, p_Color, p_DepthTest, p_Thickness);
+      }
+
+      void render_line(Renderer::RenderView p_RenderView,
+                       Math::Vector3 p_Start, Math::Vector3 p_End,
+                       Math::Color p_Color, bool p_DepthTest,
+                       float p_Thickness)
+      {
+        if (Math::VectorUtil::distance(p_Start, p_End) <=
+            LOW_MATH_EPSILON) {
           return;
         }
 
-        Math::Vector3 l_Direction =
-            Math::VectorUtil::normalize(p_End - p_Start);
+        Renderer::DebugLineDraw l_Draw;
+        l_Draw.start = p_Start;
+        l_Draw.end = p_End;
+        l_Draw.color = p_Color;
+        l_Draw.depth_test = p_DepthTest;
+        l_Draw.thickness = p_Thickness;
+        l_Draw.pick_id = LOW_UINT32_MAX;
 
-        Math::Cylinder l_Cylinder;
-        l_Cylinder.position =
-            p_Start + (l_Direction * (l_Distance * 0.5f));
-        l_Cylinder.rotation =
-            Math::VectorUtil::between(LOW_VECTOR3_UP, l_Direction);
-        l_Cylinder.radius = p_Thickness;
-        l_Cylinder.height = l_Distance;
-
-        render_cylinder(l_Cylinder, p_Color, p_DepthTest, p_Wireframe);
+        p_RenderView.get_debug_geometry_lines().push_back(l_Draw);
       }
 
       glm::mat4 generateModelMatrix(const glm::vec3 &v0,
@@ -287,21 +296,29 @@ namespace Low {
                            Math::Color p_Color, bool p_DepthTest,
                            bool p_Wireframe)
       {
-        Math::Matrix4x4 l_Transformation =
-            generateModelMatrix(p_Vertex0, p_Vertex2, p_Vertex1);
+        render_triangle(Renderer::get_editor_renderview(), p_Vertex0,
+                        p_Vertex1, p_Vertex2, p_Color, p_DepthTest,
+                        p_Wireframe);
+      }
 
-        /*
-              render_mesh(g_Meshes.triangle, p_Color,
-           l_Transformation, p_DepthTest, p_Wireframe);
-        */
+      void render_triangle(Renderer::RenderView p_RenderView,
+                           Math::Vector3 p_Vertex0,
+                           Math::Vector3 p_Vertex1,
+                           Math::Vector3 p_Vertex2,
+                           Math::Color p_Color, bool p_DepthTest,
+                           bool p_Wireframe)
+      {
+        Renderer::DebugTriangleDraw l_Draw;
+        l_Draw.p0 = p_Vertex0;
+        l_Draw.p1 = p_Vertex1;
+        l_Draw.p2 = p_Vertex2;
+        l_Draw.color = p_Color;
+        l_Draw.depth_test = p_DepthTest;
+        l_Draw.fill = !p_Wireframe;
+        l_Draw.thickness = 1.0f;
+        l_Draw.pick_id = LOW_UINT32_MAX;
 
-        return;
-        // TODO: fix
-
-        /*
-        Renderer::render_debug_triangle(p_Color, p_Vertex0, p_Vertex1,
-                                        p_Vertex2);
-                                        */
+        p_RenderView.get_debug_geometry_triangles().push_back(l_Draw);
       }
 
       Renderer::Mesh get_plane()

@@ -70,6 +70,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+if (MSVC)
+  add_compile_options(/FS)
+endif()
+
 set(EASTL_BUILD_TESTS OFF)
 set(EASTL_BUILD_BENCHMARK OFF)
 
@@ -127,7 +131,7 @@ add_compile_definitions(
   CFLAT_ENABLED=1
   RELEASE_BUILD=0
 
-  GAME_DLL_PATH="../../../misteda/build/Debug/app/Gameplayd.dll"
+  GAME_DLL_PATH="../../../misteda/bin/Debug/Gameplay.dll"
 )
 endif()
 

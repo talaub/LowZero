@@ -37,6 +37,28 @@ namespace Low {
       u32 pickId;
     };
 
+    struct DebugLineDraw
+    {
+      Math::Vector3 start;
+      Math::Vector3 end;
+      Math::Color color;
+      bool depth_test;
+      float thickness;
+      u32 pick_id;
+    };
+
+    struct DebugTriangleDraw
+    {
+      Math::Vector3 p0;
+      Math::Vector3 p1;
+      Math::Vector3 p2;
+      Math::Color color;
+      bool depth_test;
+      bool fill;
+      float thickness;
+      u32 pick_id;
+    };
+
     enum class HighlightType
     {
       Selected,
@@ -95,6 +117,10 @@ namespace Low {
         Low::Util::List<Low::Renderer::UiCanvas> ui_canvases;
         Low::Util::List<Low::Renderer::DebugGeometryDraw>
             debug_geometry;
+        Low::Util::List<Low::Renderer::DebugLineDraw>
+            debug_geometry_lines;
+        Low::Util::List<Low::Renderer::DebugTriangleDraw>
+            debug_geometry_triangles;
         Low::Util::List<Low::Renderer::HighlightDrawSolid>
             highlight_draws_solid;
         Low::Util::List<Low::Renderer::HighlightDrawDebugGeometry>
@@ -320,6 +346,12 @@ namespace Low {
       Low::Util::List<Low::Renderer::DebugGeometryDraw> &
       get_debug_geometry() const;
 
+      Low::Util::List<Low::Renderer::DebugLineDraw> &
+      get_debug_geometry_lines() const;
+
+      Low::Util::List<Low::Renderer::DebugTriangleDraw> &
+      get_debug_geometry_triangles() const;
+
       Low::Util::List<Low::Renderer::HighlightDrawSolid> &
       get_highlight_draws_solid() const;
 
@@ -353,6 +385,8 @@ namespace Low {
       read_object_id_px(const Low::Math::UVector2 p_PixelPosition);
       static Low::Renderer::RenderView
       make_default(Low::Util::Name p_Name);
+      bool has_step(Low::Renderer::RenderStep p_Step) const;
+      bool has_step_by_name(Low::Util::Name p_StepName) const;
       static bool get_page_for_index(const u32 p_Index,
                                      u32 &p_PageIndex,
                                      u32 &p_SlotIndex);

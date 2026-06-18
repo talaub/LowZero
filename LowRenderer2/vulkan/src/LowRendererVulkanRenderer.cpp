@@ -787,6 +787,8 @@ namespace Low {
           }
 
           i_RenderView.get_debug_geometry().clear();
+          i_RenderView.get_debug_geometry_lines().clear();
+          i_RenderView.get_debug_geometry_triangles().clear();
           i_RenderView.get_highlight_draws_solid().clear();
           i_RenderView.get_highlight_draws_debug_geometry().clear();
 

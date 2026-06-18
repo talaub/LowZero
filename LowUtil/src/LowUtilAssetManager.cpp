@@ -68,7 +68,8 @@ namespace Low {
     {
       return FileSystem::is_file_in_directory(
           std::filesystem::path(p_Path.c_str()),
-          std::filesystem::path(project_asset_cache_path().get().c_str()),
+          std::filesystem::path(
+              project_asset_cache_path().get().c_str()),
           true);
     }
 
@@ -162,8 +163,7 @@ namespace Low {
       return false;
     }
 
-    static void
-    upsert_asset_authoring_type(
+    static void upsert_asset_authoring_type(
         const AssetManager::AuthoringTypeRegistrator &p_Registrator)
     {
       for (AssetManager::AuthoringTypeRegistrator &i_AssetType :
@@ -215,8 +215,7 @@ namespace Low {
     }
 
     static void run_authoring_startup_import(
-        const AssetManager::AuthoringTypeRegistrator
-            &p_AuthoringType)
+        const AssetManager::AuthoringTypeRegistrator &p_AuthoringType)
     {
       if (!p_AuthoringType.importOnStartup ||
           !p_AuthoringType.importer) {
@@ -248,7 +247,6 @@ namespace Low {
           initialize_asset(l_RuntimeAssetType, l_ImportedPath);
         }
       }
-
     }
 
     static AssetManager::FileEventType convert_file_event_type(
@@ -275,8 +273,7 @@ namespace Low {
       for (auto i_Type : g_AssetAuthoringTypes) {
         bool i_IsRawAsset = false;
         for (auto i_RawSuffix : i_Type.rawSuffixes) {
-          if (StringHelper::ends_with(p_FullEventPath,
-                                      i_RawSuffix)) {
+          if (StringHelper::ends_with(p_FullEventPath, i_RawSuffix)) {
             i_IsRawAsset = true;
             break;
           }
@@ -305,8 +302,7 @@ namespace Low {
               FileSystem::Watcher::EventType::Removed) {
             AssetManager::AssetBundle l_Bundle;
             if (i_Type.describeFromPath &&
-                i_Type.describeFromPath(p_FullEventPath,
-                                        l_Bundle)) {
+                i_Type.describeFromPath(p_FullEventPath, l_Bundle)) {
               AssetManager::AssetFile l_File;
               l_File.path = p_FullEventPath;
               l_File.role = AssetManager::AssetFileRole::Source;
@@ -320,12 +316,10 @@ namespace Low {
               AssetManager::AssetHealth l_Health =
                   AssetManager::diagnose_bundle(l_Bundle);
 
-              if (l_Health.state ==
-                      AssetManager::AssetHealthState::
-                          MissingDerivedFile ||
-                  l_Health.state ==
-                      AssetManager::AssetHealthState::
-                          RequiresReimport ||
+              if (l_Health.state == AssetManager::AssetHealthState::
+                                        MissingDerivedFile ||
+                  l_Health.state == AssetManager::AssetHealthState::
+                                        RequiresReimport ||
                   l_Health.state ==
                       AssetManager::AssetHealthState::Stale) {
                 AssetManager::repair_bundle(l_Bundle, l_Health);
@@ -366,7 +360,6 @@ namespace Low {
       if (p_Registrator.initializeOnStartup) {
         initialize_assets(p_Registrator);
       }
-
     }
 
     void AssetManager::register_asset_authoring_type(
@@ -576,12 +569,11 @@ namespace Low {
       return false;
     }
 
-    AssetManager::AssetHealth AssetManager::diagnose_bundle(
-        const AssetBundle &p_Bundle)
+    AssetManager::AssetHealth
+    AssetManager::diagnose_bundle(const AssetBundle &p_Bundle)
     {
       AuthoringTypeRegistrator l_AssetType;
-      if (find_asset_authoring_type(p_Bundle.typeId,
-                                    l_AssetType) &&
+      if (find_asset_authoring_type(p_Bundle.typeId, l_AssetType) &&
           l_AssetType.diagnose) {
         return l_AssetType.diagnose(p_Bundle);
       }
@@ -631,8 +623,7 @@ namespace Low {
                                      const AssetHealth &p_Health)
     {
       AuthoringTypeRegistrator l_AssetType;
-      if (!find_asset_authoring_type(p_Bundle.typeId,
-                                     l_AssetType) ||
+      if (!find_asset_authoring_type(p_Bundle.typeId, l_AssetType) ||
           !l_AssetType.repair) {
         AM_LOG_WARN << "No repair callback registered for asset type "
                     << p_Bundle.typeId << LOW_LOG_END;
@@ -646,8 +637,7 @@ namespace Low {
                                      const AssetHealth &p_Health)
     {
       AuthoringTypeRegistrator l_AssetType;
-      if (!find_asset_authoring_type(p_Bundle.typeId,
-                                     l_AssetType) ||
+      if (!find_asset_authoring_type(p_Bundle.typeId, l_AssetType) ||
           !l_AssetType.deleteAsset) {
         AM_LOG_WARN << "No delete callback registered for asset type "
                     << p_Bundle.typeId << LOW_LOG_END;

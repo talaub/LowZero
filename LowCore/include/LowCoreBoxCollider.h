@@ -29,6 +29,7 @@ namespace Low {
         {
         public:
           Low::Math::Vector3 center;
+          Low::Math::Quaternion rotation;
           Low::Math::Vector3 half_extents;
           bool trigger;
           Low::Core::Physics::Shape shape;
@@ -154,6 +155,9 @@ namespace Low {
         void set_center_x(float p_Value);
         void set_center_y(float p_Value);
         void set_center_z(float p_Value);
+
+        Low::Math::Quaternion get_rotation() const;
+        void set_rotation(Low::Math::Quaternion p_Value);
 
         Low::Math::Vector3 get_half_extents() const;
         void set_half_extents(Low::Math::Vector3 p_Value);

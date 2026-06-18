@@ -1,6 +1,7 @@
 #pragma once
 
 #include "LowEditorApi.h"
+#include "LowEditorEditingLayer.h"
 
 #include "LowMath.h"
 #include "LowRenderer.h"
@@ -12,6 +13,7 @@
 #include "LowRendererSkeletalRenderObject.h"
 #include "LowRendererSkinningInstance.h"
 #include "LowRendererSkinningPose.h"
+#include "LowRendererTexture.h"
 #include "LowRendererUiCanvas.h"
 
 namespace Low {
@@ -19,15 +21,28 @@ namespace Low {
     struct LOW_EDITOR_API Viewport
     {
       Viewport(const Math::UVector2 p_Dimensions);
+      Viewport(Renderer::RenderView p_RenderView);
       virtual ~Viewport();
 
       virtual bool tick(const float p_Delta);
       bool render_viewport(const float p_Delta);
 
-      Renderer::Texture get_out_texture() const
+      EditingLayerStack &get_editing_layers()
       {
-        return m_RenderView.get_lit_image();
+        return m_EditingLayers;
       }
+
+      const EditingLayerStack &get_editing_layers() const
+      {
+        return m_EditingLayers;
+      }
+
+      Renderer::RenderView get_render_view() const
+      {
+        return m_RenderView;
+      }
+
+      Renderer::Texture get_out_texture() const;
 
       void set_dimensions(const Math::UVector2 p_Dimensions);
       void set_dimensions(const u32 p_DimenionsX,
@@ -57,13 +72,51 @@ namespace Low {
         return m_ViewportHovered;
       }
 
+      bool is_focused() const
+      {
+        return m_ViewportFocused;
+      }
+
+      Math::Vector2 get_relative_hover_position() const
+      {
+        return m_HoveredRelativePosition;
+      }
+
+      Math::Vector2 get_widget_position() const
+      {
+        return m_WidgetPosition;
+      }
+
+      Math::Vector2 get_widget_rect_position() const
+      {
+        return m_WidgetRectPosition;
+      }
+
+      Math::Vector2 get_widget_rect_size() const
+      {
+        return Math::Vector2((float)m_LastFrameDimensions.x,
+                             (float)m_LastFrameDimensions.y);
+      }
+
+      Math::UVector2 get_widget_dimensions() const
+      {
+        return m_LastFrameDimensions;
+      }
+
     protected:
       Renderer::RenderView m_RenderView;
       Renderer::RenderScene m_RenderScene;
 
       bool m_ViewportHovered;
+      bool m_ViewportFocused;
+      bool m_OwnsRenderResources;
+      Math::UVector2 m_LastFrameDimensions = {0, 0};
+      Math::Vector2 m_HoveredRelativePosition = {2.0f, 2.0f};
+      Math::Vector2 m_WidgetPosition = {0.0f, 0.0f};
+      Math::Vector2 m_WidgetRectPosition = {0.0f, 0.0f};
 
       Util::List<Renderer::RenderObject> m_RenderObjects;
+      EditingLayerStack m_EditingLayers;
     };
 
     struct LOW_EDITOR_API MeshViewer : public Viewport
@@ -149,10 +202,12 @@ namespace Low {
             glm::translate(l_LocalMatrix, Math::Vector3(0.0f));
         l_LocalMatrix *=
             glm::toMat4(Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f));
-        l_LocalMatrix = glm::scale(l_LocalMatrix, Math::Vector3(1.0f));
+        l_LocalMatrix =
+            glm::scale(l_LocalMatrix, Math::Vector3(1.0f));
         m_RenderObject.set_world_transform(l_LocalMatrix);
 
-        m_Pose = Renderer::SkinningPose::make(N(Skeletal Mesh Viewer));
+        m_Pose =
+            Renderer::SkinningPose::make(N(Skeletal Mesh Viewer));
         m_Pose.set_skeleton(p_Mesh.get_skeleton());
 
         m_SkinningInstance = Renderer::SkinningInstance::make(

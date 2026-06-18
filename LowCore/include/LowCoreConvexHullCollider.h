@@ -7,35 +7,36 @@
 #include "LowUtilContainers.h"
 #include "LowUtilSerialization.h"
 
+#include "LowCoreEntity.h"
+
 #include "LowMath.h"
-#include "LowCorePhysicsWorld.h"
+#include "LowCorePhysicsShape.h"
+#include "LowCorePhysicsBody.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-#include "LowRendererRenderView.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
   namespace Core {
-    namespace Physics {
+    namespace Component {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-      enum class ShapeType
-      {
-        Sphere,
-        Box,
-        ConvexHull
-      };
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      struct LOW_CORE_API Shape : public Low::Util::Handle
+      struct LOW_CORE_API ConvexHullCollider
+          : public Low::Util::Handle
       {
       public:
         struct Data
         {
         public:
-          uint64_t backend_id;
-          World world;
-          ShapeType type;
-          Low::Util::Name name;
+          Low::Util::List<Low::Math::Vector3> points;
+          bool trigger;
+          Low::Core::Physics::Shape shape;
+          Low::Core::Physics::Body static_body;
+          bool initialized;
+          Low::Core::Entity entity;
+          Low::Util::UniqueId unique_id;
+          bool dirty;
 
           static size_t get_size()
           {
@@ -49,7 +50,7 @@ namespace Low {
       public:
         static Low::Util::List<Low::Util::Instances::Page *> ms_Pages;
 
-        static Low::Util::List<Shape> ms_LivingInstances;
+        static Low::Util::List<ConvexHullCollider> ms_LivingInstances;
 
         const static Low::Util::TypeIdentifier IDENTIFIER;
 
@@ -58,12 +59,12 @@ namespace Low {
           return ms_TypeId;
         }
 
-      private:
-        static Shape make(Low::Util::Name p_Name);
-        static Low::Util::Handle _make(Low::Util::Name p_Name);
-
-      public:
-        explicit Shape(const Shape &p_Copy)
+        static ConvexHullCollider make(Low::Core::Entity p_Entity);
+        static Low::Util::Handle _make(Low::Util::Handle p_Entity);
+        static ConvexHullCollider
+        make(Low::Core::Entity p_Entity,
+             Low::Util::UniqueId p_UniqueId);
+        explicit ConvexHullCollider(const ConvexHullCollider &p_Copy)
             : Low::Util::Handle(p_Copy.m_Id)
         {
         }
@@ -73,34 +74,36 @@ namespace Low {
         static void initialize();
         static void cleanup();
 
-        Shape(u64 p_Id) : Low::Util::Handle(p_Id)
+        ConvexHullCollider(u64 p_Id) : Low::Util::Handle(p_Id)
         {
         }
-        Shape() : Low::Util::Handle()
+        ConvexHullCollider() : Low::Util::Handle()
         {
         }
-        Shape(Low::Util::Handle p_Handle)
+        ConvexHullCollider(Low::Util::Handle p_Handle)
             : Low::Util::Handle(p_Handle.get_id())
         {
         }
 
         using Handle::operator=;
 
-        Shape &operator=(const Shape &) = default;
-        Shape &operator=(Shape &&) noexcept = default;
+        ConvexHullCollider &
+        operator=(const ConvexHullCollider &) = default;
+        ConvexHullCollider &
+        operator=(ConvexHullCollider &&) noexcept = default;
 
         static uint32_t living_count()
         {
           return static_cast<uint32_t>(ms_LivingInstances.size());
         }
-        static Shape *living_instances()
+        static ConvexHullCollider *living_instances()
         {
           return ms_LivingInstances.data();
         }
 
-        static Shape create_handle_by_index(u32 p_Index);
+        static ConvexHullCollider create_handle_by_index(u32 p_Index);
 
-        static Shape find_by_index(uint32_t p_Index);
+        static ConvexHullCollider find_by_index(uint32_t p_Index);
         static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
         bool is_alive() const;
@@ -123,16 +126,14 @@ namespace Low {
 
         void serialize(Low::Util::Serial::Node &p_Node) const;
 
-        Shape duplicate(Low::Util::Name p_Name) const;
-        static Shape duplicate(Shape p_Handle,
-                               Low::Util::Name p_Name);
+        ConvexHullCollider
+        duplicate(Low::Core::Entity p_Entity) const;
+        static ConvexHullCollider
+        duplicate(ConvexHullCollider p_Handle,
+                  Low::Core::Entity p_Entity);
         static Low::Util::Handle
         _duplicate(Low::Util::Handle p_Handle,
-                   Low::Util::Name p_Name);
-
-        static Shape find_by_name(Low::Util::Name p_Name);
-        static Low::Util::Handle
-        _find_by_name(Low::Util::Name p_Name);
+                   Low::Util::Handle p_Entity);
 
         static void serialize(Low::Util::Handle p_Handle,
                               Low::Util::Serial::Node &p_Node);
@@ -141,35 +142,41 @@ namespace Low {
                     Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
-          Shape l_Handle = p_Handle.get_id();
+          ConvexHullCollider l_Handle = p_Handle.get_id();
           return l_Handle.is_alive();
         }
 
         static void destroy(Low::Util::Handle p_Handle)
         {
           _LOW_ASSERT(is_alive(p_Handle));
-          Shape l_Shape = p_Handle.get_id();
-          l_Shape.destroy();
+          ConvexHullCollider l_ConvexHullCollider = p_Handle.get_id();
+          l_ConvexHullCollider.destroy();
         }
 
-        uint64_t get_backend_id() const;
+        Low::Util::List<Low::Math::Vector3> &get_points() const;
+        void set_points(Low::Util::List<Low::Math::Vector3> &p_Value);
 
-        World get_world() const;
+        bool is_trigger() const;
+        void set_trigger(bool p_Value);
+        void toggle_trigger();
 
-        ShapeType get_type() const;
+        Low::Core::Physics::Shape get_shape() const;
 
-        Low::Util::Name get_name() const;
-        void set_name(Low::Util::Name p_Value);
+        Low::Core::Physics::Body get_static_body() const;
 
-        static Shape make(World p_World, Low::Math::Shape &p_Shape);
-        static Shape
-        make_convex_hull(World p_World,
-                         const Util::List<Math::Vector3> &p_Points);
-        void debug_visualize(Renderer::RenderView p_RenderView,
-                             Math::Vector3 p_Position,
-                             Math::Quaternion p_Rotation,
-                             Math::Color p_Color, bool p_Wireframe,
-                             bool p_DepthTest);
+        bool is_initialized() const;
+
+        Low::Core::Entity get_entity() const;
+        void set_entity(Low::Core::Entity p_Value);
+
+        Low::Util::UniqueId get_unique_id() const;
+
+        bool is_dirty() const;
+        void set_dirty(bool p_Value);
+        void toggle_dirty();
+        void mark_dirty();
+
+        void rebuild();
         static bool get_page_for_index(const u32 p_Index,
                                        u32 &p_PageIndex,
                                        u32 &p_SlotIndex);
@@ -180,18 +187,24 @@ namespace Low {
         static u32 create_instance(u32 &p_PageIndex,
                                    u32 &p_SlotIndex);
         static u32 create_page();
-        void set_backend_id(uint64_t p_Value);
-        void set_world(World p_Value);
-        void set_type(ShapeType p_Value);
+        void set_shape(Low::Core::Physics::Shape p_Value);
+        void set_static_body(Low::Core::Physics::Body p_Value);
+        void set_initialized(bool p_Value);
+        void toggle_initialized();
+        void set_unique_id(Low::Util::UniqueId p_Value);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+      public:
+        static Low::Util::Set<
+            Low::Core::Component::ConvexHullCollider>
+            ms_Dirty;
         // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
       };
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
-    } // namespace Physics
+    } // namespace Component
   } // namespace Core
 } // namespace Low
 
