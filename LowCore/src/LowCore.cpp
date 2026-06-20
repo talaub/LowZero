@@ -232,7 +232,7 @@ namespace Low {
     static void load_prefabs()
     {
       Util::String l_Path =
-          Util::get_project().dataPath + "\\assets\\prefabs";
+          Util::get_project().dataPath + "/assets/prefabs";
 
       load_prefabs_from_directory(l_Path);
     }
@@ -240,7 +240,7 @@ namespace Low {
     static void load_regions()
     {
       Util::String l_Path =
-          Util::get_project().dataPath + "\\assets\\regions";
+          Util::get_project().dataPath + "/assets/regions";
 
       Util::List<Util::String> l_FilePaths;
 
@@ -259,7 +259,7 @@ namespace Low {
     static void load_scenes()
     {
       Util::String l_Path =
-          Util::get_project().dataPath + "\\assets\\scenes";
+          Util::get_project().dataPath + "/assets/scenes";
 
       Util::List<Util::String> l_FilePaths;
 
@@ -283,7 +283,7 @@ namespace Low {
     static void load_gamemodes()
     {
       Util::String l_Path =
-          Util::get_project().dataPath + "\\assets\\gamemodes";
+          Util::get_project().dataPath + "/assets/gamemodes";
 
       Util::List<Util::String> l_FilePaths;
 

@@ -74,7 +74,8 @@ namespace Low {
       {
         uint8_t level;
         String module;
-        int threadId;
+        uint64_t threadId;
+        String threadName;
         time_t time;
         String message;
         bool terminate;
@@ -117,6 +118,8 @@ namespace Low {
 
       LOW_EXPORT void register_log_callback(LogCallback p_Callback);
       LOW_EXPORT void set_console_output_enabled(bool p_Enabled);
+      LOW_EXPORT void set_current_thread_name(const char *p_Name);
+      LOW_EXPORT String get_thread_name(uint64_t p_ThreadId);
 
       void initialize();
       void cleanup();

@@ -456,10 +456,10 @@ namespace Low {
             p_Node["source_file"].as<Util::String>();
 
         p_Config.sidecarPath =
-            Util::get_project().assetCachePath + "\\" +
+            Util::get_project().assetCachePath + "/" +
             Util::hash_to_string(p_Config.fontId) + ".font.yaml";
         p_Config.fontPath =
-            Util::get_project().assetCachePath + "\\" +
+            Util::get_project().assetCachePath + "/" +
             Util::hash_to_string(p_Config.fontId) + ".msdf.ktx";
 
         p_Config.path = Util::PathHelper::normalize(p_Path);
@@ -582,10 +582,12 @@ namespace Low {
             Mesh l_ExistingMesh = ResourceManager::find_asset<Mesh>(
                 i_ResourceConfig.meshId);
             if (!l_ExistingMesh.is_alive()) {
+              l_ExistingMesh =
+                  Mesh::make_from_resource_config(i_ResourceConfig);
               ResourceManager::register_asset(
-                  i_ResourceConfig.meshId,
-                  Mesh::make_from_resource_config(i_ResourceConfig));
+                  i_ResourceConfig.meshId, l_ExistingMesh);
             }
+            return l_ExistingMesh.get_id();
           })
           .saver([](Util::Handle p_Handle) {
             Mesh l_Mesh = p_Handle.get_id();
@@ -650,11 +652,14 @@ namespace Low {
                       ResourceManager::find_asset<Texture>(
                           i_ResourceConfig.textureId);
                   if (!l_ExistingTexture.is_alive()) {
+                    l_ExistingTexture =
+                        Texture::make_from_resource_config(
+                            i_ResourceConfig);
                     ResourceManager::register_asset(
                         i_ResourceConfig.textureId,
-                        Texture::make_from_resource_config(
-                            i_ResourceConfig));
+                        l_ExistingTexture);
                   }
+                  return l_ExistingTexture.get_id();
                 })
             .no_saving();
 
@@ -736,11 +741,13 @@ namespace Low {
                   ResourceManager::find_asset<Material>(
                       l_ResourceConfig.material_id);
               if (!l_ExistingMaterial.is_alive()) {
-                ResourceManager::register_asset(
-                    l_ResourceConfig.material_id,
+                l_ExistingMaterial =
                     Material::make_from_resource_config(
-                        l_ResourceConfig));
+                        l_ResourceConfig);
+                ResourceManager::register_asset(
+                    l_ResourceConfig.material_id, l_ExistingMaterial);
               }
+              return l_ExistingMaterial.get_id();
             });
 
         l_Builder.creatable().creator([](const Util::Name p_Name,

@@ -122,7 +122,7 @@ namespace Lowder {
           return p_Left + p_Right;
         }
 
-        return p_Left + "\\" + p_Right;
+        return p_Left + "/" + p_Right;
       }
 
       static bool file_exists(const std::string &p_Path)
@@ -154,9 +154,9 @@ namespace Lowder {
       {
         const std::string l_Candidates[] = {
             join_path(g_ProjectPath,
-                      "data\\.editor_images\\lowlogo_90.png"),
+                      "data/.editor_images/lowlogo_90.png"),
             join_path(g_ProjectPath,
-                      "data\\.editor_images\\lowlogo_36.png")};
+                      "data/.editor_images/lowlogo_36.png")};
 
         for (const std::string &i_Path : l_Candidates) {
           if (file_exists(i_Path)) {
@@ -170,7 +170,7 @@ namespace Lowder {
       static std::string find_logo_text_path()
       {
         const std::string l_Path = join_path(
-            g_ProjectPath, "data\\.editor_images\\lowfont_500.png");
+            g_ProjectPath, "data/.editor_images/lowfont_500.png");
         return file_exists(l_Path) ? l_Path : "";
       }
 

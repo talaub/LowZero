@@ -2,7 +2,6 @@
 
 #include <algorithm>
 
-#include "LowMath.h"
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"

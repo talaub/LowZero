@@ -477,7 +477,7 @@ namespace Low {
       l_Builder.post_register([](Util::Handle p_Handle) {
         Region l_Region = p_Handle.get_id();
         Util::String l_Path =
-            Util::get_project().dataPath + "\\assets\\regions\\";
+            Util::get_project().dataPath + "/assets/regions/";
         l_Path += Util::hash_to_string(l_Region.get_unique_id());
         l_Path += ".entities.yaml";
         Util::AssetManager::register_alias(l_Region, l_Path);
@@ -1031,7 +1031,7 @@ namespace Low {
       set_loaded(true);
 
       Util::String l_Path =
-          Util::get_project().dataPath + "\\assets\\regions\\";
+          Util::get_project().dataPath + "/assets/regions/";
       l_Path += Util::hash_to_string(get_unique_id());
       l_Path += ".entities.yaml";
 

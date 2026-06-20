@@ -82,8 +82,7 @@ namespace Low {
 
           LOWR_VK_CHECK(vkCreatePipelineLayout(Global::get_device(),
                                                &p_CreateInfo, nullptr,
-                                               &l_VkLayout),
-                        "Failed to create pipeline layout.");
+                                               &l_VkLayout));
 
           l_Layout.set(l_VkLayout);
           return l_Layout;

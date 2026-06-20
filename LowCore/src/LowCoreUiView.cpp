@@ -1377,7 +1377,7 @@ namespace Low {
         set_loaded(true);
 
         Util::String l_Path =
-            Util::get_project().dataPath + "\\assets\\ui_views\\";
+            Util::get_project().dataPath + "/assets/ui_views/";
         l_Path += Util::hash_to_string(get_unique_id());
         l_Path += ".elements.yaml";
 

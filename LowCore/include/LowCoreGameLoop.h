@@ -20,7 +20,7 @@ namespace Low {
       void LOW_CORE_API
       register_late_tick_callback(System::TickCallback p_Callback);
 
-      [[nodiscard]] inline float LOW_CORE_API get_delta_time();
+      [[nodiscard]] float LOW_CORE_API get_delta_time();
     } // namespace GameLoop
   } // namespace Core
 } // namespace Low

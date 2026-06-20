@@ -575,7 +575,7 @@ namespace Low {
             p_Path.find_last_of('\\') + 1,
             p_Path.find_last_of('.') - p_Path.find_last_of('\\') - 1);
         ResourceProcessor::Image::process(
-            Util::get_project().dataPath + "\\resources\\img2d\\" +
+            Util::get_project().dataPath + "/resources/img2d/" +
                 l_FileName,
             l_Image);
 

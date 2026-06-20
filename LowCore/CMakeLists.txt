@@ -23,6 +23,9 @@ add_library(LowCoreAnimation OBJECT
   ${ANIMATION_INCLUDES}
   ${ANIMATION_PRIVATE_INCLUDES}
 )
+set_target_properties(LowCoreAnimation PROPERTIES
+    POSITION_INDEPENDENT_CODE ON
+  )
 
 add_dependencies(LowCoreAnimation
   LowUtil

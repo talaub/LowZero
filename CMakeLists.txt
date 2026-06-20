@@ -3,6 +3,7 @@ project(LowEngineZero)
 option(ENGINE_BUILD "Enable engine release build")
 
 cmake_minimum_required(VERSION 3.5)
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 
 set(LOW_YEAR_VERSION 2026)
 set(LOW_MAJOR_VERSION 6)
@@ -69,6 +70,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+add_compile_definitions($<$<CONFIG:Debug>:_DEBUG>)
 
 if (MSVC)
   add_compile_options(/FS)

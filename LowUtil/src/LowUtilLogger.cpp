@@ -9,7 +9,7 @@
 #include <string>
 #include <time.h>
 #include <thread>
-#include <sstream>
+#include <unordered_map>
 
 #include "LowUtil.h"
 #include "LowUtilHandle.h"
@@ -31,7 +31,25 @@ namespace Low {
       String g_ErrLogFilePath;
 
       Mutex g_PrintMutex;
+      Mutex g_ThreadNameMutex;
+      std::unordered_map<uint64_t, String> g_ThreadNames;
       bool g_ConsoleOutputEnabled = true;
+
+      static uint64_t get_current_thread_id()
+      {
+        return static_cast<uint64_t>(
+            std::hash<std::thread::id>{}(std::this_thread::get_id()));
+      }
+
+      static String get_thread_label(uint64_t p_ThreadId)
+      {
+        String l_Name = get_thread_name(p_ThreadId);
+        if (!l_Name.empty()) {
+          return l_Name;
+        }
+
+        return std::to_string(p_ThreadId).c_str();
+      }
 
       static void clear_log(const String &p_LogPath,
                             const String &p_Title)
@@ -55,6 +73,7 @@ namespace Low {
 
       void initialize()
       {
+        set_current_thread_name("Main");
         g_ThreadPool = new JobManager::ThreadPool(1);
 
         g_LogFilePath = get_project().rootPath + "/low.log";
@@ -79,6 +98,31 @@ namespace Low {
       void set_console_output_enabled(bool p_Enabled)
       {
         g_ConsoleOutputEnabled = p_Enabled;
+      }
+
+      void set_current_thread_name(const char *p_Name)
+      {
+        if (!p_Name || p_Name[0] == '\0') {
+          return;
+        }
+
+        g_ThreadNameMutex.lock();
+        g_ThreadNames[get_current_thread_id()] = p_Name;
+        g_ThreadNameMutex.unlock();
+      }
+
+      String get_thread_name(uint64_t p_ThreadId)
+      {
+        String l_Name = "";
+
+        g_ThreadNameMutex.lock();
+        auto l_It = g_ThreadNames.find(p_ThreadId);
+        if (l_It != g_ThreadNames.end()) {
+          l_Name = l_It->second;
+        }
+        g_ThreadNameMutex.unlock();
+
+        return l_Name;
       }
 
       static bool should_print_to_console()
@@ -106,12 +150,15 @@ namespace Low {
 #endif
       }
 
-      static void print_thread_id(LogEntry &p_Entry)
+      static void print_thread(LogEntry &p_Entry)
       {
+        String l_Label = p_Entry.threadName.empty()
+                             ? get_thread_label(p_Entry.threadId)
+                             : p_Entry.threadName;
 #ifdef LOW_COLOR_LOG
-        printf("\x1B[35m%i\033[0m\t", p_Entry.threadId);
+        printf("\x1B[35m%s\033[0m\t", l_Label.c_str());
 #else
-        printf("%i\t", p_Entry.threadId);
+        printf("%s\t", l_Label.c_str());
 #endif
       }
 
@@ -191,9 +238,9 @@ namespace Low {
         l_LogStream.m_Entry.module = p_Module;
         time(&l_LogStream.m_Entry.time);
 
-        std::stringstream ss;
-        ss << std::this_thread::get_id();
-        l_LogStream.m_Entry.threadId = std::stoi(ss.str());
+        l_LogStream.m_Entry.threadId = get_current_thread_id();
+        l_LogStream.m_Entry.threadName =
+            get_thread_label(l_LogStream.m_Entry.threadId);
 
         return l_LogStream;
       }
@@ -215,7 +262,9 @@ namespace Low {
         String l_Content = "";
         l_Content += buffer;
         l_Content += "\t";
-        l_Content += std::to_string(p_Entry.threadId).c_str();
+        l_Content += p_Entry.threadName.empty()
+                         ? get_thread_label(p_Entry.threadId)
+                         : p_Entry.threadName;
         l_Content += "\t";
 
         if (p_Entry.level == LogLevel::DEBUG) {
@@ -276,10 +325,11 @@ namespace Low {
         g_PrintMutex.lock();
         if (should_print_to_console()) {
           print_time(m_Entry);
-          print_thread_id(m_Entry);
+          print_thread(m_Entry);
           print_log_level(m_Entry.level);
           print_module(m_Entry);
           printf("- %s\n", m_Entry.message.c_str());
+          fflush(stdout);
         }
 
         for (uint32_t i = 0u; i < g_Callbacks.size(); ++i) {

@@ -138,7 +138,7 @@ void draw()
 
 #if 0
   if (frames == 120) {
-    Low::Renderer::ResourceImporter::import_mesh("E:\\spaceship.obj",
+    Low::Renderer::ResourceImporter::import_mesh("E:/spaceship.obj",
                                                  "spaceship");
   }
 #endif
@@ -149,7 +149,7 @@ void draw()
     using namespace Low::Renderer;
     TextureExport l_Export = TextureExport::make(N(Test));
     l_Export.set_texture(g_RenderView.get_lit_image());
-    l_Export.set_path("E:\\screenshot.png");
+    l_Export.set_path("E:/screenshot.png");
 
     LOW_LOG_DEBUG << "EXPORT" << LOW_LOG_END;
   }
@@ -375,7 +375,7 @@ void init()
 #if 0
     {
       Low::Util::String l_Path = Low::Util::get_project().dataPath;
-      l_Path += "\\TestMaterial.material.yaml";
+      l_Path += "/TestMaterial.material.yaml";
       save_material(g_TestMaterial, l_Path);
     }
 #endif
@@ -400,7 +400,7 @@ void init()
       g_UiRenderObject.set_size(Low::Math::Vector2(150.0f, 150.0f));
       Low::Util::String l_TexturePath =
           Low::Util::get_project().dataPath;
-      l_TexturePath += "\\resources\\img2d\\buff.ktx";
+      l_TexturePath += "/resources/img2d/buff.ktx";
 
       Texture l_Texture = Texture::make(N(TestTexture));
       l_Texture.set_resource(TextureResource::make(l_TexturePath));
@@ -418,7 +418,7 @@ void init()
       {
         Low::Util::String l_TexturePath =
             Low::Util::get_project().assetCachePath;
-        l_TexturePath += "\\test.msdf.ktx";
+        l_TexturePath += "/test.msdf.ktx";
         l_TextureFont.set_resource(
             TextureResource::make(l_TexturePath));
 
@@ -457,20 +457,20 @@ int main(int argc, char *argv[])
   Low::Util::initialize();
 
   if (false) {
-    Low::Renderer::ResourceImporter::import_mesh("E:\\spaceship.obj",
+    Low::Renderer::ResourceImporter::import_mesh("E:/spaceship.obj",
                                                  "spaceship");
 
     Low::Util::cleanup();
     return 0;
   }
   if (false) {
-    Low::Renderer::ResourceImporter::import_font("E:\\roboto.ttf",
+    Low::Renderer::ResourceImporter::import_font("E:/roboto.ttf",
                                                  "roboto");
     Low::Util::cleanup();
     return 0;
   }
   if (false) {
-    Low::Renderer::ResourceImporter::import_texture("E:\\brick.png",
+    Low::Renderer::ResourceImporter::import_texture("E:/brick.png",
                                                     "bricks");
     Low::Util::cleanup();
     return 0;

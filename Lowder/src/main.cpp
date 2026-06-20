@@ -242,6 +242,36 @@ static Low::Util::String get_name_from_path(Low::Util::String p_Path)
   return l_Parts[l_Parts.size() - 1];
 }
 
+static Low::Util::String
+build_module_lib_path(Low::Util::String p_ProjectPath,
+                      Low::Util::String p_ModulePath)
+{
+  Low::Util::String l_Path = p_ProjectPath;
+
+#ifdef _WIN32
+  l_Path += "/bin";
+#else
+  l_Path += "/build";
+#endif
+
+#ifdef NDEBUG
+  l_Path += "/RelWithDebInfo/";
+#else
+  l_Path += "/Debug/";
+#endif
+
+#ifdef _WIN32
+  l_Path += get_name_from_path(p_ModulePath);
+  l_Path += ".dll";
+#else
+  l_Path += "lib/lib";
+  l_Path += get_name_from_path(p_ModulePath);
+  l_Path += ".so";
+#endif
+
+  return l_Path;
+}
+
 void load_module(Low::Util::String p_ProjectPath,
                  Low::Util::String p_Path)
 {
@@ -256,20 +286,8 @@ void load_module(Low::Util::String p_ProjectPath,
   ModuleType l_ModuleType =
       parse_module_type(l_ConfigNode["type"].as<Low::Util::String>());
 
-  Util::String l_DllPath = p_ProjectPath + "/bin";
-
-#ifdef NDEBUG
-  l_DllPath += "/RelWithDebInfo/";
-#else
-  l_DllPath += "/Debug/";
-#endif
-
-  l_DllPath += get_name_from_path(p_Path);
-#ifdef _WIN32
-  l_DllPath += ".dll";
-#else
-  l_DllPath += ".so";
-#endif
+  Util::String l_DllPath =
+      build_module_lib_path(p_ProjectPath, p_Path);
   load_module_lib(l_ModuleType, l_DllPath);
 }
 
@@ -288,7 +306,7 @@ for (int i = 0; i < l_FilePaths.size(); ++i) {
     continue;
   }
   Util::String i_ModuleConfigPath =
-      l_FilePaths[i] + "\\module.yaml";
+      l_FilePaths[i] + "/module.yaml";
   if (!Util::FileIO::file_exists_sync(i_ModuleConfigPath.c_str())) {
     continue;
   }
@@ -299,17 +317,8 @@ for (int i = 0; i < l_FilePaths.size(); ++i) {
 
 // HACK: We need some kind of dependency graph so we know which
 // modules to load first
-#if RELEASE_BUILD
-  load_module(p_ProjectPath, "./modules/Gameplay");
-  load_module(p_ProjectPath, "./modules/Editor");
-#else
-  load_module(
-      p_ProjectPath,
-      "C:/Users/tlaub/Documents/LowEngine/misteda/modules/Gameplay");
-  load_module(
-      p_ProjectPath,
-      "C:/Users/tlaub/Documents/LowEngine/misteda/modules/Editor");
-#endif
+  load_module(p_ProjectPath, p_ProjectPath + "/modules/Gameplay");
+  load_module(p_ProjectPath, p_ProjectPath + "/modules/Editor");
 }
 
 int run_low(bool p_IsHost, Low::Util::String p_ProjectPath)
@@ -337,7 +346,7 @@ int run_low(bool p_IsHost, Low::Util::String p_ProjectPath)
       &tick_splash_shutdown);
 
   if (0) {
-    Low::Renderer::ResourceImporter::import_font("C:\\roboto.ttf",
+    Low::Renderer::ResourceImporter::import_font("C:/roboto.ttf",
                                                  "roboto");
     Low::Util::cleanup();
   }

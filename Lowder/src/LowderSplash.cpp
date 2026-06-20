@@ -72,7 +72,7 @@ namespace Lowder {
         if (l_Last == '\\' || l_Last == '/') {
           return p_Left + p_Right;
         }
-        return p_Left + "\\" + p_Right;
+        return p_Left + "/" + p_Right;
       }
 
       void
@@ -83,10 +83,10 @@ namespace Lowder {
         std::string l_Current = p_Base;
         for (int i = 0; i < 8 && !l_Current.empty(); ++i) {
           p_Candidates.push_back(
-              join_path(join_path(l_Current, "data\\.editor_images"),
+              join_path(join_path(l_Current, "data/.editor_images"),
                         p_FileName));
           p_Candidates.push_back(join_path(
-              join_path(l_Current, "misteda\\data\\.editor_images"),
+              join_path(l_Current, "misteda/data/.editor_images"),
               p_FileName));
 
           size_t l_Pos = l_Current.find_last_of("\\/");

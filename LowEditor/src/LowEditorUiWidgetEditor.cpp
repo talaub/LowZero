@@ -34,7 +34,6 @@
 #include "LowUtilLogger.h"
 #include "LowUtilString.h"
 #include <IconsCodicons.h>
-#include <corecrt_io.h>
 #include <imgui.h>
 #include "glm/matrix.hpp"
 

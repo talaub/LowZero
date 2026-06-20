@@ -140,7 +140,7 @@ namespace Low {
             gli::generate_mipmaps(l_Texture, gli::FILTER_LINEAR);
 
         const Util::String l_BaseAssetPath =
-            Util::get_project().assetCachePath + "\\" +
+            Util::get_project().assetCachePath + "/" +
             Util::hash_to_string(l_TextureId);
 
         const Util::String l_KtxPath = l_BaseAssetPath + ".ktx";

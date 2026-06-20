@@ -1,4 +1,7 @@
 // -------- Generic  converters for common containers --------
+#include <cerrno>
+#include <cstdlib>
+#include <string>
 #include <variant>
 #define BASIC_CONVERTER(ttype)                                       \
   template <> struct Converter<ttype, void>                          \
@@ -361,10 +364,62 @@ template <> struct Converter<Math::Matrix4x4, void>
   }
 };
 
+static bool parse_bool_scalar(const std::string &p_Value, bool &p_Out)
+{
+  std::string l_Value;
+  l_Value.reserve(p_Value.size());
+  for (char i_Char : p_Value) {
+    if (i_Char >= 'A' && i_Char <= 'Z') {
+      l_Value.push_back(i_Char - 'A' + 'a');
+    } else {
+      l_Value.push_back(i_Char);
+    }
+  }
+
+  if (l_Value == "true") {
+    p_Out = true;
+    return true;
+  }
+  if (l_Value == "false") {
+    p_Out = false;
+    return true;
+  }
+
+  return false;
+}
+
+template <typename T>
+static bool parse_number_scalar(const std::string &p_Value, T &p_Out)
+{
+  if (p_Value.empty()) {
+    return false;
+  }
+
+  errno = 0;
+  char *l_End = nullptr;
+  T l_Value = T{};
+  if constexpr (std::is_same_v<T, i64>) {
+    l_Value = static_cast<T>(std::strtoll(p_Value.c_str(), &l_End, 10));
+  } else if constexpr (std::is_same_v<T, u64>) {
+    if (p_Value[0] == '-') {
+      return false;
+    }
+    l_Value = static_cast<T>(std::strtoull(p_Value.c_str(), &l_End, 10));
+  } else if constexpr (std::is_same_v<T, double>) {
+    l_Value = std::strtod(p_Value.c_str(), &l_End);
+  }
+  if (errno != 0 || !l_End || *l_End != '\0') {
+    return false;
+  }
+
+  p_Out = l_Value;
+  return true;
+}
+
 static void encode_scalar(const Yaml::Node &v, Node &out)
 {
-  using YAML::BadConversion;
-  const String l_Scalar = v.Scalar().c_str();
+  const std::string l_RawScalar = v.Scalar();
+  const String l_Scalar = l_RawScalar.c_str();
 
   // Preserve zero-padded scalars as strings so identifiers like
   // 0000000000000012 do not get interpreted as octal numbers by YAML.
@@ -376,39 +431,30 @@ static void encode_scalar(const Yaml::Node &v, Node &out)
     return;
   }
 
-  // 1) Try bool
-  try {
-    bool b = v.as<bool>();
+  bool b = false;
+  if (parse_bool_scalar(l_RawScalar, b)) {
     out = b; // Node::operator= does the rest
     return;
-  } catch (const BadConversion &) {
   }
 
-  // 2) Try signed integer
-  try {
-    i64 i = v.as<i64>();
+  i64 i = 0;
+  if (parse_number_scalar<i64>(l_RawScalar, i)) {
     out = i;
     return;
-  } catch (const BadConversion &) {
   }
 
-  // 3) Try unsigned integer
-  try {
-    u64 u = v.as<u64>();
+  u64 u = 0;
+  if (parse_number_scalar<u64>(l_RawScalar, u)) {
     out = u;
     return;
-  } catch (const BadConversion &) {
   }
 
-  // 4) Try floating point
-  try {
-    double d = v.as<double>();
+  double d = 0.0;
+  if (parse_number_scalar<double>(l_RawScalar, d)) {
     out = static_cast<float>(d);
     return;
-  } catch (const BadConversion &) {
   }
 
-  // 5) Fallback: string
   out = l_Scalar;
 }
 

@@ -1931,7 +1931,7 @@ namespace Low {
 
       {
         Util::String l_BasePath =
-            Util::get_project().engineDataPath + "\\fonts\\";
+            Util::get_project().engineDataPath + "/fonts/";
         // During engine/editor init:
         Fonts::set_paths({
             /* roboto_regular_ttf = */ l_BasePath +

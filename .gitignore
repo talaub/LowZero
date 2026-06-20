@@ -1,4 +1,6 @@
 build/
+.nvim/
+.nvim.lua
 *#*
 *~*
 .vscode

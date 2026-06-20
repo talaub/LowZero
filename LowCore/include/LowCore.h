@@ -41,6 +41,6 @@ namespace Low {
     LOW_CORE_API Util::FileSystem::WatchHandle
     get_filesystem_watcher(uint16_t p_Type);
 
-    [[nodiscard]] inline float LOW_CORE_API get_delta_time();
+    [[nodiscard]] float LOW_CORE_API get_delta_time();
   } // namespace Core
 } // namespace Low

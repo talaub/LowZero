@@ -487,6 +487,7 @@ namespace Low {
             ResourceManager::register_asset(
                 l_ResourceConfig.animationclip_id, l_Existing);
           }
+          return l_Existing.get_id();
         });
 
         Util::AssetManager::register_asset_type(l_Builder.build());

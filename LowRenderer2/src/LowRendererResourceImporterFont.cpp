@@ -261,7 +261,7 @@ namespace Low {
           success = true;
 
           const Util::String l_BaseAssetPath =
-              Util::get_project().assetCachePath + "\\" +
+              Util::get_project().assetCachePath + "/" +
               Util::hash_to_string(l_FontId);
 
 #if 1
@@ -269,7 +269,7 @@ namespace Low {
               l_BaseAssetPath + ".msdf.ktx";
 #else
           const Util::String l_SdfPath =
-              Util::get_project().assetCachePath + "\\test.msdf.ktx";
+              Util::get_project().assetCachePath + "/test.msdf.ktx";
 #endif
           const Util::String l_SidecarPath =
               l_BaseAssetPath + ".font.yaml";
@@ -282,7 +282,7 @@ namespace Low {
               "Failed to populate sidecar info");
 #if 0
           stbi_write_png(
-              "E:\\testfont_atlas_2.png", bitmap.width, bitmap.height,
+              "E:/testfont_atlas_2.png", bitmap.width, bitmap.height,
               DESIRED_CHANNEL_COUNT, l_Pixels.data(),
               bitmap.width * DESIRED_CHANNEL_COUNT *
                   (sizeof(PixelRGBA) / DESIRED_CHANNEL_COUNT));
@@ -308,7 +308,7 @@ namespace Low {
           }
 
           const Util::String l_ResourcePath =
-              Util::get_project().dataPath + "\\" + p_OutputPath +
+              Util::get_project().dataPath + "/" + p_OutputPath +
               ".fontresource.yaml";
 
           Util::Serial::write_yaml_file(l_SidecarPath.c_str(),

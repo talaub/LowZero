@@ -2296,10 +2296,10 @@ namespace Low {
           p_Config.submeshCount = p_Node["submesh_count"].as<u32>();
 
           p_Config.sidecarPath =
-              Util::get_project().assetCachePath + "\\" +
+              Util::get_project().assetCachePath + "/" +
               Util::hash_to_string(p_Config.meshId) + ".mesh.yaml";
           p_Config.meshPath =
-              Util::get_project().assetCachePath + "\\" +
+              Util::get_project().assetCachePath + "/" +
               Util::hash_to_string(p_Config.meshId) + ".glb";
 
           p_Config.path = p_Path;

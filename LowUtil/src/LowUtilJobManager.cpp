@@ -1,6 +1,7 @@
 #include "LowUtilJobManager.h"
 #include "LowUtilHandle.h"
 #include "LowUtilHashing.h"
+#include "LowUtilLogger.h"
 #include "LowUtilSerialization.h"
 #include "LowMath.h"
 
@@ -54,7 +55,12 @@ namespace Low {
       ThreadPool::ThreadPool(int p_NumThreads) : m_Stop(false)
       {
         for (int i = 0; i < p_NumThreads; ++i) {
-          m_Workers.emplace_back([this] {
+          Util::String i_Name = "Worker ";
+          i_Name += std::to_string(i + 1).c_str();
+
+          m_Workers.emplace_back([this, i_Name] {
+            Log::set_current_thread_name(i_Name.c_str());
+
             while (true) {
               Function<void()> l_Task;
               {
@@ -72,8 +78,6 @@ namespace Low {
             }
           });
 
-          Util::String i_Name = "Worker ";
-          i_Name += std::to_string(i + 1).c_str();
           set_thread_name(m_Workers[i], i_Name.c_str());
         }
       }
@@ -323,7 +327,10 @@ namespace Low {
         void initialize()
         {
           g_IoStop = false;
-          g_IoThread = std::thread(io_worker_func);
+          g_IoThread = std::thread([] {
+            Log::set_current_thread_name("IO Worker");
+            io_worker_func();
+          });
           set_thread_name(g_IoThread, "IO Worker");
         }
 
@@ -624,9 +631,13 @@ namespace Low {
         {
           g_Stop = false;
           for (u32 i = 0; i < p_NumWorkers; ++i) {
-            g_Workers.emplace_back(worker_func);
             String i_Name = "BG Worker ";
             i_Name += std::to_string(i + 1).c_str();
+
+            g_Workers.emplace_back([i_Name] {
+              Log::set_current_thread_name(i_Name.c_str());
+              worker_func();
+            });
             set_thread_name(g_Workers[i], i_Name.c_str());
           }
         }

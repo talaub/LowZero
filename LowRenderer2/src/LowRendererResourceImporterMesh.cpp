@@ -1129,7 +1129,7 @@ namespace Low {
         }
 
         l_Schedule.path = Util::get_project().editorImagesPath +
-                          "\\thumbnails\\mesh_" +
+                          "/thumbnails/mesh_" +
                           Util::hash_to_string(
                               p_Mesh.get_resource().get_mesh_id()) +
                           ".png";
@@ -1183,7 +1183,7 @@ namespace Low {
         }
 
         const Util::String l_BaseAssetPath =
-            Util::get_project().assetCachePath + "\\" +
+            Util::get_project().assetCachePath + "/" +
             Util::hash_to_string(l_SkeletonId);
 
         const Util::String l_DataPath =
@@ -1271,7 +1271,7 @@ namespace Low {
           l_ChannelHeaders.push_back(i_ChannelHeader);
         }
         const Util::String l_BaseAssetPath =
-            Util::get_project().assetCachePath + "\\" +
+            Util::get_project().assetCachePath + "/" +
             Util::hash_to_string(l_AnimationClipId);
 
         const Util::String l_DataPath = l_BaseAssetPath + ".animclip";
@@ -1421,7 +1421,7 @@ namespace Low {
                                "coordinate post-processing.");
 
         const Util::String l_BaseAssetPath =
-            Util::get_project().assetCachePath + "\\" +
+            Util::get_project().assetCachePath + "/" +
             Util::hash_to_string(l_MeshId);
 
         const Util::String l_GlbPath = l_BaseAssetPath + ".glb";
