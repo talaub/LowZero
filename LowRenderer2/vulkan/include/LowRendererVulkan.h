@@ -334,6 +334,9 @@ namespace Low {
         VkExtent3D extent;
         VkFormat format;
         VkImageLayout layout;
+
+        void transition_to(VkCommandBuffer p_Cmd,
+                           VkImageLayout p_NewLayout);
       };
 
       struct FrameData

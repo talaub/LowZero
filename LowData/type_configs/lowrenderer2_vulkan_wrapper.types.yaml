@@ -30,6 +30,12 @@ types:
       depth:
         type: bool
     functions:
+      transition_to:
+        return_type: void
+        parameters:
+          - name: newLayout
+            type: VkImageLayout
+            no_ref: true
       unload:
         return_type: bool
   ViewInfo:

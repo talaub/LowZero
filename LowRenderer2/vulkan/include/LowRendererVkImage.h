@@ -151,6 +151,7 @@ namespace Low {
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
 
+        void transition_to(VkImageLayout p_NewLayout);
         bool unload();
         static bool get_page_for_index(const u32 p_Index,
                                        u32 &p_PageIndex,

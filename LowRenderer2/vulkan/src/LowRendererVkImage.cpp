@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "LowRendererVulkan.h"
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
@@ -233,6 +234,23 @@ namespace Low {
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: name
+        }
+        {
+          // Function: transition_to
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(transition_to);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_NewLayout);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: transition_to
         }
         {
           // Function: unload
@@ -553,6 +571,14 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
         broadcast_observable(N(name));
+      }
+
+      void Image::transition_to(VkImageLayout p_NewLayout)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_transition_to
+        get_allocated_image().transition_to(
+            Global::get_current_command_buffer(), p_NewLayout);
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_transition_to
       }
 
       bool Image::unload()

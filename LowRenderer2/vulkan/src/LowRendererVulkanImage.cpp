@@ -10,13 +10,14 @@ namespace Low {
     namespace Vulkan {
       namespace ImageUtil {
         namespace Internal {
-          static bool cmd_transition_color(
-              VkCommandBuffer p_Cmd, AllocatedImage &p_AllocatedImage,
-              VkImageLayout p_NewLayout,
-              VkPipelineStageFlags2 p_SrcStageMask,
-              VkAccessFlags2 p_SrcAccessMask,
-              VkPipelineStageFlags2 p_DstStageMask,
-              VkAccessFlags2 p_DstAccessMask)
+          static bool
+          cmd_transition_color(VkCommandBuffer p_Cmd,
+                               AllocatedImage &p_AllocatedImage,
+                               VkImageLayout p_NewLayout,
+                               VkPipelineStageFlags2 p_SrcStageMask,
+                               VkAccessFlags2 p_SrcAccessMask,
+                               VkPipelineStageFlags2 p_DstStageMask,
+                               VkAccessFlags2 p_DstAccessMask)
           {
             if (p_AllocatedImage.layout == p_NewLayout) {
               return true;

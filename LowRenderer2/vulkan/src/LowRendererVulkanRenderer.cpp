@@ -549,10 +549,7 @@ namespace Low {
             "Failed to upload default image to resource staging "
             "buffer");
 
-        ImageUtil::cmd_transition(
-            Global::get_current_command_buffer(), p_Image,
-            VK_IMAGE_LAYOUT_UNDEFINED,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        p_Image.transition_to(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
         VkBufferImageCopy l_Region = {};
         l_Region.bufferOffset = l_StagingOffset;
@@ -576,11 +573,6 @@ namespace Low {
                 .buffer.buffer,
             p_Image.get_allocated_image().image,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &l_Region);
-
-        ImageUtil::cmd_transition(
-            Global::get_current_command_buffer(), p_Image,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         return true;
       }
@@ -1004,12 +996,12 @@ namespace Low {
             float l_Near = l_CascadeBegins[i];
             float l_Far = l_CascadeSplits[i];
             if (i > 0) {
-              l_Near = glm::max(l_NearPlane,
-                                l_Near - l_CascadeBlendRange);
+              l_Near =
+                  glm::max(l_NearPlane, l_Near - l_CascadeBlendRange);
             }
             if (i + 1 < SHADOW_CSM_CASCADE_COUNT) {
-              l_Far = glm::min(l_FarPlane,
-                               l_Far + l_CascadeBlendRange);
+              l_Far =
+                  glm::min(l_FarPlane, l_Far + l_CascadeBlendRange);
             }
 
             float l_HalfH = tanf(l_CamFovY * 0.5f);

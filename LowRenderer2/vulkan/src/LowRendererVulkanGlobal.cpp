@@ -129,7 +129,7 @@ namespace Low {
           // Break on error or warning
           if (messageSeverity >=
               VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-             //DEBUG_BREAK();
+            // DEBUG_BREAK();
           }
 
           return VK_FALSE;
@@ -463,10 +463,10 @@ namespace Low {
             l_Builder.add_binding(5,
                                   VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
-            g_GlobalDescriptorSetLayout = l_Builder.build(
-                Global::get_device(),
-                VK_SHADER_STAGE_ALL_GRAPHICS |
-                    VK_SHADER_STAGE_COMPUTE_BIT);
+            g_GlobalDescriptorSetLayout =
+                l_Builder.build(Global::get_device(),
+                                VK_SHADER_STAGE_ALL_GRAPHICS |
+                                    VK_SHADER_STAGE_COMPUTE_BIT);
           }
 
           g_GlobalDescriptorSet =
@@ -497,7 +497,7 @@ namespace Low {
                 3,
                 Global::get_ui_drawcommand_buffer().m_Buffer.buffer,
                 Global::get_ui_drawcommand_buffer().m_ElementSize *
-                Global::get_ui_drawcommand_buffer()
+                    Global::get_ui_drawcommand_buffer()
                         .m_ElementCount,
                 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
@@ -554,8 +554,7 @@ namespace Low {
                 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
             l_Writer.write_buffer(
-                1,
-                Global::get_pose_palette_buffer().m_Buffer.buffer,
+                1, Global::get_pose_palette_buffer().m_Buffer.buffer,
                 Global::get_pose_palette_buffer().m_ElementSize *
                     Global::get_pose_palette_buffer().m_ElementCount,
                 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
@@ -1174,17 +1173,18 @@ namespace Low {
           SDL_Window *l_SdlWindow =
               Util::Window::get_main_window().sdlwindow;
 
-          LOWR_VK_ASSERT(SDL_Vulkan_GetInstanceExtensions(
-                             l_SdlWindow, &l_SdlExtensionCount,
-                             nullptr),
-                         "Failed to query SDL Vulkan instance extension count");
+          LOWR_VK_ASSERT(
+              SDL_Vulkan_GetInstanceExtensions(
+                  l_SdlWindow, &l_SdlExtensionCount, nullptr),
+              "Failed to query SDL Vulkan instance extension count");
 
           std::vector<const char *> l_SdlExtensions(
               l_SdlExtensionCount);
-          LOWR_VK_ASSERT(SDL_Vulkan_GetInstanceExtensions(
-                             l_SdlWindow, &l_SdlExtensionCount,
-                             l_SdlExtensions.data()),
-                         "Failed to query SDL Vulkan instance extensions");
+          LOWR_VK_ASSERT(
+              SDL_Vulkan_GetInstanceExtensions(
+                  l_SdlWindow, &l_SdlExtensionCount,
+                  l_SdlExtensions.data()),
+              "Failed to query SDL Vulkan instance extensions");
 
           l_InstanceBuilder.enable_extensions(l_SdlExtensions);
 
@@ -1866,6 +1866,12 @@ namespace Low {
           }
         }
       } // namespace Global
+      void AllocatedImage::transition_to(VkCommandBuffer p_Cmd,
+                                         VkImageLayout p_NewLayout)
+      {
+        Low::Renderer::Vulkan::ImageUtil::Internal::cmd_transition(
+            p_Cmd, *this, p_NewLayout);
+      }
     } // namespace Vulkan
   } // namespace Renderer
 } // namespace Low
