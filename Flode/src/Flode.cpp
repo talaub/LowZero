@@ -49,12 +49,12 @@ namespace Flode {
   {
     using namespace Low::Util;
 
-    Yaml::Node mistedanode = Yaml::load_file(
-        "C:/Users/tlaub/Documents/LowEngine/misteda/data/"
-        "_internal/type_configs/typeids.yaml");
+    Yaml::Node mistedanode =
+        Yaml::load_file("./data/"
+                        "_internal/type_configs/typeids.yaml");
     init_interim(mistedanode);
     Yaml::Node lownode =
-        Yaml::load_file("C:/Users/tlaub/Documents/LowEngine/"
+        Yaml::load_file("../"
                         "LowData/type_configs/typeids.yaml");
     init_interim(lownode);
   }
@@ -688,7 +688,7 @@ namespace Flode {
         l_Builder.append("Handle_");
         l_Builder.append((Low::Util::String)l_Identifier);
 
-        for (int i = 2; i < l_Parts.size(); ++i){
+        for (int i = 2; i < l_Parts.size(); ++i) {
           l_Builder.append("_").append(l_Parts[i]);
         }
         p_TypeName = LOW_NAME(l_Builder.get().c_str());

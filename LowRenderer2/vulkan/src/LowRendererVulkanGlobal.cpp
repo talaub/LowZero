@@ -29,6 +29,7 @@
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_vulkan.h"
 #include <cstring>
+#include <vector>
 #include <vulkan/vulkan_core.h>
 
 namespace Low {
@@ -1168,6 +1169,24 @@ namespace Low {
               //.use_default_debug_messenger()
               .set_debug_callback(&DebugCallback)
               .require_api_version(1, 3, 0);
+
+          u32 l_SdlExtensionCount = 0u;
+          SDL_Window *l_SdlWindow =
+              Util::Window::get_main_window().sdlwindow;
+
+          LOWR_VK_ASSERT(SDL_Vulkan_GetInstanceExtensions(
+                             l_SdlWindow, &l_SdlExtensionCount,
+                             nullptr),
+                         "Failed to query SDL Vulkan instance extension count");
+
+          std::vector<const char *> l_SdlExtensions(
+              l_SdlExtensionCount);
+          LOWR_VK_ASSERT(SDL_Vulkan_GetInstanceExtensions(
+                             l_SdlWindow, &l_SdlExtensionCount,
+                             l_SdlExtensions.data()),
+                         "Failed to query SDL Vulkan instance extensions");
+
+          l_InstanceBuilder.enable_extensions(l_SdlExtensions);
 
 #ifdef LOW_RENDERER_VALIDATION_VERBOSE
           l_InstanceBuilder.set_debug_messenger_severity(
