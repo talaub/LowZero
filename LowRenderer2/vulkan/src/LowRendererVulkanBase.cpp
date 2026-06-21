@@ -91,6 +91,22 @@ namespace Low {
             p_Swapchain.imageViews.push_back(it);
           }
 
+          {
+            VkSemaphoreCreateInfo l_SemaphoreCreateInfo =
+                InitUtil::semaphore_create_info();
+
+            p_Swapchain.renderSemaphores.clear();
+            p_Swapchain.renderSemaphores.resize(
+                p_Swapchain.images.size());
+
+            for (u32 i = 0; i < p_Swapchain.renderSemaphores.size();
+                 ++i) {
+              LOWR_VK_CHECK_RETURN(vkCreateSemaphore(
+                  Global::get_device(), &l_SemaphoreCreateInfo,
+                  nullptr, &p_Swapchain.renderSemaphores[i]));
+            }
+          }
+
           p_Swapchain.context = &p_Context;
 
           {
@@ -189,9 +205,6 @@ namespace Low {
             LOWR_VK_CHECK_RETURN(vkCreateSemaphore(
                 Global::get_device(), &l_SemaphoreCreateInfo, nullptr,
                 &p_Context.frames[i].swapchainSemaphore));
-            LOWR_VK_CHECK_RETURN(vkCreateSemaphore(
-                Global::get_device(), &l_SemaphoreCreateInfo, nullptr,
-                &p_Context.frames[i].renderSemaphore));
           }
 
           return true;
@@ -291,6 +304,14 @@ namespace Low {
           // Destroy drawimage
           ImageUtil::Internal::destroy(p_Swapchain.drawImage);
 
+          for (u32 i = 0; i < p_Swapchain.renderSemaphores.size();
+               ++i) {
+            vkDestroySemaphore(Global::get_device(),
+                               p_Swapchain.renderSemaphores[i],
+                               nullptr);
+          }
+          p_Swapchain.renderSemaphores.clear();
+
           vkDestroySwapchainKHR(Global::get_device(),
                                 p_Swapchain.vkhandle, nullptr);
 
@@ -317,9 +338,6 @@ namespace Low {
           for (u32 i = 0; i < Global::get_frame_overlap(); ++i) {
             vkDestroyFence(Global::get_device(),
                            p_Context.frames[i].renderFence, nullptr);
-            vkDestroySemaphore(Global::get_device(),
-                               p_Context.frames[i].renderSemaphore,
-                               nullptr);
             vkDestroySemaphore(Global::get_device(),
                                p_Context.frames[i].swapchainSemaphore,
                                nullptr);
@@ -501,7 +519,8 @@ namespace Low {
           VkSemaphoreSubmitInfo l_SignalInfo =
               InitUtil::semaphore_submit_info(
                   VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,
-                  p_Context.get_current_frame().renderSemaphore);
+                  p_Context.swapchain.renderSemaphores
+                      [p_Context.swapchain.imageIndex]);
 
           VkSubmitInfo2 l_SubmitInfo = InitUtil::submit_info(
               &l_CmdInfo, &l_SignalInfo, &l_WaitInfo);
@@ -517,7 +536,8 @@ namespace Low {
           l_PresentInfo.swapchainCount = 1;
 
           l_PresentInfo.pWaitSemaphores =
-              &p_Context.get_current_frame().renderSemaphore;
+              &p_Context.swapchain
+                   .renderSemaphores[p_Context.swapchain.imageIndex];
           l_PresentInfo.waitSemaphoreCount = 1;
 
           l_PresentInfo.pImageIndices =

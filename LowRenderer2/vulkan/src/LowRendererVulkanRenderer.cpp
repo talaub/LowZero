@@ -574,6 +574,9 @@ namespace Low {
             p_Image.get_allocated_image().image,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &l_Region);
 
+        p_Image.transition_to(
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
         return true;
       }
 
@@ -666,6 +669,39 @@ namespace Low {
         }
       }
 
+      static bool initialize_default_editor_image_slots()
+      {
+        GpuTexture l_DefaultTexture =
+            get_default_gpu_texture(TextureFormatCategory::Float);
+
+        LOWR_VK_ASSERT_RETURN(
+            l_DefaultTexture.is_alive(),
+            "Default editor image texture is not alive.");
+
+        Image l_DefaultImage = l_DefaultTexture.get_data_handle();
+
+        LOWR_VK_ASSERT_RETURN(
+            l_DefaultImage.is_alive(),
+            "Default editor image texture image is not alive.");
+
+        for (u32 i = 0; i < Global::get_frame_overlap(); ++i) {
+          DescriptorUtil::DescriptorWriter l_Writer;
+
+          for (u32 j = 0; j < EditorImageGpu::get_capacity(); ++j) {
+            l_Writer.write_image(
+                4, l_DefaultImage.get_allocated_image().imageView,
+                Global::get_samplers().no_lod_nearest_repeat_black,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, j);
+          }
+
+          l_Writer.update_set(Global::get_device(),
+                              Global::get_texture_descriptor_set(i));
+        }
+
+        return true;
+      }
+
       static bool initialize_default_texture()
       {
         LOWR_VK_ASSERT_RETURN(initialize_float_default_texture(),
@@ -683,6 +719,10 @@ namespace Low {
         queue_default_texture_for_slots(TextureFormatCategory::Float);
         queue_default_texture_for_slots(TextureFormatCategory::Uint);
         queue_default_texture_for_slots(TextureFormatCategory::Int);
+
+        LOWR_VK_ASSERT_RETURN(
+            initialize_default_editor_image_slots(),
+            "Failed to initialize default editor image slots");
 
         return true;
       }
@@ -794,14 +834,11 @@ namespace Low {
       {
         VkCommandBuffer l_Cmd = Global::get_current_command_buffer();
 
-        ImageUtil::Internal::cmd_transition(
-            l_Cmd, p_Context.swapchain.drawImage.image,
-            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+        p_Context.swapchain.drawImage.transition_to(
+            l_Cmd, VK_IMAGE_LAYOUT_GENERAL);
 
-        ImageUtil::Internal::cmd_transition(
-            l_Cmd, p_Context.swapchain.drawImage.image,
-            VK_IMAGE_LAYOUT_GENERAL,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        p_Context.swapchain.drawImage.transition_to(
+            l_Cmd, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
         draw_render_entries(p_Context, p_Delta);
 
@@ -812,13 +849,10 @@ namespace Low {
           RenderView l_RenderView = RenderView::living_instances()[0];
           ViewInfo l_ViewInfo = l_RenderView.get_view_info_handle();
 
-          ImageUtil::cmd_transition(
-              l_Cmd,
-              l_RenderView.get_lit_image()
-                  .get_gpu()
-                  .get_data_handle(),
-              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-              VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+          Image(l_RenderView.get_lit_image()
+                    .get_gpu()
+                    .get_data_handle())
+              .transition_to(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
           Image l_LitImage = l_RenderView.get_lit_image()
                                  .get_gpu()
@@ -833,19 +867,15 @@ namespace Low {
               g_Context.swapchain.drawImage.image, l_SourceExtent,
               p_Context.swapchain.drawExtent);
 
-          ImageUtil::cmd_transition(
-              l_Cmd,
-              l_RenderView.get_lit_image()
-                  .get_gpu()
-                  .get_data_handle(),
-              VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+          Image(l_RenderView.get_lit_image()
+                    .get_gpu()
+                    .get_data_handle())
+              .transition_to(
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
 
-        ImageUtil::Internal::cmd_transition(
-            l_Cmd, p_Context.swapchain.drawImage.image,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        p_Context.swapchain.drawImage.transition_to(
+            l_Cmd, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
         ImageUtil::Internal::cmd_transition(
             l_Cmd,
             p_Context.swapchain
@@ -1173,8 +1203,7 @@ namespace Low {
                                 VK_IMAGE_USAGE_SAMPLED_BIT,
                             false);
 
-          ImageUtil::cmd_transition(
-              l_Cmd, l_Image, VK_IMAGE_LAYOUT_UNDEFINED,
+          l_Image.transition_to(
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
 
@@ -1650,8 +1679,7 @@ namespace Low {
                                 VK_IMAGE_USAGE_SAMPLED_BIT,
                             false);
 
-          ImageUtil::cmd_transition(
-              l_Cmd, l_Image, VK_IMAGE_LAYOUT_UNDEFINED,
+          l_Image.transition_to(
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
         {
@@ -1679,8 +1707,7 @@ namespace Low {
                                 VK_IMAGE_USAGE_SAMPLED_BIT,
                             false);
 
-          ImageUtil::cmd_transition(
-              l_Cmd, l_Image, VK_IMAGE_LAYOUT_UNDEFINED,
+          l_Image.transition_to(
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
 
@@ -1710,8 +1737,7 @@ namespace Low {
                                 VK_IMAGE_USAGE_SAMPLED_BIT,
                             false);
 
-          ImageUtil::cmd_transition(
-              l_Cmd, l_Image, VK_IMAGE_LAYOUT_UNDEFINED,
+          l_Image.transition_to(
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
 
@@ -1740,8 +1766,7 @@ namespace Low {
                                 VK_IMAGE_USAGE_SAMPLED_BIT,
                             false);
 
-          ImageUtil::cmd_transition(
-              l_Cmd, l_Image, VK_IMAGE_LAYOUT_UNDEFINED,
+          l_Image.transition_to(
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
 
@@ -1794,8 +1819,7 @@ namespace Low {
 
           p_ViewInfo.set_object_id_buffer(l_ObjectBuffer);
 
-          ImageUtil::cmd_transition(
-              l_Cmd, l_Image, VK_IMAGE_LAYOUT_UNDEFINED,
+          l_Image.transition_to(
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
 
@@ -1828,8 +1852,7 @@ namespace Low {
                   VK_IMAGE_USAGE_SAMPLED_BIT,
               false);
 
-          ImageUtil::cmd_transition(
-              l_Cmd, l_Image, VK_IMAGE_LAYOUT_UNDEFINED,
+          l_Image.transition_to(
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
 
@@ -1859,8 +1882,7 @@ namespace Low {
                                 VK_IMAGE_USAGE_SAMPLED_BIT,
                             false);
 
-          ImageUtil::cmd_transition(
-              l_Cmd, l_Image, VK_IMAGE_LAYOUT_UNDEFINED,
+          l_Image.transition_to(
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
 
@@ -1889,8 +1911,7 @@ namespace Low {
                                 VK_IMAGE_USAGE_SAMPLED_BIT,
                             false);
 
-          ImageUtil::cmd_transition(
-              l_Cmd, l_Image, VK_IMAGE_LAYOUT_UNDEFINED,
+          l_Image.transition_to(
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
 
@@ -1920,8 +1941,7 @@ namespace Low {
                                 VK_IMAGE_USAGE_SAMPLED_BIT,
                             false);
 
-          ImageUtil::cmd_transition(
-              l_Cmd, l_Image, VK_IMAGE_LAYOUT_UNDEFINED,
+          l_Image.transition_to(
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
 
@@ -1952,8 +1972,7 @@ namespace Low {
                   VK_IMAGE_USAGE_SAMPLED_BIT,
               false);
 
-          ImageUtil::cmd_transition(
-              l_Cmd, l_Image, VK_IMAGE_LAYOUT_UNDEFINED,
+          l_Image.transition_to(
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
           DescriptorUtil::DescriptorWriter l_AtlasWriter;
@@ -2323,11 +2342,9 @@ namespace Low {
                 VK_ACCESS_2_SHADER_STORAGE_READ_BIT);
           }
 
-          ImageUtil::cmd_transition(
-              l_Cmd,
-              i_Canvas.get_out_image().get_gpu().get_data_handle(),
-              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+          Image(i_Canvas.get_out_image().get_gpu().get_data_handle())
+              .transition_to(
+                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
           VkClearValue l_ClearColorValue = {};
           l_ClearColorValue.color = {{0.2f, 0.2f, 0.2f, 1.0f}};
@@ -2339,7 +2356,8 @@ namespace Low {
           l_ColorAttachments.resize(1);
           l_ColorAttachments[0] = InitUtil::attachment_info(
               l_OutImage.get_allocated_image().imageView,
-              &l_ClearColorValue, VK_IMAGE_LAYOUT_GENERAL);
+              &l_ClearColorValue,
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
           VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
               {i_Canvas.get_dimensions().x,
@@ -2385,11 +2403,9 @@ namespace Low {
 
           vkCmdEndRendering(l_Cmd);
 
-          ImageUtil::cmd_transition(
-              l_Cmd,
-              i_Canvas.get_out_image().get_gpu().get_data_handle(),
-              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+          Image(i_Canvas.get_out_image().get_gpu().get_data_handle())
+              .transition_to(
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
 
         VK_RENDERDOC_SECTION_END();
@@ -3353,9 +3369,7 @@ namespace Low {
                 i_Export.observe(OBSERVABLE_DESTROY,
                                  i_TexExport.get_id());
 
-                ImageUtil::cmd_transition(
-                    l_Cmd, i_Image,
-                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                i_Image.transition_to(
                     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
                 // Copy image to buffer
@@ -3378,9 +3392,7 @@ namespace Low {
                       &l_Region);
                 }
 
-                ImageUtil::cmd_transition(
-                    l_Cmd, i_Image,
-                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                i_Image.transition_to(
                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
                 i_Export.set_state(TextureExportState::COPIED);

@@ -804,9 +804,7 @@ namespace Low {
         l_GpuTexture.set_full_mip_count(IMAGE_MIPMAP_COUNT);
 
         // TODO: Should be changed to transfer command buffer
-        Vulkan::ImageUtil::cmd_transition(
-            Vulkan::Global::get_current_command_buffer(), l_Image,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        l_Image.transition_to(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
         p_Texture.set_state(TextureState::UPLOADINGTOGPU);
         return true;
@@ -846,9 +844,7 @@ namespace Low {
         l_Gpu.set_data_handle(l_Image.get_id());
 
         // TODO: Should be changed to transfer command buffer
-        Vulkan::ImageUtil::cmd_transition(
-            Vulkan::Global::get_current_command_buffer(), l_Image,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        l_Image.transition_to(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
         p_EditorImage.set_state(TextureState::UPLOADINGTOGPU);
         return true;
@@ -1967,8 +1963,7 @@ namespace Low {
           if (!l_Regions.empty()) {
             // TODO: Change to transfer queue command buffer
 
-            Vulkan::ImageUtil::cmd_transition(
-                Vulkan::Global::get_current_command_buffer(), l_Image,
+            l_Image.transition_to(
                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
             vkCmdCopyBufferToImage(
@@ -1978,8 +1973,7 @@ namespace Low {
                 l_VkImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 l_Regions.size(), l_Regions.data());
 
-            Vulkan::ImageUtil::cmd_transition(
-                Vulkan::Global::get_current_command_buffer(), l_Image,
+            l_Image.transition_to(
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
           }
         }
@@ -2088,8 +2082,7 @@ namespace Low {
           if (!l_Regions.empty()) {
             // TODO: Change to transfer queue command buffer
 
-            Vulkan::ImageUtil::cmd_transition(
-                Vulkan::Global::get_current_command_buffer(), l_Image,
+            l_Image.transition_to(
                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
             vkCmdCopyBufferToImage(
@@ -2099,8 +2092,7 @@ namespace Low {
                 l_VkImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 l_Regions.size(), l_Regions.data());
 
-            Vulkan::ImageUtil::cmd_transition(
-                Vulkan::Global::get_current_command_buffer(), l_Image,
+            l_Image.transition_to(
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
           }
         }
@@ -2137,8 +2129,7 @@ namespace Low {
           // TODO: Check if this can stay graphics queue command
           // buffer or needs changing. Maybe we also need additional
           // synchronization
-          Vulkan::ImageUtil::cmd_transition(
-              Vulkan::Global::get_current_command_buffer(), l_Image,
+          l_Image.transition_to(
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
           // Add the loaded mip to the list of mips loaded and sort
@@ -2176,8 +2167,7 @@ namespace Low {
           // TODO: Check if this can stay graphics queue command
           // buffer or needs changing. Maybe we also need additional
           // synchronization
-          Vulkan::ImageUtil::cmd_transition(
-              Vulkan::Global::get_current_command_buffer(), l_Image,
+          l_Image.transition_to(
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         } else if (p_UploadEntry.is_mesh_upload()) {
           const char *l_Name =

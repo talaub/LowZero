@@ -342,7 +342,6 @@ namespace Low {
       struct FrameData
       {
         VkSemaphore swapchainSemaphore;
-        VkSemaphore renderSemaphore;
 
         VkFence renderFence;
 
@@ -359,6 +358,7 @@ namespace Low {
 
         Util::List<VkImage> images;
         Util::List<VkImageView> imageViews;
+        Util::List<VkSemaphore> renderSemaphores;
 
         AllocatedImage drawImage;
         VkExtent2D drawExtent;

@@ -956,8 +956,7 @@ namespace Low {
 
             sampl.magFilter = VK_FILTER_NEAREST;
             sampl.minFilter = VK_FILTER_NEAREST;
-            sampl.mipmapMode =
-                VK_SAMPLER_MIPMAP_MODE_LINEAR; // Enable mipmaps
+            sampl.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
 
             sampl.addressModeU =
                 VK_SAMPLER_ADDRESS_MODE_REPEAT; // Addressing mode
@@ -979,8 +978,7 @@ namespace Low {
 
             sampl.magFilter = VK_FILTER_NEAREST;
             sampl.minFilter = VK_FILTER_NEAREST;
-            sampl.mipmapMode =
-                VK_SAMPLER_MIPMAP_MODE_LINEAR; // Enable mipmaps
+            sampl.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
 
             sampl.addressModeU =
                 VK_SAMPLER_ADDRESS_MODE_REPEAT; // Addressing mode
@@ -1006,8 +1004,7 @@ namespace Low {
 
               sampl.magFilter = VK_FILTER_NEAREST;
               sampl.minFilter = VK_FILTER_NEAREST;
-              sampl.mipmapMode =
-                  VK_SAMPLER_MIPMAP_MODE_LINEAR; // Enable mipmaps
+              sampl.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
 
               sampl.addressModeU =
                   VK_SAMPLER_ADDRESS_MODE_REPEAT; // Addressing mode
@@ -1866,9 +1863,22 @@ namespace Low {
           }
         }
       } // namespace Global
+
+      static bool is_depth_format(VkFormat p_Format)
+      {
+        return p_Format == VK_FORMAT_D32_SFLOAT ||
+               p_Format == VK_FORMAT_D32_SFLOAT_S8_UINT;
+      }
+
       void AllocatedImage::transition_to(VkCommandBuffer p_Cmd,
                                          VkImageLayout p_NewLayout)
       {
+        if (is_depth_format(format)) {
+          Low::Renderer::Vulkan::ImageUtil::Internal::
+              cmd_transition_depth(p_Cmd, *this, p_NewLayout);
+          return;
+        }
+
         Low::Renderer::Vulkan::ImageUtil::Internal::cmd_transition(
             p_Cmd, *this, p_NewLayout);
       }

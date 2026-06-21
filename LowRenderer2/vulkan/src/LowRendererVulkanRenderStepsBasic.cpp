@@ -229,27 +229,24 @@ namespace Low {
 
           {
             // Transfer the gbuffer images
-            ImageUtil::cmd_transition(
-                l_Cmd,
-                p_RenderView.get_highlight_map()
-                    .get_gpu()
-                    .get_data_handle(),
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-            ImageUtil::cmd_transition(
-                l_Cmd,
-                p_RenderView.get_gbuffer_depth()
-                    .get_gpu()
-                    .get_data_handle(),
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+            Image(p_RenderView.get_highlight_map()
+                      .get_gpu()
+                      .get_data_handle())
+                .transition_to(
+                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            Image(p_RenderView.get_gbuffer_depth()
+                      .get_gpu()
+                      .get_data_handle())
+                .transition_to(
+                    VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
           }
 
           Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
           l_ColorAttachments.resize(1);
           l_ColorAttachments[0] = InitUtil::attachment_info(
               l_HighlightMapImage.get_allocated_image().imageView,
-              &l_ClearObjectValue, VK_IMAGE_LAYOUT_GENERAL);
+              &l_ClearObjectValue,
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
           VkRenderingAttachmentInfo l_DepthAttachment =
               InitUtil::attachment_info(
@@ -278,20 +275,16 @@ namespace Low {
           vkCmdEndRendering(l_Cmd);
 
           {
-            ImageUtil::cmd_transition(
-                l_Cmd,
-                p_RenderView.get_highlight_map()
-                    .get_gpu()
-                    .get_data_handle(),
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-            ImageUtil::cmd_transition(
-                l_Cmd,
-                p_RenderView.get_gbuffer_depth()
-                    .get_gpu()
-                    .get_data_handle(),
-                VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            Image(p_RenderView.get_highlight_map()
+                      .get_gpu()
+                      .get_data_handle())
+                .transition_to(
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            Image(p_RenderView.get_gbuffer_depth()
+                      .get_gpu()
+                      .get_data_handle())
+                .transition_to(
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
           }
 
           VK_RENDERDOC_SECTION_END();
@@ -352,23 +345,17 @@ namespace Low {
               (HighlightEdgeStepData *)p_RenderView
                   .get_step_data()[p_RenderStep.get_index()];
 
-          ImageUtil::cmd_transition(
-              l_Cmd,
-              p_RenderView.get_lit_image()
-                  .get_gpu()
-                  .get_data_handle(),
-              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
           Image l_OutImage = p_RenderView.get_tonemapped_image()
                                  .get_gpu()
                                  .get_data_handle();
+          l_OutImage.transition_to(
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
           Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
           l_ColorAttachments.resize(1);
           l_ColorAttachments[0] = InitUtil::attachment_info(
               l_OutImage.get_allocated_image().imageView, nullptr,
-              VK_IMAGE_LAYOUT_GENERAL);
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
           VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
               {p_RenderView.get_dimensions().x,
@@ -438,12 +425,7 @@ namespace Low {
 
           vkCmdEndRendering(l_Cmd);
 
-          ImageUtil::cmd_transition(
-              l_Cmd,
-              p_RenderView.get_lit_image()
-                  .get_gpu()
-                  .get_data_handle(),
-              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+          l_OutImage.transition_to(
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
           VK_RENDERDOC_SECTION_END();
@@ -718,27 +700,24 @@ namespace Low {
 
           {
             // Transfer the gbuffer images
-            ImageUtil::cmd_transition(
-                l_Cmd,
-                p_RenderView.get_object_map()
-                    .get_gpu()
-                    .get_data_handle(),
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-            ImageUtil::cmd_transition(
-                l_Cmd,
-                p_RenderView.get_gbuffer_depth()
-                    .get_gpu()
-                    .get_data_handle(),
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+            Image(p_RenderView.get_object_map()
+                      .get_gpu()
+                      .get_data_handle())
+                .transition_to(
+                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            Image(p_RenderView.get_gbuffer_depth()
+                      .get_gpu()
+                      .get_data_handle())
+                .transition_to(
+                    VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
           }
 
           Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
           l_ColorAttachments.resize(1);
           l_ColorAttachments[0] = InitUtil::attachment_info(
               l_ObjectMapImage.get_allocated_image().imageView,
-              &l_ClearObjectValue, VK_IMAGE_LAYOUT_GENERAL);
+              &l_ClearObjectValue,
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
           VkRenderingAttachmentInfo l_DepthAttachment =
               InitUtil::attachment_info(
@@ -771,20 +750,16 @@ namespace Low {
           vkCmdEndRendering(l_Cmd);
 
           {
-            ImageUtil::cmd_transition(
-                l_Cmd,
-                p_RenderView.get_object_map()
-                    .get_gpu()
-                    .get_data_handle(),
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-            ImageUtil::cmd_transition(
-                l_Cmd,
-                p_RenderView.get_gbuffer_depth()
-                    .get_gpu()
-                    .get_data_handle(),
-                VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            Image(p_RenderView.get_object_map()
+                      .get_gpu()
+                      .get_data_handle())
+                .transition_to(
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            Image(p_RenderView.get_gbuffer_depth()
+                      .get_gpu()
+                      .get_data_handle())
+                .transition_to(
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
           }
 
           VK_RENDERDOC_SECTION_END();
@@ -866,54 +841,47 @@ namespace Low {
 
           {
             // Transfer the gbuffer images
-            ImageUtil::cmd_transition(
-                l_Cmd,
-                p_RenderView.get_gbuffer_albedo()
-                    .get_gpu()
-                    .get_data_handle(),
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-            ImageUtil::cmd_transition(
-                l_Cmd,
-                p_RenderView.get_gbuffer_normals()
-                    .get_gpu()
-                    .get_data_handle(),
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-            ImageUtil::cmd_transition(
-                l_Cmd,
-                p_RenderView.get_gbuffer_viewposition()
-                    .get_gpu()
-                    .get_data_handle(),
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-            ImageUtil::cmd_transition(
-                l_Cmd,
-                p_RenderView.get_object_map()
-                    .get_gpu()
-                    .get_data_handle(),
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-            ImageUtil::cmd_transition(
-                l_Cmd,
-                p_RenderView.get_gbuffer_depth()
-                    .get_gpu()
-                    .get_data_handle(),
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+            Image(p_RenderView.get_gbuffer_albedo()
+                      .get_gpu()
+                      .get_data_handle())
+                .transition_to(
+                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            Image(p_RenderView.get_gbuffer_normals()
+                      .get_gpu()
+                      .get_data_handle())
+                .transition_to(
+                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            Image(p_RenderView.get_gbuffer_viewposition()
+                      .get_gpu()
+                      .get_data_handle())
+                .transition_to(
+                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            Image(p_RenderView.get_object_map()
+                      .get_gpu()
+                      .get_data_handle())
+                .transition_to(
+                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            Image(p_RenderView.get_gbuffer_depth()
+                      .get_gpu()
+                      .get_data_handle())
+                .transition_to(
+                    VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
           }
 
           Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
           l_ColorAttachments.resize(3);
           l_ColorAttachments[0] = InitUtil::attachment_info(
               l_AlbedoImage.get_allocated_image().imageView,
-              &l_ClearColorValue, VK_IMAGE_LAYOUT_GENERAL);
+              &l_ClearColorValue,
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
           l_ColorAttachments[1] = InitUtil::attachment_info(
               l_NormalsImage.get_allocated_image().imageView,
-              &l_ClearColorValue, VK_IMAGE_LAYOUT_GENERAL);
+              &l_ClearColorValue,
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
           l_ColorAttachments[2] = InitUtil::attachment_info(
               l_ViewPositionImage.get_allocated_image().imageView,
-              &l_ClearColorValue, VK_IMAGE_LAYOUT_GENERAL);
+              &l_ClearColorValue,
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
           /*
           l_ColorAttachments[3] = InitUtil::attachment_info(
               l_ObjectMapImage.get_allocated_image().imageView,
@@ -1066,41 +1034,31 @@ namespace Low {
 
           {
             // Transfer the gbuffer images
-            ImageUtil::cmd_transition(
-                l_Cmd,
-                p_RenderView.get_gbuffer_albedo()
-                    .get_gpu()
-                    .get_data_handle(),
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-            ImageUtil::cmd_transition(
-                l_Cmd,
-                p_RenderView.get_gbuffer_normals()
-                    .get_gpu()
-                    .get_data_handle(),
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-            ImageUtil::cmd_transition(
-                l_Cmd,
-                p_RenderView.get_gbuffer_viewposition()
-                    .get_gpu()
-                    .get_data_handle(),
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-            ImageUtil::cmd_transition(
-                l_Cmd,
-                p_RenderView.get_object_map()
-                    .get_gpu()
-                    .get_data_handle(),
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-            ImageUtil::cmd_transition(
-                l_Cmd,
-                p_RenderView.get_gbuffer_depth()
-                    .get_gpu()
-                    .get_data_handle(),
-                VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            Image(p_RenderView.get_gbuffer_albedo()
+                      .get_gpu()
+                      .get_data_handle())
+                .transition_to(
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            Image(p_RenderView.get_gbuffer_normals()
+                      .get_gpu()
+                      .get_data_handle())
+                .transition_to(
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            Image(p_RenderView.get_gbuffer_viewposition()
+                      .get_gpu()
+                      .get_data_handle())
+                .transition_to(
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            Image(p_RenderView.get_object_map()
+                      .get_gpu()
+                      .get_data_handle())
+                .transition_to(
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            Image(p_RenderView.get_gbuffer_depth()
+                      .get_gpu()
+                      .get_data_handle())
+                .transition_to(
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
           }
 
           VK_RENDERDOC_SECTION_END();
@@ -1180,26 +1138,21 @@ namespace Low {
 
           ViewInfo l_ViewInfo = p_RenderView.get_view_info_handle();
 
-          ImageUtil::cmd_transition(
-              l_Cmd,
-              p_RenderView.get_tonemapped_image()
-                  .get_gpu()
-                  .get_data_handle(),
-              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
           VkClearValue l_ClearColorValue = {};
           l_ClearColorValue.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
 
           Image l_LitImage = p_RenderView.get_lit_image()
                                  .get_gpu()
                                  .get_data_handle();
+          l_LitImage.transition_to(
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
           Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
           l_ColorAttachments.resize(1);
           l_ColorAttachments[0] = InitUtil::attachment_info(
               l_LitImage.get_allocated_image().imageView,
-              &l_ClearColorValue, VK_IMAGE_LAYOUT_GENERAL);
+              &l_ClearColorValue,
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
           VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
               {p_RenderView.get_dimensions().x,
@@ -1261,12 +1214,7 @@ namespace Low {
 
             vkCmdEndRendering(l_Cmd);
 
-            ImageUtil::cmd_transition(
-                l_Cmd,
-                p_RenderView.get_tonemapped_image()
-                    .get_gpu()
-                    .get_data_handle(),
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            l_LitImage.transition_to(
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
           }
 
@@ -1507,9 +1455,7 @@ namespace Low {
                 "staging "
                 "buffer");
 
-            ImageUtil::cmd_transition(
-                Global::get_current_command_buffer(), l_Image,
-                VK_IMAGE_LAYOUT_UNDEFINED,
+            l_Image.transition_to(
                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
             VkBufferImageCopy l_Region = {};
@@ -1539,9 +1485,7 @@ namespace Low {
                 l_Image.get_allocated_image().image,
                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &l_Region);
 
-            ImageUtil::cmd_transition(
-                Global::get_current_command_buffer(), l_Image,
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            l_Image.transition_to(
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
           }
 
@@ -1721,11 +1665,9 @@ namespace Low {
                         false),
                     "Failed to create ssao out image.");
 
-                ImageUtil::cmd_transition(
-                    l_Cmd,
-                    l_Data->texture.get_gpu().get_data_handle(),
-                    VK_IMAGE_LAYOUT_UNDEFINED,
-                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                Image(l_Data->texture.get_gpu().get_data_handle())
+                    .transition_to(
+                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
               }
               {
                 Texture l_Texture = l_Data->tempBlurTexture;
@@ -1765,12 +1707,10 @@ namespace Low {
                           false),
                       "Failed to create ssao blur image.");
 
-                  ImageUtil::cmd_transition(
-                      l_Cmd,
-                      l_Data->tempBlurTexture.get_gpu()
-                          .get_data_handle(),
-                      VK_IMAGE_LAYOUT_UNDEFINED,
-                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                  Image(l_Data->tempBlurTexture.get_gpu()
+                            .get_data_handle())
+                      .transition_to(
+                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
                 }
               }
               return true;
@@ -1823,10 +1763,9 @@ namespace Low {
                     false),
                 "Failed to create ssao out image.");
 
-            ImageUtil::cmd_transition(
-                l_Cmd, l_Data->texture.get_gpu().get_data_handle(),
-                VK_IMAGE_LAYOUT_UNDEFINED,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            Image(l_Data->texture.get_gpu().get_data_handle())
+                .transition_to(
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
           }
 
           {
@@ -1851,18 +1790,16 @@ namespace Low {
                       false),
                   "Failed to create ssao blur image.");
 
-              ImageUtil::cmd_transition(
-                  l_Cmd,
-                  l_Data->tempBlurTexture.get_gpu().get_data_handle(),
-                  VK_IMAGE_LAYOUT_UNDEFINED,
-                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+              Image(
+                  l_Data->tempBlurTexture.get_gpu().get_data_handle())
+                  .transition_to(
+                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             }
           }
 
-          ImageUtil::cmd_transition(
-              l_Cmd, l_Data->texture.get_gpu().get_data_handle(),
-              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+          Image(l_Data->texture.get_gpu().get_data_handle())
+              .transition_to(
+                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
           VkClearValue l_ClearColorValue = {};
           l_ClearColorValue.color = {{1.0f, 1.0f, 1.0f, 1.0f}};
@@ -1963,10 +1900,9 @@ namespace Low {
 
           vkCmdEndRendering(l_Cmd);
 
-          ImageUtil::cmd_transition(
-              l_Cmd, l_Data->texture.get_gpu().get_data_handle(),
-              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+          Image(l_Data->texture.get_gpu().get_data_handle())
+              .transition_to(
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
           VK_RENDERDOC_SECTION_BEGIN("Blurring SSAO",
                                      SINGLE_ARG({1.0f, 0.0f, 0.0f}));
@@ -2144,10 +2080,9 @@ namespace Low {
                       false),
                   "Failed to create cavities output image.");
 
-              ImageUtil::cmd_transition(
-                  l_Cmd, l_Data->texture.get_gpu().get_data_handle(),
-                  VK_IMAGE_LAYOUT_UNDEFINED,
-                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+              Image(l_Data->texture.get_gpu().get_data_handle())
+                  .transition_to(
+                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
               return true;
             });
@@ -2196,16 +2131,14 @@ namespace Low {
                     false),
                 "Failed to create cavities output image.");
 
-            ImageUtil::cmd_transition(
-                l_Cmd, l_Data->texture.get_gpu().get_data_handle(),
-                VK_IMAGE_LAYOUT_UNDEFINED,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            Image(l_Data->texture.get_gpu().get_data_handle())
+                .transition_to(
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
           }
 
-          ImageUtil::cmd_transition(
-              l_Cmd, l_Data->texture.get_gpu().get_data_handle(),
-              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+          Image(l_Data->texture.get_gpu().get_data_handle())
+              .transition_to(
+                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
           VkClearValue l_ClearColorValue = {};
           l_ClearColorValue.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
@@ -2283,10 +2216,9 @@ namespace Low {
 
           vkCmdEndRendering(l_Cmd);
 
-          ImageUtil::cmd_transition(
-              l_Cmd, l_Data->texture.get_gpu().get_data_handle(),
-              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+          Image(l_Data->texture.get_gpu().get_data_handle())
+              .transition_to(
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
           VK_RENDERDOC_SECTION_END();
 
@@ -2459,16 +2391,14 @@ namespace Low {
                                    .get_gpu()
                                    .get_data_handle();
 
-            ImageUtil::cmd_transition(
-                l_Cmd, l_LitImage,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            l_LitImage.transition_to(
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
             Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
             l_ColorAttachments.resize(1);
             l_ColorAttachments[0] = InitUtil::attachment_info(
                 l_LitImage.get_allocated_image().imageView, nullptr,
-                VK_IMAGE_LAYOUT_GENERAL);
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
             VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
                 {p_RenderView.get_dimensions().x,
@@ -2540,9 +2470,7 @@ namespace Low {
 
             vkCmdEndRendering(l_Cmd);
 
-            ImageUtil::cmd_transition(
-                l_Cmd, l_LitImage,
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            l_LitImage.transition_to(
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
           }
 
@@ -2581,9 +2509,9 @@ namespace Low {
         Pipeline debugLineNoDepthPipeline;
       };
 
-      static Pipeline create_debug_triangle_pipeline(
-          PipelineLayout p_PipelineLayout, bool p_DepthTest,
-          bool p_Fill)
+      static Pipeline
+      create_debug_triangle_pipeline(PipelineLayout p_PipelineLayout,
+                                     bool p_DepthTest, bool p_Fill)
       {
         PipelineUtil::GraphicsPipelineBuilder l_Builder;
         l_Builder.pipelineLayout = p_PipelineLayout;
@@ -2591,8 +2519,8 @@ namespace Low {
                               "debug_triangle.frag");
         l_Builder.set_input_topology(
             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-        l_Builder.set_polygon_mode(p_Fill ? VK_POLYGON_MODE_FILL :
-                                                VK_POLYGON_MODE_LINE,
+        l_Builder.set_polygon_mode(p_Fill ? VK_POLYGON_MODE_FILL
+                                          : VK_POLYGON_MODE_LINE,
                                    3.0f);
         l_Builder.set_cull_mode(VK_CULL_MODE_NONE,
                                 VK_FRONT_FACE_COUNTER_CLOCKWISE);
@@ -2611,14 +2539,14 @@ namespace Low {
         return l_Builder.register_pipeline();
       }
 
-      static Pipeline create_debug_line_pipeline(
-          PipelineLayout p_PipelineLayout, bool p_DepthTest)
+      static Pipeline
+      create_debug_line_pipeline(PipelineLayout p_PipelineLayout,
+                                 bool p_DepthTest)
       {
         PipelineUtil::GraphicsPipelineBuilder l_Builder;
         l_Builder.pipelineLayout = p_PipelineLayout;
         l_Builder.set_shaders("debug_line.vert", "debug_line.frag");
-        l_Builder.set_input_topology(
-            VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
+        l_Builder.set_input_topology(VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
         l_Builder.set_polygon_mode(VK_POLYGON_MODE_FILL, 1.0f);
         l_Builder.enable_dynamic_line_width();
         l_Builder.set_cull_mode(VK_CULL_MODE_NONE,
@@ -2638,30 +2566,31 @@ namespace Low {
         return l_Builder.register_pipeline();
       }
 
-      static void bind_debug_shape_pipeline_descriptors(
-          VkCommandBuffer p_Cmd, Pipeline p_Pipeline,
-          ViewInfo p_ViewInfo)
+      static void
+      bind_debug_shape_pipeline_descriptors(VkCommandBuffer p_Cmd,
+                                            Pipeline p_Pipeline,
+                                            ViewInfo p_ViewInfo)
       {
         VkDescriptorSet l_GlobalSet =
             Global::get_global_descriptor_set();
-        vkCmdBindDescriptorSets(
-            p_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-            p_Pipeline.get_layout().get(), 0, 1, &l_GlobalSet, 0,
-            nullptr);
+        vkCmdBindDescriptorSets(p_Cmd,
+                                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                p_Pipeline.get_layout().get(), 0, 1,
+                                &l_GlobalSet, 0, nullptr);
 
         VkDescriptorSet l_TextureSet =
             Global::get_current_texture_descriptor_set();
-        vkCmdBindDescriptorSets(
-            p_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-            p_Pipeline.get_layout().get(), 1, 1, &l_TextureSet, 0,
-            nullptr);
+        vkCmdBindDescriptorSets(p_Cmd,
+                                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                p_Pipeline.get_layout().get(), 1, 1,
+                                &l_TextureSet, 0, nullptr);
 
         VkDescriptorSet l_ViewInfoSet =
             p_ViewInfo.get_view_data_descriptor_set();
-        vkCmdBindDescriptorSets(
-            p_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-            p_Pipeline.get_layout().get(), 2, 1, &l_ViewInfoSet, 0,
-            nullptr);
+        vkCmdBindDescriptorSets(p_Cmd,
+                                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                p_Pipeline.get_layout().get(), 2, 1,
+                                &l_ViewInfoSet, 0, nullptr);
       }
 
       bool initialize_debug_geometry_renderstep()
@@ -2669,115 +2598,98 @@ namespace Low {
         RenderStep l_RenderStep =
             RenderStep::make(RENDERSTEP_DEBUG_GEOMETRY_NAME);
 
-        l_RenderStep.set_prepare_callback(
-            [](RenderStep p_RenderStep,
-               RenderView p_RenderView) -> bool {
-              DebugGeometryStepData *l_Data =
-                  new DebugGeometryStepData;
+        l_RenderStep.set_prepare_callback([](RenderStep p_RenderStep,
+                                             RenderView p_RenderView)
+                                              -> bool {
+          DebugGeometryStepData *l_Data = new DebugGeometryStepData;
 
-              Util::List<VkDescriptorSetLayout>
-                  l_DescriptorSetLayouts;
-              l_DescriptorSetLayouts.push_back(
-                  Global::get_global_descriptor_set_layout());
-              l_DescriptorSetLayouts.push_back(
-                  Global::get_texture_descriptor_set_layout());
-              l_DescriptorSetLayouts.push_back(
-                  Global::get_view_info_descriptor_set_layout());
+          Util::List<VkDescriptorSetLayout> l_DescriptorSetLayouts;
+          l_DescriptorSetLayouts.push_back(
+              Global::get_global_descriptor_set_layout());
+          l_DescriptorSetLayouts.push_back(
+              Global::get_texture_descriptor_set_layout());
+          l_DescriptorSetLayouts.push_back(
+              Global::get_view_info_descriptor_set_layout());
 
-              VkPipelineLayoutCreateInfo l_Layout{};
-              l_Layout.sType =
-                  VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-              l_Layout.pNext = nullptr;
-              l_Layout.pSetLayouts = l_DescriptorSetLayouts.data();
-              l_Layout.setLayoutCount =
-                  l_DescriptorSetLayouts.size();
+          VkPipelineLayoutCreateInfo l_Layout{};
+          l_Layout.sType =
+              VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+          l_Layout.pNext = nullptr;
+          l_Layout.pSetLayouts = l_DescriptorSetLayouts.data();
+          l_Layout.setLayoutCount = l_DescriptorSetLayouts.size();
 
-              VkPushConstantRange l_PushConstant{};
-              l_PushConstant.offset = 0;
-              l_PushConstant.size =
-                  sizeof(DebugTrianglePushConstants);
-              l_PushConstant.stageFlags =
-                  VK_SHADER_STAGE_ALL_GRAPHICS;
+          VkPushConstantRange l_PushConstant{};
+          l_PushConstant.offset = 0;
+          l_PushConstant.size = sizeof(DebugTrianglePushConstants);
+          l_PushConstant.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
 
-              l_Layout.pPushConstantRanges = &l_PushConstant;
-              l_Layout.pushConstantRangeCount = 1;
+          l_Layout.pPushConstantRanges = &l_PushConstant;
+          l_Layout.pushConstantRangeCount = 1;
 
-              l_Data->debugTrianglePipelineLayout =
-                  PipelineUtil::create_layout(N(DebugTriangle),
-                                              l_Layout);
-              l_Data->debugTriangleFillDepthPipeline =
-                  create_debug_triangle_pipeline(
-                      l_Data->debugTrianglePipelineLayout, true,
-                      true);
-              l_Data->debugTriangleFillNoDepthPipeline =
-                  create_debug_triangle_pipeline(
-                      l_Data->debugTrianglePipelineLayout, false,
-                      true);
-              l_Data->debugTriangleWireDepthPipeline =
-                  create_debug_triangle_pipeline(
-                      l_Data->debugTrianglePipelineLayout, true,
-                      false);
-              l_Data->debugTriangleWireNoDepthPipeline =
-                  create_debug_triangle_pipeline(
-                      l_Data->debugTrianglePipelineLayout, false,
-                      false);
+          l_Data->debugTrianglePipelineLayout =
+              PipelineUtil::create_layout(N(DebugTriangle), l_Layout);
+          l_Data->debugTriangleFillDepthPipeline =
+              create_debug_triangle_pipeline(
+                  l_Data->debugTrianglePipelineLayout, true, true);
+          l_Data->debugTriangleFillNoDepthPipeline =
+              create_debug_triangle_pipeline(
+                  l_Data->debugTrianglePipelineLayout, false, true);
+          l_Data->debugTriangleWireDepthPipeline =
+              create_debug_triangle_pipeline(
+                  l_Data->debugTrianglePipelineLayout, true, false);
+          l_Data->debugTriangleWireNoDepthPipeline =
+              create_debug_triangle_pipeline(
+                  l_Data->debugTrianglePipelineLayout, false, false);
 
-              l_PushConstant.size =
-                  sizeof(DebugLinePushConstants);
-              l_Data->debugLinePipelineLayout =
-                  PipelineUtil::create_layout(N(DebugLine),
-                                              l_Layout);
-              l_Data->debugLineDepthPipeline =
-                  create_debug_line_pipeline(
-                      l_Data->debugLinePipelineLayout, true);
-              l_Data->debugLineNoDepthPipeline =
-                  create_debug_line_pipeline(
-                      l_Data->debugLinePipelineLayout, false);
+          l_PushConstant.size = sizeof(DebugLinePushConstants);
+          l_Data->debugLinePipelineLayout =
+              PipelineUtil::create_layout(N(DebugLine), l_Layout);
+          l_Data->debugLineDepthPipeline = create_debug_line_pipeline(
+              l_Data->debugLinePipelineLayout, true);
+          l_Data->debugLineNoDepthPipeline =
+              create_debug_line_pipeline(
+                  l_Data->debugLinePipelineLayout, false);
 
-              p_RenderView.get_step_data()[p_RenderStep.get_index()] =
-                  l_Data;
-              return true;
-            });
+          p_RenderView.get_step_data()[p_RenderStep.get_index()] =
+              l_Data;
+          return true;
+        });
 
-        l_RenderStep.set_teardown_callback(
-            [](RenderStep p_RenderStep,
-               RenderView p_RenderView) -> bool {
-              DebugGeometryStepData *l_Data =
-                  (DebugGeometryStepData *)GET_STEP_DATA(
-                      p_RenderView, p_RenderStep);
-              if (l_Data) {
-                if (l_Data->debugTriangleFillDepthPipeline
-                        .is_alive()) {
-                  l_Data->debugTriangleFillDepthPipeline.destroy();
-                }
-                if (l_Data->debugTriangleFillNoDepthPipeline
-                        .is_alive()) {
-                  l_Data->debugTriangleFillNoDepthPipeline.destroy();
-                }
-                if (l_Data->debugTriangleWireDepthPipeline
-                        .is_alive()) {
-                  l_Data->debugTriangleWireDepthPipeline.destroy();
-                }
-                if (l_Data->debugTriangleWireNoDepthPipeline
-                        .is_alive()) {
-                  l_Data->debugTriangleWireNoDepthPipeline.destroy();
-                }
-                if (l_Data->debugTrianglePipelineLayout.is_alive()) {
-                  l_Data->debugTrianglePipelineLayout.destroy();
-                }
-                if (l_Data->debugLineDepthPipeline.is_alive()) {
-                  l_Data->debugLineDepthPipeline.destroy();
-                }
-                if (l_Data->debugLineNoDepthPipeline.is_alive()) {
-                  l_Data->debugLineNoDepthPipeline.destroy();
-                }
-                if (l_Data->debugLinePipelineLayout.is_alive()) {
-                  l_Data->debugLinePipelineLayout.destroy();
-                }
-                delete l_Data;
-              }
-              return true;
-            });
+        l_RenderStep.set_teardown_callback([](RenderStep p_RenderStep,
+                                              RenderView p_RenderView)
+                                               -> bool {
+          DebugGeometryStepData *l_Data =
+              (DebugGeometryStepData *)GET_STEP_DATA(p_RenderView,
+                                                     p_RenderStep);
+          if (l_Data) {
+            if (l_Data->debugTriangleFillDepthPipeline.is_alive()) {
+              l_Data->debugTriangleFillDepthPipeline.destroy();
+            }
+            if (l_Data->debugTriangleFillNoDepthPipeline.is_alive()) {
+              l_Data->debugTriangleFillNoDepthPipeline.destroy();
+            }
+            if (l_Data->debugTriangleWireDepthPipeline.is_alive()) {
+              l_Data->debugTriangleWireDepthPipeline.destroy();
+            }
+            if (l_Data->debugTriangleWireNoDepthPipeline.is_alive()) {
+              l_Data->debugTriangleWireNoDepthPipeline.destroy();
+            }
+            if (l_Data->debugTrianglePipelineLayout.is_alive()) {
+              l_Data->debugTrianglePipelineLayout.destroy();
+            }
+            if (l_Data->debugLineDepthPipeline.is_alive()) {
+              l_Data->debugLineDepthPipeline.destroy();
+            }
+            if (l_Data->debugLineNoDepthPipeline.is_alive()) {
+              l_Data->debugLineNoDepthPipeline.destroy();
+            }
+            if (l_Data->debugLinePipelineLayout.is_alive()) {
+              l_Data->debugLinePipelineLayout.destroy();
+            }
+            delete l_Data;
+          }
+          return true;
+        });
 
         l_RenderStep.set_execute_callback([&](RenderStep p_RenderStep,
                                               float p_Delta,
@@ -2859,8 +2771,8 @@ namespace Low {
               // queue so we can leave it as is
               vkCmdCopyBuffer(
                   Vulkan::Global::get_current_command_buffer(),
-                  l_ViewInfo.get_current_staging_buffer().buffer
-                      .buffer,
+                  l_ViewInfo.get_current_staging_buffer()
+                      .buffer.buffer,
                   l_ViewInfo.get_debug_geometry_buffer().buffer, 1,
                   &l_CopyRegion);
 
@@ -2884,20 +2796,16 @@ namespace Low {
                   .get_gpu()
                   .get_data_handle();
 
-          ImageUtil::cmd_transition(
-              l_Cmd, l_TonemappedImage,
-              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+          l_TonemappedImage.transition_to(
               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-          ImageUtil::cmd_transition(
-              l_Cmd, l_DepthImage,
-              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+          l_DepthImage.transition_to(
               VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
           Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
           l_ColorAttachments.resize(1);
           l_ColorAttachments[0] = InitUtil::attachment_info(
               l_TonemappedImage.get_allocated_image().imageView,
-              nullptr, VK_IMAGE_LAYOUT_GENERAL);
+              nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
           VkRenderingAttachmentInfo l_DepthAttachment =
               InitUtil::attachment_info(
@@ -2998,8 +2906,7 @@ namespace Low {
               "step data was not initialized.");
           Pipeline l_CurrentTrianglePipeline = Util::Handle::DEAD;
           for (u32 i = 0u;
-               i <
-               p_RenderView.get_debug_geometry_triangles().size();
+               i < p_RenderView.get_debug_geometry_triangles().size();
                ++i) {
             DebugTriangleDraw &i_Draw =
                 p_RenderView.get_debug_geometry_triangles()[i];
@@ -3007,14 +2914,14 @@ namespace Low {
             Pipeline i_Pipeline = Util::Handle::DEAD;
             if (i_Draw.fill) {
               i_Pipeline =
-                  i_Draw.depth_test ?
-                      l_Data->debugTriangleFillDepthPipeline :
-                      l_Data->debugTriangleFillNoDepthPipeline;
+                  i_Draw.depth_test
+                      ? l_Data->debugTriangleFillDepthPipeline
+                      : l_Data->debugTriangleFillNoDepthPipeline;
             } else {
               i_Pipeline =
-                  i_Draw.depth_test ?
-                      l_Data->debugTriangleWireDepthPipeline :
-                      l_Data->debugTriangleWireNoDepthPipeline;
+                  i_Draw.depth_test
+                      ? l_Data->debugTriangleWireDepthPipeline
+                      : l_Data->debugTriangleWireNoDepthPipeline;
             }
 
             if (l_CurrentTrianglePipeline != i_Pipeline) {
@@ -3022,8 +2929,8 @@ namespace Low {
               vkCmdBindPipeline(l_Cmd,
                                 VK_PIPELINE_BIND_POINT_GRAPHICS,
                                 i_Pipeline.get());
-              bind_debug_shape_pipeline_descriptors(
-                  l_Cmd, i_Pipeline, l_ViewInfo);
+              bind_debug_shape_pipeline_descriptors(l_Cmd, i_Pipeline,
+                                                    l_ViewInfo);
             }
 
             DebugTrianglePushConstants i_PushConstants{};
@@ -3032,11 +2939,10 @@ namespace Low {
             i_PushConstants.p2 = Math::Vector4(i_Draw.p2, 1.0f);
             i_PushConstants.color = i_Draw.color;
 
-            vkCmdPushConstants(
-                l_Cmd, i_Pipeline.get_layout().get(),
-                VK_SHADER_STAGE_ALL_GRAPHICS, 0,
-                sizeof(DebugTrianglePushConstants),
-                &i_PushConstants);
+            vkCmdPushConstants(l_Cmd, i_Pipeline.get_layout().get(),
+                               VK_SHADER_STAGE_ALL_GRAPHICS, 0,
+                               sizeof(DebugTrianglePushConstants),
+                               &i_PushConstants);
 
             vkCmdDraw(l_Cmd, 3, 1, 0, 0);
           }
@@ -3049,16 +2955,16 @@ namespace Low {
                 p_RenderView.get_debug_geometry_lines()[i];
 
             Pipeline i_Pipeline =
-                i_Draw.depth_test ? l_Data->debugLineDepthPipeline :
-                                    l_Data->debugLineNoDepthPipeline;
+                i_Draw.depth_test ? l_Data->debugLineDepthPipeline
+                                  : l_Data->debugLineNoDepthPipeline;
 
             if (l_CurrentLinePipeline != i_Pipeline) {
               l_CurrentLinePipeline = i_Pipeline;
               vkCmdBindPipeline(l_Cmd,
                                 VK_PIPELINE_BIND_POINT_GRAPHICS,
                                 i_Pipeline.get());
-              bind_debug_shape_pipeline_descriptors(
-                  l_Cmd, i_Pipeline, l_ViewInfo);
+              bind_debug_shape_pipeline_descriptors(l_Cmd, i_Pipeline,
+                                                    l_ViewInfo);
             }
 
             const float l_LineWidth =
@@ -3066,8 +2972,7 @@ namespace Low {
             vkCmdSetLineWidth(l_Cmd, l_LineWidth);
 
             DebugLinePushConstants i_PushConstants{};
-            i_PushConstants.start =
-                Math::Vector4(i_Draw.start, 1.0f);
+            i_PushConstants.start = Math::Vector4(i_Draw.start, 1.0f);
             i_PushConstants.end = Math::Vector4(i_Draw.end, 1.0f);
             i_PushConstants.color = i_Draw.color;
 
@@ -3081,13 +2986,9 @@ namespace Low {
 
           vkCmdEndRendering(l_Cmd);
 
-          ImageUtil::cmd_transition(
-              l_Cmd, l_TonemappedImage,
-              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+          l_TonemappedImage.transition_to(
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-          ImageUtil::cmd_transition(
-              l_Cmd, l_DepthImage,
-              VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+          l_DepthImage.transition_to(
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
           VK_RENDERDOC_SECTION_END();
@@ -3102,79 +3003,73 @@ namespace Low {
         RenderStep l_RenderStep =
             RenderStep::make(RENDERSTEP_OBJECT_ID_COPY);
 
-        l_RenderStep.set_execute_callback(
-            [&](RenderStep p_RenderStep, float p_Delta,
-                RenderView p_RenderView) -> bool {
-              VK_RENDERDOC_SECTION_BEGIN(
-                  "Object ID copy",
-                  SINGLE_ARG({0.2f, 0.427f, 0.217f}));
+        l_RenderStep.set_execute_callback([&](RenderStep p_RenderStep,
+                                              float p_Delta,
+                                              RenderView p_RenderView)
+                                              -> bool {
+          VK_RENDERDOC_SECTION_BEGIN(
+              "Object ID copy", SINGLE_ARG({0.2f, 0.427f, 0.217f}));
 
-              VkCommandBuffer l_Cmd =
-                  Global::get_current_command_buffer();
+          VkCommandBuffer l_Cmd =
+              Global::get_current_command_buffer();
 
-              ViewInfo l_ViewInfo =
-                  p_RenderView.get_view_info_handle();
+          ViewInfo l_ViewInfo = p_RenderView.get_view_info_handle();
 
-              Image l_Image = p_RenderView.get_object_map()
-                                  .get_gpu()
-                                  .get_data_handle();
+          Image l_Image = p_RenderView.get_object_map()
+                              .get_gpu()
+                              .get_data_handle();
 
-              const u32 l_Width =
-                  l_Image.get_allocated_image().extent.width;
-              const u32 l_Height =
-                  l_Image.get_allocated_image().extent.height;
+          const u32 l_Width =
+              l_Image.get_allocated_image().extent.width;
+          const u32 l_Height =
+              l_Image.get_allocated_image().extent.height;
 
-              ImageUtil::cmd_transition(
-                  l_Cmd, l_Image,
-                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+          l_Image.transition_to(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-              // Copy image to buffer
-              {
-                VkBufferImageCopy l_Region = {};
-                l_Region.bufferOffset = 0;
-                l_Region.bufferRowLength = 0;
-                l_Region.bufferImageHeight = 0;
-                l_Region.imageSubresource.aspectMask =
-                    VK_IMAGE_ASPECT_COLOR_BIT;
-                l_Region.imageSubresource.mipLevel = 0;
-                l_Region.imageSubresource.baseArrayLayer = 0;
-                l_Region.imageSubresource.layerCount = 1;
-                l_Region.imageExtent = {l_Width, l_Height, 1};
+          // Copy image to buffer
+          {
+            VkBufferImageCopy l_Region = {};
+            l_Region.bufferOffset = 0;
+            l_Region.bufferRowLength = 0;
+            l_Region.bufferImageHeight = 0;
+            l_Region.imageSubresource.aspectMask =
+                VK_IMAGE_ASPECT_COLOR_BIT;
+            l_Region.imageSubresource.mipLevel = 0;
+            l_Region.imageSubresource.baseArrayLayer = 0;
+            l_Region.imageSubresource.layerCount = 1;
+            l_Region.imageExtent = {l_Width, l_Height, 1};
 
-                BufferUtil::cmd_buffer_barrier(
-                    l_Cmd, l_ViewInfo.get_object_id_buffer(),
-                    l_Region.bufferOffset,
-                    sizeof(u32) * l_Width * l_Height,
-                    VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                    VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                    VK_ACCESS_2_TRANSFER_WRITE_BIT);
+            BufferUtil::cmd_buffer_barrier(
+                l_Cmd, l_ViewInfo.get_object_id_buffer(),
+                l_Region.bufferOffset,
+                sizeof(u32) * l_Width * l_Height,
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT);
 
-                vkCmdCopyImageToBuffer(
-                    l_Cmd, l_Image.get_allocated_image().image,
-                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                    l_ViewInfo.get_object_id_buffer().buffer, 1,
-                    &l_Region);
+            vkCmdCopyImageToBuffer(
+                l_Cmd, l_Image.get_allocated_image().image,
+                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                l_ViewInfo.get_object_id_buffer().buffer, 1,
+                &l_Region);
 
-                BufferUtil::cmd_buffer_barrier(
-                    l_Cmd, l_ViewInfo.get_object_id_buffer(),
-                    l_Region.bufferOffset,
-                    sizeof(u32) * l_Width * l_Height,
-                    VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                    VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    VK_PIPELINE_STAGE_2_HOST_BIT,
-                    VK_ACCESS_2_HOST_READ_BIT);
-              }
+            BufferUtil::cmd_buffer_barrier(
+                l_Cmd, l_ViewInfo.get_object_id_buffer(),
+                l_Region.bufferOffset,
+                sizeof(u32) * l_Width * l_Height,
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                VK_PIPELINE_STAGE_2_HOST_BIT,
+                VK_ACCESS_2_HOST_READ_BIT);
+          }
 
-              ImageUtil::cmd_transition(
-                  l_Cmd, l_Image,
-                  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+          l_Image.transition_to(
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-              VK_RENDERDOC_SECTION_END();
-              return true;
-            });
+          VK_RENDERDOC_SECTION_END();
+          return true;
+        });
         return true;
       }
 
@@ -3270,12 +3165,10 @@ namespace Low {
                           false),
                       "Failed to create temp blur image.");
 
-                  ImageUtil::cmd_transition(
-                      l_Cmd,
-                      l_Data->tempBlurTexture.get_gpu()
-                          .get_data_handle(),
-                      VK_IMAGE_LAYOUT_UNDEFINED,
-                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                  Image(l_Data->tempBlurTexture.get_gpu()
+                            .get_data_handle())
+                      .transition_to(
+                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
                 }
               }
               return true;
@@ -3325,13 +3218,11 @@ namespace Low {
                     false),
                 "Failed to create blur out image.");
 
-            ImageUtil::cmd_transition(
-                l_Cmd,
-                p_RenderView.get_blurred_image()
-                    .get_gpu()
-                    .get_data_handle(),
-                VK_IMAGE_LAYOUT_UNDEFINED,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            Image(p_RenderView.get_blurred_image()
+                      .get_gpu()
+                      .get_data_handle())
+                .transition_to(
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
           }
 
           {
@@ -3356,11 +3247,10 @@ namespace Low {
                       false),
                   "Failed to create blur image.");
 
-              ImageUtil::cmd_transition(
-                  l_Cmd,
-                  l_Data->tempBlurTexture.get_gpu().get_data_handle(),
-                  VK_IMAGE_LAYOUT_UNDEFINED,
-                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+              Image(
+                  l_Data->tempBlurTexture.get_gpu().get_data_handle())
+                  .transition_to(
+                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             }
 
             {
@@ -3524,9 +3414,7 @@ namespace Low {
                                    .get_gpu()
                                    .get_data_handle();
 
-          ImageUtil::cmd_transition(
-              l_Cmd, l_AtlasImage,
-              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+          l_AtlasImage.transition_to(
               VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
           VkClearValue l_DepthClear{};
@@ -3724,9 +3612,7 @@ namespace Low {
 
           vkCmdEndRendering(l_Cmd);
 
-          ImageUtil::cmd_transition(
-              l_Cmd, l_AtlasImage,
-              VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+          l_AtlasImage.transition_to(
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
           VK_RENDERDOC_SECTION_END();
@@ -3887,9 +3773,7 @@ namespace Low {
                 "Failed to upload SSGI noise texture to resource "
                 "staging buffer");
 
-            ImageUtil::cmd_transition(
-                Global::get_current_command_buffer(), l_Image,
-                VK_IMAGE_LAYOUT_UNDEFINED,
+            l_Image.transition_to(
                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
             VkBufferImageCopy l_Region = {};
@@ -3912,9 +3796,7 @@ namespace Low {
                 l_Image.get_allocated_image().image,
                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &l_Region);
 
-            ImageUtil::cmd_transition(
-                Global::get_current_command_buffer(), l_Image,
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            l_Image.transition_to(
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
           }
 
@@ -4122,11 +4004,9 @@ namespace Low {
                         false),
                     "Failed to create SSGI out image.");
 
-                ImageUtil::cmd_transition(
-                    l_Cmd,
-                    l_Data->texture.get_gpu().get_data_handle(),
-                    VK_IMAGE_LAYOUT_UNDEFINED,
-                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                Image(l_Data->texture.get_gpu().get_data_handle())
+                    .transition_to(
+                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
               }
 
               {
@@ -4166,12 +4046,10 @@ namespace Low {
                           false),
                       "Failed to create SSGI blur image.");
 
-                  ImageUtil::cmd_transition(
-                      l_Cmd,
-                      l_Data->tempBlurTexture.get_gpu()
-                          .get_data_handle(),
-                      VK_IMAGE_LAYOUT_UNDEFINED,
-                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                  Image(l_Data->tempBlurTexture.get_gpu()
+                            .get_data_handle())
+                      .transition_to(
+                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
                 }
               }
 
@@ -4223,10 +4101,9 @@ namespace Low {
                     false),
                 "Failed to create SSGI out image.");
 
-            ImageUtil::cmd_transition(
-                l_Cmd, l_Data->texture.get_gpu().get_data_handle(),
-                VK_IMAGE_LAYOUT_UNDEFINED,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            Image(l_Data->texture.get_gpu().get_data_handle())
+                .transition_to(
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
           }
 
           {
@@ -4251,19 +4128,17 @@ namespace Low {
                       false),
                   "Failed to create SSGI blur image.");
 
-              ImageUtil::cmd_transition(
-                  l_Cmd,
-                  l_Data->tempBlurTexture.get_gpu().get_data_handle(),
-                  VK_IMAGE_LAYOUT_UNDEFINED,
-                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+              Image(
+                  l_Data->tempBlurTexture.get_gpu().get_data_handle())
+                  .transition_to(
+                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             }
           }
 
           // Generation pass
-          ImageUtil::cmd_transition(
-              l_Cmd, l_Data->texture.get_gpu().get_data_handle(),
-              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+          Image(l_Data->texture.get_gpu().get_data_handle())
+              .transition_to(
+                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
           {
             VkClearValue l_ClearValue = {};
@@ -4352,10 +4227,9 @@ namespace Low {
             vkCmdEndRendering(l_Cmd);
           }
 
-          ImageUtil::cmd_transition(
-              l_Cmd, l_Data->texture.get_gpu().get_data_handle(),
-              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+          Image(l_Data->texture.get_gpu().get_data_handle())
+              .transition_to(
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
           // Blur the SSGI output
           Global::blur_image_4(
@@ -4364,13 +4238,11 @@ namespace Low {
               {l_Dimensions.x / l_Scale, l_Dimensions.y / l_Scale});
 
           // Composite pass: additively blend SSGI onto lit_image
-          ImageUtil::cmd_transition(
-              l_Cmd,
-              p_RenderView.get_lit_image()
-                  .get_gpu()
-                  .get_data_handle(),
-              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+          Image(p_RenderView.get_lit_image()
+                    .get_gpu()
+                    .get_data_handle())
+              .transition_to(
+                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
           {
             Image l_LitImage = p_RenderView.get_lit_image()
@@ -4436,13 +4308,11 @@ namespace Low {
             vkCmdEndRendering(l_Cmd);
           }
 
-          ImageUtil::cmd_transition(
-              l_Cmd,
-              p_RenderView.get_lit_image()
-                  .get_gpu()
-                  .get_data_handle(),
-              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+          Image(p_RenderView.get_lit_image()
+                    .get_gpu()
+                    .get_data_handle())
+              .transition_to(
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
           VK_RENDERDOC_SECTION_END();
           return true;
@@ -4522,9 +4392,7 @@ namespace Low {
                   .get_gpu()
                   .get_data_handle();
 
-          ImageUtil::cmd_transition(
-              l_Cmd, l_TonemappedImage,
-              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+          l_TonemappedImage.transition_to(
               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
           VkClearValue l_ClearColorValue = {};
@@ -4534,7 +4402,8 @@ namespace Low {
           l_ColorAttachments.resize(1);
           l_ColorAttachments[0] = InitUtil::attachment_info(
               l_TonemappedImage.get_allocated_image().imageView,
-              &l_ClearColorValue, VK_IMAGE_LAYOUT_GENERAL);
+              &l_ClearColorValue,
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
           VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
               {p_RenderView.get_dimensions().x,
@@ -4588,9 +4457,7 @@ namespace Low {
           vkCmdDraw(l_Cmd, 3, 1, 0, 0);
           vkCmdEndRendering(l_Cmd);
 
-          ImageUtil::cmd_transition(
-              l_Cmd, l_TonemappedImage,
-              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+          l_TonemappedImage.transition_to(
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
           VK_RENDERDOC_SECTION_END();
@@ -4657,13 +4524,11 @@ namespace Low {
 
           ViewInfo l_ViewInfo = p_RenderView.get_view_info_handle();
 
-          ImageUtil::cmd_transition(
-              l_Cmd,
-              p_RenderView.get_lit_image()
-                  .get_gpu()
-                  .get_data_handle(),
-              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+          Image(p_RenderView.get_lit_image()
+                    .get_gpu()
+                    .get_data_handle())
+              .transition_to(
+                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
           Image l_LitImage = p_RenderView.get_lit_image()
                                  .get_gpu()
@@ -4673,7 +4538,7 @@ namespace Low {
           l_ColorAttachments.resize(1);
           l_ColorAttachments[0] = InitUtil::attachment_info(
               l_LitImage.get_allocated_image().imageView, nullptr,
-              VK_IMAGE_LAYOUT_GENERAL);
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
           VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
               {p_RenderView.get_dimensions().x,
@@ -4730,13 +4595,11 @@ namespace Low {
 
           vkCmdEndRendering(l_Cmd);
 
-          ImageUtil::cmd_transition(
-              l_Cmd,
-              p_RenderView.get_lit_image()
-                  .get_gpu()
-                  .get_data_handle(),
-              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+          Image(p_RenderView.get_lit_image()
+                    .get_gpu()
+                    .get_data_handle())
+              .transition_to(
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
           VK_RENDERDOC_SECTION_END();
           return true;
