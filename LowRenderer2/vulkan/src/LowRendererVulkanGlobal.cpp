@@ -1582,9 +1582,12 @@ namespace Low {
               p_ImageToBlur.get_gpu().get_data_handle();
           Image l_OutImage = p_OutImage.get_gpu().get_data_handle();
 
+          l_ImageToBlur.transition_to(
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
           {
-            ImageUtil::cmd_transition_for_color_write(l_Cmd,
-                                                      l_TempImage);
+            l_TempImage.transition_to(
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
             Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
             l_ColorAttachments.resize(1);
@@ -1626,13 +1629,15 @@ namespace Low {
 
             vkCmdEndRendering(l_Cmd);
 
-            ImageUtil::cmd_transition_color_write_to_shader_read(
-                l_Cmd, l_TempImage);
+            l_TempImage.transition_to(
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
           }
 
           {
-            ImageUtil::cmd_transition_for_color_write(l_Cmd,
-                                                      l_OutImage);
+            l_TempImage.transition_to(
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            l_OutImage.transition_to(
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
             Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
             l_ColorAttachments.resize(1);
@@ -1674,8 +1679,8 @@ namespace Low {
 
             vkCmdEndRendering(l_Cmd);
 
-            ImageUtil::cmd_transition_color_write_to_shader_read(
-                l_Cmd, l_OutImage);
+            l_OutImage.transition_to(
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
           }
 
           return true;
@@ -1721,9 +1726,12 @@ namespace Low {
               p_ImageToBlur.get_gpu().get_data_handle();
           Image l_OutImage = p_OutImage.get_gpu().get_data_handle();
 
+          l_ImageToBlur.transition_to(
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
           {
-            ImageUtil::cmd_transition_for_color_write(l_Cmd,
-                                                      l_TempImage);
+            l_TempImage.transition_to(
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
             Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
             l_ColorAttachments.resize(1);
@@ -1768,13 +1776,15 @@ namespace Low {
 
             vkCmdEndRendering(l_Cmd);
 
-            ImageUtil::cmd_transition_color_write_to_shader_read(
-                l_Cmd, l_TempImage);
+            l_TempImage.transition_to(
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
           }
 
           {
-            ImageUtil::cmd_transition_for_color_write(l_Cmd,
-                                                      l_OutImage);
+            l_TempImage.transition_to(
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            l_OutImage.transition_to(
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
             Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
             l_ColorAttachments.resize(1);
@@ -1819,8 +1829,8 @@ namespace Low {
 
             vkCmdEndRendering(l_Cmd);
 
-            ImageUtil::cmd_transition_color_write_to_shader_read(
-                l_Cmd, l_OutImage);
+            l_OutImage.transition_to(
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
           }
 
           return true;
