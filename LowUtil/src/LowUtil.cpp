@@ -42,8 +42,7 @@ namespace Low {
       if (p_Message == WM_NCHITTEST &&
           g_MainWindow.customDecorations &&
           p_Hwnd == static_cast<HWND>(g_MainWindow.nativeHandle)) {
-        POINT l_Point{GET_X_LPARAM(p_LParam),
-                      GET_Y_LPARAM(p_LParam)};
+        POINT l_Point{GET_X_LPARAM(p_LParam), GET_Y_LPARAM(p_LParam)};
         ScreenToClient(p_Hwnd, &l_Point);
 
         RECT l_ClientRect{};
@@ -98,8 +97,8 @@ namespace Low {
       WNDPROC l_Previous =
           reinterpret_cast<WNDPROC>(g_MainWindow.nativeWndProc);
       if (l_Previous) {
-        return CallWindowProc(l_Previous, p_Hwnd, p_Message,
-                              p_WParam, p_LParam);
+        return CallWindowProc(l_Previous, p_Hwnd, p_Message, p_WParam,
+                              p_LParam);
       }
       return DefWindowProc(p_Hwnd, p_Message, p_WParam, p_LParam);
     }
@@ -153,9 +152,9 @@ namespace Low {
     }
 #endif
 
-    static SDL_HitTestResult custom_window_hit_test(SDL_Window *p_Window,
-                                                    const SDL_Point *p_Area,
-                                                    void *p_Data)
+    static SDL_HitTestResult
+    custom_window_hit_test(SDL_Window *p_Window,
+                           const SDL_Point *p_Area, void *p_Data)
     {
       Window *l_Window = static_cast<Window *>(p_Data);
       if (!l_Window || !l_Window->customDecorations ||
@@ -234,7 +233,8 @@ namespace Low {
       AssetManager::initialize();
 
       {
-        SDL_Init(SDL_INIT_VIDEO);
+        int l_SdlInitResult = SDL_Init(SDL_INIT_VIDEO);
+        LOW_ASSERT(l_SdlInitResult == 0, SDL_GetError());
 
         SDL_WindowFlags window_flags =
             (SDL_WindowFlags)(SDL_WINDOW_VULKAN |
@@ -250,6 +250,7 @@ namespace Low {
         g_MainWindow.sdlwindow = SDL_CreateWindow(
             "LowEngine", SDL_WINDOWPOS_UNDEFINED,
             SDL_WINDOWPOS_UNDEFINED, 1280, 720, window_flags);
+        LOW_ASSERT(g_MainWindow.sdlwindow, SDL_GetError());
         g_MainWindow.set_custom_decorations(true);
       }
 
@@ -293,8 +294,9 @@ namespace Low {
       String l_Command = p_Command;
       if (!CreateProcessA(nullptr, l_Command.data(), nullptr, nullptr,
                           p_Output ? TRUE : FALSE,
-                          p_HideWindow ? CREATE_NO_WINDOW : 0, nullptr,
-                          nullptr, &l_StartupInfo, &l_ProcessInfo)) {
+                          p_HideWindow ? CREATE_NO_WINDOW : 0,
+                          nullptr, nullptr, &l_StartupInfo,
+                          &l_ProcessInfo)) {
         if (l_ReadPipe)
           CloseHandle(l_ReadPipe);
         if (l_WritePipe)
@@ -567,8 +569,8 @@ namespace Low {
     {
       customDecorations = p_Enabled;
 #ifndef _WIN32
-      SDL_SetWindowBordered(sdlwindow, p_Enabled ? SDL_FALSE
-                                                 : SDL_TRUE);
+      SDL_SetWindowBordered(sdlwindow,
+                            p_Enabled ? SDL_FALSE : SDL_TRUE);
 #endif
 #ifdef _WIN32
       if (p_Enabled) {
@@ -577,14 +579,14 @@ namespace Low {
         restore_custom_window_proc(*this);
       }
 #endif
-      SDL_SetWindowHitTest(sdlwindow,
-                           p_Enabled ? custom_window_hit_test
-                                     : nullptr,
-                           p_Enabled ? this : nullptr);
+      SDL_SetWindowHitTest(
+          sdlwindow, p_Enabled ? custom_window_hit_test : nullptr,
+          p_Enabled ? this : nullptr);
     }
 
-    void Window::set_custom_title_bar_hit_zones(
-        int p_Height, int p_InteractiveLeft, int p_ControlsLeft)
+    void Window::set_custom_title_bar_hit_zones(int p_Height,
+                                                int p_InteractiveLeft,
+                                                int p_ControlsLeft)
     {
       customTitleBarHeight = p_Height;
       customTitleBarInteractiveLeft = p_InteractiveLeft;

@@ -14,11 +14,8 @@ namespace Low {
     {
       ObserverType type;
       u64 id;
-      struct
-      {
-        Util::Function<void(Util::Handle, Util::Name)> function;
-        Util::Handle handle;
-      };
+      Util::Function<void(Util::Handle, Util::Name)> function;
+      Util::Handle handle;
     };
 
     u64 g_GlobalIdCounter = 0;
