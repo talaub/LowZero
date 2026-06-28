@@ -8,13 +8,6 @@ namespace Low {
   namespace Gfx {
     namespace Vulkan {
 
-      struct VulkanBufferState
-      {
-        VkBuffer buffer = VK_NULL_HANDLE;
-        VmaAllocation allocation = nullptr;
-        VmaAllocationInfo info{};
-      };
-
       static bool has_usage(BufferUsage p_Value, BufferUsage p_Flag)
       {
         return (static_cast<u32>(p_Value) &

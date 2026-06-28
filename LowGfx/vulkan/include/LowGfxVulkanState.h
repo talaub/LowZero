@@ -28,6 +28,15 @@ namespace Low {
         VkCommandBuffer present_transition_command = VK_NULL_HANDLE;
       };
 
+      struct VulkanCommandListState
+      {
+        VkCommandBuffer command_buffer = VK_NULL_HANDLE;
+        VkCommandPool command_pool = VK_NULL_HANDLE;
+        QueueRole queue_role = QueueRole::Graphics;
+        u32 queue_family_index = LOW_UINT32_MAX;
+        bool owns_command_pool = true;
+      };
+
       struct VulkanFrameCommandPool
       {
         VkCommandPool pool = VK_NULL_HANDLE;
@@ -41,6 +50,7 @@ namespace Low {
         VulkanFrameCommandPool transfer;
         VulkanFrameCommandPool compute;
         VkFence frame_fence = VK_NULL_HANDLE;
+        Util::List<VkCommandBuffer> pending_graphics_submits;
         Util::List<VulkanPendingPresent> pending_presents;
       };
 
@@ -51,6 +61,75 @@ namespace Low {
         VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;
         VkSemaphore render_finished = VK_NULL_HANDLE;
         VkFence in_flight_fence = VK_NULL_HANDLE;
+      };
+
+      struct VulkanImageState
+      {
+        VkImage image = VK_NULL_HANDLE;
+        VmaAllocation allocation = nullptr;
+        VmaAllocationInfo info{};
+        VkFormat format = VK_FORMAT_UNDEFINED;
+        VkExtent3D extent{};
+        u32 mip_levels = 1;
+        u32 array_layers = 1;
+      };
+
+      struct VulkanImageViewState
+      {
+        VkImageView image_view = VK_NULL_HANDLE;
+      };
+
+      struct VulkanSamplerState
+      {
+        VkSampler sampler = VK_NULL_HANDLE;
+      };
+
+      struct VulkanBufferState
+      {
+        VkBuffer buffer = VK_NULL_HANDLE;
+        VmaAllocation allocation = nullptr;
+        VmaAllocationInfo info{};
+      };
+
+      struct VulkanShaderModuleState
+      {
+        VkShaderModule shader_module = VK_NULL_HANDLE;
+      };
+
+      struct VulkanBindGroupLayoutState
+      {
+        VkDescriptorSetLayout descriptor_set_layout =
+            VK_NULL_HANDLE;
+      };
+
+      struct VulkanPipelineLayoutState
+      {
+        VkPipelineLayout pipeline_layout = VK_NULL_HANDLE;
+      };
+
+      struct VulkanDescriptorPoolSizeRatio
+      {
+        VkDescriptorType type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        float ratio = 1.0f;
+      };
+
+      struct VulkanDescriptorAllocatorGrowable
+      {
+        Util::List<VulkanDescriptorPoolSizeRatio> ratios;
+        Util::List<VkDescriptorPool> full_pools;
+        Util::List<VkDescriptorPool> ready_pools;
+        u32 sets_per_pool = 0;
+      };
+
+      struct VulkanBindGroupState
+      {
+        VkDescriptorPool descriptor_pool = VK_NULL_HANDLE;
+        VkDescriptorSet descriptor_set = VK_NULL_HANDLE;
+      };
+
+      struct VulkanGraphicsPipelineState
+      {
+        VkPipeline pipeline = VK_NULL_HANDLE;
       };
 
       struct VulkanInstanceState
@@ -84,6 +163,8 @@ namespace Low {
         VulkanQueue transfer_queue;
         VulkanQueue present_queue;
 
+        VulkanDescriptorAllocatorGrowable descriptor_allocator;
+
         Util::List<FrameState> frames;
       };
 
@@ -104,6 +185,10 @@ namespace Low {
         bool acquired = false;
         bool resize_requested = false;
       };
+
+      VkCommandBuffer
+      acquire_frame_command_buffer(VulkanContextState &p_State,
+                                   VulkanFrameCommandPool &p_Pool);
     } // namespace Vulkan
   } // namespace Gfx
 } // namespace Low

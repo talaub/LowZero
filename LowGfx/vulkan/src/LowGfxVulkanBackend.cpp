@@ -6,12 +6,8 @@ namespace Low {
       const Detail::BackendProvider &get_backend_provider()
       {
         static const Detail::InstanceBackendApi g_InstanceApi = {
-            &create_instance,
-            &destroy_instance,
-            &enumerate_adapters,
-            &create_surface,
-            &destroy_surface,
-            &select_adapter};
+            &create_instance, &destroy_instance, &enumerate_adapters,
+            &create_surface,  &destroy_surface,  &select_adapter};
 
         static const Detail::ContextBackendApi g_ContextApi = {
             &create_context,
@@ -19,6 +15,23 @@ namespace Low {
             &get_caps,
             &create_buffer,
             &destroy_buffer,
+            &create_image,
+            &destroy_image,
+            &create_image_view,
+            &destroy_image_view,
+            &create_sampler,
+            &destroy_sampler,
+            &create_shader_module,
+            &destroy_shader_module,
+            &create_bind_group_layout,
+            &destroy_bind_group_layout,
+            &create_pipeline_layout,
+            &destroy_pipeline_layout,
+            &create_bind_group,
+            &update_bind_group,
+            &destroy_bind_group,
+            &create_graphics_pipeline,
+            &destroy_graphics_pipeline,
             &request_command_list,
             &request_immediate_command_list,
             &destroy_command_list,
@@ -27,7 +40,17 @@ namespace Low {
             &begin_frame,
             &acquire_swapchain,
             &present,
-            &end_frame};
+            &end_frame,
+            &begin_command_list,
+            &end_command_list,
+            &submit_command_list,
+            &barrier_image_command_list,
+            &begin_dynamic_rendering,
+            &end_dynamic_rendering,
+            &set_viewport,
+            &set_scissor,
+            &bind_graphics_pipeline,
+            &bind_bind_group};
 
         static const Detail::BackendProvider g_Provider = {
             Backend::Vulkan, &g_InstanceApi, &g_ContextApi};

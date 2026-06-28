@@ -1,10 +1,12 @@
 #pragma once
 
 #include "LowGfxBuffer.h"
+#include "LowGfxImage.h"
 #include "LowGfxLog.h"
 #include "LowMath.h"
 #include "LowUtilContainers.h"
 #include "LowGfxCommandList.h"
+#include "LowGfxPipeline.h"
 #include "LowGfxSwapchain.h"
 #include "LowGfxSurface.h"
 #include "LowGfxAdapter.h"
@@ -40,8 +42,14 @@ namespace Low {
     class FrameContext
     {
     public:
-      u64 get_frame_number() const { return m_FrameNumber; }
-      u32 get_frame_index() const { return m_FrameIndex; }
+      u64 get_frame_number() const
+      {
+        return m_FrameNumber;
+      }
+      u32 get_frame_index() const
+      {
+        return m_FrameIndex;
+      }
 
     private:
       friend class Context;
@@ -54,9 +62,18 @@ namespace Low {
     class SwapchainFrame
     {
     public:
-      u64 get_frame_number() const { return m_FrameNumber; }
-      u32 get_frame_index() const { return m_FrameIndex; }
-      Swapchain get_swapchain() const { return m_Swapchain; }
+      u64 get_frame_number() const
+      {
+        return m_FrameNumber;
+      }
+      u32 get_frame_index() const
+      {
+        return m_FrameIndex;
+      }
+      Swapchain get_swapchain() const
+      {
+        return m_Swapchain;
+      }
       u32 get_swapchain_image_index() const
       {
         return m_SwapchainImageIndex;
@@ -84,7 +101,6 @@ namespace Low {
         {
           return p_Frame.m_FrameIndex;
         }
-
       };
 
       struct SwapchainFrameAccess
@@ -104,14 +120,14 @@ namespace Low {
           return p_Frame.m_Swapchain;
         }
 
-        static u32 swapchain_image_index(
-            const SwapchainFrame &p_Frame)
+        static u32
+        swapchain_image_index(const SwapchainFrame &p_Frame)
         {
           return p_Frame.m_SwapchainImageIndex;
         }
 
-        static void set_swapchain_image_index(
-            SwapchainFrame &p_Frame, u32 p_ImageIndex)
+        static void set_swapchain_image_index(SwapchainFrame &p_Frame,
+                                              u32 p_ImageIndex)
         {
           p_Frame.m_SwapchainImageIndex = p_ImageIndex;
         }
@@ -156,6 +172,29 @@ namespace Low {
     {
       Surface compatible_surface;
       PowerPreference power_preference = PowerPreference::Default;
+    };
+
+    struct RenderingInfo
+    {
+      Math::UVector2 extent;
+      Util::Span<const ColorAttachmentDesc> color_attachments;
+      const DepthAttachmentDesc *depth_attachment = nullptr;
+    };
+
+    struct Viewport
+    {
+      float x = 0.0f;
+      float y = 0.0f;
+      float width = 0.0f;
+      float height = 0.0f;
+      float min_depth = 0.0f;
+      float max_depth = 1.0f;
+    };
+
+    struct Rect2D
+    {
+      Math::IVector2 offset{0, 0};
+      Math::UVector2 extent{0, 0};
     };
 
     struct DeviceCaps
@@ -222,6 +261,45 @@ namespace Low {
       void destroy(Buffer p_Buffer);
       bool is_valid(Buffer p_Buffer) const;
 
+      Image create_image(const ImageDesc &p_Desc);
+      void destroy(Image p_Image);
+      bool is_valid(Image p_Image) const;
+
+      ImageView create_image_view(const ImageViewDesc &p_Desc);
+      void destroy(ImageView p_ImageView);
+      bool is_valid(ImageView p_ImageView) const;
+
+      Sampler create_sampler(const SamplerDesc &p_Desc);
+      void destroy(Sampler p_Sampler);
+      bool is_valid(Sampler p_Sampler) const;
+
+      ShaderModule create_shader_module(
+          const ShaderModuleDesc &p_Desc);
+      void destroy(ShaderModule p_ShaderModule);
+      bool is_valid(ShaderModule p_ShaderModule) const;
+
+      BindGroupLayout create_bind_group_layout(
+          const BindGroupLayoutDesc &p_Desc);
+      void destroy(BindGroupLayout p_BindGroupLayout);
+      bool is_valid(BindGroupLayout p_BindGroupLayout) const;
+
+      PipelineLayout create_pipeline_layout(
+          const PipelineLayoutDesc &p_Desc);
+      void destroy(PipelineLayout p_PipelineLayout);
+      bool is_valid(PipelineLayout p_PipelineLayout) const;
+
+      BindGroup create_bind_group(const BindGroupDesc &p_Desc);
+      void update_bind_group(BindGroup p_BindGroup,
+                             Util::Span<const BindGroupEntry>
+                                 p_Entries);
+      void destroy(BindGroup p_BindGroup);
+      bool is_valid(BindGroup p_BindGroup) const;
+
+      GraphicsPipeline create_graphics_pipeline(
+          const GraphicsPipelineDesc &p_Desc);
+      void destroy(GraphicsPipeline p_GraphicsPipeline);
+      bool is_valid(GraphicsPipeline p_GraphicsPipeline) const;
+
       CommandList request_command_list(const FrameContext &p_Frame,
                                        QueueRole p_QueueRole);
       CommandList
@@ -239,6 +317,29 @@ namespace Low {
                                        Swapchain p_Swapchain);
       void present(const SwapchainFrame &p_SwapchainFrame);
       void end_frame(const FrameContext &p_Frame);
+
+      void begin(CommandList p_CommandList);
+      void end(CommandList p_CommandList);
+      void submit(const FrameContext &p_Frame,
+                  CommandList p_CommandList);
+
+      void barrier(CommandList p_CommandList,
+                   const ImageBarrier &p_Barrier);
+
+      void begin_rendering(CommandList p_CommandList,
+                           const RenderingInfo &p_RenderingInfo);
+      void end_rendering(CommandList p_CommandList);
+      void set_viewport(CommandList p_CommandList,
+                        const Viewport &p_Viewport);
+      void set_scissor(CommandList p_CommandList,
+                       const Rect2D &p_Scissor);
+      void bind_graphics_pipeline(
+          CommandList p_CommandList,
+          GraphicsPipeline p_GraphicsPipeline);
+      void bind_bind_group(CommandList p_CommandList,
+                           PipelineLayout p_PipelineLayout,
+                           u32 p_GroupIndex,
+                           BindGroup p_BindGroup);
 
     private:
       Util::UniquePtr<Detail::ContextImpl> m_Impl;

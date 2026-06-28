@@ -33,13 +33,70 @@ namespace Low {
       void destroy_buffer(Detail::ContextImpl &p_Context,
                           Detail::BackendBuffer &p_Buffer);
 
+      Detail::BackendImage
+      create_image(Detail::ContextImpl &p_Context,
+                   const ImageDesc &p_Desc);
+      void destroy_image(Detail::ContextImpl &p_Context,
+                         Detail::BackendImage &p_Image);
+
+      Detail::BackendImageView
+      create_image_view(Detail::ContextImpl &p_Context,
+                        const ImageViewDesc &p_Desc);
+      void destroy_image_view(Detail::ContextImpl &p_Context,
+                              Detail::BackendImageView &p_ImageView);
+
+      Detail::BackendSampler
+      create_sampler(Detail::ContextImpl &p_Context,
+                     const SamplerDesc &p_Desc);
+      void destroy_sampler(Detail::ContextImpl &p_Context,
+                           Detail::BackendSampler &p_Sampler);
+
+      Detail::BackendShaderModule create_shader_module(
+          Detail::ContextImpl &p_Context,
+          const ShaderModuleDesc &p_Desc);
+      void destroy_shader_module(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendShaderModule &p_ShaderModule);
+
+      Detail::BackendBindGroupLayout create_bind_group_layout(
+          Detail::ContextImpl &p_Context,
+          const BindGroupLayoutDesc &p_Desc);
+      void destroy_bind_group_layout(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendBindGroupLayout &p_BindGroupLayout);
+
+      Detail::BackendPipelineLayout create_pipeline_layout(
+          Detail::ContextImpl &p_Context,
+          const PipelineLayoutDesc &p_Desc);
+      void destroy_pipeline_layout(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendPipelineLayout &p_PipelineLayout);
+
+      Detail::BackendBindGroup
+      create_bind_group(Detail::ContextImpl &p_Context,
+                        const BindGroupDesc &p_Desc);
+      void update_bind_group(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendBindGroup &p_BindGroup,
+          Util::Span<const BindGroupEntry> p_Entries);
+      void destroy_bind_group(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendBindGroup &p_BindGroup);
+
+      Detail::BackendGraphicsPipeline create_graphics_pipeline(
+          Detail::ContextImpl &p_Context,
+          const GraphicsPipelineDesc &p_Desc);
+      void destroy_graphics_pipeline(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendGraphicsPipeline &p_GraphicsPipeline);
+
       Detail::BackendCommandList
       request_command_list(Detail::ContextImpl &p_Context,
                            const FrameContext &p_Frame,
                            QueueRole p_QueueRole);
       Detail::BackendCommandList
       request_immediate_command_list(Detail::ContextImpl &p_Context,
-                           QueueRole p_QueueRole);
+                                     QueueRole p_QueueRole);
       void
       destroy_command_list(Detail::ContextImpl &p_Context,
                            Detail::BackendCommandList &p_CommandList);
@@ -59,6 +116,40 @@ namespace Low {
                    const SwapchainFrame &p_SwapchainFrame);
       void end_frame(Detail::ContextImpl &p_Context,
                      const FrameContext &p_Frame);
+
+      void begin_command_list(Detail::ContextImpl &p_Context,
+                              Detail::BackendCommandList &);
+      void end_command_list(Detail::ContextImpl &p_Context,
+                            Detail::BackendCommandList &);
+      void submit_command_list(Detail::ContextImpl &p_Context,
+                               const FrameContext &p_Frame,
+                               Detail::BackendCommandList &);
+      void barrier_image_command_list(Detail::ContextImpl &p_Context,
+                                      Detail::BackendCommandList &,
+                                      const ImageBarrier &);
+
+      void begin_dynamic_rendering(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendCommandList &p_CommandList,
+          const RenderingInfo &p_RenderingInfo);
+      void end_dynamic_rendering(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendCommandList &p_CommandList);
+      void set_viewport(Detail::ContextImpl &p_Context,
+                        Detail::BackendCommandList &p_CommandList,
+                        const Viewport &p_Viewport);
+      void set_scissor(Detail::ContextImpl &p_Context,
+                       Detail::BackendCommandList &p_CommandList,
+                       const Rect2D &p_Scissor);
+      void bind_graphics_pipeline(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendCommandList &p_CommandList,
+          Detail::BackendGraphicsPipeline &p_GraphicsPipeline);
+      void bind_bind_group(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendCommandList &p_CommandList,
+          Detail::BackendPipelineLayout &p_PipelineLayout,
+          u32 p_GroupIndex, Detail::BackendBindGroup &p_BindGroup);
 
     } // namespace Vulkan
   } // namespace Gfx

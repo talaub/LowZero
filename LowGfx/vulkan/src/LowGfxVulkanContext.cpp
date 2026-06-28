@@ -183,6 +183,75 @@ namespace Low {
         }
       }
 
+      static VkDescriptorPool create_descriptor_pool(
+          VkDevice p_Device, u32 p_SetCount,
+          Util::Span<const VulkanDescriptorPoolSizeRatio> p_Ratios)
+      {
+        Util::List<VkDescriptorPoolSize> l_PoolSizes;
+        l_PoolSizes.reserve(p_Ratios.size());
+        for (const VulkanDescriptorPoolSizeRatio &i_Ratio :
+             p_Ratios) {
+          VkDescriptorPoolSize l_Size{};
+          l_Size.type = i_Ratio.type;
+          l_Size.descriptorCount =
+              static_cast<u32>(i_Ratio.ratio * p_SetCount);
+          if (l_Size.descriptorCount == 0) {
+            l_Size.descriptorCount = 1;
+          }
+          l_PoolSizes.push_back(l_Size);
+        }
+
+        VkDescriptorPoolCreateInfo l_Info{};
+        l_Info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        l_Info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+        l_Info.maxSets = p_SetCount;
+        l_Info.poolSizeCount = l_PoolSizes.size();
+        l_Info.pPoolSizes = l_PoolSizes.data();
+
+        VkDescriptorPool l_Pool = VK_NULL_HANDLE;
+        VkResult l_Result = vkCreateDescriptorPool(
+            p_Device, &l_Info, nullptr, &l_Pool);
+        LOW_ASSERT(l_Result == VK_SUCCESS,
+                   "Failed to create Vulkan descriptor pool");
+        return l_Pool;
+      }
+
+      static void init_descriptor_allocator(
+          VulkanDescriptorAllocatorGrowable &p_Allocator,
+          VkDevice p_Device)
+      {
+        p_Allocator.ratios = {
+            {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 30.0f},
+            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 50.0f},
+            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100.0f},
+            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100.0f},
+            {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 700.0f},
+            {VK_DESCRIPTOR_TYPE_SAMPLER, 32.0f}};
+        p_Allocator.sets_per_pool = 15;
+        p_Allocator.ready_pools.push_back(create_descriptor_pool(
+            p_Device, 10, Util::Span<const VulkanDescriptorPoolSizeRatio>(
+                              p_Allocator.ratios.data(),
+                              p_Allocator.ratios.size())));
+      }
+
+      static void destroy_descriptor_allocator(
+          VulkanDescriptorAllocatorGrowable &p_Allocator,
+          VkDevice p_Device)
+      {
+        for (VkDescriptorPool i_Pool : p_Allocator.ready_pools) {
+          vkDestroyDescriptorPool(p_Device, i_Pool, nullptr);
+        }
+        p_Allocator.ready_pools.clear();
+
+        for (VkDescriptorPool i_Pool : p_Allocator.full_pools) {
+          vkDestroyDescriptorPool(p_Device, i_Pool, nullptr);
+        }
+        p_Allocator.full_pools.clear();
+
+        p_Allocator.ratios.clear();
+        p_Allocator.sets_per_pool = 0;
+      }
+
       static void create_frame_state(Detail::ContextImpl &p_Context,
                                      VulkanContextState &p_State,
                                      FrameState &p_Frame)
@@ -520,6 +589,9 @@ namespace Low {
             l_State->vkb_device, vkb::QueueType::present,
             l_State->graphics_queue);
 
+        init_descriptor_allocator(l_State->descriptor_allocator,
+                                  l_State->device);
+
         for (u32 i = 0; i < p_Desc.frames_in_flight; ++i) {
           FrameState l_Frame;
           create_frame_state(p_Context, *l_State, l_Frame);
@@ -546,6 +618,11 @@ namespace Low {
             destroy_frame_state(l_State->device, i_Frame);
           }
           l_State->frames.clear();
+        }
+
+        if (l_State->device != VK_NULL_HANDLE) {
+          destroy_descriptor_allocator(l_State->descriptor_allocator,
+                                       l_State->device);
         }
 
         if (l_State->allocator) {
@@ -590,19 +667,8 @@ namespace Low {
           return VK_NULL_HANDLE;
         }
 
-        VkCommandBuffer l_Command = VK_NULL_HANDLE;
-        VkCommandBufferAllocateInfo l_AllocateInfo{};
-        l_AllocateInfo.sType =
-            VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        l_AllocateInfo.commandPool = p_Frame.graphics.pool;
-        l_AllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        l_AllocateInfo.commandBufferCount = 1;
-
-        VkResult l_AllocateResult = vkAllocateCommandBuffers(
-            p_State.device, &l_AllocateInfo, &l_Command);
-        LOW_ASSERT(l_AllocateResult == VK_SUCCESS,
-                   "Failed to allocate Vulkan present transition "
-                   "command buffer");
+        VkCommandBuffer l_Command = acquire_frame_command_buffer(
+            p_State, p_Frame.graphics);
 
         VkCommandBufferBeginInfo l_BeginInfo{};
         l_BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -670,6 +736,9 @@ namespace Low {
         reset_frame_command_pool(l_State->device, l_Frame.compute);
         reset_frame_command_pool(l_State->device, l_Frame.transfer);
 
+        LOW_ASSERT(l_Frame.pending_graphics_submits.empty(),
+                   "Cannot begin Vulkan frame with pending graphics "
+                   "submissions");
         LOW_ASSERT(l_Frame.pending_presents.empty(),
                    "Cannot begin Vulkan frame with pending presents");
       }
@@ -821,6 +890,14 @@ namespace Low {
         Util::List<VkSemaphore> l_SignalSemaphores;
         Util::List<VkCommandBuffer> l_CommandBuffers;
 
+        for (VkCommandBuffer i_CommandBuffer :
+             l_Frame.pending_graphics_submits) {
+          LOW_ASSERT(i_CommandBuffer != VK_NULL_HANDLE,
+                     "Cannot submit invalid pending Vulkan command "
+                     "buffer");
+          l_CommandBuffers.push_back(i_CommandBuffer);
+        }
+
         for (VulkanPendingPresent &i_Pending :
              l_Frame.pending_presents) {
           LOW_ASSERT(i_Pending.swapchain && i_Pending.image,
@@ -900,6 +977,7 @@ namespace Low {
         }
 
         l_Frame.pending_presents.clear();
+        l_Frame.pending_graphics_submits.clear();
       }
     } // namespace Vulkan
   } // namespace Gfx
