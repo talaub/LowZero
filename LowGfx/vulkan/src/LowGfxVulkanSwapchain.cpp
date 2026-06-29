@@ -77,7 +77,8 @@ namespace Low {
                     to_vulkan_present_mode(p_Desc.present_mode))
                 .set_desired_extent(p_Desc.width, p_Desc.height)
                 .add_image_usage_flags(
-                    VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+                    VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
                 .build();
 
         GFX_ASSERT(l_SwapchainResult,
@@ -115,10 +116,59 @@ namespace Low {
 
         GFX_ASSERT(l_Images.size() == l_ImageViews.size(),
                    "Vulkan swapchain returned mismatched image state");
+
+        Detail::BackendSwapchain l_Result;
         for (u32 i = 0; i < l_Images.size(); ++i) {
           VulkanSwapchainImageState l_ImageState;
-          l_ImageState.image = l_Images[i];
-          l_ImageState.image_view = l_ImageViews[i];
+
+          VulkanImageState *l_WrappedImageState =
+              new VulkanImageState();
+          l_WrappedImageState->image = l_Images[i];
+          l_WrappedImageState->allocation = nullptr;
+          l_WrappedImageState->format = l_Swapchain->format;
+          l_WrappedImageState->extent = VkExtent3D{
+              l_Swapchain->extent.width, l_Swapchain->extent.height,
+              1};
+          l_WrappedImageState->mip_levels = 1;
+          l_WrappedImageState->array_layers = 1;
+
+          Detail::BackendImage l_BackendImage;
+          l_BackendImage.format = ImageFormat::B8G8R8A8_UNorm;
+          l_BackendImage.dimension = ImageDimension::Image2D;
+          l_BackendImage.usage = ImageUsage::ColorAttachment |
+                                 ImageUsage::TransferDst |
+                                 ImageUsage::Present;
+          l_BackendImage.state = ImageState::Undefined;
+          l_BackendImage.extent = Math::UVector3{
+              l_Swapchain->extent.width, l_Swapchain->extent.height,
+              1};
+          l_BackendImage.mip_levels = 1;
+          l_BackendImage.array_layers = 1;
+          l_BackendImage.backend_state = l_WrappedImageState;
+          Image l_ImageToken =
+              p_Context.images.create(std::move(l_BackendImage));
+
+          VulkanImageViewState *l_WrappedImageViewState =
+              new VulkanImageViewState();
+          l_WrappedImageViewState->image_view = l_ImageViews[i];
+
+          Detail::BackendImageView l_BackendImageView;
+          l_BackendImageView.image = l_ImageToken;
+          l_BackendImageView.format = ImageFormat::B8G8R8A8_UNorm;
+          l_BackendImageView.aspect = ImageAspect::Color;
+          l_BackendImageView.base_mip = 0;
+          l_BackendImageView.mip_count = 1;
+          l_BackendImageView.base_layer = 0;
+          l_BackendImageView.layer_count = 1;
+          l_BackendImageView.backend_state =
+              l_WrappedImageViewState;
+          ImageView l_ImageViewToken = p_Context.image_views.create(
+              std::move(l_BackendImageView));
+
+          l_ImageState.image_token = l_ImageToken;
+          l_ImageState.image_view_token = l_ImageViewToken;
+          l_Result.images.push_back(l_ImageToken);
+          l_Result.image_views.push_back(l_ImageViewToken);
 
           VkSemaphoreCreateInfo l_SemaphoreInfo{};
           l_SemaphoreInfo.sType =
@@ -149,7 +199,6 @@ namespace Low {
               l_ImageAvailable);
         }
 
-        Detail::BackendSwapchain l_Result;
         l_Result.backend_state = l_Swapchain;
 
         return l_Result;
@@ -182,10 +231,6 @@ namespace Low {
             vkDestroySemaphore(l_State->device,
                                i_Image.render_finished, nullptr);
           }
-          if (i_Image.image_view != VK_NULL_HANDLE) {
-            vkDestroyImageView(l_State->device, i_Image.image_view,
-                               nullptr);
-          }
         }
 
         for (VkSemaphore i_Semaphore :
@@ -199,6 +244,8 @@ namespace Low {
                               nullptr);
 
         delete l_Swapchain;
+        p_Swapchain.images.clear();
+        p_Swapchain.image_views.clear();
         p_Swapchain.backend_state = nullptr;
       }
     } // namespace Vulkan

@@ -26,6 +26,7 @@ namespace Low {
                            const ContextDesc &p_Desc);
       void destroy_context(Detail::ContextImpl &p_Context);
       DeviceCaps get_caps(const Detail::ContextImpl &p_Context);
+      void wait_idle(Detail::ContextImpl &p_Context);
 
       Detail::BackendBuffer
       create_buffer(Detail::ContextImpl &p_Context,

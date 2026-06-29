@@ -659,13 +659,37 @@ namespace Low {
         return l_Caps;
       }
 
+      void wait_idle(Detail::ContextImpl &p_Context)
+      {
+        VulkanContextState *l_State =
+            static_cast<VulkanContextState *>(p_Context.backend_state);
+        GFX_ASSERT(l_State,
+                   "Cannot wait for idle without Vulkan context state");
+        if (l_State->device != VK_NULL_HANDLE) {
+          VkResult l_Result = vkDeviceWaitIdle(l_State->device);
+          GFX_ASSERT(l_Result == VK_SUCCESS,
+                     "Failed to wait for Vulkan device idle");
+        }
+      }
+
       static VkCommandBuffer record_present_transition(
-          VulkanContextState &p_State, FrameState &p_Frame,
-          VulkanSwapchainImageState &p_Image)
+          Detail::ContextImpl &p_Context, VulkanContextState &p_State,
+          FrameState &p_Frame, VulkanSwapchainImageState &p_Image)
       {
         if (p_Image.layout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
           return VK_NULL_HANDLE;
         }
+
+        Detail::BackendImage *l_BackendImage =
+            p_Context.images.get(p_Image.image_token);
+        GFX_ASSERT(l_BackendImage,
+                   "Cannot transition invalid swapchain image");
+        VulkanImageState *l_ImageState =
+            static_cast<VulkanImageState *>(
+                l_BackendImage->backend_state);
+        GFX_ASSERT(l_ImageState &&
+                       l_ImageState->image != VK_NULL_HANDLE,
+                   "Cannot transition empty Vulkan swapchain image");
 
         VkCommandBuffer l_Command = acquire_frame_command_buffer(
             p_State, p_Frame.graphics);
@@ -689,7 +713,7 @@ namespace Low {
         l_Barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
         l_Barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         l_Barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        l_Barrier.image = p_Image.image;
+        l_Barrier.image = l_ImageState->image;
         l_Barrier.subresourceRange.aspectMask =
             VK_IMAGE_ASPECT_COLOR_BIT;
         l_Barrier.subresourceRange.baseMipLevel = 0;
@@ -866,7 +890,8 @@ namespace Low {
         l_Pending.image_available =
             l_Swapchain->image_available_semaphores[l_FrameIndex];
         l_Pending.present_transition_command =
-            record_present_transition(*l_State, l_Frame, l_Image);
+            record_present_transition(p_Context, *l_State, l_Frame,
+                                      l_Image);
         l_Frame.pending_presents.push_back(l_Pending);
       }
 
@@ -948,6 +973,10 @@ namespace Low {
         for (VulkanPendingPresent &i_Pending :
              l_Frame.pending_presents) {
           i_Pending.image->layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+          if (Detail::BackendImage *i_BackendImage =
+                  p_Context.images.get(i_Pending.image->image_token)) {
+            i_BackendImage->state = ImageState::Present;
+          }
 
           VkSwapchainKHR l_Swapchain = i_Pending.swapchain->swapchain;
           VkSemaphore l_RenderFinished =

@@ -69,6 +69,8 @@ namespace Low {
     static void cleanup_context(Detail::ContextImpl *p_Impl)
     {
       if (p_Impl && p_Impl->api) {
+        p_Impl->api->wait_idle(*p_Impl);
+
         p_Impl->graphics_pipelines.for_each(
             [p_Impl](Detail::BackendGraphicsPipeline &p_Pipeline) {
               p_Impl->api->destroy_graphics_pipeline(*p_Impl,
@@ -302,6 +304,11 @@ namespace Low {
       return m_Impl->caps;
     }
 
+    void Context::wait_idle()
+    {
+      m_Impl->api->wait_idle(*m_Impl);
+    }
+
     Buffer Context::create_buffer(const BufferDesc &p_Desc)
     {
       GFX_ASSERT(p_Desc.size > 0, "Cannot create zero-sized buffer");
@@ -376,6 +383,14 @@ namespace Low {
     bool Context::is_valid(Image p_Image) const
     {
       return m_Impl->images.is_valid(p_Image);
+    }
+
+    ImageState Context::get_image_state(Image p_Image) const
+    {
+      const Detail::BackendImage *l_Image =
+          m_Impl->images.get(p_Image);
+      GFX_ASSERT(l_Image, "Cannot get state for invalid image");
+      return l_Image->state;
     }
 
     static bool is_depth_format(ImageFormat p_Format)
@@ -1081,6 +1096,27 @@ namespace Low {
       GFX_ASSERT(!m_Impl->frame_active,
                  "Cannot destroy swapchain while a frame is active");
 
+      for (ImageView i_ImageView : l_Swapchain->image_views) {
+        Detail::BackendImageView *i_BackendImageView =
+            m_Impl->image_views.get(i_ImageView);
+        if (i_BackendImageView) {
+          m_Impl->api->destroy_image_view(*m_Impl,
+                                          *i_BackendImageView);
+          m_Impl->image_views.destroy(i_ImageView);
+        }
+      }
+      l_Swapchain->image_views.clear();
+
+      for (Image i_Image : l_Swapchain->images) {
+        Detail::BackendImage *i_BackendImage =
+            m_Impl->images.get(i_Image);
+        if (i_BackendImage) {
+          m_Impl->api->destroy_image(*m_Impl, *i_BackendImage);
+          m_Impl->images.destroy(i_Image);
+        }
+      }
+      l_Swapchain->images.clear();
+
       m_Impl->api->destroy_swapchain(*m_Impl, *l_Swapchain);
       m_Impl->swapchains.destroy(p_Swapchain);
     }
@@ -1128,6 +1164,52 @@ namespace Low {
       m_Impl->api->acquire_swapchain(*m_Impl, p_Frame,
                                      l_SwapchainFrame);
       return l_SwapchainFrame;
+    }
+
+    Image Context::get_swapchain_image(
+        const SwapchainFrame &p_SwapchainFrame) const
+    {
+      GFX_ASSERT(
+          m_Impl->swapchains.is_valid(p_SwapchainFrame.m_Swapchain),
+          "Cannot get image from invalid swapchain frame");
+      GFX_ASSERT(p_SwapchainFrame.m_SwapchainImageIndex !=
+                     LOW_UINT32_MAX,
+                 "Cannot get image from unacquired swapchain frame");
+
+      const Detail::BackendSwapchain *l_Swapchain =
+          m_Impl->swapchains.get(p_SwapchainFrame.m_Swapchain);
+      GFX_ASSERT(l_Swapchain,
+                 "Cannot get image from missing swapchain");
+      GFX_ASSERT(p_SwapchainFrame.m_SwapchainImageIndex <
+                     l_Swapchain->images.size(),
+                 "Swapchain frame image index exceeds image count");
+
+      return l_Swapchain
+          ->images[p_SwapchainFrame.m_SwapchainImageIndex];
+    }
+
+    ImageView Context::get_swapchain_image_view(
+        const SwapchainFrame &p_SwapchainFrame) const
+    {
+      GFX_ASSERT(
+          m_Impl->swapchains.is_valid(p_SwapchainFrame.m_Swapchain),
+          "Cannot get image view from invalid swapchain frame");
+      GFX_ASSERT(p_SwapchainFrame.m_SwapchainImageIndex !=
+                     LOW_UINT32_MAX,
+                 "Cannot get image view from unacquired swapchain "
+                 "frame");
+
+      const Detail::BackendSwapchain *l_Swapchain =
+          m_Impl->swapchains.get(p_SwapchainFrame.m_Swapchain);
+      GFX_ASSERT(l_Swapchain,
+                 "Cannot get image view from missing swapchain");
+      GFX_ASSERT(
+          p_SwapchainFrame.m_SwapchainImageIndex <
+              l_Swapchain->image_views.size(),
+          "Swapchain frame image index exceeds image view count");
+
+      return l_Swapchain
+          ->image_views[p_SwapchainFrame.m_SwapchainImageIndex];
     }
 
     void Context::present(const SwapchainFrame &p_SwapchainFrame)

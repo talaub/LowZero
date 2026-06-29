@@ -13,6 +13,7 @@ namespace Low {
             &create_context,
             &destroy_context,
             &get_caps,
+            &wait_idle,
             &create_buffer,
             &destroy_buffer,
             &create_image,

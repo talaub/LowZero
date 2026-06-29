@@ -105,6 +105,8 @@ namespace Low {
 
       struct BackendSwapchain
       {
+        Util::List<Image> images;
+        Util::List<ImageView> image_views;
         void *backend_state = nullptr;
       };
 
@@ -130,6 +132,7 @@ namespace Low {
         void (*destroy_context)(ContextImpl &);
 
         DeviceCaps (*get_caps)(const ContextImpl &);
+        void (*wait_idle)(ContextImpl &);
 
         BackendBuffer (*create_buffer)(ContextImpl &,
                                        const BufferDesc &);

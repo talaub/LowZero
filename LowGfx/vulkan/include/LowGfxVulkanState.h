@@ -56,8 +56,8 @@ namespace Low {
 
       struct VulkanSwapchainImageState
       {
-        VkImage image = VK_NULL_HANDLE;
-        VkImageView image_view = VK_NULL_HANDLE;
+        Image image_token;
+        ImageView image_view_token;
         VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;
         VkSemaphore render_finished = VK_NULL_HANDLE;
         VkFence in_flight_fence = VK_NULL_HANDLE;

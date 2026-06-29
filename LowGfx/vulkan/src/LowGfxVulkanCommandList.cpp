@@ -455,6 +455,25 @@ namespace Low {
 
         vkCmdPipelineBarrier2(l_CommandListState->command_buffer,
                               &l_DependencyInfo);
+
+        p_Context.swapchains.for_each(
+            [&p_Barrier, &l_Destination](
+                Detail::BackendSwapchain &p_Swapchain) {
+              VulkanSwapchainState *i_Swapchain =
+                  static_cast<VulkanSwapchainState *>(
+                      p_Swapchain.backend_state);
+              if (!i_Swapchain) {
+                return;
+              }
+
+              for (VulkanSwapchainImageState &i_Image :
+                   i_Swapchain->images) {
+                if (i_Image.image_token == p_Barrier.image) {
+                  i_Image.layout = l_Destination.layout;
+                  return;
+                }
+              }
+            });
       }
     } // namespace Vulkan
   } // namespace Gfx

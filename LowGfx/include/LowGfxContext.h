@@ -256,6 +256,7 @@ namespace Low {
 
       Backend get_backend() const;
       const DeviceCaps &get_caps() const;
+      void wait_idle();
 
       Buffer create_buffer(const BufferDesc &p_Desc);
       void destroy(Buffer p_Buffer);
@@ -264,6 +265,7 @@ namespace Low {
       Image create_image(const ImageDesc &p_Desc);
       void destroy(Image p_Image);
       bool is_valid(Image p_Image) const;
+      ImageState get_image_state(Image p_Image) const;
 
       ImageView create_image_view(const ImageViewDesc &p_Desc);
       void destroy(ImageView p_ImageView);
@@ -320,6 +322,10 @@ namespace Low {
       FrameContext begin_frame();
       SwapchainFrame acquire_swapchain(const FrameContext &p_Frame,
                                        Swapchain p_Swapchain);
+      Image get_swapchain_image(
+          const SwapchainFrame &p_SwapchainFrame) const;
+      ImageView get_swapchain_image_view(
+          const SwapchainFrame &p_SwapchainFrame) const;
       void present(const SwapchainFrame &p_SwapchainFrame);
       void end_frame(const FrameContext &p_Frame);
 
