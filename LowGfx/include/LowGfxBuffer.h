@@ -55,5 +55,12 @@ namespace Low {
       BufferMemoryUsage memory_usage = BufferMemoryUsage::GpuOnly;
       const char *debug_name = nullptr;
     };
+
+    struct BufferCopyRegion
+    {
+      u64 src_offset = 0;
+      u64 dst_offset = 0;
+      u64 size = 0;
+    };
   } // namespace Gfx
 } // namespace Low

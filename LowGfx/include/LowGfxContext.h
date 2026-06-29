@@ -345,6 +345,27 @@ namespace Low {
 
       void barrier(CommandList p_CommandList,
                    const ImageBarrier &p_Barrier);
+      void copy_buffer(
+          CommandList p_CommandList, Buffer p_Source,
+          Buffer p_Destination,
+          Util::Span<const BufferCopyRegion> p_Regions);
+      void copy_buffer_to_image(
+          CommandList p_CommandList, Buffer p_Source,
+          Image p_Destination,
+          Util::Span<const BufferImageCopyRegion> p_Regions);
+      void copy_image_to_buffer(
+          CommandList p_CommandList, Image p_Source,
+          Buffer p_Destination,
+          Util::Span<const BufferImageCopyRegion> p_Regions);
+      void copy_image(
+          CommandList p_CommandList, Image p_Source,
+          Image p_Destination,
+          Util::Span<const ImageCopyRegion> p_Regions);
+      void blit_image(
+          CommandList p_CommandList, Image p_Source,
+          Image p_Destination,
+          Util::Span<const ImageBlitRegion> p_Regions,
+          FilterMode p_Filter);
 
       void begin_rendering(CommandList p_CommandList,
                            const RenderingInfo &p_RenderingInfo);

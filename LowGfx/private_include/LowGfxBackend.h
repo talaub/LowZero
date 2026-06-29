@@ -220,6 +220,27 @@ namespace Low {
         void (*barrier_image_command_list)(
             ContextImpl &p_Context, BackendCommandList &p_CommandList,
             const ImageBarrier &p_Barrier);
+        void (*copy_buffer)(
+            ContextImpl &p_Context, BackendCommandList &p_CommandList,
+            BackendBuffer &p_Source, BackendBuffer &p_Destination,
+            Util::Span<const BufferCopyRegion> p_Regions);
+        void (*copy_buffer_to_image)(
+            ContextImpl &p_Context, BackendCommandList &p_CommandList,
+            BackendBuffer &p_Source, BackendImage &p_Destination,
+            Util::Span<const BufferImageCopyRegion> p_Regions);
+        void (*copy_image_to_buffer)(
+            ContextImpl &p_Context, BackendCommandList &p_CommandList,
+            BackendImage &p_Source, BackendBuffer &p_Destination,
+            Util::Span<const BufferImageCopyRegion> p_Regions);
+        void (*copy_image)(
+            ContextImpl &p_Context, BackendCommandList &p_CommandList,
+            BackendImage &p_Source, BackendImage &p_Destination,
+            Util::Span<const ImageCopyRegion> p_Regions);
+        void (*blit_image)(
+            ContextImpl &p_Context, BackendCommandList &p_CommandList,
+            BackendImage &p_Source, BackendImage &p_Destination,
+            Util::Span<const ImageBlitRegion> p_Regions,
+            FilterMode p_Filter);
 
         void (*begin_dynamic_rendering)(
             ContextImpl &p_Context, BackendCommandList &p_CommandList,

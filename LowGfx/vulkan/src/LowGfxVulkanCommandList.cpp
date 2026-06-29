@@ -157,6 +157,82 @@ namespace Low {
         return VK_IMAGE_ASPECT_COLOR_BIT;
       }
 
+      static VkFilter to_vulkan_filter(FilterMode p_Filter)
+      {
+        switch (p_Filter) {
+        case FilterMode::Nearest:
+          return VK_FILTER_NEAREST;
+        case FilterMode::Linear:
+          return VK_FILTER_LINEAR;
+        }
+
+        GFX_ASSERT(false, "Unsupported LowGfx filter mode");
+        return VK_FILTER_NEAREST;
+      }
+
+      static VkOffset3D
+      to_vulkan_offset(const Math::UVector3 &p_Offset)
+      {
+        return {static_cast<i32>(p_Offset.x),
+                static_cast<i32>(p_Offset.y),
+                static_cast<i32>(p_Offset.z)};
+      }
+
+      static VkExtent3D
+      to_vulkan_extent(const Math::UVector3 &p_Extent)
+      {
+        return {p_Extent.x, p_Extent.y, p_Extent.z};
+      }
+
+      static VkImageSubresourceLayers to_vulkan_layers(
+          ImageAspect p_Aspect, u32 p_Mip, u32 p_BaseLayer,
+          u32 p_LayerCount)
+      {
+        VkImageSubresourceLayers l_Layers{};
+        l_Layers.aspectMask = to_vulkan_aspect(p_Aspect);
+        l_Layers.mipLevel = p_Mip;
+        l_Layers.baseArrayLayer = p_BaseLayer;
+        l_Layers.layerCount = p_LayerCount;
+        return l_Layers;
+      }
+
+      static VulkanCommandListState *
+      get_vulkan_command_list(Detail::BackendCommandList &p_CommandList,
+                              const char *p_Message)
+      {
+        VulkanCommandListState *l_CommandListState =
+            static_cast<VulkanCommandListState *>(
+                p_CommandList.backend_state);
+        GFX_ASSERT(l_CommandListState, p_Message);
+        GFX_ASSERT(l_CommandListState->command_buffer !=
+                       VK_NULL_HANDLE,
+                   "Cannot record copy without Vulkan command "
+                   "buffer");
+        return l_CommandListState;
+      }
+
+      static VulkanBufferState *
+      get_vulkan_buffer(Detail::BackendBuffer &p_Buffer,
+                        const char *p_Message)
+      {
+        VulkanBufferState *l_Buffer =
+            static_cast<VulkanBufferState *>(p_Buffer.backend_state);
+        GFX_ASSERT(l_Buffer && l_Buffer->buffer != VK_NULL_HANDLE,
+                   p_Message);
+        return l_Buffer;
+      }
+
+      static VulkanImageState *
+      get_vulkan_image(Detail::BackendImage &p_Image,
+                       const char *p_Message)
+      {
+        VulkanImageState *l_Image =
+            static_cast<VulkanImageState *>(p_Image.backend_state);
+        GFX_ASSERT(l_Image && l_Image->image != VK_NULL_HANDLE,
+                   p_Message);
+        return l_Image;
+      }
+
       Detail::BackendCommandList
       request_command_list(Detail::ContextImpl &p_Context,
                            const FrameContext &p_Frame,
@@ -474,6 +550,245 @@ namespace Low {
                 }
               }
             });
+      }
+
+      void copy_buffer(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendCommandList &p_CommandList,
+          Detail::BackendBuffer &p_Source,
+          Detail::BackendBuffer &p_Destination,
+          Util::Span<const BufferCopyRegion> p_Regions)
+      {
+        (void)p_Context;
+        VulkanCommandListState *l_CommandList =
+            get_vulkan_command_list(
+                p_CommandList,
+                "Cannot copy Vulkan buffer without command list "
+                "state");
+        VulkanBufferState *l_Source =
+            get_vulkan_buffer(p_Source,
+                              "Cannot copy from invalid Vulkan "
+                              "source buffer");
+        VulkanBufferState *l_Destination =
+            get_vulkan_buffer(p_Destination,
+                              "Cannot copy to invalid Vulkan "
+                              "destination buffer");
+
+        Util::List<VkBufferCopy> l_Regions;
+        for (const BufferCopyRegion &i_Region : p_Regions) {
+          VkBufferCopy i_VulkanRegion{};
+          i_VulkanRegion.srcOffset = i_Region.src_offset;
+          i_VulkanRegion.dstOffset = i_Region.dst_offset;
+          i_VulkanRegion.size = i_Region.size;
+          l_Regions.push_back(i_VulkanRegion);
+        }
+
+        vkCmdCopyBuffer(l_CommandList->command_buffer,
+                        l_Source->buffer, l_Destination->buffer,
+                        static_cast<u32>(l_Regions.size()),
+                        l_Regions.data());
+      }
+
+      void copy_buffer_to_image(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendCommandList &p_CommandList,
+          Detail::BackendBuffer &p_Source,
+          Detail::BackendImage &p_Destination,
+          Util::Span<const BufferImageCopyRegion> p_Regions)
+      {
+        (void)p_Context;
+        VulkanCommandListState *l_CommandList =
+            get_vulkan_command_list(
+                p_CommandList,
+                "Cannot copy Vulkan buffer to image without command "
+                "list state");
+        VulkanBufferState *l_Source =
+            get_vulkan_buffer(p_Source,
+                              "Cannot copy from invalid Vulkan "
+                              "source buffer");
+        VulkanImageState *l_Destination =
+            get_vulkan_image(p_Destination,
+                             "Cannot copy to invalid Vulkan "
+                             "destination image");
+
+        Util::List<VkBufferImageCopy> l_Regions;
+        for (const BufferImageCopyRegion &i_Region : p_Regions) {
+          VkBufferImageCopy i_VulkanRegion{};
+          i_VulkanRegion.bufferOffset = i_Region.buffer_offset;
+          i_VulkanRegion.bufferRowLength =
+              i_Region.buffer_row_length;
+          i_VulkanRegion.bufferImageHeight =
+              i_Region.buffer_image_height;
+          i_VulkanRegion.imageSubresource = to_vulkan_layers(
+              i_Region.image_aspect, i_Region.image_mip,
+              i_Region.image_base_layer,
+              i_Region.image_layer_count);
+          i_VulkanRegion.imageOffset =
+              to_vulkan_offset(i_Region.image_offset);
+          i_VulkanRegion.imageExtent =
+              to_vulkan_extent(i_Region.image_extent);
+          l_Regions.push_back(i_VulkanRegion);
+        }
+
+        vkCmdCopyBufferToImage(
+            l_CommandList->command_buffer, l_Source->buffer,
+            l_Destination->image,
+            to_vulkan_image_state_access(ImageState::TransferDst)
+                .layout,
+            static_cast<u32>(l_Regions.size()), l_Regions.data());
+      }
+
+      void copy_image_to_buffer(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendCommandList &p_CommandList,
+          Detail::BackendImage &p_Source,
+          Detail::BackendBuffer &p_Destination,
+          Util::Span<const BufferImageCopyRegion> p_Regions)
+      {
+        (void)p_Context;
+        VulkanCommandListState *l_CommandList =
+            get_vulkan_command_list(
+                p_CommandList,
+                "Cannot copy Vulkan image to buffer without command "
+                "list state");
+        VulkanImageState *l_Source =
+            get_vulkan_image(p_Source,
+                             "Cannot copy from invalid Vulkan "
+                             "source image");
+        VulkanBufferState *l_Destination =
+            get_vulkan_buffer(p_Destination,
+                              "Cannot copy to invalid Vulkan "
+                              "destination buffer");
+
+        Util::List<VkBufferImageCopy> l_Regions;
+        for (const BufferImageCopyRegion &i_Region : p_Regions) {
+          VkBufferImageCopy i_VulkanRegion{};
+          i_VulkanRegion.bufferOffset = i_Region.buffer_offset;
+          i_VulkanRegion.bufferRowLength =
+              i_Region.buffer_row_length;
+          i_VulkanRegion.bufferImageHeight =
+              i_Region.buffer_image_height;
+          i_VulkanRegion.imageSubresource = to_vulkan_layers(
+              i_Region.image_aspect, i_Region.image_mip,
+              i_Region.image_base_layer,
+              i_Region.image_layer_count);
+          i_VulkanRegion.imageOffset =
+              to_vulkan_offset(i_Region.image_offset);
+          i_VulkanRegion.imageExtent =
+              to_vulkan_extent(i_Region.image_extent);
+          l_Regions.push_back(i_VulkanRegion);
+        }
+
+        vkCmdCopyImageToBuffer(
+            l_CommandList->command_buffer, l_Source->image,
+            to_vulkan_image_state_access(ImageState::TransferSrc)
+                .layout,
+            l_Destination->buffer, static_cast<u32>(l_Regions.size()),
+            l_Regions.data());
+      }
+
+      void copy_image(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendCommandList &p_CommandList,
+          Detail::BackendImage &p_Source,
+          Detail::BackendImage &p_Destination,
+          Util::Span<const ImageCopyRegion> p_Regions)
+      {
+        (void)p_Context;
+        VulkanCommandListState *l_CommandList =
+            get_vulkan_command_list(
+                p_CommandList,
+                "Cannot copy Vulkan image without command list "
+                "state");
+        VulkanImageState *l_Source =
+            get_vulkan_image(p_Source,
+                             "Cannot copy from invalid Vulkan "
+                             "source image");
+        VulkanImageState *l_Destination =
+            get_vulkan_image(p_Destination,
+                             "Cannot copy to invalid Vulkan "
+                             "destination image");
+
+        Util::List<VkImageCopy> l_Regions;
+        for (const ImageCopyRegion &i_Region : p_Regions) {
+          VkImageCopy i_VulkanRegion{};
+          i_VulkanRegion.srcSubresource = to_vulkan_layers(
+              i_Region.src_aspect, i_Region.src_mip,
+              i_Region.src_base_layer, i_Region.layer_count);
+          i_VulkanRegion.srcOffset =
+              to_vulkan_offset(i_Region.src_offset);
+          i_VulkanRegion.dstSubresource = to_vulkan_layers(
+              i_Region.dst_aspect, i_Region.dst_mip,
+              i_Region.dst_base_layer, i_Region.layer_count);
+          i_VulkanRegion.dstOffset =
+              to_vulkan_offset(i_Region.dst_offset);
+          i_VulkanRegion.extent =
+              to_vulkan_extent(i_Region.extent);
+          l_Regions.push_back(i_VulkanRegion);
+        }
+
+        vkCmdCopyImage(
+            l_CommandList->command_buffer, l_Source->image,
+            to_vulkan_image_state_access(ImageState::TransferSrc)
+                .layout,
+            l_Destination->image,
+            to_vulkan_image_state_access(ImageState::TransferDst)
+                .layout,
+            static_cast<u32>(l_Regions.size()), l_Regions.data());
+      }
+
+      void blit_image(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendCommandList &p_CommandList,
+          Detail::BackendImage &p_Source,
+          Detail::BackendImage &p_Destination,
+          Util::Span<const ImageBlitRegion> p_Regions,
+          FilterMode p_Filter)
+      {
+        (void)p_Context;
+        VulkanCommandListState *l_CommandList =
+            get_vulkan_command_list(
+                p_CommandList,
+                "Cannot blit Vulkan image without command list "
+                "state");
+        VulkanImageState *l_Source =
+            get_vulkan_image(p_Source,
+                             "Cannot blit from invalid Vulkan source "
+                             "image");
+        VulkanImageState *l_Destination =
+            get_vulkan_image(p_Destination,
+                             "Cannot blit to invalid Vulkan "
+                             "destination image");
+
+        Util::List<VkImageBlit> l_Regions;
+        for (const ImageBlitRegion &i_Region : p_Regions) {
+          VkImageBlit i_VulkanRegion{};
+          i_VulkanRegion.srcSubresource = to_vulkan_layers(
+              i_Region.src_aspect, i_Region.src_mip,
+              i_Region.src_base_layer, i_Region.layer_count);
+          i_VulkanRegion.srcOffsets[0] =
+              to_vulkan_offset(i_Region.src_min);
+          i_VulkanRegion.srcOffsets[1] =
+              to_vulkan_offset(i_Region.src_max);
+          i_VulkanRegion.dstSubresource = to_vulkan_layers(
+              i_Region.dst_aspect, i_Region.dst_mip,
+              i_Region.dst_base_layer, i_Region.layer_count);
+          i_VulkanRegion.dstOffsets[0] =
+              to_vulkan_offset(i_Region.dst_min);
+          i_VulkanRegion.dstOffsets[1] =
+              to_vulkan_offset(i_Region.dst_max);
+          l_Regions.push_back(i_VulkanRegion);
+        }
+
+        vkCmdBlitImage(
+            l_CommandList->command_buffer, l_Source->image,
+            to_vulkan_image_state_access(ImageState::TransferSrc)
+                .layout,
+            l_Destination->image,
+            to_vulkan_image_state_access(ImageState::TransferDst)
+                .layout,
+            static_cast<u32>(l_Regions.size()), l_Regions.data(),
+            to_vulkan_filter(p_Filter));
       }
     } // namespace Vulkan
   } // namespace Gfx

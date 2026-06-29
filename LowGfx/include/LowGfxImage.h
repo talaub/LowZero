@@ -258,6 +258,48 @@ namespace Low {
       u32 layer_count = 1;
     };
 
+    struct BufferImageCopyRegion
+    {
+      u64 buffer_offset = 0;
+      u32 buffer_row_length = 0;
+      u32 buffer_image_height = 0;
+      ImageAspect image_aspect = ImageAspect::Color;
+      u32 image_mip = 0;
+      u32 image_base_layer = 0;
+      u32 image_layer_count = 1;
+      Math::UVector3 image_offset = {0, 0, 0};
+      Math::UVector3 image_extent = {1, 1, 1};
+    };
+
+    struct ImageCopyRegion
+    {
+      ImageAspect src_aspect = ImageAspect::Color;
+      u32 src_mip = 0;
+      u32 src_base_layer = 0;
+      ImageAspect dst_aspect = ImageAspect::Color;
+      u32 dst_mip = 0;
+      u32 dst_base_layer = 0;
+      u32 layer_count = 1;
+      Math::UVector3 src_offset = {0, 0, 0};
+      Math::UVector3 dst_offset = {0, 0, 0};
+      Math::UVector3 extent = {1, 1, 1};
+    };
+
+    struct ImageBlitRegion
+    {
+      ImageAspect src_aspect = ImageAspect::Color;
+      u32 src_mip = 0;
+      u32 src_base_layer = 0;
+      ImageAspect dst_aspect = ImageAspect::Color;
+      u32 dst_mip = 0;
+      u32 dst_base_layer = 0;
+      u32 layer_count = 1;
+      Math::UVector3 src_min = {0, 0, 0};
+      Math::UVector3 src_max = {1, 1, 1};
+      Math::UVector3 dst_min = {0, 0, 0};
+      Math::UVector3 dst_max = {1, 1, 1};
+    };
+
     struct ColorAttachmentDesc
     {
       ImageView view;

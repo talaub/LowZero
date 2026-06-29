@@ -1489,6 +1489,417 @@ namespace Low {
       }
     }
 
+    static Detail::BackendCommandList *
+    get_copy_command_list(Detail::ContextImpl &p_Context,
+                          CommandList p_CommandList)
+    {
+      Detail::BackendCommandList *l_CommandList =
+          p_Context.command_lists.get(p_CommandList);
+      GFX_ASSERT(l_CommandList,
+                 "Cannot record copy to invalid command list");
+      GFX_ASSERT(l_CommandList->state == CommandListState::Recording,
+                 "Can only record copies to recording command lists");
+      GFX_ASSERT(!l_CommandList->rendering_active,
+                 "Cannot record copy inside an active rendering "
+                 "scope");
+      return l_CommandList;
+    }
+
+    static void validate_copy_aspect(const Detail::BackendImage &p_Image,
+                                     ImageAspect p_Aspect)
+    {
+      if (is_depth_format(p_Image.format)) {
+        GFX_ASSERT(p_Aspect != ImageAspect::Color,
+                   "Cannot copy color aspect from depth image");
+        GFX_ASSERT(p_Aspect != ImageAspect::DepthStencil,
+                   "Depth/stencil copies must copy one aspect at a "
+                   "time");
+        if (p_Aspect == ImageAspect::Stencil) {
+          GFX_ASSERT(has_stencil(p_Image.format),
+                     "Cannot copy stencil aspect from depth-only "
+                     "image");
+        }
+      } else {
+        GFX_ASSERT(p_Aspect == ImageAspect::Color,
+                   "Cannot copy depth/stencil aspect from color "
+                   "image");
+      }
+    }
+
+    static void validate_image_extent_bounds(
+        const Detail::BackendImage &p_Image, u32 p_Mip,
+        const Math::UVector3 &p_Offset,
+        const Math::UVector3 &p_Extent)
+    {
+      GFX_ASSERT(p_Mip < p_Image.mip_levels,
+                 "Image copy mip exceeds image mip levels");
+      GFX_ASSERT(p_Extent.x > 0 && p_Extent.y > 0 &&
+                     p_Extent.z > 0,
+                 "Image copy extent must be non-zero");
+
+      const Math::UVector3 l_MipExtent = {
+          mip_extent(p_Image.extent.x, p_Mip),
+          mip_extent(p_Image.extent.y, p_Mip),
+          mip_extent(p_Image.extent.z, p_Mip)};
+
+      GFX_ASSERT(static_cast<u64>(p_Offset.x) + p_Extent.x <=
+                         l_MipExtent.x &&
+                     static_cast<u64>(p_Offset.y) + p_Extent.y <=
+                         l_MipExtent.y &&
+                     static_cast<u64>(p_Offset.z) + p_Extent.z <=
+                         l_MipExtent.z,
+                 "Image copy region exceeds image mip extent");
+    }
+
+    static void validate_image_layers(
+        const Detail::BackendImage &p_Image, u32 p_BaseLayer,
+        u32 p_LayerCount)
+    {
+      GFX_ASSERT(p_LayerCount > 0,
+                 "Image copy layer count must be non-zero");
+      GFX_ASSERT(p_BaseLayer + p_LayerCount <= p_Image.array_layers,
+                 "Image copy layer range exceeds image layers");
+      if (p_Image.dimension == ImageDimension::Image3D) {
+        GFX_ASSERT(p_BaseLayer == 0 && p_LayerCount == 1,
+                   "3D image copies must use layer zero and one "
+                   "layer");
+      }
+    }
+
+    static u32 format_bytes_per_texel(ImageFormat p_Format)
+    {
+      switch (p_Format) {
+      case ImageFormat::R8_UNorm:
+      case ImageFormat::R8_SNorm:
+      case ImageFormat::R8_UInt:
+      case ImageFormat::R8_SInt:
+        return 1;
+      case ImageFormat::R8G8_UNorm:
+      case ImageFormat::R8G8_SNorm:
+      case ImageFormat::R8G8_UInt:
+      case ImageFormat::R8G8_SInt:
+      case ImageFormat::R16_UNorm:
+      case ImageFormat::R16_SNorm:
+      case ImageFormat::R16_UInt:
+      case ImageFormat::R16_SInt:
+      case ImageFormat::R16_Float:
+      case ImageFormat::D16_UNorm:
+        return 2;
+      case ImageFormat::R8G8B8A8_UNorm:
+      case ImageFormat::R8G8B8A8_SNorm:
+      case ImageFormat::R8G8B8A8_UInt:
+      case ImageFormat::R8G8B8A8_SInt:
+      case ImageFormat::R8G8B8A8_SRGB:
+      case ImageFormat::B8G8R8A8_UNorm:
+      case ImageFormat::B8G8R8A8_SRGB:
+      case ImageFormat::R16G16_UNorm:
+      case ImageFormat::R16G16_SNorm:
+      case ImageFormat::R16G16_UInt:
+      case ImageFormat::R16G16_SInt:
+      case ImageFormat::R16G16_Float:
+      case ImageFormat::R32_UInt:
+      case ImageFormat::R32_SInt:
+      case ImageFormat::R32_Float:
+      case ImageFormat::D32_Float:
+      case ImageFormat::D24_UNorm_S8_UInt:
+        return 4;
+      case ImageFormat::R16G16B16A16_UNorm:
+      case ImageFormat::R16G16B16A16_SNorm:
+      case ImageFormat::R16G16B16A16_UInt:
+      case ImageFormat::R16G16B16A16_SInt:
+      case ImageFormat::R16G16B16A16_Float:
+      case ImageFormat::R32G32_UInt:
+      case ImageFormat::R32G32_SInt:
+      case ImageFormat::R32G32_Float:
+        return 8;
+      case ImageFormat::R32G32B32A32_UInt:
+      case ImageFormat::R32G32B32A32_SInt:
+      case ImageFormat::R32G32B32A32_Float:
+        return 16;
+      case ImageFormat::D32_Float_S8_UInt:
+        return 5;
+      case ImageFormat::Undefined:
+        break;
+      }
+
+      GFX_ASSERT(false, "Unsupported image format byte size");
+      return 1;
+    }
+
+    static void validate_buffer_image_region(
+        const Detail::BackendImage &p_Image,
+        const Detail::BackendBuffer &p_Buffer,
+        const BufferImageCopyRegion &p_Region)
+    {
+      validate_copy_aspect(p_Image, p_Region.image_aspect);
+      validate_image_layers(p_Image, p_Region.image_base_layer,
+                            p_Region.image_layer_count);
+      validate_image_extent_bounds(p_Image, p_Region.image_mip,
+                                   p_Region.image_offset,
+                                   p_Region.image_extent);
+
+      const u64 l_RowLength = p_Region.buffer_row_length == 0
+                                  ? p_Region.image_extent.x
+                                  : p_Region.buffer_row_length;
+      const u64 l_ImageHeight = p_Region.buffer_image_height == 0
+                                    ? p_Region.image_extent.y
+                                    : p_Region.buffer_image_height;
+      GFX_ASSERT(l_RowLength >= p_Region.image_extent.x,
+                 "Buffer-image copy row length is smaller than image "
+                 "extent width");
+      GFX_ASSERT(
+          l_ImageHeight >= p_Region.image_extent.y,
+          "Buffer-image copy image height is smaller than image "
+          "extent height");
+
+      const u64 l_TexelSize = format_bytes_per_texel(p_Image.format);
+      const u64 l_LayerSize =
+          l_RowLength * l_ImageHeight * p_Region.image_extent.z *
+          l_TexelSize;
+      const u64 l_RequiredSize =
+          l_LayerSize * p_Region.image_layer_count;
+      GFX_ASSERT(p_Region.buffer_offset < p_Buffer.size,
+                 "Buffer-image copy offset exceeds buffer size");
+      GFX_ASSERT(l_RequiredSize <=
+                     p_Buffer.size - p_Region.buffer_offset,
+                 "Buffer-image copy range exceeds buffer size");
+    }
+
+    void Context::copy_buffer(
+        CommandList p_CommandList, Buffer p_Source,
+        Buffer p_Destination,
+        Util::Span<const BufferCopyRegion> p_Regions)
+    {
+      Detail::BackendCommandList *l_CommandList =
+          get_copy_command_list(*m_Impl, p_CommandList);
+      GFX_ASSERT(!p_Regions.empty(),
+                 "Cannot copy buffer without regions");
+
+      Detail::BackendBuffer *l_Source =
+          m_Impl->buffers.get(p_Source);
+      Detail::BackendBuffer *l_Destination =
+          m_Impl->buffers.get(p_Destination);
+      GFX_ASSERT(l_Source, "Cannot copy from invalid source buffer");
+      GFX_ASSERT(l_Destination,
+                 "Cannot copy to invalid destination buffer");
+      GFX_ASSERT(has_buffer_usage(l_Source->usage,
+                                  BufferUsage::TransferSrc),
+                 "Source buffer was not created with TransferSrc "
+                 "usage");
+      GFX_ASSERT(has_buffer_usage(l_Destination->usage,
+                                  BufferUsage::TransferDst),
+                 "Destination buffer was not created with "
+                 "TransferDst usage");
+
+      for (const BufferCopyRegion &i_Region : p_Regions) {
+        GFX_ASSERT(i_Region.size > 0,
+                   "Buffer copy region size must be non-zero");
+        GFX_ASSERT(i_Region.src_offset < l_Source->size,
+                   "Buffer copy source offset exceeds buffer size");
+        GFX_ASSERT(i_Region.dst_offset < l_Destination->size,
+                   "Buffer copy destination offset exceeds buffer "
+                   "size");
+        GFX_ASSERT(i_Region.size <=
+                       l_Source->size - i_Region.src_offset,
+                   "Buffer copy source range exceeds buffer size");
+        GFX_ASSERT(i_Region.size <=
+                       l_Destination->size - i_Region.dst_offset,
+                   "Buffer copy destination range exceeds buffer "
+                   "size");
+      }
+
+      m_Impl->api->copy_buffer(*m_Impl, *l_CommandList, *l_Source,
+                               *l_Destination, p_Regions);
+    }
+
+    void Context::copy_buffer_to_image(
+        CommandList p_CommandList, Buffer p_Source,
+        Image p_Destination,
+        Util::Span<const BufferImageCopyRegion> p_Regions)
+    {
+      Detail::BackendCommandList *l_CommandList =
+          get_copy_command_list(*m_Impl, p_CommandList);
+      GFX_ASSERT(!p_Regions.empty(),
+                 "Cannot copy buffer to image without regions");
+
+      Detail::BackendBuffer *l_Source =
+          m_Impl->buffers.get(p_Source);
+      Detail::BackendImage *l_Destination =
+          m_Impl->images.get(p_Destination);
+      GFX_ASSERT(l_Source,
+                 "Cannot copy from invalid source buffer");
+      GFX_ASSERT(l_Destination,
+                 "Cannot copy to invalid destination image");
+      GFX_ASSERT(has_buffer_usage(l_Source->usage,
+                                  BufferUsage::TransferSrc),
+                 "Source buffer was not created with TransferSrc "
+                 "usage");
+      GFX_ASSERT(has_image_usage(l_Destination->usage,
+                                 ImageUsage::TransferDst),
+                 "Destination image was not created with TransferDst "
+                 "usage");
+      GFX_ASSERT(l_Destination->state == ImageState::TransferDst,
+                 "Destination image must be in TransferDst state");
+
+      for (const BufferImageCopyRegion &i_Region : p_Regions) {
+        validate_buffer_image_region(*l_Destination, *l_Source,
+                                     i_Region);
+      }
+
+      m_Impl->api->copy_buffer_to_image(
+          *m_Impl, *l_CommandList, *l_Source, *l_Destination,
+          p_Regions);
+    }
+
+    void Context::copy_image_to_buffer(
+        CommandList p_CommandList, Image p_Source,
+        Buffer p_Destination,
+        Util::Span<const BufferImageCopyRegion> p_Regions)
+    {
+      Detail::BackendCommandList *l_CommandList =
+          get_copy_command_list(*m_Impl, p_CommandList);
+      GFX_ASSERT(!p_Regions.empty(),
+                 "Cannot copy image to buffer without regions");
+
+      Detail::BackendImage *l_Source =
+          m_Impl->images.get(p_Source);
+      Detail::BackendBuffer *l_Destination =
+          m_Impl->buffers.get(p_Destination);
+      GFX_ASSERT(l_Source, "Cannot copy from invalid source image");
+      GFX_ASSERT(l_Destination,
+                 "Cannot copy to invalid destination buffer");
+      GFX_ASSERT(has_image_usage(l_Source->usage,
+                                 ImageUsage::TransferSrc),
+                 "Source image was not created with TransferSrc "
+                 "usage");
+      GFX_ASSERT(has_buffer_usage(l_Destination->usage,
+                                  BufferUsage::TransferDst),
+                 "Destination buffer was not created with "
+                 "TransferDst usage");
+      GFX_ASSERT(l_Source->state == ImageState::TransferSrc,
+                 "Source image must be in TransferSrc state");
+
+      for (const BufferImageCopyRegion &i_Region : p_Regions) {
+        validate_buffer_image_region(*l_Source, *l_Destination,
+                                     i_Region);
+      }
+
+      m_Impl->api->copy_image_to_buffer(
+          *m_Impl, *l_CommandList, *l_Source, *l_Destination,
+          p_Regions);
+    }
+
+    void Context::copy_image(
+        CommandList p_CommandList, Image p_Source,
+        Image p_Destination,
+        Util::Span<const ImageCopyRegion> p_Regions)
+    {
+      Detail::BackendCommandList *l_CommandList =
+          get_copy_command_list(*m_Impl, p_CommandList);
+      GFX_ASSERT(!p_Regions.empty(),
+                 "Cannot copy image without regions");
+
+      Detail::BackendImage *l_Source =
+          m_Impl->images.get(p_Source);
+      Detail::BackendImage *l_Destination =
+          m_Impl->images.get(p_Destination);
+      GFX_ASSERT(l_Source, "Cannot copy from invalid source image");
+      GFX_ASSERT(l_Destination,
+                 "Cannot copy to invalid destination image");
+      GFX_ASSERT(has_image_usage(l_Source->usage,
+                                 ImageUsage::TransferSrc),
+                 "Source image was not created with TransferSrc "
+                 "usage");
+      GFX_ASSERT(has_image_usage(l_Destination->usage,
+                                 ImageUsage::TransferDst),
+                 "Destination image was not created with TransferDst "
+                 "usage");
+      GFX_ASSERT(l_Source->state == ImageState::TransferSrc,
+                 "Source image must be in TransferSrc state");
+      GFX_ASSERT(l_Destination->state == ImageState::TransferDst,
+                 "Destination image must be in TransferDst state");
+
+      for (const ImageCopyRegion &i_Region : p_Regions) {
+        validate_copy_aspect(*l_Source, i_Region.src_aspect);
+        validate_copy_aspect(*l_Destination, i_Region.dst_aspect);
+        validate_image_layers(*l_Source, i_Region.src_base_layer,
+                              i_Region.layer_count);
+        validate_image_layers(*l_Destination,
+                              i_Region.dst_base_layer,
+                              i_Region.layer_count);
+        validate_image_extent_bounds(*l_Source, i_Region.src_mip,
+                                     i_Region.src_offset,
+                                     i_Region.extent);
+        validate_image_extent_bounds(*l_Destination,
+                                     i_Region.dst_mip,
+                                     i_Region.dst_offset,
+                                     i_Region.extent);
+      }
+
+      m_Impl->api->copy_image(*m_Impl, *l_CommandList, *l_Source,
+                              *l_Destination, p_Regions);
+    }
+
+    void Context::blit_image(
+        CommandList p_CommandList, Image p_Source,
+        Image p_Destination,
+        Util::Span<const ImageBlitRegion> p_Regions,
+        FilterMode p_Filter)
+    {
+      Detail::BackendCommandList *l_CommandList =
+          get_copy_command_list(*m_Impl, p_CommandList);
+      GFX_ASSERT(!p_Regions.empty(),
+                 "Cannot blit image without regions");
+
+      Detail::BackendImage *l_Source =
+          m_Impl->images.get(p_Source);
+      Detail::BackendImage *l_Destination =
+          m_Impl->images.get(p_Destination);
+      GFX_ASSERT(l_Source, "Cannot blit from invalid source image");
+      GFX_ASSERT(l_Destination,
+                 "Cannot blit to invalid destination image");
+      GFX_ASSERT(has_image_usage(l_Source->usage,
+                                 ImageUsage::TransferSrc),
+                 "Source image was not created with TransferSrc "
+                 "usage");
+      GFX_ASSERT(has_image_usage(l_Destination->usage,
+                                 ImageUsage::TransferDst),
+                 "Destination image was not created with TransferDst "
+                 "usage");
+      GFX_ASSERT(l_Source->state == ImageState::TransferSrc,
+                 "Source image must be in TransferSrc state");
+      GFX_ASSERT(l_Destination->state == ImageState::TransferDst,
+                 "Destination image must be in TransferDst state");
+
+      for (const ImageBlitRegion &i_Region : p_Regions) {
+        GFX_ASSERT(i_Region.src_max.x > i_Region.src_min.x &&
+                       i_Region.src_max.y > i_Region.src_min.y &&
+                       i_Region.src_max.z > i_Region.src_min.z,
+                   "Source blit region must be non-zero");
+        GFX_ASSERT(i_Region.dst_max.x > i_Region.dst_min.x &&
+                       i_Region.dst_max.y > i_Region.dst_min.y &&
+                       i_Region.dst_max.z > i_Region.dst_min.z,
+                   "Destination blit region must be non-zero");
+
+        validate_copy_aspect(*l_Source, i_Region.src_aspect);
+        validate_copy_aspect(*l_Destination, i_Region.dst_aspect);
+        validate_image_layers(*l_Source, i_Region.src_base_layer,
+                              i_Region.layer_count);
+        validate_image_layers(*l_Destination,
+                              i_Region.dst_base_layer,
+                              i_Region.layer_count);
+        validate_image_extent_bounds(
+            *l_Source, i_Region.src_mip, i_Region.src_min,
+            i_Region.src_max - i_Region.src_min);
+        validate_image_extent_bounds(
+            *l_Destination, i_Region.dst_mip, i_Region.dst_min,
+            i_Region.dst_max - i_Region.dst_min);
+      }
+
+      m_Impl->api->blit_image(*m_Impl, *l_CommandList, *l_Source,
+                              *l_Destination, p_Regions, p_Filter);
+    }
+
     void
     Context::begin_rendering(CommandList p_CommandList,
                              const RenderingInfo &p_RenderingInfo)

@@ -145,6 +145,37 @@ namespace Low {
       void barrier_image_command_list(Detail::ContextImpl &p_Context,
                                       Detail::BackendCommandList &,
                                       const ImageBarrier &);
+      void copy_buffer(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendCommandList &p_CommandList,
+          Detail::BackendBuffer &p_Source,
+          Detail::BackendBuffer &p_Destination,
+          Util::Span<const BufferCopyRegion> p_Regions);
+      void copy_buffer_to_image(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendCommandList &p_CommandList,
+          Detail::BackendBuffer &p_Source,
+          Detail::BackendImage &p_Destination,
+          Util::Span<const BufferImageCopyRegion> p_Regions);
+      void copy_image_to_buffer(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendCommandList &p_CommandList,
+          Detail::BackendImage &p_Source,
+          Detail::BackendBuffer &p_Destination,
+          Util::Span<const BufferImageCopyRegion> p_Regions);
+      void copy_image(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendCommandList &p_CommandList,
+          Detail::BackendImage &p_Source,
+          Detail::BackendImage &p_Destination,
+          Util::Span<const ImageCopyRegion> p_Regions);
+      void blit_image(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendCommandList &p_CommandList,
+          Detail::BackendImage &p_Source,
+          Detail::BackendImage &p_Destination,
+          Util::Span<const ImageBlitRegion> p_Regions,
+          FilterMode p_Filter);
 
       void begin_dynamic_rendering(
           Detail::ContextImpl &p_Context,
