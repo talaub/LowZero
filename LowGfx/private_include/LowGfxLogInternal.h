@@ -45,6 +45,13 @@ namespace Low {
                      log_level_name(p_Level), l_Message);
       }
 
+      inline void log(LogLevel p_Level, const char *p_Message)
+      {
+        const char *l_Message = p_Message ? p_Message : "";
+        std::fprintf(stderr, "[LowGfx] %s: %s\n",
+                     log_level_name(p_Level), l_Message);
+      }
+
       inline void log(InstanceImpl &p_Instance, LogLevel p_Level,
                       const char *p_Message)
       {

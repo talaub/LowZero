@@ -3,7 +3,7 @@
 #include "LowGfxContext.h"
 #include "LowGfxLogInternal.h"
 
-#include "LowUtilAssert.h"
+#include "LowGfxAssert.h"
 
 #include "LowGfxVulkanState.h"
 
@@ -26,20 +26,20 @@ namespace Low {
         case WindowBackend::SDL: {
           SDL_Window *l_Window =
               static_cast<SDL_Window *>(p_Desc.window.handle);
-          LOW_ASSERT(l_Window,
+          GFX_ASSERT(l_Window,
                      "SDL surface creation requires a window handle");
           if (!SDL_Vulkan_CreateSurface(l_Window, p_State.instance,
                                         &p_Surface.surface)) {
             Detail::logf(p_Instance, LogLevel::Error,
                          "Failed to create SDL Vulkan surface: {}",
                          SDL_GetError());
-            LOW_ASSERT(false, "Failed to create SDL Vulkan surface");
+            GFX_ASSERT(false, "Failed to create SDL Vulkan surface");
           }
           return;
         }
         }
 
-        LOW_ASSERT(false, "Unsupported LowGfx window backend");
+        GFX_ASSERT(false, "Unsupported LowGfx window backend");
       }
 
       Detail::BackendSurface
@@ -50,7 +50,7 @@ namespace Low {
             static_cast<VulkanInstanceState *>(
                 p_Instance.backend_state);
 
-        LOW_ASSERT(
+        GFX_ASSERT(
             l_State,
             "Cannot create Vulkan surface without instance state");
 
@@ -70,7 +70,7 @@ namespace Low {
             static_cast<VulkanInstanceState *>(
                 p_Instance.backend_state);
 
-        LOW_ASSERT(
+        GFX_ASSERT(
             l_State,
             "Cannot destroy Vulkan surface without instance state");
 

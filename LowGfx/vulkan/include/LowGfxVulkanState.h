@@ -132,6 +132,11 @@ namespace Low {
         VkPipeline pipeline = VK_NULL_HANDLE;
       };
 
+      struct VulkanComputePipelineState
+      {
+        VkPipeline pipeline = VK_NULL_HANDLE;
+      };
+
       struct VulkanInstanceState
       {
         bool validation_enabled = false;

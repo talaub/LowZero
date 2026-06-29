@@ -1,6 +1,6 @@
 #include "LowGfxVulkanBackend.h"
 #include "LowGfxVulkanState.h"
-#include "LowUtilAssert.h"
+#include "LowGfxAssert.h"
 #include <vulkan/vulkan_core.h>
 
 namespace Low {
@@ -17,7 +17,7 @@ namespace Low {
           return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         }
 
-        LOW_ASSERT(false, "Unsupported LowGfx load op");
+        GFX_ASSERT(false, "Unsupported LowGfx load op");
         return VK_ATTACHMENT_LOAD_OP_LOAD;
       }
 
@@ -30,7 +30,7 @@ namespace Low {
           return VK_ATTACHMENT_STORE_OP_DONT_CARE;
         }
 
-        LOW_ASSERT(false, "Unsupported LowGfx store op");
+        GFX_ASSERT(false, "Unsupported LowGfx store op");
         return VK_ATTACHMENT_STORE_OP_STORE;
       }
 
@@ -48,7 +48,7 @@ namespace Low {
           break;
         }
 
-        LOW_ASSERT(false,
+        GFX_ASSERT(false,
                    "Unsupported LowGfx image state for rendering");
         return VK_IMAGE_LAYOUT_UNDEFINED;
       }
@@ -89,14 +89,14 @@ namespace Low {
       {
         Detail::BackendImageView *l_ImageView =
             p_Context.image_views.get(p_ImageView);
-        LOW_ASSERT(l_ImageView,
+        GFX_ASSERT(l_ImageView,
                    "Cannot use invalid image view for Vulkan "
                    "rendering attachment");
 
         VulkanImageViewState *l_ImageViewState =
             static_cast<VulkanImageViewState *>(
                 l_ImageView->backend_state);
-        LOW_ASSERT(l_ImageViewState &&
+        GFX_ASSERT(l_ImageViewState &&
                        l_ImageViewState->image_view != VK_NULL_HANDLE,
                    "Cannot use empty Vulkan image view for rendering "
                    "attachment");
@@ -111,16 +111,16 @@ namespace Low {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(
                 p_Context.backend_state);
-        LOW_ASSERT(l_State,
+        GFX_ASSERT(l_State,
                    "Cannot begin rendering on Vulkan command list "
                    "without context state");
         VulkanCommandListState *l_CommandListState =
             static_cast<VulkanCommandListState *>(
                 p_CommandList.backend_state);
-        LOW_ASSERT(l_CommandListState,
+        GFX_ASSERT(l_CommandListState,
                    "Cannot begin rendering on Vulkan command list "
                    "without command list state");
-        LOW_ASSERT(l_CommandListState->command_buffer !=
+        GFX_ASSERT(l_CommandListState->command_buffer !=
                        VK_NULL_HANDLE,
                    "Cannot begin rendering without Vulkan command "
                    "buffer");
@@ -186,13 +186,13 @@ namespace Low {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(
                 p_Context.backend_state);
-        LOW_ASSERT(l_State,
+        GFX_ASSERT(l_State,
                    "Cannot end rendering on Vulkan command list "
                    "without context state");
         VulkanCommandListState *l_CommandListState =
             static_cast<VulkanCommandListState *>(
                 p_CommandList.backend_state);
-        LOW_ASSERT(l_CommandListState,
+        GFX_ASSERT(l_CommandListState,
                    "Cannot end rendering on Vulkan command list "
                    "without command list state");
 
@@ -206,16 +206,16 @@ namespace Low {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(
                 p_Context.backend_state);
-        LOW_ASSERT(l_State,
+        GFX_ASSERT(l_State,
                    "Cannot set viewport on Vulkan command list "
                    "without context state");
         VulkanCommandListState *l_CommandListState =
             static_cast<VulkanCommandListState *>(
                 p_CommandList.backend_state);
-        LOW_ASSERT(l_CommandListState,
+        GFX_ASSERT(l_CommandListState,
                    "Cannot set viewport on Vulkan command list "
                    "without command list state");
-        LOW_ASSERT(l_CommandListState->command_buffer !=
+        GFX_ASSERT(l_CommandListState->command_buffer !=
                        VK_NULL_HANDLE,
                    "Cannot set viewport without Vulkan command "
                    "buffer");
@@ -239,16 +239,16 @@ namespace Low {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(
                 p_Context.backend_state);
-        LOW_ASSERT(l_State,
+        GFX_ASSERT(l_State,
                    "Cannot set scissor on Vulkan command list "
                    "without context state");
         VulkanCommandListState *l_CommandListState =
             static_cast<VulkanCommandListState *>(
                 p_CommandList.backend_state);
-        LOW_ASSERT(l_CommandListState,
+        GFX_ASSERT(l_CommandListState,
                    "Cannot set scissor on Vulkan command list "
                    "without command list state");
-        LOW_ASSERT(l_CommandListState->command_buffer !=
+        GFX_ASSERT(l_CommandListState->command_buffer !=
                        VK_NULL_HANDLE,
                    "Cannot set scissor without Vulkan command "
                    "buffer");

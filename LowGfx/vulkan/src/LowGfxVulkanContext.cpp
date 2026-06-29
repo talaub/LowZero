@@ -3,7 +3,7 @@
 
 #include "LowGfxLogInternal.h"
 #include "LowGfxVulkanState.h"
-#include "LowUtilAssert.h"
+#include "LowGfxAssert.h"
 #include "VkBootstrap.h"
 
 #include <SDL.h>
@@ -25,7 +25,7 @@ namespace Low {
           p_InstanceBuilder.set_headless();
           return;
         case WindowBackend::SDL: {
-          LOW_ASSERT(
+          GFX_ASSERT(
               p_Desc.surface_window.handle,
               "SDL surface extension setup requires a window handle");
 
@@ -38,7 +38,7 @@ namespace Low {
                          "Failed to query SDL Vulkan instance "
                          "extension count: {}",
                          SDL_GetError());
-            LOW_ASSERT(
+            GFX_ASSERT(
                 false,
                 "Failed to query SDL Vulkan instance extensions");
           }
@@ -50,7 +50,7 @@ namespace Low {
                 p_Instance, LogLevel::Error,
                 "Failed to query SDL Vulkan instance extensions: {}",
                 SDL_GetError());
-            LOW_ASSERT(
+            GFX_ASSERT(
                 false,
                 "Failed to query SDL Vulkan instance extensions");
           }
@@ -61,7 +61,7 @@ namespace Low {
         }
         }
 
-        LOW_ASSERT(false, "Unsupported LowGfx window backend");
+        GFX_ASSERT(false, "Unsupported LowGfx window backend");
       }
 
       static VulkanQueue
@@ -75,7 +75,7 @@ namespace Low {
                        "Failed to get Vulkan {} queue: {}", p_Name,
                        l_Queue.full_error().type.message().c_str());
         }
-        LOW_ASSERT(l_Queue, "Failed to get required Vulkan queue");
+        GFX_ASSERT(l_Queue, "Failed to get required Vulkan queue");
 
         vkb::Result<u32> l_FamilyIndex =
             p_Device.get_queue_index(p_Type);
@@ -86,7 +86,7 @@ namespace Low {
               p_Name,
               l_FamilyIndex.full_error().type.message().c_str());
         }
-        LOW_ASSERT(
+        GFX_ASSERT(
             l_FamilyIndex,
             "Failed to get required Vulkan queue family index");
 
@@ -122,7 +122,7 @@ namespace Low {
                                 const char *p_Name,
                                 VulkanFrameCommandPool &p_Pool)
       {
-        LOW_ASSERT(p_Queue.family_index != LOW_UINT32_MAX,
+        GFX_ASSERT(p_Queue.family_index != LOW_UINT32_MAX,
                    "Cannot create Vulkan command pool without queue "
                    "family");
 
@@ -138,7 +138,7 @@ namespace Low {
                        "Failed to create Vulkan {} command pool: {}",
                        p_Name, static_cast<int>(l_Result));
         }
-        LOW_ASSERT(l_Result == VK_SUCCESS,
+        GFX_ASSERT(l_Result == VK_SUCCESS,
                    "Failed to create Vulkan command pool");
         p_Pool.next_command_buffer = 0;
       }
@@ -153,7 +153,7 @@ namespace Low {
 
         VkResult l_Result = vkResetCommandPool(p_Device, p_Pool.pool,
                                                0);
-        LOW_ASSERT(l_Result == VK_SUCCESS,
+        GFX_ASSERT(l_Result == VK_SUCCESS,
                    "Failed to reset Vulkan frame command pool");
         p_Pool.next_command_buffer = 0;
       }
@@ -211,7 +211,7 @@ namespace Low {
         VkDescriptorPool l_Pool = VK_NULL_HANDLE;
         VkResult l_Result = vkCreateDescriptorPool(
             p_Device, &l_Info, nullptr, &l_Pool);
-        LOW_ASSERT(l_Result == VK_SUCCESS,
+        GFX_ASSERT(l_Result == VK_SUCCESS,
                    "Failed to create Vulkan descriptor pool");
         return l_Pool;
       }
@@ -276,7 +276,7 @@ namespace Low {
                        "Failed to create Vulkan frame fence: {}",
                        static_cast<int>(l_FenceResult));
         }
-        LOW_ASSERT(l_FenceResult == VK_SUCCESS,
+        GFX_ASSERT(l_FenceResult == VK_SUCCESS,
                    "Failed to create Vulkan frame fence");
 
       }
@@ -397,7 +397,7 @@ namespace Low {
               "Failed to initialize Vulkan instance: {}",
               l_InstanceReturn.full_error().type.message().c_str());
         }
-        LOW_ASSERT(l_InstanceReturn,
+        GFX_ASSERT(l_InstanceReturn,
                    "Failed to initialize vulkan instance");
 
         l_State->vkb_instance = l_InstanceReturn.value();
@@ -441,19 +441,19 @@ namespace Low {
         VulkanInstanceState *l_InstanceState =
             static_cast<VulkanInstanceState *>(
                 p_Instance.backend_state);
-        LOW_ASSERT(l_InstanceState,
+        GFX_ASSERT(l_InstanceState,
                    "Cannot select Vulkan adapter without instance");
 
         VkSurfaceKHR l_Surface = VK_NULL_HANDLE;
         if (p_Desc.compatible_surface) {
           const Detail::BackendSurface *l_BackendSurface =
               p_Instance.surfaces.get(p_Desc.compatible_surface);
-          LOW_ASSERT(l_BackendSurface,
+          GFX_ASSERT(l_BackendSurface,
                      "Cannot select adapter for invalid surface");
           VulkanSurfaceState *l_SurfaceState =
               static_cast<VulkanSurfaceState *>(
                   l_BackendSurface->backend_state);
-          LOW_ASSERT(l_SurfaceState,
+          GFX_ASSERT(l_SurfaceState,
                      "Cannot select adapter for invalid Vulkan surface");
           l_Surface = l_SurfaceState->surface;
         }
@@ -493,7 +493,7 @@ namespace Low {
               "Failed to select Vulkan physical device: {}",
               l_Selected.full_error().type.message().c_str());
         }
-        LOW_ASSERT(l_Selected,
+        GFX_ASSERT(l_Selected,
                    "Failed to select Vulkan physical device");
 
         VulkanAdapterState *l_AdapterState =
@@ -527,15 +527,15 @@ namespace Low {
         VulkanInstanceState *l_InstanceState =
             static_cast<VulkanInstanceState *>(
                 p_Instance.backend_state);
-        LOW_ASSERT(l_InstanceState,
+        GFX_ASSERT(l_InstanceState,
                    "Cannot create Vulkan context without instance");
-        LOW_ASSERT(p_Adapter.index < p_Instance.adapters.size(),
+        GFX_ASSERT(p_Adapter.index < p_Instance.adapters.size(),
                    "Cannot create Vulkan context with invalid adapter");
 
         VulkanAdapterState *l_AdapterState =
             static_cast<VulkanAdapterState *>(
                 p_Instance.adapters[p_Adapter.index].backend_state);
-        LOW_ASSERT(l_AdapterState,
+        GFX_ASSERT(l_AdapterState,
                    "Cannot create Vulkan context without adapter state");
 
         VulkanContextState *l_State = new VulkanContextState();
@@ -554,7 +554,7 @@ namespace Low {
               "Failed to create Vulkan device: {}",
               l_DeviceReturn.full_error().type.message().c_str());
         }
-        LOW_ASSERT(l_DeviceReturn, "Failed to create Vulkan device");
+        GFX_ASSERT(l_DeviceReturn, "Failed to create Vulkan device");
         l_State->vkb_device = l_DeviceReturn.value();
         l_State->device = l_State->vkb_device.device;
 
@@ -573,7 +573,7 @@ namespace Low {
                        "Failed to create VMA allocator: {}",
                        static_cast<int>(l_AllocatorResult));
         }
-        LOW_ASSERT(l_AllocatorResult == VK_SUCCESS,
+        GFX_ASSERT(l_AllocatorResult == VK_SUCCESS,
                    "Failed to create VMA allocator");
 
         l_State->graphics_queue =
@@ -675,7 +675,7 @@ namespace Low {
         l_BeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
         VkResult l_BeginResult =
             vkBeginCommandBuffer(l_Command, &l_BeginInfo);
-        LOW_ASSERT(l_BeginResult == VK_SUCCESS,
+        GFX_ASSERT(l_BeginResult == VK_SUCCESS,
                    "Failed to begin Vulkan present transition command "
                    "buffer");
 
@@ -704,7 +704,7 @@ namespace Low {
         vkCmdPipelineBarrier2(l_Command, &l_Dependency);
 
         VkResult l_EndResult = vkEndCommandBuffer(l_Command);
-        LOW_ASSERT(l_EndResult == VK_SUCCESS,
+        GFX_ASSERT(l_EndResult == VK_SUCCESS,
                    "Failed to end Vulkan present transition command "
                    "buffer");
 
@@ -716,12 +716,12 @@ namespace Low {
       {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(p_Context.backend_state);
-        LOW_ASSERT(l_State,
+        GFX_ASSERT(l_State,
                    "Cannot begin Vulkan frame without context state");
         const u32 l_FrameIndex =
             Detail::FrameContextAccess::frame_index(p_Frame);
 
-        LOW_ASSERT(l_FrameIndex < l_State->frames.size(),
+        GFX_ASSERT(l_FrameIndex < l_State->frames.size(),
                    "Cannot begin Vulkan frame with invalid frame index");
 
         FrameState &l_Frame = l_State->frames[l_FrameIndex];
@@ -729,17 +729,17 @@ namespace Low {
         VkResult l_WaitResult = vkWaitForFences(
             l_State->device, 1, &l_Frame.frame_fence, VK_TRUE,
             UINT64_MAX);
-        LOW_ASSERT(l_WaitResult == VK_SUCCESS,
+        GFX_ASSERT(l_WaitResult == VK_SUCCESS,
                    "Failed to wait for Vulkan frame fence");
 
         reset_frame_command_pool(l_State->device, l_Frame.graphics);
         reset_frame_command_pool(l_State->device, l_Frame.compute);
         reset_frame_command_pool(l_State->device, l_Frame.transfer);
 
-        LOW_ASSERT(l_Frame.pending_graphics_submits.empty(),
+        GFX_ASSERT(l_Frame.pending_graphics_submits.empty(),
                    "Cannot begin Vulkan frame with pending graphics "
                    "submissions");
-        LOW_ASSERT(l_Frame.pending_presents.empty(),
+        GFX_ASSERT(l_Frame.pending_presents.empty(),
                    "Cannot begin Vulkan frame with pending presents");
       }
 
@@ -749,13 +749,13 @@ namespace Low {
       {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(p_Context.backend_state);
-        LOW_ASSERT(l_State,
+        GFX_ASSERT(l_State,
                    "Cannot acquire Vulkan swapchain without context "
                    "state");
 
         const u32 l_FrameIndex =
             Detail::FrameContextAccess::frame_index(p_Frame);
-        LOW_ASSERT(l_FrameIndex < l_State->frames.size(),
+        GFX_ASSERT(l_FrameIndex < l_State->frames.size(),
                    "Cannot acquire Vulkan swapchain with invalid frame "
                    "index");
 
@@ -764,17 +764,17 @@ namespace Low {
                 p_SwapchainFrame);
         Detail::BackendSwapchain *l_BackendSwapchain =
             p_Context.swapchains.get(l_FrameSwapchain);
-        LOW_ASSERT(l_BackendSwapchain,
+        GFX_ASSERT(l_BackendSwapchain,
                    "Cannot acquire invalid Vulkan swapchain");
         VulkanSwapchainState *l_Swapchain =
             static_cast<VulkanSwapchainState *>(
                 l_BackendSwapchain->backend_state);
-        LOW_ASSERT(l_Swapchain,
+        GFX_ASSERT(l_Swapchain,
                    "Cannot acquire Vulkan swapchain without state");
-        LOW_ASSERT(!l_Swapchain->acquired,
+        GFX_ASSERT(!l_Swapchain->acquired,
                    "Cannot acquire a Vulkan swapchain image while one "
                    "is already active");
-        LOW_ASSERT(l_FrameIndex <
+        GFX_ASSERT(l_FrameIndex <
                        l_Swapchain->image_available_semaphores.size(),
                    "Cannot acquire Vulkan swapchain without frame "
                    "semaphore");
@@ -789,16 +789,16 @@ namespace Low {
             l_ImageAvailable, VK_NULL_HANDLE, &l_ImageIndex);
         if (l_AcquireResult == VK_ERROR_OUT_OF_DATE_KHR) {
           l_Swapchain->resize_requested = true;
-          LOW_ASSERT(false, "Vulkan swapchain is out of date");
+          GFX_ASSERT(false, "Vulkan swapchain is out of date");
         }
         if (l_AcquireResult == VK_SUBOPTIMAL_KHR) {
           l_Swapchain->resize_requested = true;
         } else {
-          LOW_ASSERT(l_AcquireResult == VK_SUCCESS,
+          GFX_ASSERT(l_AcquireResult == VK_SUCCESS,
                      "Failed to acquire Vulkan swapchain image");
         }
 
-        LOW_ASSERT(l_ImageIndex < l_Swapchain->images.size(),
+        GFX_ASSERT(l_ImageIndex < l_Swapchain->images.size(),
                    "Vulkan returned invalid swapchain image index");
         VulkanSwapchainImageState &l_Image =
             l_Swapchain->images[l_ImageIndex];
@@ -807,7 +807,7 @@ namespace Low {
           VkResult l_ImageWaitResult = vkWaitForFences(
               l_State->device, 1, &l_Image.in_flight_fence, VK_TRUE,
               UINT64_MAX);
-          LOW_ASSERT(l_ImageWaitResult == VK_SUCCESS,
+          GFX_ASSERT(l_ImageWaitResult == VK_SUCCESS,
                      "Failed to wait for Vulkan swapchain image fence");
         }
 
@@ -823,7 +823,7 @@ namespace Low {
       {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(p_Context.backend_state);
-        LOW_ASSERT(l_State,
+        GFX_ASSERT(l_State,
                    "Cannot present Vulkan swapchain without context "
                    "state");
         const u32 l_FrameIndex =
@@ -836,22 +836,22 @@ namespace Low {
             Detail::SwapchainFrameAccess::swapchain_image_index(
                 p_SwapchainFrame);
 
-        LOW_ASSERT(l_FrameIndex < l_State->frames.size(),
+        GFX_ASSERT(l_FrameIndex < l_State->frames.size(),
                    "Cannot present Vulkan swapchain with invalid frame "
                    "index");
 
         Detail::BackendSwapchain *l_BackendSwapchain =
             p_Context.swapchains.get(l_FrameSwapchain);
-        LOW_ASSERT(l_BackendSwapchain,
+        GFX_ASSERT(l_BackendSwapchain,
                    "Cannot present invalid Vulkan swapchain");
         VulkanSwapchainState *l_Swapchain =
             static_cast<VulkanSwapchainState *>(
                 l_BackendSwapchain->backend_state);
-        LOW_ASSERT(l_Swapchain,
+        GFX_ASSERT(l_Swapchain,
                    "Cannot present Vulkan swapchain without state");
-        LOW_ASSERT(l_Swapchain->acquired,
+        GFX_ASSERT(l_Swapchain->acquired,
                    "Cannot present a Vulkan frame before image acquire");
-        LOW_ASSERT(
+        GFX_ASSERT(
             l_FrameImageIndex == l_Swapchain->acquired_image_index,
             "Cannot present a Vulkan frame with mismatched image index");
 
@@ -875,12 +875,12 @@ namespace Low {
       {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(p_Context.backend_state);
-        LOW_ASSERT(l_State,
+        GFX_ASSERT(l_State,
                    "Cannot end Vulkan frame without context state");
         const u32 l_FrameIndex =
             Detail::FrameContextAccess::frame_index(p_Frame);
 
-        LOW_ASSERT(l_FrameIndex < l_State->frames.size(),
+        GFX_ASSERT(l_FrameIndex < l_State->frames.size(),
                    "Cannot end Vulkan frame with invalid frame index");
 
         FrameState &l_Frame = l_State->frames[l_FrameIndex];
@@ -892,7 +892,7 @@ namespace Low {
 
         for (VkCommandBuffer i_CommandBuffer :
              l_Frame.pending_graphics_submits) {
-          LOW_ASSERT(i_CommandBuffer != VK_NULL_HANDLE,
+          GFX_ASSERT(i_CommandBuffer != VK_NULL_HANDLE,
                      "Cannot submit invalid pending Vulkan command "
                      "buffer");
           l_CommandBuffers.push_back(i_CommandBuffer);
@@ -900,7 +900,7 @@ namespace Low {
 
         for (VulkanPendingPresent &i_Pending :
              l_Frame.pending_presents) {
-          LOW_ASSERT(i_Pending.swapchain && i_Pending.image,
+          GFX_ASSERT(i_Pending.swapchain && i_Pending.image,
                      "Cannot submit invalid pending Vulkan present");
           l_WaitSemaphores.push_back(i_Pending.image_available);
           l_WaitStages.push_back(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
@@ -936,13 +936,13 @@ namespace Low {
 
         VkResult l_ResetFenceResult =
             vkResetFences(l_State->device, 1, &l_Frame.frame_fence);
-        LOW_ASSERT(l_ResetFenceResult == VK_SUCCESS,
+        GFX_ASSERT(l_ResetFenceResult == VK_SUCCESS,
                    "Failed to reset Vulkan frame fence");
 
         VkResult l_SubmitResult =
             vkQueueSubmit(l_State->graphics_queue.queue, 1,
                           &l_SubmitInfo, l_Frame.frame_fence);
-        LOW_ASSERT(l_SubmitResult == VK_SUCCESS,
+        GFX_ASSERT(l_SubmitResult == VK_SUCCESS,
                    "Failed to submit Vulkan frame");
 
         for (VulkanPendingPresent &i_Pending :
@@ -967,7 +967,7 @@ namespace Low {
               l_PresentResult == VK_SUBOPTIMAL_KHR) {
             i_Pending.swapchain->resize_requested = true;
           } else {
-            LOW_ASSERT(l_PresentResult == VK_SUCCESS,
+            GFX_ASSERT(l_PresentResult == VK_SUCCESS,
                        "Failed to present Vulkan frame");
           }
 

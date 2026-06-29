@@ -1,7 +1,7 @@
 #include "LowGfxVulkanBackend.h"
 #include "LowGfxVulkanState.h"
 
-#include "LowUtilAssert.h"
+#include "LowGfxAssert.h"
 #include <vulkan/vulkan_core.h>
 
 namespace Low {
@@ -44,7 +44,7 @@ namespace Low {
       acquire_frame_command_buffer(VulkanContextState &p_State,
                                    VulkanFrameCommandPool &p_Pool)
       {
-        LOW_ASSERT(
+        GFX_ASSERT(
             p_Pool.pool != VK_NULL_HANDLE,
             "Cannot acquire Vulkan command buffer without pool");
 
@@ -66,7 +66,7 @@ namespace Low {
         VkCommandBuffer l_CommandBuffer = VK_NULL_HANDLE;
         VkResult l_AllocateResult = vkAllocateCommandBuffers(
             p_State.device, &l_AllocateInfo, &l_CommandBuffer);
-        LOW_ASSERT(l_AllocateResult == VK_SUCCESS,
+        GFX_ASSERT(l_AllocateResult == VK_SUCCESS,
                    "Failed to allocate Vulkan frame command buffer");
 
         p_Pool.command_buffers.push_back(l_CommandBuffer);
@@ -133,7 +133,7 @@ namespace Low {
                   VK_PIPELINE_STAGE_2_NONE, VK_ACCESS_2_NONE};
         }
 
-        LOW_ASSERT(false, "Unsupported LowGfx image state");
+        GFX_ASSERT(false, "Unsupported LowGfx image state");
         return {VK_IMAGE_LAYOUT_UNDEFINED,
                 VK_PIPELINE_STAGE_2_NONE, VK_ACCESS_2_NONE};
       }
@@ -153,7 +153,7 @@ namespace Low {
                  VK_IMAGE_ASPECT_STENCIL_BIT;
         }
 
-        LOW_ASSERT(false, "Unsupported LowGfx image aspect");
+        GFX_ASSERT(false, "Unsupported LowGfx image aspect");
         return VK_IMAGE_ASPECT_COLOR_BIT;
       }
 
@@ -165,16 +165,16 @@ namespace Low {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(
                 p_Context.backend_state);
-        LOW_ASSERT(l_State, "Cannot create Vulkan command list "
+        GFX_ASSERT(l_State, "Cannot create Vulkan command list "
                             "without context state");
-        LOW_ASSERT(
+        GFX_ASSERT(
             l_State->device != VK_NULL_HANDLE,
             "Cannot create Vulkan command list without device");
 
         const VulkanQueue &l_Queue = get_queue(*l_State, p_QueueRole);
-        LOW_ASSERT(l_Queue.queue != VK_NULL_HANDLE,
+        GFX_ASSERT(l_Queue.queue != VK_NULL_HANDLE,
                    "Cannot create Vulkan command list without queue");
-        LOW_ASSERT(
+        GFX_ASSERT(
             l_Queue.family_index != LOW_UINT32_MAX,
             "Cannot create Vulkan command list without queue family");
 
@@ -186,7 +186,7 @@ namespace Low {
 
         const u32 l_FrameIndex =
             Detail::FrameContextAccess::frame_index(p_Frame);
-        LOW_ASSERT(l_FrameIndex < l_State->frames.size(),
+        GFX_ASSERT(l_FrameIndex < l_State->frames.size(),
                    "Cannot allocate frame command list with invalid "
                    "frame index");
 
@@ -210,16 +210,16 @@ namespace Low {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(
                 p_Context.backend_state);
-        LOW_ASSERT(l_State, "Cannot create Vulkan command list "
+        GFX_ASSERT(l_State, "Cannot create Vulkan command list "
                             "without context state");
-        LOW_ASSERT(
+        GFX_ASSERT(
             l_State->device != VK_NULL_HANDLE,
             "Cannot create Vulkan command list without device");
 
         const VulkanQueue &l_Queue = get_queue(*l_State, p_QueueRole);
-        LOW_ASSERT(l_Queue.queue != VK_NULL_HANDLE,
+        GFX_ASSERT(l_Queue.queue != VK_NULL_HANDLE,
                    "Cannot create Vulkan command list without queue");
-        LOW_ASSERT(
+        GFX_ASSERT(
             l_Queue.family_index != LOW_UINT32_MAX,
             "Cannot create Vulkan command list without queue family");
 
@@ -239,7 +239,7 @@ namespace Low {
         VkResult l_PoolResult = vkCreateCommandPool(
             l_State->device, &l_CommandPoolInfo, nullptr,
             &l_CommandListState->command_pool);
-        LOW_ASSERT(l_PoolResult == VK_SUCCESS,
+        GFX_ASSERT(l_PoolResult == VK_SUCCESS,
                    "Failed to create Vulkan immediate command pool");
 
         VkCommandBufferAllocateInfo l_AllocateInfo{};
@@ -257,7 +257,7 @@ namespace Low {
                                l_CommandListState->command_pool,
                                nullptr);
           delete l_CommandListState;
-          LOW_ASSERT(false,
+          GFX_ASSERT(false,
                      "Failed to allocate Vulkan command buffer");
         }
 
@@ -275,7 +275,7 @@ namespace Low {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(
                 p_Context.backend_state);
-        LOW_ASSERT(l_State, "Cannot destroy Vulkan command list "
+        GFX_ASSERT(l_State, "Cannot destroy Vulkan command list "
                             "without context state");
 
         VulkanCommandListState *l_CommandListState =
@@ -305,13 +305,13 @@ namespace Low {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(
                 p_Context.backend_state);
-        LOW_ASSERT(l_State, "Cannot begin Vulkan command list "
+        GFX_ASSERT(l_State, "Cannot begin Vulkan command list "
                             "without context state");
 
         VulkanCommandListState *l_CommandListState =
             static_cast<VulkanCommandListState *>(
                 p_CommandList.backend_state);
-        LOW_ASSERT(l_CommandListState,
+        GFX_ASSERT(l_CommandListState,
                    "Cannot begin Vulkan command list "
                    "without command list state");
 
@@ -324,7 +324,7 @@ namespace Low {
 
         VkResult l_Result = vkBeginCommandBuffer(
             l_CommandListState->command_buffer, &l_Info);
-        LOW_ASSERT(l_Result == VK_SUCCESS,
+        GFX_ASSERT(l_Result == VK_SUCCESS,
                    "Failed to begin Vulkan command buffer");
       }
 
@@ -334,19 +334,19 @@ namespace Low {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(
                 p_Context.backend_state);
-        LOW_ASSERT(l_State, "Cannot end Vulkan command list "
+        GFX_ASSERT(l_State, "Cannot end Vulkan command list "
                             "without context state");
 
         VulkanCommandListState *l_CommandListState =
             static_cast<VulkanCommandListState *>(
                 p_CommandList.backend_state);
-        LOW_ASSERT(l_CommandListState,
+        GFX_ASSERT(l_CommandListState,
                    "Cannot end Vulkan command list "
                    "without command list state");
 
         VkResult l_Result =
             vkEndCommandBuffer(l_CommandListState->command_buffer);
-        LOW_ASSERT(l_Result == VK_SUCCESS,
+        GFX_ASSERT(l_Result == VK_SUCCESS,
                    "Failed to end Vulkan command buffer");
       }
 
@@ -358,25 +358,25 @@ namespace Low {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(
                 p_Context.backend_state);
-        LOW_ASSERT(l_State, "Cannot submit Vulkan command list "
+        GFX_ASSERT(l_State, "Cannot submit Vulkan command list "
                             "without context state");
 
         const u32 l_FrameIndex =
             Detail::FrameContextAccess::frame_index(p_Frame);
-        LOW_ASSERT(l_FrameIndex < l_State->frames.size(),
+        GFX_ASSERT(l_FrameIndex < l_State->frames.size(),
                    "Cannot submit Vulkan command list with invalid "
                    "frame index");
-        LOW_ASSERT(p_CommandList.queue_role == QueueRole::Graphics,
+        GFX_ASSERT(p_CommandList.queue_role == QueueRole::Graphics,
                    "Vulkan frame submission currently supports only "
                    "graphics command lists");
 
         VulkanCommandListState *l_CommandListState =
             static_cast<VulkanCommandListState *>(
                 p_CommandList.backend_state);
-        LOW_ASSERT(l_CommandListState,
+        GFX_ASSERT(l_CommandListState,
                    "Cannot submit Vulkan command list without command "
                    "list state");
-        LOW_ASSERT(l_CommandListState->command_buffer !=
+        GFX_ASSERT(l_CommandListState->command_buffer !=
                        VK_NULL_HANDLE,
                    "Cannot submit Vulkan command list without command "
                    "buffer");
@@ -394,31 +394,31 @@ namespace Low {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(
                 p_Context.backend_state);
-        LOW_ASSERT(
+        GFX_ASSERT(
             l_State,
             "Cannot record image barrier to Vulkan command list "
             "without context state");
         VulkanCommandListState *l_CommandListState =
             static_cast<VulkanCommandListState *>(
                 p_CommandList.backend_state);
-        LOW_ASSERT(
+        GFX_ASSERT(
             l_CommandListState,
             "Cannot record image barrier to Vulkan command list "
             "without command list state");
-        LOW_ASSERT(l_CommandListState->command_buffer !=
+        GFX_ASSERT(l_CommandListState->command_buffer !=
                        VK_NULL_HANDLE,
                    "Cannot record image barrier without Vulkan "
                    "command buffer");
 
         Detail::BackendImage *l_Image =
             p_Context.images.get(p_Barrier.image);
-        LOW_ASSERT(l_Image,
+        GFX_ASSERT(l_Image,
                    "Cannot record Vulkan image barrier for invalid "
                    "image");
 
         VulkanImageState *l_ImageState =
             static_cast<VulkanImageState *>(l_Image->backend_state);
-        LOW_ASSERT(l_ImageState && l_ImageState->image != VK_NULL_HANDLE,
+        GFX_ASSERT(l_ImageState && l_ImageState->image != VK_NULL_HANDLE,
                    "Cannot record Vulkan image barrier without image");
 
         const VulkanImageStateAccess l_Source =

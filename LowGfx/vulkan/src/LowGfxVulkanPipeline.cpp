@@ -2,7 +2,7 @@
 #include "LowGfxVulkanState.h"
 
 #include "LowGfxLogInternal.h"
-#include "LowUtilAssert.h"
+#include "LowGfxAssert.h"
 
 namespace Low {
   namespace Gfx {
@@ -39,7 +39,7 @@ namespace Low {
           break;
         }
 
-        LOW_ASSERT(false, "Unsupported shader stage");
+        GFX_ASSERT(false, "Unsupported shader stage");
         return VK_SHADER_STAGE_VERTEX_BIT;
       }
 
@@ -61,7 +61,7 @@ namespace Low {
           return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         }
 
-        LOW_ASSERT(false, "Unsupported descriptor type");
+        GFX_ASSERT(false, "Unsupported descriptor type");
         return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
       }
 
@@ -158,7 +158,7 @@ namespace Low {
           return VK_FORMAT_D32_SFLOAT_S8_UINT;
         }
 
-        LOW_ASSERT(false, "Unsupported image format");
+        GFX_ASSERT(false, "Unsupported image format");
         return VK_FORMAT_UNDEFINED;
       }
 
@@ -183,7 +183,7 @@ namespace Low {
           return VK_FORMAT_R32G32B32A32_UINT;
         }
 
-        LOW_ASSERT(false, "Unsupported vertex format");
+        GFX_ASSERT(false, "Unsupported vertex format");
         return VK_FORMAT_R32G32B32_SFLOAT;
       }
 
@@ -197,7 +197,7 @@ namespace Low {
           return VK_VERTEX_INPUT_RATE_INSTANCE;
         }
 
-        LOW_ASSERT(false, "Unsupported vertex input rate");
+        GFX_ASSERT(false, "Unsupported vertex input rate");
         return VK_VERTEX_INPUT_RATE_VERTEX;
       }
 
@@ -217,7 +217,7 @@ namespace Low {
           return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
         }
 
-        LOW_ASSERT(false, "Unsupported primitive topology");
+        GFX_ASSERT(false, "Unsupported primitive topology");
         return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
       }
 
@@ -231,7 +231,7 @@ namespace Low {
           return VK_POLYGON_MODE_LINE;
         }
 
-        LOW_ASSERT(false, "Unsupported polygon mode");
+        GFX_ASSERT(false, "Unsupported polygon mode");
         return VK_POLYGON_MODE_FILL;
       }
 
@@ -248,7 +248,7 @@ namespace Low {
           return VK_CULL_MODE_FRONT_AND_BACK;
         }
 
-        LOW_ASSERT(false, "Unsupported cull mode");
+        GFX_ASSERT(false, "Unsupported cull mode");
         return VK_CULL_MODE_BACK_BIT;
       }
 
@@ -261,7 +261,7 @@ namespace Low {
           return VK_FRONT_FACE_CLOCKWISE;
         }
 
-        LOW_ASSERT(false, "Unsupported front face");
+        GFX_ASSERT(false, "Unsupported front face");
         return VK_FRONT_FACE_COUNTER_CLOCKWISE;
       }
 
@@ -286,7 +286,7 @@ namespace Low {
           return VK_COMPARE_OP_ALWAYS;
         }
 
-        LOW_ASSERT(false, "Unsupported compare op");
+        GFX_ASSERT(false, "Unsupported compare op");
         return VK_COMPARE_OP_LESS_OR_EQUAL;
       }
 
@@ -316,7 +316,7 @@ namespace Low {
           return VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
         }
 
-        LOW_ASSERT(false, "Unsupported blend factor");
+        GFX_ASSERT(false, "Unsupported blend factor");
         return VK_BLEND_FACTOR_ONE;
       }
 
@@ -335,7 +335,7 @@ namespace Low {
           return VK_BLEND_OP_MAX;
         }
 
-        LOW_ASSERT(false, "Unsupported blend op");
+        GFX_ASSERT(false, "Unsupported blend op");
         return VK_BLEND_OP_ADD;
       }
 
@@ -362,6 +362,19 @@ namespace Low {
         return l_Mask;
       }
 
+      static VkIndexType to_vulkan_index_type(IndexType p_Type)
+      {
+        switch (p_Type) {
+        case IndexType::UInt16:
+          return VK_INDEX_TYPE_UINT16;
+        case IndexType::UInt32:
+          return VK_INDEX_TYPE_UINT32;
+        }
+
+        GFX_ASSERT(false, "Unsupported index type");
+        return VK_INDEX_TYPE_UINT32;
+      }
+
       static VkImageLayout to_vulkan_descriptor_image_layout(
           DescriptorType p_Type, ImageState p_State)
       {
@@ -378,7 +391,7 @@ namespace Low {
           break;
         }
 
-        LOW_ASSERT(false,
+        GFX_ASSERT(false,
                    "Unsupported image state for descriptor binding");
         return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
       }
@@ -388,7 +401,7 @@ namespace Low {
       {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(p_Context.backend_state);
-        LOW_ASSERT(l_State, "Missing Vulkan context state");
+        GFX_ASSERT(l_State, "Missing Vulkan context state");
         return *l_State;
       }
 
@@ -412,7 +425,7 @@ namespace Low {
                        "Failed to create Vulkan shader module: {}",
                        static_cast<int>(l_Result));
           delete l_Shader;
-          LOW_ASSERT(false, "Failed to create Vulkan shader module");
+          GFX_ASSERT(false, "Failed to create Vulkan shader module");
         }
 
         Detail::BackendShaderModule l_Backend;
@@ -475,7 +488,7 @@ namespace Low {
               "Failed to create Vulkan descriptor set layout: {}",
               static_cast<int>(l_Result));
           delete l_Layout;
-          LOW_ASSERT(false,
+          GFX_ASSERT(false,
                      "Failed to create Vulkan descriptor set layout");
         }
 
@@ -521,12 +534,12 @@ namespace Low {
           Detail::BackendBindGroupLayout *i_Layout =
               p_Context.bind_group_layouts.get(
                   p_Desc.bind_group_layouts[i]);
-          LOW_ASSERT(i_Layout,
+          GFX_ASSERT(i_Layout,
                      "Invalid bind group layout in pipeline layout");
           VulkanBindGroupLayoutState *i_State =
               static_cast<VulkanBindGroupLayoutState *>(
                   i_Layout->backend_state);
-          LOW_ASSERT(i_State && i_State->descriptor_set_layout !=
+          GFX_ASSERT(i_State && i_State->descriptor_set_layout !=
                                     VK_NULL_HANDLE,
                      "Missing Vulkan descriptor set layout");
           l_SetLayouts[i] = i_State->descriptor_set_layout;
@@ -545,7 +558,7 @@ namespace Low {
                        "Failed to create Vulkan pipeline layout: {}",
                        static_cast<int>(l_Result));
           delete l_Layout;
-          LOW_ASSERT(false, "Failed to create Vulkan pipeline layout");
+          GFX_ASSERT(false, "Failed to create Vulkan pipeline layout");
         }
 
         Detail::BackendPipelineLayout l_Backend;
@@ -686,7 +699,7 @@ namespace Low {
         VkDescriptorPool l_Pool = VK_NULL_HANDLE;
         VkResult l_Result = vkCreateDescriptorPool(
             p_State.device, &l_Info, nullptr, &l_Pool);
-        LOW_ASSERT(l_Result == VK_SUCCESS,
+        GFX_ASSERT(l_Result == VK_SUCCESS,
                    "Failed to create Vulkan descriptor pool");
 
         l_Allocator.sets_per_pool =
@@ -726,7 +739,7 @@ namespace Low {
                                                    .descriptor_set);
         }
 
-        LOW_ASSERT(l_Result == VK_SUCCESS,
+        GFX_ASSERT(l_Result == VK_SUCCESS,
                    "Failed to allocate Vulkan descriptor set");
         p_BindGroup.descriptor_pool = l_Pool;
         l_Allocator.ready_pools.push_back(l_Pool);
@@ -741,11 +754,11 @@ namespace Low {
 
         Detail::BackendBindGroupLayout *l_Layout =
             p_Context.bind_group_layouts.get(p_Desc.layout);
-        LOW_ASSERT(l_Layout, "Invalid bind group layout");
+        GFX_ASSERT(l_Layout, "Invalid bind group layout");
         VulkanBindGroupLayoutState *l_LayoutState =
             static_cast<VulkanBindGroupLayoutState *>(
                 l_Layout->backend_state);
-        LOW_ASSERT(l_LayoutState,
+        GFX_ASSERT(l_LayoutState,
                    "Missing Vulkan bind group layout state");
 
         allocate_descriptor_set(l_State,
@@ -770,7 +783,7 @@ namespace Low {
         VulkanBindGroupState *l_BindGroup =
             static_cast<VulkanBindGroupState *>(
                 p_BindGroup.backend_state);
-        LOW_ASSERT(l_BindGroup &&
+        GFX_ASSERT(l_BindGroup &&
                        l_BindGroup->descriptor_set != VK_NULL_HANDLE,
                    "Cannot update empty Vulkan bind group");
 
@@ -983,7 +996,7 @@ namespace Low {
               "Failed to create Vulkan graphics pipeline: {}",
               static_cast<int>(l_Result));
           delete l_Pipeline;
-          LOW_ASSERT(false,
+          GFX_ASSERT(false,
                      "Failed to create Vulkan graphics pipeline");
         }
 
@@ -1013,6 +1026,84 @@ namespace Low {
         p_GraphicsPipeline.backend_state = nullptr;
       }
 
+      Detail::BackendComputePipeline create_compute_pipeline(
+          Detail::ContextImpl &p_Context,
+          const ComputePipelineDesc &p_Desc)
+      {
+        VulkanContextState &l_State = get_context_state(p_Context);
+        VulkanComputePipelineState *l_Pipeline =
+            new VulkanComputePipelineState();
+
+        Detail::BackendPipelineLayout *l_PipelineLayout =
+            p_Context.pipeline_layouts.get(p_Desc.layout);
+        VulkanPipelineLayoutState *l_PipelineLayoutState =
+            static_cast<VulkanPipelineLayoutState *>(
+                l_PipelineLayout->backend_state);
+        GFX_ASSERT(l_PipelineLayoutState &&
+                       l_PipelineLayoutState->pipeline_layout !=
+                           VK_NULL_HANDLE,
+                   "Missing Vulkan pipeline layout");
+
+        Detail::BackendShaderModule *l_Module =
+            p_Context.shader_modules.get(p_Desc.shader.module);
+        VulkanShaderModuleState *l_ModuleState =
+            static_cast<VulkanShaderModuleState *>(
+                l_Module->backend_state);
+        GFX_ASSERT(l_ModuleState &&
+                       l_ModuleState->shader_module != VK_NULL_HANDLE,
+                   "Missing Vulkan compute shader module");
+
+        VkPipelineShaderStageCreateInfo l_ShaderStage{};
+        l_ShaderStage.sType =
+            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        l_ShaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+        l_ShaderStage.module = l_ModuleState->shader_module;
+        l_ShaderStage.pName = p_Desc.shader.entry_point;
+
+        VkComputePipelineCreateInfo l_Info{};
+        l_Info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+        l_Info.stage = l_ShaderStage;
+        l_Info.layout = l_PipelineLayoutState->pipeline_layout;
+
+        VkResult l_Result = vkCreateComputePipelines(
+            l_State.device, VK_NULL_HANDLE, 1, &l_Info, nullptr,
+            &l_Pipeline->pipeline);
+        if (l_Result != VK_SUCCESS) {
+          Detail::logf(
+              p_Context, LogLevel::Error,
+              "Failed to create Vulkan compute pipeline: {}",
+              static_cast<int>(l_Result));
+          delete l_Pipeline;
+          GFX_ASSERT(false,
+                     "Failed to create Vulkan compute pipeline");
+        }
+
+        Detail::BackendComputePipeline l_Backend;
+        l_Backend.layout = p_Desc.layout;
+        l_Backend.backend_state = l_Pipeline;
+        return l_Backend;
+      }
+
+      void destroy_compute_pipeline(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendComputePipeline &p_ComputePipeline)
+      {
+        VulkanContextState &l_State = get_context_state(p_Context);
+        VulkanComputePipelineState *l_Pipeline =
+            static_cast<VulkanComputePipelineState *>(
+                p_ComputePipeline.backend_state);
+        if (l_Pipeline) {
+          if (l_Pipeline->pipeline != VK_NULL_HANDLE) {
+            vkDestroyPipeline(l_State.device, l_Pipeline->pipeline,
+                              nullptr);
+          }
+          delete l_Pipeline;
+        }
+
+        p_ComputePipeline.layout = PipelineLayout{};
+        p_ComputePipeline.backend_state = nullptr;
+      }
+
       void bind_graphics_pipeline(
           Detail::ContextImpl &p_Context,
           Detail::BackendCommandList &p_CommandList,
@@ -1022,7 +1113,7 @@ namespace Low {
         VulkanCommandListState *l_CommandList =
             static_cast<VulkanCommandListState *>(
                 p_CommandList.backend_state);
-        LOW_ASSERT(l_CommandList &&
+        GFX_ASSERT(l_CommandList &&
                        l_CommandList->command_buffer !=
                            VK_NULL_HANDLE,
                    "Cannot bind graphics pipeline without Vulkan "
@@ -1030,12 +1121,38 @@ namespace Low {
         VulkanGraphicsPipelineState *l_Pipeline =
             static_cast<VulkanGraphicsPipelineState *>(
                 p_GraphicsPipeline.backend_state);
-        LOW_ASSERT(l_Pipeline &&
+        GFX_ASSERT(l_Pipeline &&
                        l_Pipeline->pipeline != VK_NULL_HANDLE,
                    "Cannot bind empty Vulkan graphics pipeline");
 
         vkCmdBindPipeline(l_CommandList->command_buffer,
                           VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          l_Pipeline->pipeline);
+      }
+
+      void bind_compute_pipeline(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendCommandList &p_CommandList,
+          Detail::BackendComputePipeline &p_ComputePipeline)
+      {
+        get_context_state(p_Context);
+        VulkanCommandListState *l_CommandList =
+            static_cast<VulkanCommandListState *>(
+                p_CommandList.backend_state);
+        GFX_ASSERT(l_CommandList &&
+                       l_CommandList->command_buffer !=
+                           VK_NULL_HANDLE,
+                   "Cannot bind compute pipeline without Vulkan "
+                   "command buffer");
+        VulkanComputePipelineState *l_Pipeline =
+            static_cast<VulkanComputePipelineState *>(
+                p_ComputePipeline.backend_state);
+        GFX_ASSERT(l_Pipeline &&
+                       l_Pipeline->pipeline != VK_NULL_HANDLE,
+                   "Cannot bind empty Vulkan compute pipeline");
+
+        vkCmdBindPipeline(l_CommandList->command_buffer,
+                          VK_PIPELINE_BIND_POINT_COMPUTE,
                           l_Pipeline->pipeline);
       }
 
@@ -1049,7 +1166,7 @@ namespace Low {
         VulkanCommandListState *l_CommandList =
             static_cast<VulkanCommandListState *>(
                 p_CommandList.backend_state);
-        LOW_ASSERT(l_CommandList &&
+        GFX_ASSERT(l_CommandList &&
                        l_CommandList->command_buffer !=
                            VK_NULL_HANDLE,
                    "Cannot bind bind group without Vulkan command "
@@ -1057,7 +1174,7 @@ namespace Low {
         VulkanPipelineLayoutState *l_PipelineLayout =
             static_cast<VulkanPipelineLayoutState *>(
                 p_PipelineLayout.backend_state);
-        LOW_ASSERT(l_PipelineLayout &&
+        GFX_ASSERT(l_PipelineLayout &&
                        l_PipelineLayout->pipeline_layout !=
                            VK_NULL_HANDLE,
                    "Cannot bind bind group without Vulkan pipeline "
@@ -1065,15 +1182,130 @@ namespace Low {
         VulkanBindGroupState *l_BindGroup =
             static_cast<VulkanBindGroupState *>(
                 p_BindGroup.backend_state);
-        LOW_ASSERT(l_BindGroup &&
+        GFX_ASSERT(l_BindGroup &&
                        l_BindGroup->descriptor_set != VK_NULL_HANDLE,
                    "Cannot bind empty Vulkan descriptor set");
 
-        vkCmdBindDescriptorSets(
-            l_CommandList->command_buffer,
-            VK_PIPELINE_BIND_POINT_GRAPHICS,
-            l_PipelineLayout->pipeline_layout, p_GroupIndex, 1,
-            &l_BindGroup->descriptor_set, 0, nullptr);
+        const VkPipelineBindPoint l_BindPoint =
+            p_CommandList.rendering_active
+                ? VK_PIPELINE_BIND_POINT_GRAPHICS
+                : VK_PIPELINE_BIND_POINT_COMPUTE;
+
+        vkCmdBindDescriptorSets(l_CommandList->command_buffer,
+                                l_BindPoint,
+                                l_PipelineLayout->pipeline_layout,
+                                p_GroupIndex, 1,
+                                &l_BindGroup->descriptor_set, 0,
+                                nullptr);
+      }
+
+      void bind_vertex_buffer(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendCommandList &p_CommandList, u32 p_Binding,
+          Detail::BackendBuffer &p_Buffer, u64 p_Offset)
+      {
+        get_context_state(p_Context);
+        VulkanCommandListState *l_CommandList =
+            static_cast<VulkanCommandListState *>(
+                p_CommandList.backend_state);
+        GFX_ASSERT(l_CommandList &&
+                       l_CommandList->command_buffer !=
+                           VK_NULL_HANDLE,
+                   "Cannot bind vertex buffer without Vulkan command "
+                   "buffer");
+        VulkanBufferState *l_Buffer =
+            static_cast<VulkanBufferState *>(p_Buffer.backend_state);
+        GFX_ASSERT(l_Buffer && l_Buffer->buffer != VK_NULL_HANDLE,
+                   "Cannot bind empty Vulkan vertex buffer");
+
+        VkBuffer l_BufferHandle = l_Buffer->buffer;
+        VkDeviceSize l_Offset = p_Offset;
+        vkCmdBindVertexBuffers(l_CommandList->command_buffer,
+                               p_Binding, 1, &l_BufferHandle,
+                               &l_Offset);
+      }
+
+      void bind_index_buffer(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendCommandList &p_CommandList,
+          Detail::BackendBuffer &p_Buffer, u64 p_Offset,
+          IndexType p_IndexType)
+      {
+        get_context_state(p_Context);
+        VulkanCommandListState *l_CommandList =
+            static_cast<VulkanCommandListState *>(
+                p_CommandList.backend_state);
+        GFX_ASSERT(l_CommandList &&
+                       l_CommandList->command_buffer !=
+                           VK_NULL_HANDLE,
+                   "Cannot bind index buffer without Vulkan command "
+                   "buffer");
+        VulkanBufferState *l_Buffer =
+            static_cast<VulkanBufferState *>(p_Buffer.backend_state);
+        GFX_ASSERT(l_Buffer && l_Buffer->buffer != VK_NULL_HANDLE,
+                   "Cannot bind empty Vulkan index buffer");
+
+        vkCmdBindIndexBuffer(l_CommandList->command_buffer,
+                             l_Buffer->buffer, p_Offset,
+                             to_vulkan_index_type(p_IndexType));
+      }
+
+      void draw(Detail::ContextImpl &p_Context,
+                Detail::BackendCommandList &p_CommandList,
+                u32 p_VertexCount, u32 p_InstanceCount,
+                u32 p_FirstVertex, u32 p_FirstInstance)
+      {
+        get_context_state(p_Context);
+        VulkanCommandListState *l_CommandList =
+            static_cast<VulkanCommandListState *>(
+                p_CommandList.backend_state);
+        GFX_ASSERT(l_CommandList &&
+                       l_CommandList->command_buffer !=
+                           VK_NULL_HANDLE,
+                   "Cannot draw without Vulkan command buffer");
+
+        vkCmdDraw(l_CommandList->command_buffer, p_VertexCount,
+                  p_InstanceCount, p_FirstVertex, p_FirstInstance);
+      }
+
+      void draw_indexed(Detail::ContextImpl &p_Context,
+                        Detail::BackendCommandList &p_CommandList,
+                        u32 p_IndexCount, u32 p_InstanceCount,
+                        u32 p_FirstIndex, i32 p_VertexOffset,
+                        u32 p_FirstInstance)
+      {
+        get_context_state(p_Context);
+        VulkanCommandListState *l_CommandList =
+            static_cast<VulkanCommandListState *>(
+                p_CommandList.backend_state);
+        GFX_ASSERT(l_CommandList &&
+                       l_CommandList->command_buffer !=
+                           VK_NULL_HANDLE,
+                   "Cannot draw indexed without Vulkan command "
+                   "buffer");
+
+        vkCmdDrawIndexed(l_CommandList->command_buffer,
+                         p_IndexCount, p_InstanceCount,
+                         p_FirstIndex, p_VertexOffset,
+                         p_FirstInstance);
+      }
+
+      void dispatch(Detail::ContextImpl &p_Context,
+                    Detail::BackendCommandList &p_CommandList,
+                    u32 p_GroupCountX, u32 p_GroupCountY,
+                    u32 p_GroupCountZ)
+      {
+        get_context_state(p_Context);
+        VulkanCommandListState *l_CommandList =
+            static_cast<VulkanCommandListState *>(
+                p_CommandList.backend_state);
+        GFX_ASSERT(l_CommandList &&
+                       l_CommandList->command_buffer !=
+                           VK_NULL_HANDLE,
+                   "Cannot dispatch without Vulkan command buffer");
+
+        vkCmdDispatch(l_CommandList->command_buffer, p_GroupCountX,
+                      p_GroupCountY, p_GroupCountZ);
       }
     } // namespace Vulkan
   } // namespace Gfx

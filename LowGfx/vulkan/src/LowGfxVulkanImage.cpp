@@ -4,7 +4,7 @@
 #include "LowGfxVulkanState.h"
 
 #include "LowGfxLogInternal.h"
-#include "LowUtilAssert.h"
+#include "LowGfxAssert.h"
 #include <vulkan/vulkan_core.h>
 
 namespace Low {
@@ -121,7 +121,7 @@ namespace Low {
           return VK_FORMAT_D32_SFLOAT_S8_UINT;
         }
 
-        LOW_ASSERT(false, "Unsupported LowGfx image format");
+        GFX_ASSERT(false, "Unsupported LowGfx image format");
         return VK_FORMAT_UNDEFINED;
       }
 
@@ -162,7 +162,7 @@ namespace Low {
           return VK_IMAGE_TYPE_3D;
         }
 
-        LOW_ASSERT(false, "Unsupported LowGfx image dimension");
+        GFX_ASSERT(false, "Unsupported LowGfx image dimension");
         return VK_IMAGE_TYPE_2D;
       }
 
@@ -182,7 +182,7 @@ namespace Low {
           return VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
         }
 
-        LOW_ASSERT(false, "Unsupported LowGfx image view type");
+        GFX_ASSERT(false, "Unsupported LowGfx image view type");
         return VK_IMAGE_VIEW_TYPE_2D;
       }
 
@@ -201,7 +201,7 @@ namespace Low {
                  VK_IMAGE_ASPECT_STENCIL_BIT;
         }
 
-        LOW_ASSERT(false, "Unsupported LowGfx image aspect");
+        GFX_ASSERT(false, "Unsupported LowGfx image aspect");
         return VK_IMAGE_ASPECT_COLOR_BIT;
       }
 
@@ -214,7 +214,7 @@ namespace Low {
           return VK_FILTER_LINEAR;
         }
 
-        LOW_ASSERT(false, "Unsupported LowGfx filter mode");
+        GFX_ASSERT(false, "Unsupported LowGfx filter mode");
         return VK_FILTER_LINEAR;
       }
 
@@ -228,7 +228,7 @@ namespace Low {
           return VK_SAMPLER_MIPMAP_MODE_LINEAR;
         }
 
-        LOW_ASSERT(false, "Unsupported LowGfx mipmap mode");
+        GFX_ASSERT(false, "Unsupported LowGfx mipmap mode");
         return VK_SAMPLER_MIPMAP_MODE_LINEAR;
       }
 
@@ -246,7 +246,7 @@ namespace Low {
           return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
         }
 
-        LOW_ASSERT(false, "Unsupported LowGfx address mode");
+        GFX_ASSERT(false, "Unsupported LowGfx address mode");
         return VK_SAMPLER_ADDRESS_MODE_REPEAT;
       }
 
@@ -261,7 +261,7 @@ namespace Low {
           return VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
         }
 
-        LOW_ASSERT(false, "Unsupported LowGfx border color");
+        GFX_ASSERT(false, "Unsupported LowGfx border color");
         return VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
       }
 
@@ -286,7 +286,7 @@ namespace Low {
           return VK_COMPARE_OP_ALWAYS;
         }
 
-        LOW_ASSERT(false, "Unsupported LowGfx compare op");
+        GFX_ASSERT(false, "Unsupported LowGfx compare op");
         return VK_COMPARE_OP_LESS_OR_EQUAL;
       }
 
@@ -384,12 +384,12 @@ namespace Low {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(
                 p_Context.backend_state);
-        LOW_ASSERT(
+        GFX_ASSERT(
             l_State,
             "Cannot create Vulkan image without context state");
-        LOW_ASSERT(l_State->allocator,
+        GFX_ASSERT(l_State->allocator,
                    "Cannot create Vulkan image without allocator");
-        LOW_ASSERT(!has_usage(p_Desc.usage, ImageUsage::Present),
+        GFX_ASSERT(!has_usage(p_Desc.usage, ImageUsage::Present),
                    "Cannot create normal Vulkan image with present "
                    "usage");
 
@@ -443,7 +443,7 @@ namespace Low {
                        static_cast<int>(l_Result));
           delete l_ImageState;
         }
-        LOW_ASSERT(l_Result == VK_SUCCESS,
+        GFX_ASSERT(l_Result == VK_SUCCESS,
                    "Failed to create Vulkan image");
 
         l_ImageState->format = l_Info.format;
@@ -471,18 +471,18 @@ namespace Low {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(
                 p_Context.backend_state);
-        LOW_ASSERT(
+        GFX_ASSERT(
             l_State,
             "Cannot create Vulkan image view without context state");
 
         Detail::BackendImage *l_Image =
             p_Context.images.get(p_Desc.image);
-        LOW_ASSERT(l_Image,
+        GFX_ASSERT(l_Image,
                    "Cannot create Vulkan image view for invalid image");
 
         VulkanImageState *l_ImageState =
             static_cast<VulkanImageState *>(l_Image->backend_state);
-        LOW_ASSERT(l_ImageState && l_ImageState->image != VK_NULL_HANDLE,
+        GFX_ASSERT(l_ImageState && l_ImageState->image != VK_NULL_HANDLE,
                    "Cannot create Vulkan image view without image");
 
         VulkanImageViewState *l_ImageViewState =
@@ -513,7 +513,7 @@ namespace Low {
                        static_cast<int>(l_Result));
           delete l_ImageViewState;
         }
-        LOW_ASSERT(l_Result == VK_SUCCESS,
+        GFX_ASSERT(l_Result == VK_SUCCESS,
                    "Failed to create Vulkan image view");
 
         set_debug_name(*l_State, *l_ImageViewState,
@@ -538,7 +538,7 @@ namespace Low {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(
                 p_Context.backend_state);
-        LOW_ASSERT(
+        GFX_ASSERT(
             l_State,
             "Cannot destroy Vulkan image view without context state");
 
@@ -568,7 +568,7 @@ namespace Low {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(
                 p_Context.backend_state);
-        LOW_ASSERT(
+        GFX_ASSERT(
             l_State,
             "Cannot create Vulkan sampler without context state");
 
@@ -609,7 +609,7 @@ namespace Low {
                        static_cast<int>(l_Result));
           delete l_SamplerState;
         }
-        LOW_ASSERT(l_Result == VK_SUCCESS,
+        GFX_ASSERT(l_Result == VK_SUCCESS,
                    "Failed to create Vulkan sampler");
 
         set_debug_name(*l_State, *l_SamplerState,
@@ -626,7 +626,7 @@ namespace Low {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(
                 p_Context.backend_state);
-        LOW_ASSERT(
+        GFX_ASSERT(
             l_State,
             "Cannot destroy Vulkan sampler without context state");
 
@@ -652,7 +652,7 @@ namespace Low {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(
                 p_Context.backend_state);
-        LOW_ASSERT(
+        GFX_ASSERT(
             l_State,
             "Cannot destroy Vulkan buffer without context state");
 

@@ -90,6 +90,13 @@ namespace Low {
           Detail::ContextImpl &p_Context,
           Detail::BackendGraphicsPipeline &p_GraphicsPipeline);
 
+      Detail::BackendComputePipeline create_compute_pipeline(
+          Detail::ContextImpl &p_Context,
+          const ComputePipelineDesc &p_Desc);
+      void destroy_compute_pipeline(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendComputePipeline &p_ComputePipeline);
+
       Detail::BackendCommandList
       request_command_list(Detail::ContextImpl &p_Context,
                            const FrameContext &p_Frame,
@@ -145,11 +152,37 @@ namespace Low {
           Detail::ContextImpl &p_Context,
           Detail::BackendCommandList &p_CommandList,
           Detail::BackendGraphicsPipeline &p_GraphicsPipeline);
+      void bind_compute_pipeline(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendCommandList &p_CommandList,
+          Detail::BackendComputePipeline &p_ComputePipeline);
       void bind_bind_group(
           Detail::ContextImpl &p_Context,
           Detail::BackendCommandList &p_CommandList,
           Detail::BackendPipelineLayout &p_PipelineLayout,
           u32 p_GroupIndex, Detail::BackendBindGroup &p_BindGroup);
+      void bind_vertex_buffer(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendCommandList &p_CommandList, u32 p_Binding,
+          Detail::BackendBuffer &p_Buffer, u64 p_Offset);
+      void bind_index_buffer(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendCommandList &p_CommandList,
+          Detail::BackendBuffer &p_Buffer, u64 p_Offset,
+          IndexType p_IndexType);
+      void draw(Detail::ContextImpl &p_Context,
+                Detail::BackendCommandList &p_CommandList,
+                u32 p_VertexCount, u32 p_InstanceCount,
+                u32 p_FirstVertex, u32 p_FirstInstance);
+      void draw_indexed(Detail::ContextImpl &p_Context,
+                        Detail::BackendCommandList &p_CommandList,
+                        u32 p_IndexCount, u32 p_InstanceCount,
+                        u32 p_FirstIndex, i32 p_VertexOffset,
+                        u32 p_FirstInstance);
+      void dispatch(Detail::ContextImpl &p_Context,
+                    Detail::BackendCommandList &p_CommandList,
+                    u32 p_GroupCountX, u32 p_GroupCountY,
+                    u32 p_GroupCountZ);
 
     } // namespace Vulkan
   } // namespace Gfx

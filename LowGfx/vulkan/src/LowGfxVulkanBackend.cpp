@@ -32,6 +32,8 @@ namespace Low {
             &destroy_bind_group,
             &create_graphics_pipeline,
             &destroy_graphics_pipeline,
+            &create_compute_pipeline,
+            &destroy_compute_pipeline,
             &request_command_list,
             &request_immediate_command_list,
             &destroy_command_list,
@@ -50,7 +52,13 @@ namespace Low {
             &set_viewport,
             &set_scissor,
             &bind_graphics_pipeline,
-            &bind_bind_group};
+            &bind_compute_pipeline,
+            &bind_bind_group,
+            &bind_vertex_buffer,
+            &bind_index_buffer,
+            &draw,
+            &draw_indexed,
+            &dispatch};
 
         static const Detail::BackendProvider g_Provider = {
             Backend::Vulkan, &g_InstanceApi, &g_ContextApi};

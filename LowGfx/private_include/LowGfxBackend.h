@@ -76,6 +76,12 @@ namespace Low {
         void *backend_state = nullptr;
       };
 
+      struct BackendComputePipeline
+      {
+        PipelineLayout layout;
+        void *backend_state = nullptr;
+      };
+
       struct BackendCommandList
       {
         QueueRole queue_role = QueueRole::Graphics;
@@ -168,6 +174,11 @@ namespace Low {
         void (*destroy_graphics_pipeline)(
             ContextImpl &, BackendGraphicsPipeline &);
 
+        BackendComputePipeline (*create_compute_pipeline)(
+            ContextImpl &, const ComputePipelineDesc &);
+        void (*destroy_compute_pipeline)(ContextImpl &,
+                                         BackendComputePipeline &);
+
         BackendCommandList (*request_command_list)(
             ContextImpl &, const FrameContext &, QueueRole);
         BackendCommandList (*request_immediate_command_list)(
@@ -215,10 +226,36 @@ namespace Low {
         void (*bind_graphics_pipeline)(
             ContextImpl &p_Context, BackendCommandList &p_CommandList,
             BackendGraphicsPipeline &p_GraphicsPipeline);
+        void (*bind_compute_pipeline)(
+            ContextImpl &p_Context, BackendCommandList &p_CommandList,
+            BackendComputePipeline &p_ComputePipeline);
         void (*bind_bind_group)(
             ContextImpl &p_Context, BackendCommandList &p_CommandList,
             BackendPipelineLayout &p_PipelineLayout, u32 p_GroupIndex,
             BackendBindGroup &p_BindGroup);
+        void (*bind_vertex_buffer)(ContextImpl &p_Context,
+                                   BackendCommandList &p_CommandList,
+                                   u32 p_Binding,
+                                   BackendBuffer &p_Buffer,
+                                   u64 p_Offset);
+        void (*bind_index_buffer)(ContextImpl &p_Context,
+                                  BackendCommandList &p_CommandList,
+                                  BackendBuffer &p_Buffer,
+                                  u64 p_Offset,
+                                  IndexType p_IndexType);
+        void (*draw)(ContextImpl &p_Context,
+                     BackendCommandList &p_CommandList,
+                     u32 p_VertexCount, u32 p_InstanceCount,
+                     u32 p_FirstVertex, u32 p_FirstInstance);
+        void (*draw_indexed)(ContextImpl &p_Context,
+                             BackendCommandList &p_CommandList,
+                             u32 p_IndexCount, u32 p_InstanceCount,
+                             u32 p_FirstIndex, i32 p_VertexOffset,
+                             u32 p_FirstInstance);
+        void (*dispatch)(ContextImpl &p_Context,
+                         BackendCommandList &p_CommandList,
+                         u32 p_GroupCountX, u32 p_GroupCountY,
+                         u32 p_GroupCountZ);
       };
 
       struct BackendProvider
@@ -266,6 +303,8 @@ namespace Low {
         Pool<BindGroup, BackendBindGroup> bind_groups;
         Pool<GraphicsPipeline, BackendGraphicsPipeline>
             graphics_pipelines;
+        Pool<ComputePipeline, BackendComputePipeline>
+            compute_pipelines;
         Pool<CommandList, BackendCommandList> command_lists;
         Pool<Swapchain, BackendSwapchain> swapchains;
         Util::List<CommandList> frame_command_lists;

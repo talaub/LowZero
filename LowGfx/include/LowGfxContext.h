@@ -300,6 +300,11 @@ namespace Low {
       void destroy(GraphicsPipeline p_GraphicsPipeline);
       bool is_valid(GraphicsPipeline p_GraphicsPipeline) const;
 
+      ComputePipeline create_compute_pipeline(
+          const ComputePipelineDesc &p_Desc);
+      void destroy(ComputePipeline p_ComputePipeline);
+      bool is_valid(ComputePipeline p_ComputePipeline) const;
+
       CommandList request_command_list(const FrameContext &p_Frame,
                                        QueueRole p_QueueRole);
       CommandList
@@ -336,10 +341,27 @@ namespace Low {
       void bind_graphics_pipeline(
           CommandList p_CommandList,
           GraphicsPipeline p_GraphicsPipeline);
+      void bind_compute_pipeline(CommandList p_CommandList,
+                                 ComputePipeline p_ComputePipeline);
       void bind_bind_group(CommandList p_CommandList,
                            PipelineLayout p_PipelineLayout,
                            u32 p_GroupIndex,
                            BindGroup p_BindGroup);
+      void bind_vertex_buffer(CommandList p_CommandList, u32 p_Binding,
+                              Buffer p_Buffer, u64 p_Offset = 0);
+      void bind_index_buffer(CommandList p_CommandList,
+                             Buffer p_Buffer, u64 p_Offset,
+                             IndexType p_IndexType);
+      void draw(CommandList p_CommandList, u32 p_VertexCount,
+                u32 p_InstanceCount = 1, u32 p_FirstVertex = 0,
+                u32 p_FirstInstance = 0);
+      void draw_indexed(CommandList p_CommandList, u32 p_IndexCount,
+                        u32 p_InstanceCount = 1,
+                        u32 p_FirstIndex = 0,
+                        i32 p_VertexOffset = 0,
+                        u32 p_FirstInstance = 0);
+      void dispatch(CommandList p_CommandList, u32 p_GroupCountX,
+                    u32 p_GroupCountY, u32 p_GroupCountZ);
 
     private:
       Util::UniquePtr<Detail::ContextImpl> m_Impl;

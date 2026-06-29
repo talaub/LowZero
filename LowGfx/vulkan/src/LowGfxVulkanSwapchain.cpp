@@ -2,7 +2,7 @@
 #include "LowGfxContext.h"
 #include "LowGfxLogInternal.h"
 
-#include "LowUtilAssert.h"
+#include "LowGfxAssert.h"
 
 #include "LowGfxVulkanState.h"
 
@@ -26,7 +26,7 @@ namespace Low {
           return VK_PRESENT_MODE_MAILBOX_KHR;
         }
 
-        LOW_ASSERT(false, "Unsupported present mode for swapchain.");
+        GFX_ASSERT(false, "Unsupported present mode for swapchain.");
 
         return VK_PRESENT_MODE_FIFO_KHR;
       }
@@ -38,21 +38,21 @@ namespace Low {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(p_Context.backend_state);
 
-        LOW_ASSERT(
+        GFX_ASSERT(
             l_State,
             "Cannot create Vulkan swapchain without context state");
 
-        LOW_ASSERT(p_Context.instance,
+        GFX_ASSERT(p_Context.instance,
                    "Cannot create Vulkan swapchain without instance");
 
         const Detail::BackendSurface *l_BackendSurface =
             p_Context.instance->surfaces.get(p_Desc.surface);
-        LOW_ASSERT(l_BackendSurface,
+        GFX_ASSERT(l_BackendSurface,
                    "Cannot create Vulkan swapchain from invalid surface");
         VulkanSurfaceState *l_Surface =
             static_cast<VulkanSurfaceState *>(
                 l_BackendSurface->backend_state);
-        LOW_ASSERT(l_Surface && l_Surface->surface != VK_NULL_HANDLE,
+        GFX_ASSERT(l_Surface && l_Surface->surface != VK_NULL_HANDLE,
                    "Cannot create Vulkan swapchain from empty surface");
 
         VulkanSwapchainState *l_Swapchain = new VulkanSwapchainState;
@@ -80,7 +80,7 @@ namespace Low {
                     VK_IMAGE_USAGE_TRANSFER_DST_BIT)
                 .build();
 
-        LOW_ASSERT(l_SwapchainResult,
+        GFX_ASSERT(l_SwapchainResult,
                    "Failed to create vulkan swapchain.");
 
         vkb::Swapchain l_VkbSwapchain = l_SwapchainResult.value();
@@ -95,7 +95,7 @@ namespace Low {
         Util::List<VkImage> l_Images;
         {
           auto l_ImagesResult = l_VkbSwapchain.get_images();
-          LOW_ASSERT(l_ImagesResult,
+          GFX_ASSERT(l_ImagesResult,
                      "Failed to fetch images for vulkan swapchain.");
           for (auto it : l_ImagesResult.value()) {
             l_Images.push_back(it);
@@ -105,7 +105,7 @@ namespace Low {
         Util::List<VkImageView> l_ImageViews;
         {
           auto l_ImageViewsResult = l_VkbSwapchain.get_image_views();
-          LOW_ASSERT(
+          GFX_ASSERT(
               l_ImageViewsResult,
               "Failed to fetch image views for vulkan swapchain.");
           for (auto it : l_ImageViewsResult.value()) {
@@ -113,7 +113,7 @@ namespace Low {
           }
         }
 
-        LOW_ASSERT(l_Images.size() == l_ImageViews.size(),
+        GFX_ASSERT(l_Images.size() == l_ImageViews.size(),
                    "Vulkan swapchain returned mismatched image state");
         for (u32 i = 0; i < l_Images.size(); ++i) {
           VulkanSwapchainImageState l_ImageState;
@@ -126,7 +126,7 @@ namespace Low {
           VkResult l_SemaphoreResult = vkCreateSemaphore(
               l_State->device, &l_SemaphoreInfo, nullptr,
               &l_ImageState.render_finished);
-          LOW_ASSERT(l_SemaphoreResult == VK_SUCCESS,
+          GFX_ASSERT(l_SemaphoreResult == VK_SUCCESS,
                      "Failed to create Vulkan swapchain image "
                      "render-finished semaphore");
 
@@ -141,7 +141,7 @@ namespace Low {
           VkResult l_SemaphoreResult = vkCreateSemaphore(
               l_State->device, &l_SemaphoreInfo, nullptr,
               &l_ImageAvailable);
-          LOW_ASSERT(l_SemaphoreResult == VK_SUCCESS,
+          GFX_ASSERT(l_SemaphoreResult == VK_SUCCESS,
                      "Failed to create Vulkan swapchain "
                      "image-available semaphore");
 
@@ -161,7 +161,7 @@ namespace Low {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(p_Context.backend_state);
 
-        LOW_ASSERT(
+        GFX_ASSERT(
             l_State,
             "Cannot destroy Vulkan swapchain without context state");
 
@@ -169,7 +169,7 @@ namespace Low {
             static_cast<VulkanSwapchainState *>(
                 p_Swapchain.backend_state);
 
-        LOW_ASSERT(l_Swapchain, "Cannot destroy vulkan swapchain "
+        GFX_ASSERT(l_Swapchain, "Cannot destroy vulkan swapchain "
                                 "without valid swapchain state.");
 
         if (l_State->device != VK_NULL_HANDLE) {

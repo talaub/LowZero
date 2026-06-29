@@ -2,7 +2,7 @@
 #include "LowGfxVulkanState.h"
 
 #include "LowGfxLogInternal.h"
-#include "LowUtilAssert.h"
+#include "LowGfxAssert.h"
 
 namespace Low {
   namespace Gfx {
@@ -108,10 +108,10 @@ namespace Low {
       {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(p_Context.backend_state);
-        LOW_ASSERT(
+        GFX_ASSERT(
             l_State,
             "Cannot create Vulkan buffer without context state");
-        LOW_ASSERT(l_State->allocator,
+        GFX_ASSERT(l_State->allocator,
                    "Cannot create Vulkan buffer without allocator");
 
         VulkanBufferState *l_BufferState = new VulkanBufferState();
@@ -136,7 +136,7 @@ namespace Low {
                        "Failed to create Vulkan buffer: {}",
                        static_cast<int>(l_Result));
           delete l_BufferState;
-          LOW_ASSERT(false, "Failed to create Vulkan buffer");
+          GFX_ASSERT(false, "Failed to create Vulkan buffer");
         }
 
         set_debug_name(*l_State, *l_BufferState, p_Desc.debug_name);
@@ -153,7 +153,7 @@ namespace Low {
       {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(p_Context.backend_state);
-        LOW_ASSERT(
+        GFX_ASSERT(
             l_State,
             "Cannot destroy Vulkan buffer without context state");
 

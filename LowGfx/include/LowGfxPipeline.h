@@ -12,12 +12,14 @@ namespace Low {
     struct BindGroupTag;
     struct PipelineLayoutTag;
     struct GraphicsPipelineTag;
+    struct ComputePipelineTag;
 
     using ShaderModule = Token<ShaderModuleTag>;
     using BindGroupLayout = Token<BindGroupLayoutTag>;
     using BindGroup = Token<BindGroupTag>;
     using PipelineLayout = Token<PipelineLayoutTag>;
     using GraphicsPipeline = Token<GraphicsPipelineTag>;
+    using ComputePipeline = Token<ComputePipelineTag>;
 
     enum class ShaderStage : u32
     {
@@ -120,6 +122,12 @@ namespace Low {
       B = 1 << 2,
       A = 1 << 3,
       All = R | G | B | A
+    };
+
+    enum class IndexType : u8
+    {
+      UInt16,
+      UInt32
     };
 
     inline ShaderStage operator|(ShaderStage p_Left,
@@ -259,6 +267,14 @@ namespace Low {
       bool depth_test_enabled = false;
       bool depth_write_enabled = false;
       CompareOp depth_compare = CompareOp::LessOrEqual;
+
+      const char *debug_name = nullptr;
+    };
+
+    struct ComputePipelineDesc
+    {
+      PipelineLayout layout;
+      ShaderStageDesc shader;
 
       const char *debug_name = nullptr;
     };
