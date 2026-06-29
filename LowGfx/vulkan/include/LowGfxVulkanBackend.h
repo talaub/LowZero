@@ -33,6 +33,16 @@ namespace Low {
                     const BufferDesc &p_Desc);
       void destroy_buffer(Detail::ContextImpl &p_Context,
                           Detail::BackendBuffer &p_Buffer);
+      void *map_buffer(Detail::ContextImpl &p_Context,
+                       Detail::BackendBuffer &p_Buffer);
+      void unmap_buffer(Detail::ContextImpl &p_Context,
+                        Detail::BackendBuffer &p_Buffer);
+      void flush_buffer(Detail::ContextImpl &p_Context,
+                        Detail::BackendBuffer &p_Buffer,
+                        u64 p_Offset, u64 p_Size);
+      void invalidate_buffer(Detail::ContextImpl &p_Context,
+                             Detail::BackendBuffer &p_Buffer,
+                             u64 p_Offset, u64 p_Size);
 
       Detail::BackendImage
       create_image(Detail::ContextImpl &p_Context,

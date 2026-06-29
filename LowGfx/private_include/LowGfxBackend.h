@@ -12,6 +12,7 @@ namespace Low {
       {
         u64 size = 0;
         BufferUsage usage = BufferUsage::None;
+        BufferMemoryUsage memory_usage = BufferMemoryUsage::GpuOnly;
         void *backend_state = nullptr;
       };
 
@@ -137,6 +138,12 @@ namespace Low {
         BackendBuffer (*create_buffer)(ContextImpl &,
                                        const BufferDesc &);
         void (*destroy_buffer)(ContextImpl &, BackendBuffer &);
+        void *(*map_buffer)(ContextImpl &, BackendBuffer &);
+        void (*unmap_buffer)(ContextImpl &, BackendBuffer &);
+        void (*flush_buffer)(ContextImpl &, BackendBuffer &, u64,
+                             u64);
+        void (*invalidate_buffer)(ContextImpl &, BackendBuffer &, u64,
+                                  u64);
 
         BackendImage (*create_image)(ContextImpl &,
                                      const ImageDesc &);

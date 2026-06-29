@@ -144,6 +144,7 @@ namespace Low {
         Detail::BackendBuffer l_Buffer;
         l_Buffer.size = p_Desc.size;
         l_Buffer.usage = p_Desc.usage;
+        l_Buffer.memory_usage = p_Desc.memory_usage;
         l_Buffer.backend_state = l_BufferState;
         return l_Buffer;
       }
@@ -173,7 +174,85 @@ namespace Low {
 
         p_Buffer.size = 0;
         p_Buffer.usage = BufferUsage::None;
+        p_Buffer.memory_usage = BufferMemoryUsage::GpuOnly;
         p_Buffer.backend_state = nullptr;
+      }
+
+      void *map_buffer(Detail::ContextImpl &p_Context,
+                       Detail::BackendBuffer &p_Buffer)
+      {
+        VulkanContextState *l_State =
+            static_cast<VulkanContextState *>(p_Context.backend_state);
+        GFX_ASSERT(l_State,
+                   "Cannot map Vulkan buffer without context state");
+
+        VulkanBufferState *l_BufferState =
+            static_cast<VulkanBufferState *>(p_Buffer.backend_state);
+        GFX_ASSERT(l_BufferState,
+                   "Cannot map Vulkan buffer without buffer state");
+        GFX_ASSERT(l_BufferState->info.pMappedData,
+                   "Vulkan buffer allocation is not mapped");
+
+        return l_BufferState->info.pMappedData;
+      }
+
+      void unmap_buffer(Detail::ContextImpl &p_Context,
+                        Detail::BackendBuffer &p_Buffer)
+      {
+        (void)p_Context;
+        (void)p_Buffer;
+      }
+
+      void flush_buffer(Detail::ContextImpl &p_Context,
+                        Detail::BackendBuffer &p_Buffer,
+                        u64 p_Offset, u64 p_Size)
+      {
+        VulkanContextState *l_State =
+            static_cast<VulkanContextState *>(p_Context.backend_state);
+        GFX_ASSERT(
+            l_State,
+            "Cannot flush Vulkan buffer without context state");
+        GFX_ASSERT(l_State->allocator,
+                   "Cannot flush Vulkan buffer without allocator");
+
+        VulkanBufferState *l_BufferState =
+            static_cast<VulkanBufferState *>(p_Buffer.backend_state);
+        GFX_ASSERT(l_BufferState,
+                   "Cannot flush Vulkan buffer without buffer state");
+
+        VkResult l_Result = vmaFlushAllocation(
+            l_State->allocator, l_BufferState->allocation,
+            static_cast<VkDeviceSize>(p_Offset),
+            static_cast<VkDeviceSize>(p_Size));
+        GFX_ASSERT(l_Result == VK_SUCCESS,
+                   "Failed to flush Vulkan buffer allocation");
+      }
+
+      void invalidate_buffer(Detail::ContextImpl &p_Context,
+                             Detail::BackendBuffer &p_Buffer,
+                             u64 p_Offset, u64 p_Size)
+      {
+        VulkanContextState *l_State =
+            static_cast<VulkanContextState *>(p_Context.backend_state);
+        GFX_ASSERT(
+            l_State,
+            "Cannot invalidate Vulkan buffer without context state");
+        GFX_ASSERT(l_State->allocator,
+                   "Cannot invalidate Vulkan buffer without "
+                   "allocator");
+
+        VulkanBufferState *l_BufferState =
+            static_cast<VulkanBufferState *>(p_Buffer.backend_state);
+        GFX_ASSERT(
+            l_BufferState,
+            "Cannot invalidate Vulkan buffer without buffer state");
+
+        VkResult l_Result = vmaInvalidateAllocation(
+            l_State->allocator, l_BufferState->allocation,
+            static_cast<VkDeviceSize>(p_Offset),
+            static_cast<VkDeviceSize>(p_Size));
+        GFX_ASSERT(l_Result == VK_SUCCESS,
+                   "Failed to invalidate Vulkan buffer allocation");
       }
     } // namespace Vulkan
   } // namespace Gfx

@@ -261,6 +261,15 @@ namespace Low {
       Buffer create_buffer(const BufferDesc &p_Desc);
       void destroy(Buffer p_Buffer);
       bool is_valid(Buffer p_Buffer) const;
+      void *map_buffer(Buffer p_Buffer);
+      void unmap_buffer(Buffer p_Buffer);
+      void flush_buffer(Buffer p_Buffer, u64 p_Offset, u64 p_Size);
+      void invalidate_buffer(Buffer p_Buffer, u64 p_Offset,
+                             u64 p_Size);
+      void write_buffer(Buffer p_Buffer, u64 p_Offset,
+                        const void *p_Data, u64 p_Size);
+      void read_buffer(Buffer p_Buffer, u64 p_Offset, void *p_Data,
+                       u64 p_Size);
 
       Image create_image(const ImageDesc &p_Desc);
       void destroy(Image p_Image);

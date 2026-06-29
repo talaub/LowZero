@@ -8,6 +8,7 @@
 #include "LowGfxAssert.h"
 
 #include <atomic>
+#include <cstring>
 #include <utility>
 
 void *operator new[](size_t size, const char *pName, int flags,
@@ -334,6 +335,105 @@ namespace Low {
     bool Context::is_valid(Buffer p_Buffer) const
     {
       return m_Impl->buffers.is_valid(p_Buffer);
+    }
+
+    static Detail::BackendBuffer *
+    get_mappable_buffer(Detail::ContextImpl &p_Context,
+                        Buffer p_Buffer)
+    {
+      Detail::BackendBuffer *l_Buffer =
+          p_Context.buffers.get(p_Buffer);
+      GFX_ASSERT(l_Buffer, "Cannot map invalid buffer");
+      GFX_ASSERT(
+          l_Buffer->memory_usage != BufferMemoryUsage::GpuOnly,
+          "Cannot map GPU-only buffer");
+      return l_Buffer;
+    }
+
+    static void validate_buffer_range(
+        const Detail::BackendBuffer &p_Buffer, u64 p_Offset,
+        u64 p_Size, const char *p_Message)
+    {
+      GFX_ASSERT(p_Size > 0, p_Message);
+      GFX_ASSERT(p_Offset < p_Buffer.size,
+                 "Buffer range offset exceeds buffer size");
+      GFX_ASSERT(p_Size <= p_Buffer.size - p_Offset,
+                 "Buffer range exceeds buffer size");
+    }
+
+    void *Context::map_buffer(Buffer p_Buffer)
+    {
+      Detail::BackendBuffer *l_Buffer =
+          get_mappable_buffer(*m_Impl, p_Buffer);
+      return m_Impl->api->map_buffer(*m_Impl, *l_Buffer);
+    }
+
+    void Context::unmap_buffer(Buffer p_Buffer)
+    {
+      Detail::BackendBuffer *l_Buffer =
+          get_mappable_buffer(*m_Impl, p_Buffer);
+      m_Impl->api->unmap_buffer(*m_Impl, *l_Buffer);
+    }
+
+    void Context::flush_buffer(Buffer p_Buffer, u64 p_Offset,
+                               u64 p_Size)
+    {
+      Detail::BackendBuffer *l_Buffer =
+          get_mappable_buffer(*m_Impl, p_Buffer);
+      validate_buffer_range(*l_Buffer, p_Offset, p_Size,
+                            "Cannot flush empty buffer range");
+      m_Impl->api->flush_buffer(*m_Impl, *l_Buffer, p_Offset,
+                                p_Size);
+    }
+
+    void Context::invalidate_buffer(Buffer p_Buffer, u64 p_Offset,
+                                    u64 p_Size)
+    {
+      Detail::BackendBuffer *l_Buffer =
+          get_mappable_buffer(*m_Impl, p_Buffer);
+      validate_buffer_range(*l_Buffer, p_Offset, p_Size,
+                            "Cannot invalidate empty buffer range");
+      m_Impl->api->invalidate_buffer(*m_Impl, *l_Buffer, p_Offset,
+                                     p_Size);
+    }
+
+    void Context::write_buffer(Buffer p_Buffer, u64 p_Offset,
+                               const void *p_Data, u64 p_Size)
+    {
+      GFX_ASSERT(p_Data, "Cannot write buffer from null data");
+      Detail::BackendBuffer *l_Buffer =
+          get_mappable_buffer(*m_Impl, p_Buffer);
+      GFX_ASSERT(
+          l_Buffer->memory_usage == BufferMemoryUsage::CpuToGpu,
+          "Can only write directly to CpuToGpu buffers");
+      validate_buffer_range(*l_Buffer, p_Offset, p_Size,
+                            "Cannot write empty buffer range");
+
+      void *l_Mapped = m_Impl->api->map_buffer(*m_Impl, *l_Buffer);
+      std::memcpy(static_cast<uint8_t *>(l_Mapped) + p_Offset,
+                  p_Data, static_cast<size_t>(p_Size));
+      m_Impl->api->flush_buffer(*m_Impl, *l_Buffer, p_Offset,
+                                p_Size);
+    }
+
+    void Context::read_buffer(Buffer p_Buffer, u64 p_Offset,
+                              void *p_Data, u64 p_Size)
+    {
+      GFX_ASSERT(p_Data, "Cannot read buffer into null data");
+      Detail::BackendBuffer *l_Buffer =
+          get_mappable_buffer(*m_Impl, p_Buffer);
+      GFX_ASSERT(
+          l_Buffer->memory_usage == BufferMemoryUsage::GpuToCpu,
+          "Can only read directly from GpuToCpu buffers");
+      validate_buffer_range(*l_Buffer, p_Offset, p_Size,
+                            "Cannot read empty buffer range");
+
+      m_Impl->api->invalidate_buffer(*m_Impl, *l_Buffer, p_Offset,
+                                     p_Size);
+      void *l_Mapped = m_Impl->api->map_buffer(*m_Impl, *l_Buffer);
+      std::memcpy(p_Data,
+                  static_cast<const uint8_t *>(l_Mapped) + p_Offset,
+                  static_cast<size_t>(p_Size));
     }
 
     Image Context::create_image(const ImageDesc &p_Desc)
