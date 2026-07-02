@@ -323,6 +323,12 @@ namespace Low {
       void destroy(CommandList p_CommandList);
       bool is_valid(CommandList p_CommandList) const;
 
+      GpuFence submit(const SubmitDesc &p_Desc);
+      bool is_complete(GpuFence p_Fence);
+      void wait(GpuFence p_Fence);
+      void destroy(GpuFence p_Fence);
+      bool is_valid(GpuFence p_Fence) const;
+
       Swapchain create_swapchain(const SwapchainDesc &p_Desc);
 
       void destroy(Swapchain p_Swapchain);
@@ -345,6 +351,8 @@ namespace Low {
 
       void barrier(CommandList p_CommandList,
                    const ImageBarrier &p_Barrier);
+      void barrier(CommandList p_CommandList,
+                   const BufferBarrier &p_Barrier);
       void copy_buffer(
           CommandList p_CommandList, Buffer p_Source,
           Buffer p_Destination,
@@ -383,6 +391,10 @@ namespace Low {
                            PipelineLayout p_PipelineLayout,
                            u32 p_GroupIndex,
                            BindGroup p_BindGroup);
+      void push_constants(CommandList p_CommandList,
+                          PipelineLayout p_PipelineLayout,
+                          ShaderStage p_Stages, u32 p_Offset,
+                          u32 p_Size, const void *p_Data);
       void bind_vertex_buffer(CommandList p_CommandList, u32 p_Binding,
                               Buffer p_Buffer, u64 p_Offset = 0);
       void bind_index_buffer(CommandList p_CommandList,

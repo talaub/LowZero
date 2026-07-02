@@ -145,6 +145,7 @@ namespace Low {
         l_Buffer.size = p_Desc.size;
         l_Buffer.usage = p_Desc.usage;
         l_Buffer.memory_usage = p_Desc.memory_usage;
+        l_Buffer.state = BufferState::Undefined;
         l_Buffer.backend_state = l_BufferState;
         return l_Buffer;
       }
@@ -175,6 +176,7 @@ namespace Low {
         p_Buffer.size = 0;
         p_Buffer.usage = BufferUsage::None;
         p_Buffer.memory_usage = BufferMemoryUsage::GpuOnly;
+        p_Buffer.state = BufferState::Undefined;
         p_Buffer.backend_state = nullptr;
       }
 

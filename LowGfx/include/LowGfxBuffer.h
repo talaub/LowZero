@@ -27,6 +27,19 @@ namespace Low {
       GpuToCpu
     };
 
+    enum class BufferState : u8
+    {
+      Undefined,
+      TransferSrc,
+      TransferDst,
+      VertexBuffer,
+      IndexBuffer,
+      UniformRead,
+      StorageRead,
+      StorageReadWrite,
+      IndirectArgument
+    };
+
     inline BufferUsage operator|(BufferUsage p_Left,
                                  BufferUsage p_Right)
     {
@@ -61,6 +74,15 @@ namespace Low {
       u64 src_offset = 0;
       u64 dst_offset = 0;
       u64 size = 0;
+    };
+
+    struct BufferBarrier
+    {
+      Buffer buffer;
+      BufferState old_state = BufferState::Undefined;
+      BufferState new_state = BufferState::Undefined;
+      u64 offset = 0;
+      u64 size = LOW_UINT64_MAX;
     };
   } // namespace Gfx
 } // namespace Low

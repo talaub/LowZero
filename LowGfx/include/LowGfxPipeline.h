@@ -179,9 +179,17 @@ namespace Low {
       const char *debug_name = nullptr;
     };
 
+    struct PushConstantRange
+    {
+      ShaderStage stages = ShaderStage::None;
+      u32 offset = 0;
+      u32 size = 0;
+    };
+
     struct PipelineLayoutDesc
     {
       Util::Span<const BindGroupLayout> bind_group_layouts;
+      Util::Span<const PushConstantRange> push_constant_ranges;
       const char *debug_name = nullptr;
     };
 

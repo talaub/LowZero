@@ -119,6 +119,16 @@ namespace Low {
       destroy_command_list(Detail::ContextImpl &p_Context,
                            Detail::BackendCommandList &p_CommandList);
 
+      Detail::BackendFence submit(
+          Detail::ContextImpl &p_Context, QueueRole p_QueueRole,
+          Util::Span<Detail::BackendCommandList *> p_CommandLists);
+      bool is_fence_complete(Detail::ContextImpl &p_Context,
+                             Detail::BackendFence &p_Fence);
+      void wait_fence(Detail::ContextImpl &p_Context,
+                      Detail::BackendFence &p_Fence);
+      void destroy_fence(Detail::ContextImpl &p_Context,
+                         Detail::BackendFence &p_Fence);
+
       Detail::BackendSwapchain
       create_swapchain(Detail::ContextImpl &p_Context,
                        const SwapchainDesc &p_Desc);
@@ -145,6 +155,11 @@ namespace Low {
       void barrier_image_command_list(Detail::ContextImpl &p_Context,
                                       Detail::BackendCommandList &,
                                       const ImageBarrier &);
+      void barrier_buffer_command_list(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendCommandList &p_CommandList,
+          Detail::BackendBuffer &p_Buffer,
+          const BufferBarrier &p_Barrier);
       void copy_buffer(
           Detail::ContextImpl &p_Context,
           Detail::BackendCommandList &p_CommandList,
@@ -203,6 +218,12 @@ namespace Low {
           Detail::BackendCommandList &p_CommandList,
           Detail::BackendPipelineLayout &p_PipelineLayout,
           u32 p_GroupIndex, Detail::BackendBindGroup &p_BindGroup);
+      void push_constants(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendCommandList &p_CommandList,
+          Detail::BackendPipelineLayout &p_PipelineLayout,
+          ShaderStage p_Stages, u32 p_Offset, u32 p_Size,
+          const void *p_Data);
       void bind_vertex_buffer(
           Detail::ContextImpl &p_Context,
           Detail::BackendCommandList &p_CommandList, u32 p_Binding,

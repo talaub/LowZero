@@ -13,6 +13,7 @@ namespace Low {
         u64 size = 0;
         BufferUsage usage = BufferUsage::None;
         BufferMemoryUsage memory_usage = BufferMemoryUsage::GpuOnly;
+        BufferState state = BufferState::Undefined;
         void *backend_state = nullptr;
       };
 
@@ -60,6 +61,7 @@ namespace Low {
       struct BackendPipelineLayout
       {
         Util::List<BindGroupLayout> bind_group_layouts;
+        Util::List<PushConstantRange> push_constant_ranges;
         void *backend_state = nullptr;
       };
 
@@ -91,6 +93,18 @@ namespace Low {
         Math::UVector2 rendering_extent{0, 0};
         Util::List<BindGroup> used_bind_groups;
         void *backend_state = nullptr;
+      };
+
+      struct BackendFence
+      {
+        void *backend_state = nullptr;
+      };
+
+      struct SubmittedWork
+      {
+        GpuFence fence;
+        Util::List<BindGroup> used_bind_groups;
+        Util::List<CommandList> submitted_command_lists;
       };
 
       struct BackendSurface
@@ -196,6 +210,13 @@ namespace Low {
         void (*destroy_command_list)(ContextImpl &,
                                      BackendCommandList &);
 
+        BackendFence (*submit)(
+            ContextImpl &, QueueRole,
+            Util::Span<BackendCommandList *> p_CommandLists);
+        bool (*is_fence_complete)(ContextImpl &, BackendFence &);
+        void (*wait_fence)(ContextImpl &, BackendFence &);
+        void (*destroy_fence)(ContextImpl &, BackendFence &);
+
         BackendSwapchain (*create_swapchain)(ContextImpl &,
                                              const SwapchainDesc &);
         void (*destroy_swapchain)(ContextImpl &, BackendSwapchain &);
@@ -220,6 +241,10 @@ namespace Low {
         void (*barrier_image_command_list)(
             ContextImpl &p_Context, BackendCommandList &p_CommandList,
             const ImageBarrier &p_Barrier);
+        void (*barrier_buffer_command_list)(
+            ContextImpl &p_Context, BackendCommandList &p_CommandList,
+            BackendBuffer &p_Buffer,
+            const BufferBarrier &p_Barrier);
         void (*copy_buffer)(
             ContextImpl &p_Context, BackendCommandList &p_CommandList,
             BackendBuffer &p_Source, BackendBuffer &p_Destination,
@@ -264,6 +289,11 @@ namespace Low {
             ContextImpl &p_Context, BackendCommandList &p_CommandList,
             BackendPipelineLayout &p_PipelineLayout, u32 p_GroupIndex,
             BackendBindGroup &p_BindGroup);
+        void (*push_constants)(
+            ContextImpl &p_Context, BackendCommandList &p_CommandList,
+            BackendPipelineLayout &p_PipelineLayout,
+            ShaderStage p_Stages, u32 p_Offset, u32 p_Size,
+            const void *p_Data);
         void (*bind_vertex_buffer)(ContextImpl &p_Context,
                                    BackendCommandList &p_CommandList,
                                    u32 p_Binding,
@@ -337,6 +367,8 @@ namespace Low {
         Pool<ComputePipeline, BackendComputePipeline>
             compute_pipelines;
         Pool<CommandList, BackendCommandList> command_lists;
+        Pool<GpuFence, BackendFence> fences;
+        Util::List<SubmittedWork> pending_submissions;
         Pool<Swapchain, BackendSwapchain> swapchains;
         Util::List<CommandList> frame_command_lists;
         Util::List<Util::List<BindGroup>> frame_bind_group_usages;

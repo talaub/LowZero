@@ -81,6 +81,12 @@ namespace Low {
         VkAccessFlags2 access = VK_ACCESS_2_NONE;
       };
 
+      struct VulkanBufferStateAccess
+      {
+        VkPipelineStageFlags2 stage = VK_PIPELINE_STAGE_2_NONE;
+        VkAccessFlags2 access = VK_ACCESS_2_NONE;
+      };
+
       static VulkanImageStateAccess
       to_vulkan_image_state_access(ImageState p_State)
       {
@@ -136,6 +142,49 @@ namespace Low {
         GFX_ASSERT(false, "Unsupported LowGfx image state");
         return {VK_IMAGE_LAYOUT_UNDEFINED,
                 VK_PIPELINE_STAGE_2_NONE, VK_ACCESS_2_NONE};
+      }
+
+      static VulkanBufferStateAccess
+      to_vulkan_buffer_state_access(BufferState p_State)
+      {
+        switch (p_State) {
+        case BufferState::Undefined:
+          return {VK_PIPELINE_STAGE_2_NONE, VK_ACCESS_2_NONE};
+        case BufferState::TransferSrc:
+          return {VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                  VK_ACCESS_2_TRANSFER_READ_BIT};
+        case BufferState::TransferDst:
+          return {VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                  VK_ACCESS_2_TRANSFER_WRITE_BIT};
+        case BufferState::VertexBuffer:
+          return {VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT,
+                  VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT};
+        case BufferState::IndexBuffer:
+          return {VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT,
+                  VK_ACCESS_2_INDEX_READ_BIT};
+        case BufferState::UniformRead:
+          return {VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                      VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+                      VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                  VK_ACCESS_2_UNIFORM_READ_BIT};
+        case BufferState::StorageRead:
+          return {VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                      VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+                      VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                  VK_ACCESS_2_SHADER_STORAGE_READ_BIT};
+        case BufferState::StorageReadWrite:
+          return {VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+                      VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+                      VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                  VK_ACCESS_2_SHADER_STORAGE_READ_BIT |
+                      VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT};
+        case BufferState::IndirectArgument:
+          return {VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+                  VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT};
+        }
+
+        GFX_ASSERT(false, "Unsupported LowGfx buffer state");
+        return {VK_PIPELINE_STAGE_2_NONE, VK_ACCESS_2_NONE};
       }
 
       static VkImageAspectFlags
@@ -462,6 +511,150 @@ namespace Low {
             l_CommandListState->command_buffer);
       }
 
+      Detail::BackendFence submit(
+          Detail::ContextImpl &p_Context, QueueRole p_QueueRole,
+          Util::Span<Detail::BackendCommandList *> p_CommandLists)
+      {
+        VulkanContextState *l_State =
+            static_cast<VulkanContextState *>(
+                p_Context.backend_state);
+        GFX_ASSERT(l_State, "Cannot submit Vulkan command lists "
+                            "without context state");
+        GFX_ASSERT(
+            l_State->device != VK_NULL_HANDLE,
+            "Cannot submit Vulkan command lists without device");
+        GFX_ASSERT(!p_CommandLists.empty(),
+                   "Cannot submit empty Vulkan command list batch");
+
+        const VulkanQueue &l_Queue = get_queue(*l_State, p_QueueRole);
+        GFX_ASSERT(l_Queue.queue != VK_NULL_HANDLE,
+                   "Cannot submit Vulkan command lists without queue");
+
+        Util::List<VkCommandBuffer> l_CommandBuffers;
+        l_CommandBuffers.reserve(p_CommandLists.size());
+        for (Detail::BackendCommandList *i_CommandList :
+             p_CommandLists) {
+          GFX_ASSERT(i_CommandList,
+                     "Cannot submit null Vulkan command list");
+          GFX_ASSERT(i_CommandList->queue_role == p_QueueRole,
+                     "Vulkan command list queue role does not match "
+                     "submit queue");
+
+          VulkanCommandListState *i_CommandListState =
+              get_vulkan_command_list(
+                  *i_CommandList,
+                  "Cannot submit Vulkan command list without command "
+                  "list state");
+          l_CommandBuffers.push_back(
+              i_CommandListState->command_buffer);
+        }
+
+        VulkanFenceState *l_FenceState = new VulkanFenceState();
+        VkFenceCreateInfo l_FenceInfo{};
+        l_FenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+
+        VkResult l_FenceResult = vkCreateFence(
+            l_State->device, &l_FenceInfo, nullptr,
+            &l_FenceState->fence);
+        if (l_FenceResult != VK_SUCCESS) {
+          delete l_FenceState;
+          GFX_ASSERT(false, "Failed to create Vulkan submit fence");
+        }
+
+        VkSubmitInfo l_SubmitInfo{};
+        l_SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        l_SubmitInfo.commandBufferCount =
+            static_cast<u32>(l_CommandBuffers.size());
+        l_SubmitInfo.pCommandBuffers = l_CommandBuffers.data();
+
+        VkResult l_SubmitResult = vkQueueSubmit(
+            l_Queue.queue, 1, &l_SubmitInfo, l_FenceState->fence);
+        if (l_SubmitResult != VK_SUCCESS) {
+          vkDestroyFence(l_State->device, l_FenceState->fence,
+                         nullptr);
+          delete l_FenceState;
+          GFX_ASSERT(false, "Failed to submit Vulkan command lists");
+        }
+
+        Detail::BackendFence l_Fence;
+        l_Fence.backend_state = l_FenceState;
+        return l_Fence;
+      }
+
+      bool is_fence_complete(Detail::ContextImpl &p_Context,
+                             Detail::BackendFence &p_Fence)
+      {
+        VulkanContextState *l_State =
+            static_cast<VulkanContextState *>(
+                p_Context.backend_state);
+        GFX_ASSERT(l_State, "Cannot query Vulkan fence without "
+                            "context state");
+
+        VulkanFenceState *l_FenceState =
+            static_cast<VulkanFenceState *>(p_Fence.backend_state);
+        GFX_ASSERT(l_FenceState &&
+                       l_FenceState->fence != VK_NULL_HANDLE,
+                   "Cannot query invalid Vulkan fence");
+
+        VkResult l_Result =
+            vkGetFenceStatus(l_State->device, l_FenceState->fence);
+        if (l_Result == VK_SUCCESS) {
+          return true;
+        }
+        if (l_Result == VK_NOT_READY) {
+          return false;
+        }
+
+        GFX_ASSERT(false, "Failed to query Vulkan fence status");
+        return false;
+      }
+
+      void wait_fence(Detail::ContextImpl &p_Context,
+                      Detail::BackendFence &p_Fence)
+      {
+        VulkanContextState *l_State =
+            static_cast<VulkanContextState *>(
+                p_Context.backend_state);
+        GFX_ASSERT(l_State,
+                   "Cannot wait Vulkan fence without context state");
+
+        VulkanFenceState *l_FenceState =
+            static_cast<VulkanFenceState *>(p_Fence.backend_state);
+        GFX_ASSERT(l_FenceState &&
+                       l_FenceState->fence != VK_NULL_HANDLE,
+                   "Cannot wait invalid Vulkan fence");
+
+        VkResult l_Result =
+            vkWaitForFences(l_State->device, 1,
+                            &l_FenceState->fence, VK_TRUE,
+                            UINT64_MAX);
+        GFX_ASSERT(l_Result == VK_SUCCESS,
+                   "Failed to wait for Vulkan fence");
+      }
+
+      void destroy_fence(Detail::ContextImpl &p_Context,
+                         Detail::BackendFence &p_Fence)
+      {
+        VulkanContextState *l_State =
+            static_cast<VulkanContextState *>(
+                p_Context.backend_state);
+        GFX_ASSERT(l_State, "Cannot destroy Vulkan fence without "
+                            "context state");
+
+        VulkanFenceState *l_FenceState =
+            static_cast<VulkanFenceState *>(p_Fence.backend_state);
+        if (l_FenceState) {
+          if (l_State->device != VK_NULL_HANDLE &&
+              l_FenceState->fence != VK_NULL_HANDLE) {
+            vkDestroyFence(l_State->device, l_FenceState->fence,
+                           nullptr);
+          }
+          delete l_FenceState;
+        }
+
+        p_Fence.backend_state = nullptr;
+      }
+
       void barrier_image_command_list(
           Detail::ContextImpl &p_Context,
           Detail::BackendCommandList &p_CommandList,
@@ -550,6 +743,58 @@ namespace Low {
                 }
               }
             });
+      }
+
+      void barrier_buffer_command_list(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendCommandList &p_CommandList,
+          Detail::BackendBuffer &p_Buffer,
+          const BufferBarrier &p_Barrier)
+      {
+        (void)p_Context;
+        VulkanCommandListState *l_CommandListState =
+            get_vulkan_command_list(
+                p_CommandList,
+                "Cannot record Vulkan buffer barrier without command "
+                "list state");
+        VulkanBufferState *l_Buffer =
+            get_vulkan_buffer(p_Buffer,
+                              "Cannot record Vulkan buffer barrier "
+                              "for invalid buffer");
+
+        const VulkanBufferStateAccess l_Source =
+            to_vulkan_buffer_state_access(p_Barrier.old_state);
+        const VulkanBufferStateAccess l_Destination =
+            to_vulkan_buffer_state_access(p_Barrier.new_state);
+
+        const VkDeviceSize l_Size =
+            p_Barrier.size == LOW_UINT64_MAX
+                ? VK_WHOLE_SIZE
+                : static_cast<VkDeviceSize>(p_Barrier.size);
+
+        VkBufferMemoryBarrier2 l_BufferBarrier{};
+        l_BufferBarrier.sType =
+            VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
+        l_BufferBarrier.srcStageMask = l_Source.stage;
+        l_BufferBarrier.srcAccessMask = l_Source.access;
+        l_BufferBarrier.dstStageMask = l_Destination.stage;
+        l_BufferBarrier.dstAccessMask = l_Destination.access;
+        l_BufferBarrier.srcQueueFamilyIndex =
+            VK_QUEUE_FAMILY_IGNORED;
+        l_BufferBarrier.dstQueueFamilyIndex =
+            VK_QUEUE_FAMILY_IGNORED;
+        l_BufferBarrier.buffer = l_Buffer->buffer;
+        l_BufferBarrier.offset =
+            static_cast<VkDeviceSize>(p_Barrier.offset);
+        l_BufferBarrier.size = l_Size;
+
+        VkDependencyInfo l_DependencyInfo{};
+        l_DependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+        l_DependencyInfo.bufferMemoryBarrierCount = 1;
+        l_DependencyInfo.pBufferMemoryBarriers = &l_BufferBarrier;
+
+        vkCmdPipelineBarrier2(l_CommandListState->command_buffer,
+                              &l_DependencyInfo);
       }
 
       void copy_buffer(

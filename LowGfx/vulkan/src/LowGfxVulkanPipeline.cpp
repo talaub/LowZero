@@ -550,6 +550,23 @@ namespace Low {
         l_Info.setLayoutCount = l_SetLayouts.size();
         l_Info.pSetLayouts = l_SetLayouts.data();
 
+        Util::List<VkPushConstantRange> l_PushConstantRanges;
+        for (const PushConstantRange &i_Range :
+             p_Desc.push_constant_ranges) {
+          VkPushConstantRange i_VulkanRange{};
+          i_VulkanRange.stageFlags =
+              to_vulkan_shader_stages(i_Range.stages);
+          i_VulkanRange.offset = i_Range.offset;
+          i_VulkanRange.size = i_Range.size;
+          l_PushConstantRanges.push_back(i_VulkanRange);
+        }
+        l_Info.pushConstantRangeCount =
+            static_cast<u32>(l_PushConstantRanges.size());
+        l_Info.pPushConstantRanges =
+            l_PushConstantRanges.empty()
+                ? nullptr
+                : l_PushConstantRanges.data();
+
         VkResult l_Result = vkCreatePipelineLayout(
             l_State.device, &l_Info, nullptr,
             &l_Layout->pipeline_layout);
@@ -565,6 +582,9 @@ namespace Low {
         l_Backend.bind_group_layouts.assign(
             p_Desc.bind_group_layouts.begin(),
             p_Desc.bind_group_layouts.end());
+        l_Backend.push_constant_ranges.assign(
+            p_Desc.push_constant_ranges.begin(),
+            p_Desc.push_constant_ranges.end());
         l_Backend.backend_state = l_Layout;
         return l_Backend;
       }
@@ -587,6 +607,7 @@ namespace Low {
         }
 
         p_PipelineLayout.bind_group_layouts.clear();
+        p_PipelineLayout.push_constant_ranges.clear();
         p_PipelineLayout.backend_state = nullptr;
       }
 
@@ -1197,6 +1218,38 @@ namespace Low {
                                 p_GroupIndex, 1,
                                 &l_BindGroup->descriptor_set, 0,
                                 nullptr);
+      }
+
+      void push_constants(
+          Detail::ContextImpl &p_Context,
+          Detail::BackendCommandList &p_CommandList,
+          Detail::BackendPipelineLayout &p_PipelineLayout,
+          ShaderStage p_Stages, u32 p_Offset, u32 p_Size,
+          const void *p_Data)
+      {
+        get_context_state(p_Context);
+        VulkanCommandListState *l_CommandList =
+            static_cast<VulkanCommandListState *>(
+                p_CommandList.backend_state);
+        GFX_ASSERT(l_CommandList &&
+                       l_CommandList->command_buffer !=
+                           VK_NULL_HANDLE,
+                   "Cannot push constants without Vulkan command "
+                   "buffer");
+
+        VulkanPipelineLayoutState *l_PipelineLayout =
+            static_cast<VulkanPipelineLayoutState *>(
+                p_PipelineLayout.backend_state);
+        GFX_ASSERT(l_PipelineLayout &&
+                       l_PipelineLayout->pipeline_layout !=
+                           VK_NULL_HANDLE,
+                   "Cannot push constants without Vulkan pipeline "
+                   "layout");
+
+        vkCmdPushConstants(l_CommandList->command_buffer,
+                           l_PipelineLayout->pipeline_layout,
+                           to_vulkan_shader_stages(p_Stages),
+                           p_Offset, p_Size, p_Data);
       }
 
       void bind_vertex_buffer(

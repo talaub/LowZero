@@ -51,6 +51,14 @@ namespace Low {
       return Vulkan::get_backend_provider();
     }
 
+    static void release_submitted_work_resources(
+        Detail::ContextImpl &p_Context,
+        Detail::SubmittedWork &p_Work);
+    static void retire_completed_submissions(
+        Detail::ContextImpl &p_Context);
+    static void retire_submission(Detail::ContextImpl &p_Context,
+                                  GpuFence p_Fence);
+
     static void cleanup_instance(Detail::InstanceImpl *p_Impl)
     {
       if (p_Impl && p_Impl->api) {
@@ -71,6 +79,12 @@ namespace Low {
     {
       if (p_Impl && p_Impl->api) {
         p_Impl->api->wait_idle(*p_Impl);
+
+        for (Detail::SubmittedWork &i_Work :
+             p_Impl->pending_submissions) {
+          release_submitted_work_resources(*p_Impl, i_Work);
+        }
+        p_Impl->pending_submissions.clear();
 
         p_Impl->graphics_pipelines.for_each(
             [p_Impl](Detail::BackendGraphicsPipeline &p_Pipeline) {
@@ -134,6 +148,12 @@ namespace Low {
               p_Impl->api->destroy_sampler(*p_Impl, p_Sampler);
             });
         p_Impl->samplers.clear();
+
+        p_Impl->fences.for_each(
+            [p_Impl](Detail::BackendFence &p_Fence) {
+              p_Impl->api->destroy_fence(*p_Impl, p_Fence);
+            });
+        p_Impl->fences.clear();
 
         p_Impl->command_lists.for_each(
             [p_Impl](Detail::BackendCommandList &p_CommandList) {
@@ -272,6 +292,7 @@ namespace Low {
       m_Impl->graphics_pipelines.set_owner_id(m_Impl->context_id);
       m_Impl->compute_pipelines.set_owner_id(m_Impl->context_id);
       m_Impl->command_lists.set_owner_id(m_Impl->context_id);
+      m_Impl->fences.set_owner_id(m_Impl->context_id);
       m_Impl->swapchains.set_owner_id(m_Impl->context_id);
       m_Impl->backend_state = m_Impl->api->create_context(
           *m_Impl, *m_Impl->instance, p_Adapter, p_Desc);
@@ -308,6 +329,11 @@ namespace Low {
     void Context::wait_idle()
     {
       m_Impl->api->wait_idle(*m_Impl);
+      for (Detail::SubmittedWork &i_Work :
+           m_Impl->pending_submissions) {
+        release_submitted_work_resources(*m_Impl, i_Work);
+      }
+      m_Impl->pending_submissions.clear();
     }
 
     Buffer Context::create_buffer(const BufferDesc &p_Desc)
@@ -759,6 +785,18 @@ namespace Low {
                    "Cannot create pipeline layout with invalid bind "
                    "group layout");
       }
+      for (const PushConstantRange &i_Range :
+           p_Desc.push_constant_ranges) {
+        GFX_ASSERT(i_Range.stages != ShaderStage::None,
+                   "Push constant range must be visible to at least "
+                   "one shader stage");
+        GFX_ASSERT(i_Range.size > 0,
+                   "Push constant range size must be non-zero");
+        GFX_ASSERT(i_Range.offset + i_Range.size <=
+                       m_Impl->caps.max_inline_uniform_bytes,
+                   "Push constant range exceeds device inline "
+                   "uniform byte limit");
+      }
 
       Detail::BackendPipelineLayout l_BackendLayout =
           m_Impl->api->create_pipeline_layout(*m_Impl, p_Desc);
@@ -798,6 +836,23 @@ namespace Low {
     bool Context::is_valid(PipelineLayout p_PipelineLayout) const
     {
       return m_Impl->pipeline_layouts.is_valid(p_PipelineLayout);
+    }
+
+    static bool stages_contain(ShaderStage p_Declared,
+                               ShaderStage p_Requested)
+    {
+      return (p_Declared & p_Requested) == p_Requested;
+    }
+
+    static bool push_constant_range_contains(
+        const PushConstantRange &p_Range, ShaderStage p_Stages,
+        u32 p_Offset, u32 p_Size)
+    {
+      const u32 l_RangeEnd = p_Range.offset + p_Range.size;
+      const u32 l_WriteEnd = p_Offset + p_Size;
+      return stages_contain(p_Range.stages, p_Stages) &&
+             p_Offset >= p_Range.offset &&
+             l_WriteEnd <= l_RangeEnd;
     }
 
     static const BindGroupLayoutEntry *
@@ -943,6 +998,86 @@ namespace Low {
       }
 
       l_Usages.clear();
+    }
+
+    static void release_submitted_work_resources(
+        Detail::ContextImpl &p_Context,
+        Detail::SubmittedWork &p_Work)
+    {
+      for (BindGroup i_BindGroup : p_Work.used_bind_groups) {
+        Detail::BackendBindGroup *i_BackendBindGroup =
+            p_Context.bind_groups.get(i_BindGroup);
+        if (!i_BackendBindGroup) {
+          continue;
+        }
+
+        GFX_ASSERT(i_BackendBindGroup->in_use_count > 0,
+                   "Bind group usage tracking underflow");
+        --i_BackendBindGroup->in_use_count;
+
+        if (i_BackendBindGroup->in_use_count == 0 &&
+            !i_BackendBindGroup->pending_entries.empty()) {
+          p_Context.api->update_bind_group(
+              p_Context, *i_BackendBindGroup,
+              Util::Span<const BindGroupEntry>(
+                  i_BackendBindGroup->pending_entries.data(),
+                  i_BackendBindGroup->pending_entries.size()));
+          i_BackendBindGroup->pending_entries.clear();
+        }
+      }
+
+      p_Work.used_bind_groups.clear();
+
+      for (CommandList i_CommandList :
+           p_Work.submitted_command_lists) {
+        Detail::BackendCommandList *i_BackendCommandList =
+            p_Context.command_lists.get(i_CommandList);
+        if (!i_BackendCommandList) {
+          continue;
+        }
+
+        p_Context.api->destroy_command_list(p_Context,
+                                            *i_BackendCommandList);
+        p_Context.command_lists.destroy(i_CommandList);
+      }
+      p_Work.submitted_command_lists.clear();
+    }
+
+    static void retire_submission(Detail::ContextImpl &p_Context,
+                                  GpuFence p_Fence)
+    {
+      for (auto i_Submission =
+               p_Context.pending_submissions.begin();
+           i_Submission != p_Context.pending_submissions.end();
+           ++i_Submission) {
+        if (i_Submission->fence != p_Fence) {
+          continue;
+        }
+
+        release_submitted_work_resources(p_Context, *i_Submission);
+        p_Context.pending_submissions.erase(i_Submission);
+        return;
+      }
+    }
+
+    static void retire_completed_submissions(
+        Detail::ContextImpl &p_Context)
+    {
+      for (auto i_Submission =
+               p_Context.pending_submissions.begin();
+           i_Submission != p_Context.pending_submissions.end();) {
+        Detail::BackendFence *i_Fence =
+            p_Context.fences.get(i_Submission->fence);
+        if (!i_Fence ||
+            p_Context.api->is_fence_complete(p_Context, *i_Fence)) {
+          release_submitted_work_resources(p_Context,
+                                           *i_Submission);
+          i_Submission =
+              p_Context.pending_submissions.erase(i_Submission);
+        } else {
+          ++i_Submission;
+        }
+      }
     }
 
     BindGroup Context::create_bind_group(const BindGroupDesc &p_Desc)
@@ -1169,6 +1304,109 @@ namespace Low {
       return m_Impl->command_lists.is_valid(p_CommandList);
     }
 
+    GpuFence Context::submit(const SubmitDesc &p_Desc)
+    {
+      GFX_ASSERT(!p_Desc.command_lists.empty(),
+                 "Cannot submit without command lists");
+
+      retire_completed_submissions(*m_Impl);
+
+      Util::List<Detail::BackendCommandList *> l_CommandLists;
+      l_CommandLists.reserve(p_Desc.command_lists.size());
+      for (CommandList i_CommandListToken : p_Desc.command_lists) {
+        for (CommandList i_FrameCommandList :
+             m_Impl->frame_command_lists) {
+          GFX_ASSERT(i_CommandListToken != i_FrameCommandList,
+                     "Frame command lists must use frame "
+                     "submission");
+        }
+
+        Detail::BackendCommandList *i_CommandList =
+            m_Impl->command_lists.get(i_CommandListToken);
+        GFX_ASSERT(i_CommandList,
+                   "Cannot submit invalid command list");
+        GFX_ASSERT(i_CommandList->state ==
+                       CommandListState::Executable,
+                   "Can only submit executable command lists");
+        GFX_ASSERT(i_CommandList->queue_role == p_Desc.queue,
+                   "Submit queue does not match command list queue");
+        l_CommandLists.push_back(i_CommandList);
+      }
+
+      Detail::BackendFence l_Fence = m_Impl->api->submit(
+          *m_Impl, p_Desc.queue,
+          Util::Span<Detail::BackendCommandList *>(
+              l_CommandLists.data(), l_CommandLists.size()));
+      GpuFence l_FenceToken =
+          m_Impl->fences.create(std::move(l_Fence));
+
+      Detail::SubmittedWork l_Work;
+      l_Work.fence = l_FenceToken;
+
+      for (u32 i = 0; i < p_Desc.command_lists.size(); ++i) {
+        CommandList i_CommandListToken = p_Desc.command_lists[i];
+        Detail::BackendCommandList *i_CommandList =
+            l_CommandLists[i];
+
+        for (BindGroup i_BindGroup :
+             i_CommandList->used_bind_groups) {
+          Detail::BackendBindGroup *i_BackendBindGroup =
+              m_Impl->bind_groups.get(i_BindGroup);
+          GFX_ASSERT(i_BackendBindGroup,
+                     "Command list references invalid bind group");
+          ++i_BackendBindGroup->in_use_count;
+          l_Work.used_bind_groups.push_back(i_BindGroup);
+        }
+
+        i_CommandList->state = CommandListState::Submitted;
+        l_Work.submitted_command_lists.push_back(i_CommandListToken);
+      }
+
+      m_Impl->pending_submissions.push_back(std::move(l_Work));
+      return l_FenceToken;
+    }
+
+    bool Context::is_complete(GpuFence p_Fence)
+    {
+      Detail::BackendFence *l_Fence = m_Impl->fences.get(p_Fence);
+      GFX_ASSERT(l_Fence, "Cannot query invalid GPU fence");
+
+      const bool l_Complete =
+          m_Impl->api->is_fence_complete(*m_Impl, *l_Fence);
+      if (l_Complete) {
+        retire_submission(*m_Impl, p_Fence);
+      }
+      return l_Complete;
+    }
+
+    void Context::wait(GpuFence p_Fence)
+    {
+      Detail::BackendFence *l_Fence = m_Impl->fences.get(p_Fence);
+      GFX_ASSERT(l_Fence, "Cannot wait on invalid GPU fence");
+
+      m_Impl->api->wait_fence(*m_Impl, *l_Fence);
+      retire_submission(*m_Impl, p_Fence);
+    }
+
+    void Context::destroy(GpuFence p_Fence)
+    {
+      Detail::BackendFence *l_Fence = m_Impl->fences.get(p_Fence);
+      if (!l_Fence) {
+        return;
+      }
+
+      m_Impl->api->wait_fence(*m_Impl, *l_Fence);
+      retire_submission(*m_Impl, p_Fence);
+
+      m_Impl->api->destroy_fence(*m_Impl, *l_Fence);
+      m_Impl->fences.destroy(p_Fence);
+    }
+
+    bool Context::is_valid(GpuFence p_Fence) const
+    {
+      return m_Impl->fences.is_valid(p_Fence);
+    }
+
     Swapchain Context::create_swapchain(const SwapchainDesc &p_Desc)
     {
       GFX_ASSERT(p_Desc.width > 0,
@@ -1231,6 +1469,8 @@ namespace Low {
       GFX_ASSERT(
           !m_Impl->frame_active,
           "Cannot begin a frame while another frame is active");
+
+      retire_completed_submissions(*m_Impl);
 
       FrameContext l_Frame;
       l_Frame.m_FrameIndex = m_Impl->frame_index;
@@ -1336,6 +1576,7 @@ namespace Low {
                  "Cannot end frame with a stale frame context");
 
       m_Impl->api->end_frame(*m_Impl, p_Frame);
+      retire_completed_submissions(*m_Impl);
 
       for (CommandList i_CommandList : m_Impl->frame_command_lists) {
         Detail::BackendCommandList *l_CommandList =
@@ -1486,6 +1727,84 @@ namespace Low {
 
       if (l_CoversWholeImage) {
         l_Image->state = p_Barrier.new_state;
+      }
+    }
+
+    static BufferUsage required_usage(BufferState p_State)
+    {
+      switch (p_State) {
+      case BufferState::Undefined:
+        return BufferUsage::None;
+      case BufferState::TransferSrc:
+        return BufferUsage::TransferSrc;
+      case BufferState::TransferDst:
+        return BufferUsage::TransferDst;
+      case BufferState::VertexBuffer:
+        return BufferUsage::Vertex;
+      case BufferState::IndexBuffer:
+        return BufferUsage::Index;
+      case BufferState::UniformRead:
+        return BufferUsage::Uniform;
+      case BufferState::StorageRead:
+      case BufferState::StorageReadWrite:
+        return BufferUsage::Storage;
+      case BufferState::IndirectArgument:
+        return BufferUsage::Indirect;
+      }
+
+      GFX_ASSERT(false, "Unsupported buffer state");
+      return BufferUsage::None;
+    }
+
+    void Context::barrier(CommandList p_CommandList,
+                          const BufferBarrier &p_Barrier)
+    {
+      Detail::BackendCommandList *l_CommandList =
+          m_Impl->command_lists.get(p_CommandList);
+      GFX_ASSERT(l_CommandList,
+                 "Cannot record barrier to invalid command list");
+      GFX_ASSERT(
+          l_CommandList->state == CommandListState::Recording,
+          "Can only record barriers to recording command lists");
+      GFX_ASSERT(!l_CommandList->rendering_active,
+                 "Cannot record buffer barrier inside an active "
+                 "rendering scope");
+
+      Detail::BackendBuffer *l_Buffer =
+          m_Impl->buffers.get(p_Barrier.buffer);
+      GFX_ASSERT(l_Buffer, "Cannot record barrier for invalid buffer");
+      GFX_ASSERT(p_Barrier.size > 0,
+                 "Cannot record buffer barrier for empty range");
+      GFX_ASSERT(p_Barrier.offset < l_Buffer->size,
+                 "Buffer barrier offset exceeds buffer size");
+
+      const u64 l_Size = p_Barrier.size == LOW_UINT64_MAX
+                             ? l_Buffer->size - p_Barrier.offset
+                             : p_Barrier.size;
+      GFX_ASSERT(l_Size <= l_Buffer->size - p_Barrier.offset,
+                 "Buffer barrier range exceeds buffer size");
+
+      const BufferUsage l_RequiredUsage =
+          required_usage(p_Barrier.new_state);
+      if (l_RequiredUsage != BufferUsage::None) {
+        GFX_ASSERT(has_buffer_usage(l_Buffer->usage, l_RequiredUsage),
+                   "Buffer was not created with usage required by "
+                   "new buffer state");
+      }
+
+      const bool l_CoversWholeBuffer =
+          p_Barrier.offset == 0 && l_Size == l_Buffer->size;
+      if (l_CoversWholeBuffer) {
+        GFX_ASSERT(l_Buffer->state == p_Barrier.old_state,
+                   "Buffer barrier old state does not match tracked "
+                   "buffer state");
+      }
+
+      m_Impl->api->barrier_buffer_command_list(
+          *m_Impl, *l_CommandList, *l_Buffer, p_Barrier);
+
+      if (l_CoversWholeBuffer) {
+        l_Buffer->state = p_Barrier.new_state;
       }
     }
 
@@ -1690,6 +2009,10 @@ namespace Low {
                                   BufferUsage::TransferDst),
                  "Destination buffer was not created with "
                  "TransferDst usage");
+      GFX_ASSERT(l_Source->state == BufferState::TransferSrc,
+                 "Source buffer must be in TransferSrc state");
+      GFX_ASSERT(l_Destination->state == BufferState::TransferDst,
+                 "Destination buffer must be in TransferDst state");
 
       for (const BufferCopyRegion &i_Region : p_Regions) {
         GFX_ASSERT(i_Region.size > 0,
@@ -1734,6 +2057,8 @@ namespace Low {
                                   BufferUsage::TransferSrc),
                  "Source buffer was not created with TransferSrc "
                  "usage");
+      GFX_ASSERT(l_Source->state == BufferState::TransferSrc,
+                 "Source buffer must be in TransferSrc state");
       GFX_ASSERT(has_image_usage(l_Destination->usage,
                                  ImageUsage::TransferDst),
                  "Destination image was not created with TransferDst "
@@ -1776,6 +2101,8 @@ namespace Low {
                                   BufferUsage::TransferDst),
                  "Destination buffer was not created with "
                  "TransferDst usage");
+      GFX_ASSERT(l_Destination->state == BufferState::TransferDst,
+                 "Destination buffer must be in TransferDst state");
       GFX_ASSERT(l_Source->state == ImageState::TransferSrc,
                  "Source image must be in TransferSrc state");
 
@@ -2195,6 +2522,53 @@ namespace Low {
       }
     }
 
+    void Context::push_constants(CommandList p_CommandList,
+                                 PipelineLayout p_PipelineLayout,
+                                 ShaderStage p_Stages, u32 p_Offset,
+                                 u32 p_Size, const void *p_Data)
+    {
+      GFX_ASSERT(p_Data, "Cannot push constants from null data");
+      GFX_ASSERT(p_Stages != ShaderStage::None,
+                 "Cannot push constants without shader stages");
+      GFX_ASSERT(p_Size > 0,
+                 "Cannot push zero bytes of push constants");
+      GFX_ASSERT(p_Offset + p_Size <=
+                     m_Impl->caps.max_inline_uniform_bytes,
+                 "Push constants exceed device inline uniform byte "
+                 "limit");
+
+      Detail::BackendCommandList *l_CommandList =
+          m_Impl->command_lists.get(p_CommandList);
+      GFX_ASSERT(l_CommandList,
+                 "Cannot push constants on invalid command list");
+      GFX_ASSERT(l_CommandList->state == CommandListState::Recording,
+                 "Can only push constants on recording command "
+                 "lists");
+
+      Detail::BackendPipelineLayout *l_PipelineLayout =
+          m_Impl->pipeline_layouts.get(p_PipelineLayout);
+      GFX_ASSERT(l_PipelineLayout,
+                 "Cannot push constants with invalid pipeline "
+                 "layout");
+
+      bool l_FoundRange = false;
+      for (const PushConstantRange &i_Range :
+           l_PipelineLayout->push_constant_ranges) {
+        if (push_constant_range_contains(i_Range, p_Stages,
+                                         p_Offset, p_Size)) {
+          l_FoundRange = true;
+          break;
+        }
+      }
+      GFX_ASSERT(l_FoundRange,
+                 "Push constant write does not fit any pipeline "
+                 "layout push constant range");
+
+      m_Impl->api->push_constants(*m_Impl, *l_CommandList,
+                                  *l_PipelineLayout, p_Stages,
+                                  p_Offset, p_Size, p_Data);
+    }
+
     void Context::bind_vertex_buffer(CommandList p_CommandList,
                                      u32 p_Binding, Buffer p_Buffer,
                                      u64 p_Offset)
@@ -2216,6 +2590,8 @@ namespace Low {
       GFX_ASSERT(has_buffer_usage(l_Buffer->usage,
                                   BufferUsage::Vertex),
                  "Buffer was not created with Vertex usage");
+      GFX_ASSERT(l_Buffer->state == BufferState::VertexBuffer,
+                 "Buffer must be in VertexBuffer state");
       GFX_ASSERT(p_Offset < l_Buffer->size,
                  "Vertex buffer offset exceeds buffer size");
 
@@ -2245,6 +2621,8 @@ namespace Low {
       GFX_ASSERT(has_buffer_usage(l_Buffer->usage,
                                   BufferUsage::Index),
                  "Buffer was not created with Index usage");
+      GFX_ASSERT(l_Buffer->state == BufferState::IndexBuffer,
+                 "Buffer must be in IndexBuffer state");
       GFX_ASSERT(p_Offset < l_Buffer->size,
                  "Index buffer offset exceeds buffer size");
       GFX_ASSERT(p_IndexType == IndexType::UInt16 ||
