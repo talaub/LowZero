@@ -54,6 +54,9 @@ namespace Low {
     static void release_submitted_work_resources(
         Detail::ContextImpl &p_Context,
         Detail::SubmittedWork &p_Work);
+    static void
+    release_frame_bind_group_usages(Detail::ContextImpl &p_Context,
+                                    u32 p_FrameIndex);
     static void retire_completed_submissions(
         Detail::ContextImpl &p_Context);
     static void retire_submission(Detail::ContextImpl &p_Context,
@@ -79,6 +82,11 @@ namespace Low {
     {
       if (p_Impl && p_Impl->api) {
         p_Impl->api->wait_idle(*p_Impl);
+
+        for (u32 i = 0; i < p_Impl->frame_bind_group_usages.size();
+             ++i) {
+          release_frame_bind_group_usages(*p_Impl, i);
+        }
 
         for (Detail::SubmittedWork &i_Work :
              p_Impl->pending_submissions) {
@@ -336,6 +344,12 @@ namespace Low {
     void Context::wait_idle()
     {
       m_Impl->api->wait_idle(*m_Impl);
+
+      for (u32 i = 0; i < m_Impl->frame_bind_group_usages.size();
+           ++i) {
+        release_frame_bind_group_usages(*m_Impl, i);
+      }
+
       for (Detail::SubmittedWork &i_Work :
            m_Impl->pending_submissions) {
         release_submitted_work_resources(*m_Impl, i_Work);
@@ -735,6 +749,20 @@ namespace Low {
         GFX_ASSERT(i_Entry.stages != ShaderStage::None,
                    "Bind group layout entry must be visible to at "
                    "least one shader stage");
+        if (i_Entry.type == DescriptorType::SampledImage ||
+            i_Entry.type == DescriptorType::CombinedImageSampler) {
+          GFX_ASSERT(
+              i_Entry.count <=
+                  m_Impl->caps.max_sampled_textures_per_bind_group,
+              "Sampled texture array exceeds device bind group "
+              "limit");
+        }
+        if (i_Entry.type == DescriptorType::StorageBuffer) {
+          GFX_ASSERT(
+              i_Entry.count <=
+                  m_Impl->caps.max_storage_buffers_per_bind_group,
+              "Storage buffer array exceeds device bind group limit");
+        }
 
         for (u32 j = i + 1; j < p_Desc.entries.size(); ++j) {
           GFX_ASSERT(i_Entry.binding != p_Desc.entries[j].binding,
@@ -875,6 +903,12 @@ namespace Low {
       return nullptr;
     }
 
+    static bool is_shader_read_descriptor_state(ImageState p_State)
+    {
+      return p_State == ImageState::ShaderRead ||
+             p_State == ImageState::DepthRead;
+    }
+
     static bool same_bind_group_slot(const BindGroupEntry &p_Left,
                                      const BindGroupEntry &p_Right)
     {
@@ -949,20 +983,57 @@ namespace Low {
           }
         } else if (i_Entry.type == DescriptorType::SampledImage ||
                    i_Entry.type == DescriptorType::StorageImage) {
-          GFX_ASSERT(
-              p_Context.image_views.is_valid(i_Entry.image.view),
-              "Bind group image entry references invalid image "
-              "view");
+          Detail::BackendImageView *i_ImageView =
+              p_Context.image_views.get(i_Entry.image.view);
+          GFX_ASSERT(i_ImageView,
+                     "Bind group image entry references invalid image "
+                     "view");
+          Detail::BackendImage *i_Image =
+              p_Context.images.get(i_ImageView->image);
+          GFX_ASSERT(i_Image,
+                     "Bind group image entry references invalid image");
+          if (i_Entry.type == DescriptorType::SampledImage) {
+            GFX_ASSERT(has_image_usage(i_Image->usage,
+                                       ImageUsage::Sampled),
+                       "Sampled image descriptor references image "
+                       "without Sampled usage");
+            GFX_ASSERT(
+                is_shader_read_descriptor_state(i_Entry.image.state),
+                "Sampled image descriptors require ShaderRead or "
+                "DepthRead image state");
+          } else {
+            GFX_ASSERT(has_image_usage(i_Image->usage,
+                                       ImageUsage::Storage),
+                       "Storage image descriptor references image "
+                       "without Storage usage");
+            GFX_ASSERT(i_Entry.image.state == ImageState::ShaderWrite,
+                       "Storage image descriptors require "
+                       "ShaderWrite image state");
+          }
         } else if (i_Entry.type == DescriptorType::Sampler) {
           GFX_ASSERT(p_Context.samplers.is_valid(i_Entry.sampler),
                      "Bind group sampler entry references invalid "
                      "sampler");
         } else if (i_Entry.type ==
                    DescriptorType::CombinedImageSampler) {
+          Detail::BackendImageView *i_ImageView =
+              p_Context.image_views.get(i_Entry.image.view);
+          GFX_ASSERT(i_ImageView,
+                     "Combined image sampler entry references invalid "
+                     "image view");
+          Detail::BackendImage *i_Image =
+              p_Context.images.get(i_ImageView->image);
+          GFX_ASSERT(i_Image,
+                     "Combined image sampler entry references invalid "
+                     "image");
+          GFX_ASSERT(has_image_usage(i_Image->usage,
+                                     ImageUsage::Sampled),
+                     "Combined image sampler descriptor references "
+                     "image without Sampled usage");
           GFX_ASSERT(
-              p_Context.image_views.is_valid(i_Entry.image.view),
-              "Combined image sampler entry references invalid "
-              "image view");
+              is_shader_read_descriptor_state(i_Entry.image.state),
+              "Combined image sampler descriptors require ShaderRead "
+              "or DepthRead image state");
           GFX_ASSERT(
               p_Context.samplers.is_valid(i_Entry.sampler),
               "Combined image sampler entry references invalid "
@@ -2407,8 +2478,11 @@ namespace Low {
                     ImageState::DepthRead,
             "Depth attachments must use DepthWrite or DepthRead "
             "state");
-        GFX_ASSERT(l_DepthImageView->aspect == ImageAspect::Depth,
-                   "Depth attachments require depth image views");
+        GFX_ASSERT(l_DepthImageView->aspect == ImageAspect::Depth ||
+                       l_DepthImageView->aspect ==
+                           ImageAspect::DepthStencil,
+                   "Depth attachments require depth or depth-stencil "
+                   "image views");
         GFX_ASSERT(is_depth_format(l_DepthImageView->format),
                    "Depth attachments require depth formats");
         GFX_ASSERT(

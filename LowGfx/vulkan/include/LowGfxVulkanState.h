@@ -100,6 +100,7 @@ namespace Low {
       {
         VkDescriptorSetLayout descriptor_set_layout =
             VK_NULL_HANDLE;
+        Util::List<VkDescriptorPoolSize> descriptor_pool_sizes;
       };
 
       struct VulkanPipelineLayoutState

@@ -35,15 +35,20 @@ namespace Low {
       }
 
       static VkImageLayout
-      to_vulkan_rendering_layout(ImageState p_State)
+      to_vulkan_rendering_layout(ImageState p_State,
+                                 ImageAspect p_Aspect)
       {
         switch (p_State) {
         case ImageState::ColorAttachment:
           return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         case ImageState::DepthWrite:
-          return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+          return p_Aspect == ImageAspect::DepthStencil
+                     ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+                     : VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
         case ImageState::DepthRead:
-          return VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
+          return p_Aspect == ImageAspect::DepthStencil
+                     ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
+                     : VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
         default:
           break;
         }
@@ -68,7 +73,8 @@ namespace Low {
 
       static VkRenderingAttachmentInfo
       make_attachment_info(VkImageView p_ImageView,
-                           ImageState p_State, LoadOp p_LoadOp,
+                           ImageState p_State, ImageAspect p_Aspect,
+                           LoadOp p_LoadOp,
                            StoreOp p_StoreOp,
                            const ClearValue &p_ClearValue)
       {
@@ -76,16 +82,17 @@ namespace Low {
         l_Info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
         l_Info.pNext = nullptr;
         l_Info.imageView = p_ImageView;
-        l_Info.imageLayout = to_vulkan_rendering_layout(p_State);
+        l_Info.imageLayout =
+            to_vulkan_rendering_layout(p_State, p_Aspect);
         l_Info.loadOp = to_vulkan_load_op(p_LoadOp);
         l_Info.storeOp = to_vulkan_store_op(p_StoreOp);
         l_Info.clearValue = to_vulkan_clear_value(p_ClearValue);
         return l_Info;
       }
 
-      static VulkanImageViewState *
-      get_vulkan_image_view_state(Detail::ContextImpl &p_Context,
-                                  ImageView p_ImageView)
+      static Detail::BackendImageView *
+      get_backend_image_view(Detail::ContextImpl &p_Context,
+                             ImageView p_ImageView)
       {
         Detail::BackendImageView *l_ImageView =
             p_Context.image_views.get(p_ImageView);
@@ -100,7 +107,7 @@ namespace Low {
                        l_ImageViewState->image_view != VK_NULL_HANDLE,
                    "Cannot use empty Vulkan image view for rendering "
                    "attachment");
-        return l_ImageViewState;
+        return l_ImageView;
       }
 
       void begin_dynamic_rendering(
@@ -137,30 +144,43 @@ namespace Low {
              ++i) {
           const ColorAttachmentDesc &i_Attachment =
               p_RenderingInfo.color_attachments[i];
-          VulkanImageViewState *i_ImageView =
-              get_vulkan_image_view_state(p_Context,
-                                          i_Attachment.view);
+          Detail::BackendImageView *i_ImageView =
+              get_backend_image_view(p_Context, i_Attachment.view);
+          VulkanImageViewState *i_ImageViewState =
+              static_cast<VulkanImageViewState *>(
+                  i_ImageView->backend_state);
 
           l_ColorAttachments[i] = make_attachment_info(
-              i_ImageView->image_view, i_Attachment.state,
-              i_Attachment.load_op, i_Attachment.store_op,
-              i_Attachment.clear);
+              i_ImageViewState->image_view, i_Attachment.state,
+              i_ImageView->aspect, i_Attachment.load_op,
+              i_Attachment.store_op, i_Attachment.clear);
         }
 
         VkRenderingAttachmentInfo l_DepthAttachment{};
         VkRenderingAttachmentInfo *l_DepthAttachmentPtr = nullptr;
+        VkRenderingAttachmentInfo l_StencilAttachment{};
+        VkRenderingAttachmentInfo *l_StencilAttachmentPtr = nullptr;
         if (p_RenderingInfo.depth_attachment) {
-          VulkanImageViewState *l_ImageView =
-              get_vulkan_image_view_state(
+          Detail::BackendImageView *l_ImageView =
+              get_backend_image_view(
                   p_Context, p_RenderingInfo.depth_attachment->view);
+          VulkanImageViewState *l_ImageViewState =
+              static_cast<VulkanImageViewState *>(
+                  l_ImageView->backend_state);
 
           l_DepthAttachment = make_attachment_info(
-              l_ImageView->image_view,
+              l_ImageViewState->image_view,
               p_RenderingInfo.depth_attachment->state,
+              l_ImageView->aspect,
               p_RenderingInfo.depth_attachment->load_op,
               p_RenderingInfo.depth_attachment->store_op,
               p_RenderingInfo.depth_attachment->clear);
           l_DepthAttachmentPtr = &l_DepthAttachment;
+
+          if (l_ImageView->aspect == ImageAspect::DepthStencil) {
+            l_StencilAttachment = l_DepthAttachment;
+            l_StencilAttachmentPtr = &l_StencilAttachment;
+          }
         }
 
         VkRenderingInfo l_RenderInfo{};
@@ -173,7 +193,7 @@ namespace Low {
         l_RenderInfo.colorAttachmentCount = l_ColorAttachments.size();
         l_RenderInfo.pColorAttachments = l_ColorAttachments.data();
         l_RenderInfo.pDepthAttachment = l_DepthAttachmentPtr;
-        l_RenderInfo.pStencilAttachment = nullptr;
+        l_RenderInfo.pStencilAttachment = l_StencilAttachmentPtr;
 
         vkCmdBeginRendering(l_CommandListState->command_buffer,
                             &l_RenderInfo);

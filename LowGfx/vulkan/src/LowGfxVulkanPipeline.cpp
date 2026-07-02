@@ -65,6 +65,27 @@ namespace Low {
         return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
       }
 
+      static void add_descriptor_pool_size(
+          Util::List<VkDescriptorPoolSize> &p_Sizes,
+          VkDescriptorType p_Type, u32 p_Count)
+      {
+        if (p_Count == 0) {
+          return;
+        }
+
+        for (VkDescriptorPoolSize &i_Size : p_Sizes) {
+          if (i_Size.type == p_Type) {
+            i_Size.descriptorCount += p_Count;
+            return;
+          }
+        }
+
+        VkDescriptorPoolSize l_Size{};
+        l_Size.type = p_Type;
+        l_Size.descriptorCount = p_Count;
+        p_Sizes.push_back(l_Size);
+      }
+
       static VkFormat to_vulkan_format(ImageFormat p_Format)
       {
         switch (p_Format) {
@@ -376,7 +397,8 @@ namespace Low {
       }
 
       static VkImageLayout to_vulkan_descriptor_image_layout(
-          DescriptorType p_Type, ImageState p_State)
+          DescriptorType p_Type, ImageState p_State,
+          ImageAspect p_Aspect)
       {
         if (p_Type == DescriptorType::StorageImage) {
           return VK_IMAGE_LAYOUT_GENERAL;
@@ -385,6 +407,10 @@ namespace Low {
         switch (p_State) {
         case ImageState::ShaderRead:
           return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        case ImageState::DepthRead:
+          return p_Aspect == ImageAspect::DepthStencil
+                     ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
+                     : VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
         case ImageState::ShaderWrite:
           return VK_IMAGE_LAYOUT_GENERAL;
         default:
@@ -471,6 +497,9 @@ namespace Low {
           l_Bindings[i].descriptorCount = i_Entry.count;
           l_Bindings[i].stageFlags =
               to_vulkan_shader_stages(i_Entry.stages);
+          add_descriptor_pool_size(
+              l_Layout->descriptor_pool_sizes,
+              l_Bindings[i].descriptorType, i_Entry.count);
         }
 
         VkDescriptorSetLayoutCreateInfo l_Info{};
@@ -513,6 +542,7 @@ namespace Low {
                 l_State.device, l_Layout->descriptor_set_layout,
                 nullptr);
           }
+          l_Layout->descriptor_pool_sizes.clear();
           delete l_Layout;
         }
 
@@ -660,7 +690,8 @@ namespace Low {
               l_ImageInfo.imageView = i_ImageViewState->image_view;
               l_ImageInfo.imageLayout =
                   to_vulkan_descriptor_image_layout(
-                      i_Entry.type, i_Entry.image.state);
+                      i_Entry.type, i_Entry.image.state,
+                      i_ImageView->aspect);
             }
             if (i_Entry.type == DescriptorType::Sampler ||
                 i_Entry.type ==
@@ -684,7 +715,8 @@ namespace Low {
       }
 
       static VkDescriptorPool get_descriptor_pool(
-          VulkanContextState &p_State)
+          VulkanContextState &p_State,
+          Util::Span<const VkDescriptorPoolSize> p_MinimumSizes)
       {
         VulkanDescriptorAllocatorGrowable &l_Allocator =
             p_State.descriptor_allocator;
@@ -708,6 +740,25 @@ namespace Low {
             l_Size.descriptorCount = 1;
           }
           l_PoolSizes.push_back(l_Size);
+        }
+
+        for (const VkDescriptorPoolSize &i_Minimum :
+             p_MinimumSizes) {
+          bool l_Found = false;
+          for (VkDescriptorPoolSize &i_Size : l_PoolSizes) {
+            if (i_Size.type == i_Minimum.type) {
+              if (i_Size.descriptorCount <
+                  i_Minimum.descriptorCount) {
+                i_Size.descriptorCount =
+                    i_Minimum.descriptorCount;
+              }
+              l_Found = true;
+              break;
+            }
+          }
+          if (!l_Found) {
+            l_PoolSizes.push_back(i_Minimum);
+          }
         }
 
         VkDescriptorPoolCreateInfo l_Info{};
@@ -734,11 +785,13 @@ namespace Low {
 
       static void allocate_descriptor_set(
           VulkanContextState &p_State, VkDescriptorSetLayout p_Layout,
+          Util::Span<const VkDescriptorPoolSize> p_DescriptorSizes,
           VulkanBindGroupState &p_BindGroup)
       {
         VulkanDescriptorAllocatorGrowable &l_Allocator =
             p_State.descriptor_allocator;
-        VkDescriptorPool l_Pool = get_descriptor_pool(p_State);
+        VkDescriptorPool l_Pool =
+            get_descriptor_pool(p_State, p_DescriptorSizes);
 
         VkDescriptorSetAllocateInfo l_Info{};
         l_Info.sType =
@@ -753,7 +806,7 @@ namespace Low {
         if (l_Result == VK_ERROR_OUT_OF_POOL_MEMORY ||
             l_Result == VK_ERROR_FRAGMENTED_POOL) {
           l_Allocator.full_pools.push_back(l_Pool);
-          l_Pool = get_descriptor_pool(p_State);
+          l_Pool = get_descriptor_pool(p_State, p_DescriptorSizes);
           l_Info.descriptorPool = l_Pool;
           l_Result = vkAllocateDescriptorSets(p_State.device, &l_Info,
                                               &p_BindGroup
@@ -782,9 +835,12 @@ namespace Low {
         GFX_ASSERT(l_LayoutState,
                    "Missing Vulkan bind group layout state");
 
-        allocate_descriptor_set(l_State,
-                                l_LayoutState->descriptor_set_layout,
-                                *l_BindGroup);
+        allocate_descriptor_set(
+            l_State, l_LayoutState->descriptor_set_layout,
+            Util::Span<const VkDescriptorPoolSize>(
+                l_LayoutState->descriptor_pool_sizes.data(),
+                l_LayoutState->descriptor_pool_sizes.size()),
+            *l_BindGroup);
         write_bind_group_entries(l_State, p_Context,
                                  l_BindGroup->descriptor_set,
                                  p_Desc.entries);

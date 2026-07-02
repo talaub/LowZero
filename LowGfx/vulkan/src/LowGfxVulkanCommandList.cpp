@@ -88,7 +88,8 @@ namespace Low {
       };
 
       static VulkanImageStateAccess
-      to_vulkan_image_state_access(ImageState p_State)
+      to_vulkan_image_state_access(ImageState p_State,
+                                   ImageAspect p_Aspect)
       {
         switch (p_State) {
         case ImageState::Undefined:
@@ -114,13 +115,17 @@ namespace Low {
                   VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT |
                       VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT};
         case ImageState::DepthWrite:
-          return {VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+          return {p_Aspect == ImageAspect::DepthStencil
+                      ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+                      : VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
                   VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT |
                       VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
                   VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
                       VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT};
         case ImageState::DepthRead:
-          return {VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL,
+          return {p_Aspect == ImageAspect::DepthStencil
+                      ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
+                      : VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL,
                   VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT |
                       VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT |
                       VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
@@ -849,9 +854,11 @@ namespace Low {
                    "Cannot record Vulkan image barrier without image");
 
         const VulkanImageStateAccess l_Source =
-            to_vulkan_image_state_access(p_Barrier.old_state);
+            to_vulkan_image_state_access(p_Barrier.old_state,
+                                         p_Barrier.aspect);
         const VulkanImageStateAccess l_Destination =
-            to_vulkan_image_state_access(p_Barrier.new_state);
+            to_vulkan_image_state_access(p_Barrier.new_state,
+                                         p_Barrier.aspect);
 
         VkImageMemoryBarrier2 l_ImageBarrier{};
         l_ImageBarrier.sType =
@@ -1036,7 +1043,8 @@ namespace Low {
         vkCmdCopyBufferToImage(
             l_CommandList->command_buffer, l_Source->buffer,
             l_Destination->image,
-            to_vulkan_image_state_access(ImageState::TransferDst)
+            to_vulkan_image_state_access(ImageState::TransferDst,
+                                         ImageAspect::Color)
                 .layout,
             static_cast<u32>(l_Regions.size()), l_Regions.data());
       }
@@ -1084,7 +1092,8 @@ namespace Low {
 
         vkCmdCopyImageToBuffer(
             l_CommandList->command_buffer, l_Source->image,
-            to_vulkan_image_state_access(ImageState::TransferSrc)
+            to_vulkan_image_state_access(ImageState::TransferSrc,
+                                         ImageAspect::Color)
                 .layout,
             l_Destination->buffer, static_cast<u32>(l_Regions.size()),
             l_Regions.data());
@@ -1132,10 +1141,12 @@ namespace Low {
 
         vkCmdCopyImage(
             l_CommandList->command_buffer, l_Source->image,
-            to_vulkan_image_state_access(ImageState::TransferSrc)
+            to_vulkan_image_state_access(ImageState::TransferSrc,
+                                         ImageAspect::Color)
                 .layout,
             l_Destination->image,
-            to_vulkan_image_state_access(ImageState::TransferDst)
+            to_vulkan_image_state_access(ImageState::TransferDst,
+                                         ImageAspect::Color)
                 .layout,
             static_cast<u32>(l_Regions.size()), l_Regions.data());
       }
@@ -1185,10 +1196,12 @@ namespace Low {
 
         vkCmdBlitImage(
             l_CommandList->command_buffer, l_Source->image,
-            to_vulkan_image_state_access(ImageState::TransferSrc)
+            to_vulkan_image_state_access(ImageState::TransferSrc,
+                                         ImageAspect::Color)
                 .layout,
             l_Destination->image,
-            to_vulkan_image_state_access(ImageState::TransferDst)
+            to_vulkan_image_state_access(ImageState::TransferDst,
+                                         ImageAspect::Color)
                 .layout,
             static_cast<u32>(l_Regions.size()), l_Regions.data(),
             to_vulkan_filter(p_Filter));
