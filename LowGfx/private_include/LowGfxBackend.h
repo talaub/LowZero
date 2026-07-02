@@ -100,10 +100,23 @@ namespace Low {
         void *backend_state = nullptr;
       };
 
+      struct BackendSemaphore
+      {
+        u32 in_use_count = 0;
+        void *backend_state = nullptr;
+      };
+
+      struct BackendSubmitWait
+      {
+        BackendSemaphore *semaphore = nullptr;
+        PipelineStage stage = PipelineStage::AllCommands;
+      };
+
       struct SubmittedWork
       {
         GpuFence fence;
         Util::List<BindGroup> used_bind_groups;
+        Util::List<GpuSemaphore> used_semaphores;
         Util::List<CommandList> submitted_command_lists;
       };
 
@@ -212,10 +225,15 @@ namespace Low {
 
         BackendFence (*submit)(
             ContextImpl &, QueueRole,
-            Util::Span<BackendCommandList *> p_CommandLists);
+            Util::Span<BackendCommandList *> p_CommandLists,
+            Util::Span<const BackendSubmitWait> p_Waits,
+            Util::Span<BackendSemaphore *> p_Signals);
         bool (*is_fence_complete)(ContextImpl &, BackendFence &);
         void (*wait_fence)(ContextImpl &, BackendFence &);
         void (*destroy_fence)(ContextImpl &, BackendFence &);
+        BackendSemaphore (*create_semaphore)(ContextImpl &);
+        void (*destroy_semaphore)(ContextImpl &,
+                                  BackendSemaphore &);
 
         BackendSwapchain (*create_swapchain)(ContextImpl &,
                                              const SwapchainDesc &);
@@ -368,6 +386,7 @@ namespace Low {
             compute_pipelines;
         Pool<CommandList, BackendCommandList> command_lists;
         Pool<GpuFence, BackendFence> fences;
+        Pool<GpuSemaphore, BackendSemaphore> semaphores;
         Util::List<SubmittedWork> pending_submissions;
         Pool<Swapchain, BackendSwapchain> swapchains;
         Util::List<CommandList> frame_command_lists;

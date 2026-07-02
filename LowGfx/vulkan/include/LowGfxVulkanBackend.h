@@ -121,13 +121,19 @@ namespace Low {
 
       Detail::BackendFence submit(
           Detail::ContextImpl &p_Context, QueueRole p_QueueRole,
-          Util::Span<Detail::BackendCommandList *> p_CommandLists);
+          Util::Span<Detail::BackendCommandList *> p_CommandLists,
+          Util::Span<const Detail::BackendSubmitWait> p_Waits,
+          Util::Span<Detail::BackendSemaphore *> p_Signals);
       bool is_fence_complete(Detail::ContextImpl &p_Context,
                              Detail::BackendFence &p_Fence);
       void wait_fence(Detail::ContextImpl &p_Context,
                       Detail::BackendFence &p_Fence);
       void destroy_fence(Detail::ContextImpl &p_Context,
                          Detail::BackendFence &p_Fence);
+      Detail::BackendSemaphore
+      create_semaphore(Detail::ContextImpl &p_Context);
+      void destroy_semaphore(Detail::ContextImpl &p_Context,
+                             Detail::BackendSemaphore &p_Semaphore);
 
       Detail::BackendSwapchain
       create_swapchain(Detail::ContextImpl &p_Context,

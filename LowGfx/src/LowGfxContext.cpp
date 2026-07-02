@@ -155,6 +155,12 @@ namespace Low {
             });
         p_Impl->fences.clear();
 
+        p_Impl->semaphores.for_each(
+            [p_Impl](Detail::BackendSemaphore &p_Semaphore) {
+              p_Impl->api->destroy_semaphore(*p_Impl, p_Semaphore);
+            });
+        p_Impl->semaphores.clear();
+
         p_Impl->command_lists.for_each(
             [p_Impl](Detail::BackendCommandList &p_CommandList) {
               p_Impl->api->destroy_command_list(*p_Impl,
@@ -293,6 +299,7 @@ namespace Low {
       m_Impl->compute_pipelines.set_owner_id(m_Impl->context_id);
       m_Impl->command_lists.set_owner_id(m_Impl->context_id);
       m_Impl->fences.set_owner_id(m_Impl->context_id);
+      m_Impl->semaphores.set_owner_id(m_Impl->context_id);
       m_Impl->swapchains.set_owner_id(m_Impl->context_id);
       m_Impl->backend_state = m_Impl->api->create_context(
           *m_Impl, *m_Impl->instance, p_Adapter, p_Desc);
@@ -1028,6 +1035,19 @@ namespace Low {
 
       p_Work.used_bind_groups.clear();
 
+      for (GpuSemaphore i_Semaphore : p_Work.used_semaphores) {
+        Detail::BackendSemaphore *i_BackendSemaphore =
+            p_Context.semaphores.get(i_Semaphore);
+        if (!i_BackendSemaphore) {
+          continue;
+        }
+
+        GFX_ASSERT(i_BackendSemaphore->in_use_count > 0,
+                   "Semaphore usage tracking underflow");
+        --i_BackendSemaphore->in_use_count;
+      }
+      p_Work.used_semaphores.clear();
+
       for (CommandList i_CommandList :
            p_Work.submitted_command_lists) {
         Detail::BackendCommandList *i_BackendCommandList =
@@ -1333,15 +1353,53 @@ namespace Low {
         l_CommandLists.push_back(i_CommandList);
       }
 
+      Util::List<Detail::BackendSubmitWait> l_Waits;
+      l_Waits.reserve(p_Desc.waits.size());
+      for (const SubmitWait &i_Wait : p_Desc.waits) {
+        Detail::BackendSemaphore *i_Semaphore =
+            m_Impl->semaphores.get(i_Wait.semaphore);
+        GFX_ASSERT(i_Semaphore,
+                   "Submit wait references invalid semaphore");
+        GFX_ASSERT(i_Wait.stage != PipelineStage::None,
+                   "Submit wait must declare a destination stage");
+
+        Detail::BackendSubmitWait i_BackendWait;
+        i_BackendWait.semaphore = i_Semaphore;
+        i_BackendWait.stage = i_Wait.stage;
+        l_Waits.push_back(i_BackendWait);
+      }
+
+      Util::List<Detail::BackendSemaphore *> l_Signals;
+      Util::List<GpuSemaphore> l_UsedSemaphores;
+      l_UsedSemaphores.reserve(p_Desc.waits.size() +
+                               p_Desc.signals.size());
+      l_Signals.reserve(p_Desc.signals.size());
+      for (const SubmitWait &i_Wait : p_Desc.waits) {
+        l_UsedSemaphores.push_back(i_Wait.semaphore);
+      }
+      for (GpuSemaphore i_SemaphoreToken : p_Desc.signals) {
+        Detail::BackendSemaphore *i_Semaphore =
+            m_Impl->semaphores.get(i_SemaphoreToken);
+        GFX_ASSERT(i_Semaphore,
+                   "Submit signal references invalid semaphore");
+        l_Signals.push_back(i_Semaphore);
+        l_UsedSemaphores.push_back(i_SemaphoreToken);
+      }
+
       Detail::BackendFence l_Fence = m_Impl->api->submit(
           *m_Impl, p_Desc.queue,
           Util::Span<Detail::BackendCommandList *>(
-              l_CommandLists.data(), l_CommandLists.size()));
+              l_CommandLists.data(), l_CommandLists.size()),
+          Util::Span<const Detail::BackendSubmitWait>(
+              l_Waits.data(), l_Waits.size()),
+          Util::Span<Detail::BackendSemaphore *>(l_Signals.data(),
+                                                 l_Signals.size()));
       GpuFence l_FenceToken =
           m_Impl->fences.create(std::move(l_Fence));
 
       Detail::SubmittedWork l_Work;
       l_Work.fence = l_FenceToken;
+      l_Work.used_semaphores = std::move(l_UsedSemaphores);
 
       for (u32 i = 0; i < p_Desc.command_lists.size(); ++i) {
         CommandList i_CommandListToken = p_Desc.command_lists[i];
@@ -1360,6 +1418,14 @@ namespace Low {
 
         i_CommandList->state = CommandListState::Submitted;
         l_Work.submitted_command_lists.push_back(i_CommandListToken);
+      }
+
+      for (GpuSemaphore i_Semaphore : l_Work.used_semaphores) {
+        Detail::BackendSemaphore *i_BackendSemaphore =
+            m_Impl->semaphores.get(i_Semaphore);
+        GFX_ASSERT(i_BackendSemaphore,
+                   "Submitted work references invalid semaphore");
+        ++i_BackendSemaphore->in_use_count;
       }
 
       m_Impl->pending_submissions.push_back(std::move(l_Work));
@@ -1405,6 +1471,33 @@ namespace Low {
     bool Context::is_valid(GpuFence p_Fence) const
     {
       return m_Impl->fences.is_valid(p_Fence);
+    }
+
+    GpuSemaphore Context::create_semaphore()
+    {
+      Detail::BackendSemaphore l_Semaphore =
+          m_Impl->api->create_semaphore(*m_Impl);
+      return m_Impl->semaphores.create(std::move(l_Semaphore));
+    }
+
+    void Context::destroy(GpuSemaphore p_Semaphore)
+    {
+      Detail::BackendSemaphore *l_Semaphore =
+          m_Impl->semaphores.get(p_Semaphore);
+      if (!l_Semaphore) {
+        return;
+      }
+
+      GFX_ASSERT(l_Semaphore->in_use_count == 0,
+                 "Cannot destroy semaphore while it is in use");
+
+      m_Impl->api->destroy_semaphore(*m_Impl, *l_Semaphore);
+      m_Impl->semaphores.destroy(p_Semaphore);
+    }
+
+    bool Context::is_valid(GpuSemaphore p_Semaphore) const
+    {
+      return m_Impl->semaphores.is_valid(p_Semaphore);
     }
 
     Swapchain Context::create_swapchain(const SwapchainDesc &p_Desc)

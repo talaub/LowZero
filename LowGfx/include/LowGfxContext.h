@@ -329,6 +329,10 @@ namespace Low {
       void destroy(GpuFence p_Fence);
       bool is_valid(GpuFence p_Fence) const;
 
+      GpuSemaphore create_semaphore();
+      void destroy(GpuSemaphore p_Semaphore);
+      bool is_valid(GpuSemaphore p_Semaphore) const;
+
       Swapchain create_swapchain(const SwapchainDesc &p_Desc);
 
       void destroy(Swapchain p_Swapchain);

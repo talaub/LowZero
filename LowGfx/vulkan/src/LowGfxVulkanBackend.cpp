@@ -46,6 +46,8 @@ namespace Low {
             &is_fence_complete,
             &wait_fence,
             &destroy_fence,
+            &create_semaphore,
+            &destroy_semaphore,
             &create_swapchain,
             &destroy_swapchain,
             &begin_frame,

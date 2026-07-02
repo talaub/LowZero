@@ -187,6 +187,62 @@ namespace Low {
         return {VK_PIPELINE_STAGE_2_NONE, VK_ACCESS_2_NONE};
       }
 
+      static VkPipelineStageFlags
+      to_vulkan_pipeline_stage_flags(PipelineStage p_Stages)
+      {
+        VkPipelineStageFlags l_Flags = 0;
+
+        if ((p_Stages & PipelineStage::TopOfPipe) !=
+            PipelineStage::None) {
+          l_Flags |= VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        }
+        if ((p_Stages & PipelineStage::DrawIndirect) !=
+            PipelineStage::None) {
+          l_Flags |= VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
+        }
+        if ((p_Stages & PipelineStage::VertexInput) !=
+            PipelineStage::None) {
+          l_Flags |= VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
+        }
+        if ((p_Stages & PipelineStage::VertexShader) !=
+            PipelineStage::None) {
+          l_Flags |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+        }
+        if ((p_Stages & PipelineStage::FragmentShader) !=
+            PipelineStage::None) {
+          l_Flags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        }
+        if ((p_Stages & PipelineStage::ColorAttachment) !=
+            PipelineStage::None) {
+          l_Flags |=
+              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        }
+        if ((p_Stages & PipelineStage::ComputeShader) !=
+            PipelineStage::None) {
+          l_Flags |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        }
+        if ((p_Stages & PipelineStage::Transfer) !=
+            PipelineStage::None) {
+          l_Flags |= VK_PIPELINE_STAGE_TRANSFER_BIT;
+        }
+        if ((p_Stages & PipelineStage::BottomOfPipe) !=
+            PipelineStage::None) {
+          l_Flags |= VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        }
+        if ((p_Stages & PipelineStage::AllGraphics) !=
+            PipelineStage::None) {
+          l_Flags |= VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
+        }
+        if ((p_Stages & PipelineStage::AllCommands) !=
+            PipelineStage::None) {
+          l_Flags |= VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+        }
+
+        GFX_ASSERT(l_Flags != 0,
+                   "Cannot convert empty pipeline stage mask");
+        return l_Flags;
+      }
+
       static VkImageAspectFlags
       to_vulkan_aspect(ImageAspect p_Aspect)
       {
@@ -513,7 +569,9 @@ namespace Low {
 
       Detail::BackendFence submit(
           Detail::ContextImpl &p_Context, QueueRole p_QueueRole,
-          Util::Span<Detail::BackendCommandList *> p_CommandLists)
+          Util::Span<Detail::BackendCommandList *> p_CommandLists,
+          Util::Span<const Detail::BackendSubmitWait> p_Waits,
+          Util::Span<Detail::BackendSemaphore *> p_Signals)
       {
         VulkanContextState *l_State =
             static_cast<VulkanContextState *>(
@@ -549,6 +607,45 @@ namespace Low {
               i_CommandListState->command_buffer);
         }
 
+        Util::List<VkSemaphore> l_WaitSemaphores;
+        Util::List<VkPipelineStageFlags> l_WaitStages;
+        l_WaitSemaphores.reserve(p_Waits.size());
+        l_WaitStages.reserve(p_Waits.size());
+        for (const Detail::BackendSubmitWait &i_Wait : p_Waits) {
+          GFX_ASSERT(i_Wait.semaphore,
+                     "Cannot submit Vulkan wait with null "
+                     "semaphore");
+          VulkanSemaphoreState *i_SemaphoreState =
+              static_cast<VulkanSemaphoreState *>(
+                  i_Wait.semaphore->backend_state);
+          GFX_ASSERT(i_SemaphoreState &&
+                         i_SemaphoreState->semaphore !=
+                             VK_NULL_HANDLE,
+                     "Cannot submit Vulkan wait with invalid "
+                     "semaphore");
+          l_WaitSemaphores.push_back(i_SemaphoreState->semaphore);
+          l_WaitStages.push_back(
+              to_vulkan_pipeline_stage_flags(i_Wait.stage));
+        }
+
+        Util::List<VkSemaphore> l_SignalSemaphores;
+        l_SignalSemaphores.reserve(p_Signals.size());
+        for (Detail::BackendSemaphore *i_Semaphore : p_Signals) {
+          GFX_ASSERT(i_Semaphore,
+                     "Cannot submit Vulkan signal with null "
+                     "semaphore");
+          VulkanSemaphoreState *i_SemaphoreState =
+              static_cast<VulkanSemaphoreState *>(
+                  i_Semaphore->backend_state);
+          GFX_ASSERT(i_SemaphoreState &&
+                         i_SemaphoreState->semaphore !=
+                             VK_NULL_HANDLE,
+                     "Cannot submit Vulkan signal with invalid "
+                     "semaphore");
+          l_SignalSemaphores.push_back(
+              i_SemaphoreState->semaphore);
+        }
+
         VulkanFenceState *l_FenceState = new VulkanFenceState();
         VkFenceCreateInfo l_FenceInfo{};
         l_FenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -563,9 +660,16 @@ namespace Low {
 
         VkSubmitInfo l_SubmitInfo{};
         l_SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        l_SubmitInfo.waitSemaphoreCount =
+            static_cast<u32>(l_WaitSemaphores.size());
+        l_SubmitInfo.pWaitSemaphores = l_WaitSemaphores.data();
+        l_SubmitInfo.pWaitDstStageMask = l_WaitStages.data();
         l_SubmitInfo.commandBufferCount =
             static_cast<u32>(l_CommandBuffers.size());
         l_SubmitInfo.pCommandBuffers = l_CommandBuffers.data();
+        l_SubmitInfo.signalSemaphoreCount =
+            static_cast<u32>(l_SignalSemaphores.size());
+        l_SubmitInfo.pSignalSemaphores = l_SignalSemaphores.data();
 
         VkResult l_SubmitResult = vkQueueSubmit(
             l_Queue.queue, 1, &l_SubmitInfo, l_FenceState->fence);
@@ -653,6 +757,60 @@ namespace Low {
         }
 
         p_Fence.backend_state = nullptr;
+      }
+
+      Detail::BackendSemaphore
+      create_semaphore(Detail::ContextImpl &p_Context)
+      {
+        VulkanContextState *l_State =
+            static_cast<VulkanContextState *>(
+                p_Context.backend_state);
+        GFX_ASSERT(l_State, "Cannot create Vulkan semaphore without "
+                            "context state");
+        GFX_ASSERT(l_State->device != VK_NULL_HANDLE,
+                   "Cannot create Vulkan semaphore without device");
+
+        VulkanSemaphoreState *l_SemaphoreState =
+            new VulkanSemaphoreState();
+        VkSemaphoreCreateInfo l_Info{};
+        l_Info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+        VkResult l_Result = vkCreateSemaphore(
+            l_State->device, &l_Info, nullptr,
+            &l_SemaphoreState->semaphore);
+        if (l_Result != VK_SUCCESS) {
+          delete l_SemaphoreState;
+          GFX_ASSERT(false, "Failed to create Vulkan semaphore");
+        }
+
+        Detail::BackendSemaphore l_Semaphore;
+        l_Semaphore.backend_state = l_SemaphoreState;
+        return l_Semaphore;
+      }
+
+      void destroy_semaphore(Detail::ContextImpl &p_Context,
+                             Detail::BackendSemaphore &p_Semaphore)
+      {
+        VulkanContextState *l_State =
+            static_cast<VulkanContextState *>(
+                p_Context.backend_state);
+        GFX_ASSERT(l_State, "Cannot destroy Vulkan semaphore without "
+                            "context state");
+
+        VulkanSemaphoreState *l_SemaphoreState =
+            static_cast<VulkanSemaphoreState *>(
+                p_Semaphore.backend_state);
+        if (l_SemaphoreState) {
+          if (l_State->device != VK_NULL_HANDLE &&
+              l_SemaphoreState->semaphore != VK_NULL_HANDLE) {
+            vkDestroySemaphore(l_State->device,
+                               l_SemaphoreState->semaphore,
+                               nullptr);
+          }
+          delete l_SemaphoreState;
+        }
+
+        p_Semaphore.backend_state = nullptr;
       }
 
       void barrier_image_command_list(

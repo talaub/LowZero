@@ -142,6 +142,11 @@ namespace Low {
         VkFence fence = VK_NULL_HANDLE;
       };
 
+      struct VulkanSemaphoreState
+      {
+        VkSemaphore semaphore = VK_NULL_HANDLE;
+      };
+
       struct VulkanInstanceState
       {
         bool validation_enabled = false;
