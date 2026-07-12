@@ -209,7 +209,8 @@ namespace Low {
 
         r = p_Engine->RegisterObjectType(
             "Handle", sizeof(Low::Util::Handle),
-            asOBJ_VALUE | asGetTypeTraits<Low::Util::Handle>());
+            asOBJ_VALUE | asGetTypeTraits<Low::Util::Handle>() |
+                asOBJ_APP_CLASS_ALLINTS | asOBJ_APP_CLASS_UNION);
         LOW_ASSERT(r >= 0, "Failed to register Handle type");
 
         r = p_Engine->RegisterObjectBehaviour(
@@ -544,31 +545,36 @@ namespace Low {
         int r = p_Engine->RegisterObjectType(
             "Vector2", sizeof(Low::Math::Vector2),
             asOBJ_VALUE | asOBJ_POD |
-                asGetTypeTraits<Low::Math::Vector2>());
+                asGetTypeTraits<Low::Math::Vector2>() |
+                asOBJ_APP_CLASS_ALLFLOATS);
         LOW_ASSERT(r >= 0, "Failed to register Vector2");
 
         r = p_Engine->RegisterObjectType(
             "UVector2", sizeof(Low::Math::UVector2),
             asOBJ_VALUE | asOBJ_POD |
-                asGetTypeTraits<Low::Math::UVector2>());
+                asGetTypeTraits<Low::Math::UVector2>() |
+                asOBJ_APP_CLASS_ALLINTS);
         LOW_ASSERT(r >= 0, "Failed to register UVector2");
 
         r = p_Engine->RegisterObjectType(
             "Vector3", sizeof(Low::Math::Vector3),
             asOBJ_VALUE | asOBJ_POD |
-                asGetTypeTraits<Low::Math::Vector3>());
+                asGetTypeTraits<Low::Math::Vector3>() |
+                asOBJ_APP_CLASS_ALLFLOATS);
         LOW_ASSERT(r >= 0, "Failed to register Vector3");
 
         r = p_Engine->RegisterObjectType(
             "Vector4", sizeof(Low::Math::Vector4),
             asOBJ_VALUE | asOBJ_POD |
-                asGetTypeTraits<Low::Math::Vector4>());
+                asGetTypeTraits<Low::Math::Vector4>() |
+                asOBJ_APP_CLASS_ALLFLOATS);
         LOW_ASSERT(r >= 0, "Failed to register Vector4");
 
         r = p_Engine->RegisterObjectType(
             "Quaternion", sizeof(Low::Math::Quaternion),
             asOBJ_VALUE | asOBJ_POD |
-                asGetTypeTraits<Low::Math::Quaternion>());
+                asGetTypeTraits<Low::Math::Quaternion>() |
+                asOBJ_APP_CLASS_ALLFLOATS);
         LOW_ASSERT(r >= 0, "Failed to register Quaternion");
 
         // UVec2

@@ -15,6 +15,7 @@
 #include "angelscript.h"
 
 #include <angelscript.h>
+#include <imgui.h>
 #include <scriptbuilder/scriptbuilder.h>
 
 #include <cctype>
@@ -683,6 +684,14 @@ namespace Low {
             l_Message.row, l_Message.col,
             Util::Variant(l_Message.msg),
             Util::Variant::from_handle(l_Message.script));
+
+        if (l_Message.type == EventType::Error) {
+          LOW_LOG_ERROR << p_Message->message << LOW_LOG_END;
+        } else if (l_Message.type == EventType::Warn) {
+          LOW_LOG_WARN << p_Message->message << LOW_LOG_END;
+        } else {
+          LOW_LOG_INFO << p_Message->message << LOW_LOG_END;
+        }
       }
 
       static bool init_modules()
