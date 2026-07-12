@@ -1,13 +1,16 @@
 #include "LowEditorConvexHullColliderTypeEditor.h"
 
 #include "LowCoreConvexHullCollider.h"
+#include "LowCoreMeshRenderer.h"
 #include "LowEditorGui.h"
+#include "LowEditorIcons.h"
 #include <imgui.h>
 
 #include "LowEditorMainWindow.h"
 #include "LowEditorEditingWidget.h"
 #include "LowEditorConvexHullEditingLayer.h"
 
+#include "LowEditorThemes.h"
 #include "LowMath.h"
 #include "LowUtilContainers.h"
 #include "LowUtilString.h"
@@ -16,6 +19,29 @@ namespace Low {
 
     void ConvexHullColliderTypeEditor::render(const float p_Delta)
     {
+      Core::Component::ConvexHullCollider l_Collider =
+          m_Handle.get_id();
+
+      Core::Entity l_Entity = l_Collider.get_entity();
+      Core::Component::MeshRenderer l_MeshRenderer =
+          l_Entity.get_component(
+              Core::Component::MeshRenderer::type_id());
+
+      if (ImGui::BeginPopupModal("Construct collider from mesh")) {
+
+        if (l_MeshRenderer.is_alive()) {
+          ImGui::Text(
+              "The existing collider will be wiped and replaced with "
+              "a version constructed from the actual mesh data.");
+        } else {
+
+          ImGui::Text("This entity does not have a MeshRenderer "
+                      "component assigned.");
+        }
+
+        ImGui::EndPopup();
+      }
+
       default_render(p_Delta);
 
       ImGui::Dummy(ImVec2(0, 5));
@@ -26,8 +52,12 @@ namespace Low {
                 m_Handle.get_id()));
       }
 
-      Core::Component::ConvexHullCollider l_Collider =
-          m_Handle.get_id();
+      ImGui::SameLine();
+
+      if (Gui::Button("Construct from mesh", false,
+                      LOW_EDITOR_ICON_FILE)) {
+        ImGui::OpenPopup("Construct collider from mesh");
+      }
 
       /*
       if (!l_Collider.get_points().empty()) {
