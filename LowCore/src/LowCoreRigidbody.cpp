@@ -1052,6 +1052,7 @@ namespace Low {
                 l_World, l_Shape, l_Position,
                 l_Transform.get_world_rotation(), get_motion_type(),
                 get_mass(), is_gravity());
+        l_Body.set_owner(get_id());
         set_body(l_Body);
         set_initialized(true);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_rebuild

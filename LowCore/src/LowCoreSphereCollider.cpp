@@ -1127,6 +1127,7 @@ namespace Low {
                   l_Transform.get_world_rotation(),
                   Low::Core::Physics::BodyMotionType::STATIC, 1.0f,
                   false);
+          l_Body.set_owner(get_id());
           set_static_body(l_Body);
         }
 

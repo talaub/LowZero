@@ -54,6 +54,9 @@ namespace Low {
             World();
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Body, shape, Shape))
             Shape();
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Body, owner,
+                                   Low::Util::Handle))
+            Low::Util::Handle();
         ACCESSOR_TYPE_SOA(l_Handle, Body, name, Low::Util::Name) =
             Low::Util::Name(0u);
 
@@ -226,6 +229,34 @@ namespace Low {
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: shape
+        }
+        {
+          // Property: owner
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(owner);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset = offsetof(Body::Data, owner);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            Body l_Handle = p_Handle.get_id();
+            l_Handle.get_owner();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Body, owner,
+                                              Low::Util::Handle);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            Body l_Handle = p_Handle.get_id();
+            l_Handle.set_owner(*(Low::Util::Handle *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Body l_Handle = p_Handle.get_id();
+            *((Low::Util::Handle *)p_Data) = l_Handle.get_owner();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: owner
         }
         {
           // Property: name
@@ -849,6 +880,31 @@ namespace Low {
         broadcast_observable(N(shape));
       }
 
+      Low::Util::Handle Body::get_owner() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_owner
+        // LOW_CODEGEN::END::CUSTOM:GETTER_owner
+
+        return TYPE_SOA(Body, owner, Low::Util::Handle);
+      }
+      void Body::set_owner(Low::Util::Handle p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_owner
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_owner
+
+        // Set new value
+        TYPE_SOA(Body, owner, Low::Util::Handle) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_owner
+        // LOW_CODEGEN::END::CUSTOM:SETTER_owner
+
+        broadcast_observable(N(owner));
+      }
+
       Low::Util::Name Body::get_name() const
       {
         _LOW_ASSERT(is_alive());
@@ -885,6 +941,10 @@ namespace Low {
         _LOW_ASSERT(p_Shape.is_alive());
         _LOW_ASSERT(p_Shape.get_world().get_id() == p_World.get_id());
 
+        Body l_Body = Body::make(p_World.get_name());
+        l_Body.set_world(p_World);
+        l_Body.set_shape(p_Shape);
+
         BodyCreateInfo l_CreateInfo;
         l_CreateInfo.shape =
             ShapeBackendHandle{p_Shape.get_backend_id()};
@@ -893,14 +953,13 @@ namespace Low {
         l_CreateInfo.motion_type = p_MotionType;
         l_CreateInfo.mass = p_Mass;
         l_CreateInfo.gravity = p_Gravity;
+        l_CreateInfo.user_data =
+            reinterpret_cast<void *>(l_Body.get_id());
 
         BodyBackendHandle l_BackendHandle =
             create_body(BACKEND_WORLD(p_World), l_CreateInfo);
         _LOW_ASSERT(l_BackendHandle.is_valid());
 
-        Body l_Body = Body::make(p_World.get_name());
-        l_Body.set_world(p_World);
-        l_Body.set_shape(p_Shape);
         l_Body.set_backend_id(l_BackendHandle.id);
 
         return l_Body;

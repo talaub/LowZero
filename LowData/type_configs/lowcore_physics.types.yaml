@@ -90,6 +90,11 @@ types:
         type: Shape
         handle: true
         private_setter: true
+      owner:
+        type: Low::Util::Handle
+        no_ref: true
+        skip_serialization: true
+        skip_deserialization: true
     virtual_properties:
       position:
         type: Low::Math::Vector3
@@ -184,6 +189,7 @@ types:
     scripting_name: PhysicsWorld
     header_imports:
       - LowMath.h
+      - LowCorePhysics.h
     properties:
       world_ptr:
         type: void*
@@ -197,3 +203,62 @@ types:
         parameters:
           - name: delta
             type: float
+      raycast:
+        return_type: bool
+        parameters:
+          - name: origin
+            type: Low::Math::Vector3
+          - name: direction
+            type: Low::Math::Vector3
+          - name: maxDistance
+            type: float
+          - name: hit
+            type: Low::Core::Physics::QueryHit*
+      sphere_cast:
+        return_type: bool
+        parameters:
+          - name: origin
+            type: Low::Math::Vector3
+          - name: radius
+            type: float
+          - name: direction
+            type: Low::Math::Vector3
+          - name: maxDistance
+            type: float
+          - name: hit
+            type: Low::Core::Physics::QueryHit*
+      box_cast:
+        return_type: bool
+        parameters:
+          - name: origin
+            type: Low::Math::Vector3
+          - name: halfExtents
+            type: Low::Math::Vector3
+          - name: rotation
+            type: Low::Math::Quaternion
+          - name: direction
+            type: Low::Math::Vector3
+          - name: maxDistance
+            type: float
+          - name: hit
+            type: Low::Core::Physics::QueryHit*
+      overlap_sphere:
+        return_type: bool
+        parameters:
+          - name: position
+            type: Low::Math::Vector3
+          - name: radius
+            type: float
+          - name: hit
+            type: Low::Core::Physics::QueryHit*
+      overlap_box:
+        return_type: bool
+        parameters:
+          - name: position
+            type: Low::Math::Vector3
+          - name: halfExtents
+            type: Low::Math::Vector3
+          - name: rotation
+            type: Low::Math::Quaternion
+          - name: hit
+            type: Low::Core::Physics::QueryHit*

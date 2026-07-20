@@ -10,6 +10,8 @@
 
 #include "LowCoreEntity.h"
 #include "LowCoreInput.h"
+#include "LowCorePhysics.h"
+#include "LowCorePhysicsWorld.h"
 
 #include "LowCore.h"
 
@@ -276,6 +278,244 @@ namespace Low {
       }
 
       // END REGISTER HANDLE
+      // ------------------------------------------------------
+      // BEGIN REGISTER PHYSICS
+      static void
+      physics_query_hit_default_construct(
+          Low::Core::Physics::QueryHit *p_Memory)
+      {
+        new (p_Memory) Low::Core::Physics::QueryHit();
+      }
+
+      static void physics_query_hit_copy_construct(
+          const Low::Core::Physics::QueryHit &p_Other,
+          Low::Core::Physics::QueryHit *p_Memory)
+      {
+        new (p_Memory) Low::Core::Physics::QueryHit(p_Other);
+      }
+
+      static void physics_query_hit_destruct(
+          Low::Core::Physics::QueryHit *p_Memory)
+      {
+        p_Memory->~QueryHit();
+      }
+
+      static Low::Core::Physics::QueryHit &
+      physics_query_hit_assign(
+          const Low::Core::Physics::QueryHit &p_Other,
+          Low::Core::Physics::QueryHit *p_Self)
+      {
+        *p_Self = p_Other;
+        return *p_Self;
+      }
+
+      static bool physics_world_raycast(
+          Low::Core::Physics::World p_World,
+          Low::Math::Vector3 p_Origin,
+          Low::Math::Vector3 p_Direction, float p_MaxDistance,
+          Low::Core::Physics::QueryHit &p_Hit)
+      {
+        return p_World.raycast(p_Origin, p_Direction, p_MaxDistance,
+                               &p_Hit);
+      }
+
+      static bool physics_world_sphere_cast(
+          Low::Core::Physics::World p_World,
+          Low::Math::Vector3 p_Origin, float p_Radius,
+          Low::Math::Vector3 p_Direction, float p_MaxDistance,
+          Low::Core::Physics::QueryHit &p_Hit)
+      {
+        return p_World.sphere_cast(p_Origin, p_Radius, p_Direction,
+                                   p_MaxDistance, &p_Hit);
+      }
+
+      static bool physics_world_box_cast(
+          Low::Core::Physics::World p_World,
+          Low::Math::Vector3 p_Origin,
+          Low::Math::Vector3 p_HalfExtents,
+          Low::Math::Quaternion p_Rotation,
+          Low::Math::Vector3 p_Direction, float p_MaxDistance,
+          Low::Core::Physics::QueryHit &p_Hit)
+      {
+        return p_World.box_cast(p_Origin, p_HalfExtents, p_Rotation,
+                                p_Direction, p_MaxDistance, &p_Hit);
+      }
+
+      static bool physics_world_overlap_sphere(
+          Low::Core::Physics::World p_World,
+          Low::Math::Vector3 p_Position, float p_Radius,
+          Low::Core::Physics::QueryHit &p_Hit)
+      {
+        return p_World.overlap_sphere(p_Position, p_Radius, &p_Hit);
+      }
+
+      static bool physics_world_overlap_box(
+          Low::Core::Physics::World p_World,
+          Low::Math::Vector3 p_Position,
+          Low::Math::Vector3 p_HalfExtents,
+          Low::Math::Quaternion p_Rotation,
+          Low::Core::Physics::QueryHit &p_Hit)
+      {
+        return p_World.overlap_box(p_Position, p_HalfExtents,
+                                   p_Rotation, &p_Hit);
+      }
+
+      static void expose_physics(asIScriptEngine *p_Engine)
+      {
+        int r = 0;
+
+        r = p_Engine->RegisterEnum("PhysicsHitObjectFamily");
+        LOW_ASSERT(r >= 0,
+                   "Failed to register PhysicsHitObjectFamily");
+
+#define LOW_AS_REGISTER_HIT_OBJECT_FAMILY(script_name, cpp_name)     \
+  r = p_Engine->RegisterEnumValue(                                   \
+      "PhysicsHitObjectFamily", script_name,                         \
+      static_cast<int>(                                              \
+          Low::Core::Physics::HitObjectFamily::cpp_name));           \
+  LOW_ASSERT(r >= 0, "Failed to register PhysicsHitObjectFamily")
+
+        LOW_AS_REGISTER_HIT_OBJECT_FAMILY("None", NONE);
+        LOW_AS_REGISTER_HIT_OBJECT_FAMILY("Body", BODY);
+        LOW_AS_REGISTER_HIT_OBJECT_FAMILY("Rigidbody", RIGIDBODY);
+        LOW_AS_REGISTER_HIT_OBJECT_FAMILY("StaticCollider",
+                                          STATIC_COLLIDER);
+        LOW_AS_REGISTER_HIT_OBJECT_FAMILY("CharacterController",
+                                          CHARACTER_CONTROLLER);
+        LOW_AS_REGISTER_HIT_OBJECT_FAMILY("Unknown", UNKNOWN);
+
+#undef LOW_AS_REGISTER_HIT_OBJECT_FAMILY
+
+        r = p_Engine->RegisterObjectType(
+            "PhysicsQueryHit",
+            sizeof(Low::Core::Physics::QueryHit),
+            asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
+        LOW_ASSERT(r >= 0, "Failed to register PhysicsQueryHit");
+
+        r = p_Engine->RegisterObjectBehaviour(
+            "PhysicsQueryHit", asBEHAVE_CONSTRUCT, "void f()",
+            asFUNCTION(physics_query_hit_default_construct),
+            asCALL_CDECL_OBJLAST);
+        LOW_ASSERT(r >= 0,
+                   "Failed to register PhysicsQueryHit default ctor");
+
+        r = p_Engine->RegisterObjectBehaviour(
+            "PhysicsQueryHit", asBEHAVE_CONSTRUCT,
+            "void f(const PhysicsQueryHit &in)",
+            asFUNCTION(physics_query_hit_copy_construct),
+            asCALL_CDECL_OBJLAST);
+        LOW_ASSERT(r >= 0,
+                   "Failed to register PhysicsQueryHit copy ctor");
+
+        r = p_Engine->RegisterObjectBehaviour(
+            "PhysicsQueryHit", asBEHAVE_DESTRUCT, "void f()",
+            asFUNCTION(physics_query_hit_destruct),
+            asCALL_CDECL_OBJLAST);
+        LOW_ASSERT(r >= 0,
+                   "Failed to register PhysicsQueryHit destructor");
+
+        r = p_Engine->RegisterObjectMethod(
+            "PhysicsQueryHit",
+            "PhysicsQueryHit &opAssign(const PhysicsQueryHit &in)",
+            asFUNCTION(physics_query_hit_assign),
+            asCALL_CDECL_OBJLAST);
+        LOW_ASSERT(r >= 0,
+                   "Failed to register PhysicsQueryHit assignment");
+
+        r = p_Engine->RegisterObjectProperty(
+            "PhysicsQueryHit", "Vector3 position",
+            asOFFSET(Low::Core::Physics::QueryHit, position));
+        LOW_ASSERT(r >= 0,
+                   "Failed to register PhysicsQueryHit::position");
+
+        r = p_Engine->RegisterObjectProperty(
+            "PhysicsQueryHit", "Vector3 normal",
+            asOFFSET(Low::Core::Physics::QueryHit, normal));
+        LOW_ASSERT(r >= 0,
+                   "Failed to register PhysicsQueryHit::normal");
+
+        r = p_Engine->RegisterObjectProperty(
+            "PhysicsQueryHit", "float fraction",
+            asOFFSET(Low::Core::Physics::QueryHit, fraction));
+        LOW_ASSERT(r >= 0,
+                   "Failed to register PhysicsQueryHit::fraction");
+
+        r = p_Engine->RegisterObjectProperty(
+            "PhysicsQueryHit", "float distance",
+            asOFFSET(Low::Core::Physics::QueryHit, distance));
+        LOW_ASSERT(r >= 0,
+                   "Failed to register PhysicsQueryHit::distance");
+
+        r = p_Engine->RegisterObjectProperty(
+            "PhysicsQueryHit", "Handle body",
+            asOFFSET(Low::Core::Physics::QueryHit, body));
+        LOW_ASSERT(r >= 0,
+                   "Failed to register PhysicsQueryHit::body");
+
+        r = p_Engine->RegisterObjectProperty(
+            "PhysicsQueryHit", "Handle owner",
+            asOFFSET(Low::Core::Physics::QueryHit, owner));
+        LOW_ASSERT(r >= 0,
+                   "Failed to register PhysicsQueryHit::owner");
+
+        r = p_Engine->RegisterObjectProperty(
+            "PhysicsQueryHit", "PhysicsHitObjectFamily family",
+            asOFFSET(Low::Core::Physics::QueryHit, family));
+        LOW_ASSERT(r >= 0,
+                   "Failed to register PhysicsQueryHit::family");
+      }
+
+      static void expose_physics_late(asIScriptEngine *p_Engine)
+      {
+        int r = 0;
+
+        r = p_Engine->RegisterObjectMethod(
+            "PhysicsWorld",
+            "bool raycast(Vector3 origin, Vector3 direction, "
+            "float maxDistance, PhysicsQueryHit &out hit)",
+            asFUNCTION(physics_world_raycast), asCALL_CDECL_OBJFIRST);
+        LOW_ASSERT(r >= 0,
+                   "Failed to register PhysicsWorld::raycast");
+
+        r = p_Engine->RegisterObjectMethod(
+            "PhysicsWorld",
+            "bool sphere_cast(Vector3 origin, float radius, "
+            "Vector3 direction, float maxDistance, "
+            "PhysicsQueryHit &out hit)",
+            asFUNCTION(physics_world_sphere_cast),
+            asCALL_CDECL_OBJFIRST);
+        LOW_ASSERT(r >= 0,
+                   "Failed to register PhysicsWorld::sphere_cast");
+
+        r = p_Engine->RegisterObjectMethod(
+            "PhysicsWorld",
+            "bool box_cast(Vector3 origin, Vector3 halfExtents, "
+            "Quaternion rotation, Vector3 direction, "
+            "float maxDistance, PhysicsQueryHit &out hit)",
+            asFUNCTION(physics_world_box_cast),
+            asCALL_CDECL_OBJFIRST);
+        LOW_ASSERT(r >= 0,
+                   "Failed to register PhysicsWorld::box_cast");
+
+        r = p_Engine->RegisterObjectMethod(
+            "PhysicsWorld",
+            "bool overlap_sphere(Vector3 position, float radius, "
+            "PhysicsQueryHit &out hit)",
+            asFUNCTION(physics_world_overlap_sphere),
+            asCALL_CDECL_OBJFIRST);
+        LOW_ASSERT(r >= 0,
+                   "Failed to register PhysicsWorld::overlap_sphere");
+
+        r = p_Engine->RegisterObjectMethod(
+            "PhysicsWorld",
+            "bool overlap_box(Vector3 position, Vector3 halfExtents, "
+            "Quaternion rotation, PhysicsQueryHit &out hit)",
+            asFUNCTION(physics_world_overlap_box),
+            asCALL_CDECL_OBJFIRST);
+        LOW_ASSERT(r >= 0,
+                   "Failed to register PhysicsWorld::overlap_box");
+      }
+      // END REGISTER PHYSICS
       // ------------------------------------------------------
       // BEGIN REGISTER MATH
       static void expose_typedefs(asIScriptEngine *p_Engine)
@@ -1197,8 +1437,14 @@ namespace Low {
         expose_name(p_Engine);
         expose_logger(p_Engine);
         expose_handle(p_Engine);
+        expose_physics(p_Engine);
         expose_runtime(p_Engine);
         expose_input(p_Engine);
+      }
+
+      void expose_late(asIScriptEngine *p_Engine)
+      {
+        expose_physics_late(p_Engine);
       }
 
       void register_interfaces(asIScriptEngine *p_Engine)

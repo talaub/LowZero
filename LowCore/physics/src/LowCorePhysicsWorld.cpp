@@ -12,7 +12,13 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+#include "LowCoreBoxCollider.h"
+#include "LowCoreCharacterController.h"
+#include "LowCoreConvexHullCollider.h"
 #include "LowCorePhysicsBackend.h"
+#include "LowCorePhysicsBody.h"
+#include "LowCoreRigidbody.h"
+#include "LowCoreSphereCollider.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -20,6 +26,52 @@ namespace Low {
     namespace Physics {
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
 #define BACKEND_WORLD() static_cast<WorldBackend *>(get_world_ptr())
+      static HitObjectFamily
+      get_hit_object_family(Low::Util::Handle p_Owner)
+      {
+        if (p_Owner.get_id() == 0u ||
+            p_Owner.get_id() == Low::Util::Handle::DEAD) {
+          return HitObjectFamily::BODY;
+        }
+
+        const uint16_t l_Type = p_Owner.get_type();
+        if (l_Type == Component::Rigidbody::type_id()) {
+          return HitObjectFamily::RIGIDBODY;
+        }
+        if (l_Type == Component::BoxCollider::type_id() ||
+            l_Type == Component::SphereCollider::type_id() ||
+            l_Type == Component::ConvexHullCollider::type_id()) {
+          return HitObjectFamily::STATIC_COLLIDER;
+        }
+        if (l_Type == Component::CharacterController::type_id()) {
+          return HitObjectFamily::CHARACTER_CONTROLLER;
+        }
+
+        return HitObjectFamily::UNKNOWN;
+      }
+
+      static QueryHit to_query_hit(const BackendQueryHit &p_Hit)
+      {
+        QueryHit l_Hit;
+        l_Hit.position = p_Hit.position;
+        l_Hit.normal = p_Hit.normal;
+        l_Hit.fraction = p_Hit.fraction;
+        l_Hit.distance = p_Hit.distance;
+
+        if (!p_Hit.user_data) {
+          return l_Hit;
+        }
+
+        Body l_Body = reinterpret_cast<uint64_t>(p_Hit.user_data);
+        if (!l_Body.is_alive()) {
+          return l_Hit;
+        }
+
+        l_Hit.body = l_Body.get_id();
+        l_Hit.owner = l_Body.get_owner();
+        l_Hit.family = get_hit_object_family(l_Hit.owner);
+        return l_Hit;
+      }
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       u16 World::ms_TypeId = 0;
@@ -236,6 +288,227 @@ namespace Low {
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
           // End function: simulate
+        }
+        {
+          // Function: raycast
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(raycast);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Origin);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::VECTOR3;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Direction);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::VECTOR3;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_MaxDistance);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::FLOAT;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Hit);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: raycast
+        }
+        {
+          // Function: sphere_cast
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(sphere_cast);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Origin);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::VECTOR3;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Radius);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::FLOAT;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Direction);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::VECTOR3;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_MaxDistance);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::FLOAT;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Hit);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: sphere_cast
+        }
+        {
+          // Function: box_cast
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(box_cast);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Origin);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::VECTOR3;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_HalfExtents);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::VECTOR3;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Rotation);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::QUATERNION;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Direction);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::VECTOR3;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_MaxDistance);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::FLOAT;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Hit);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: box_cast
+        }
+        {
+          // Function: overlap_sphere
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(overlap_sphere);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Position);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::VECTOR3;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Radius);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::FLOAT;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Hit);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: overlap_sphere
+        }
+        {
+          // Function: overlap_box
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(overlap_box);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Position);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::VECTOR3;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_HalfExtents);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::VECTOR3;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Rotation);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::QUATERNION;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Hit);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: overlap_box
         }
         {
           // Function: get_gravity
@@ -531,6 +804,94 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_simulate
         simulate_world(BACKEND_WORLD(), p_Delta);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_simulate
+      }
+
+      bool World::raycast(Low::Math::Vector3 p_Origin,
+                          Low::Math::Vector3 p_Direction,
+                          float p_MaxDistance,
+                          Low::Core::Physics::QueryHit *p_Hit)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_raycast
+        BackendQueryHit l_BackendHit;
+        const bool l_Result =
+            raycast_world(BACKEND_WORLD(), p_Origin, p_Direction,
+                          p_MaxDistance, l_BackendHit);
+        if (l_Result && p_Hit) {
+          *p_Hit = to_query_hit(l_BackendHit);
+        }
+        return l_Result;
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_raycast
+      }
+
+      bool World::sphere_cast(Low::Math::Vector3 p_Origin,
+                              float p_Radius,
+                              Low::Math::Vector3 p_Direction,
+                              float p_MaxDistance,
+                              Low::Core::Physics::QueryHit *p_Hit)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_sphere_cast
+        BackendQueryHit l_BackendHit;
+        const bool l_Result =
+            sphere_cast_world(BACKEND_WORLD(), p_Origin, p_Radius,
+                              p_Direction, p_MaxDistance,
+                              l_BackendHit);
+        if (l_Result && p_Hit) {
+          *p_Hit = to_query_hit(l_BackendHit);
+        }
+        return l_Result;
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_sphere_cast
+      }
+
+      bool World::box_cast(Low::Math::Vector3 p_Origin,
+                           Low::Math::Vector3 p_HalfExtents,
+                           Low::Math::Quaternion p_Rotation,
+                           Low::Math::Vector3 p_Direction,
+                           float p_MaxDistance,
+                           Low::Core::Physics::QueryHit *p_Hit)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_box_cast
+        BackendQueryHit l_BackendHit;
+        const bool l_Result = box_cast_world(
+            BACKEND_WORLD(), p_Origin, p_HalfExtents, p_Rotation,
+            p_Direction, p_MaxDistance, l_BackendHit);
+        if (l_Result && p_Hit) {
+          *p_Hit = to_query_hit(l_BackendHit);
+        }
+        return l_Result;
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_box_cast
+      }
+
+      bool World::overlap_sphere(Low::Math::Vector3 p_Position,
+                                 float p_Radius,
+                                 Low::Core::Physics::QueryHit *p_Hit)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_overlap_sphere
+        BackendQueryHit l_BackendHit;
+        const bool l_Result = overlap_sphere_world(
+            BACKEND_WORLD(), p_Position, p_Radius,
+            p_Hit ? &l_BackendHit : nullptr);
+        if (l_Result && p_Hit) {
+          *p_Hit = to_query_hit(l_BackendHit);
+        }
+        return l_Result;
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_overlap_sphere
+      }
+
+      bool World::overlap_box(Low::Math::Vector3 p_Position,
+                              Low::Math::Vector3 p_HalfExtents,
+                              Low::Math::Quaternion p_Rotation,
+                              Low::Core::Physics::QueryHit *p_Hit)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_overlap_box
+        BackendQueryHit l_BackendHit;
+        const bool l_Result = overlap_box_world(
+            BACKEND_WORLD(), p_Position, p_HalfExtents, p_Rotation,
+            p_Hit ? &l_BackendHit : nullptr);
+        if (l_Result && p_Hit) {
+          *p_Hit = to_query_hit(l_BackendHit);
+        }
+        return l_Result;
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_overlap_box
       }
 
       Low::Math::Vector3 World::get_gravity()

@@ -9,7 +9,14 @@
 #include <Jolt/Core/JobSystemThreadPool.h>
 #include <Jolt/Core/TempAllocator.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
+#include <Jolt/Physics/Body/BodyLock.h>
 #include <Jolt/Physics/Character/CharacterVirtual.h>
+#include <Jolt/Physics/Collision/CastResult.h>
+#include <Jolt/Physics/Collision/CollideShape.h>
+#include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
+#include <Jolt/Physics/Collision/NarrowPhaseQuery.h>
+#include <Jolt/Physics/Collision/RayCast.h>
+#include <Jolt/Physics/Collision/ShapeCast.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/ConvexHullShape.h>
@@ -82,8 +89,8 @@ namespace {
     }
 
 #if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
-    const char *
-    GetBroadPhaseLayerName(JPH::BroadPhaseLayer p_Layer) const override
+    const char *GetBroadPhaseLayerName(
+        JPH::BroadPhaseLayer p_Layer) const override
     {
       if (p_Layer == BroadPhaseLayers::NON_MOVING) {
         return "NON_MOVING";
@@ -212,12 +219,10 @@ namespace {
     return JPH::EMotionType::Static;
   }
 
-  JPH::ObjectLayer
-  get_layer_for_motion_type(
+  JPH::ObjectLayer get_layer_for_motion_type(
       Low::Core::Physics::BodyMotionType p_MotionType)
   {
-    return p_MotionType ==
-                   Low::Core::Physics::BodyMotionType::STATIC
+    return p_MotionType == Low::Core::Physics::BodyMotionType::STATIC
                ? Layers::NON_MOVING
                : Layers::MOVING;
   }
@@ -271,6 +276,180 @@ namespace Low {
         }
       };
 
+      static uint64_t get_backend_body_id(WorldBackend *p_World,
+                                          const JPH::BodyID &p_BodyId)
+      {
+        for (const auto &i_Body : p_World->bodies) {
+          if (i_Body.second == p_BodyId) {
+            return i_Body.first;
+          }
+        }
+
+        return 0u;
+      }
+
+      static void fill_body_query_hit(WorldBackend *p_World,
+                                      const JPH::BodyID &p_BodyId,
+                                      BackendQueryHit &p_Hit)
+      {
+        p_Hit.body_backend_id =
+            get_backend_body_id(p_World, p_BodyId);
+        p_Hit.user_data = nullptr;
+
+        JPH::BodyLockRead l_Lock(
+            p_World->physics_system.GetBodyLockInterface(), p_BodyId);
+        if (l_Lock.Succeeded()) {
+          p_Hit.user_data = reinterpret_cast<void *>(
+              l_Lock.GetBody().GetUserData());
+        }
+      }
+
+      static JPH::ShapeRefC
+      create_sphere_query_shape(const float p_Radius)
+      {
+        return new JPH::SphereShape(std::max(p_Radius, 0.001f));
+      }
+
+      static JPH::ShapeRefC
+      create_box_query_shape(const Math::Vector3 &p_HalfExtents)
+      {
+        const JPH::Vec3 l_HalfExtents =
+            to_jolt(glm::max(p_HalfExtents, Math::Vector3(0.001f)));
+        const float l_MinHalfExtent =
+            std::min({l_HalfExtents.GetX(), l_HalfExtents.GetY(),
+                      l_HalfExtents.GetZ()});
+        const float l_ConvexRadius =
+            std::min(l_MinHalfExtent * 0.5f, 0.05f);
+        return new JPH::BoxShape(l_HalfExtents, l_ConvexRadius);
+      }
+
+      static bool fill_raycast_hit(WorldBackend *p_World,
+                                   const JPH::RRayCast &p_Ray,
+                                   const JPH::RayCastResult &p_Result,
+                                   const float p_MaxDistance,
+                                   BackendQueryHit &p_Hit)
+      {
+        const JPH::RVec3 l_Position =
+            p_Ray.GetPointOnRay(p_Result.mFraction);
+        p_Hit.position = from_jolt_position(l_Position);
+        p_Hit.fraction = p_Result.mFraction;
+        p_Hit.distance = p_MaxDistance * p_Result.mFraction;
+        p_Hit.normal = Math::Vector3(0.0f);
+        p_Hit.user_data = nullptr;
+
+        JPH::BodyLockRead l_Lock(
+            p_World->physics_system.GetBodyLockInterface(),
+            p_Result.mBodyID);
+        if (l_Lock.Succeeded()) {
+          p_Hit.normal =
+              from_jolt(l_Lock.GetBody().GetWorldSpaceSurfaceNormal(
+                  p_Result.mSubShapeID2, l_Position));
+          p_Hit.user_data = reinterpret_cast<void *>(
+              l_Lock.GetBody().GetUserData());
+        }
+
+        p_Hit.body_backend_id =
+            get_backend_body_id(p_World, p_Result.mBodyID);
+        return true;
+      }
+
+      static bool
+      fill_shape_cast_hit(WorldBackend *p_World,
+                          const JPH::ShapeCastResult &p_Result,
+                          const float p_MaxDistance, BackendQueryHit &p_Hit)
+      {
+        p_Hit.position = from_jolt(p_Result.mContactPointOn2);
+        p_Hit.normal =
+            from_jolt(-p_Result.mPenetrationAxis.Normalized());
+        p_Hit.fraction = p_Result.mFraction;
+        p_Hit.distance = p_MaxDistance * p_Result.mFraction;
+        fill_body_query_hit(p_World, p_Result.mBodyID2, p_Hit);
+        return true;
+      }
+
+      static bool
+      fill_overlap_hit(WorldBackend *p_World,
+                       const JPH::CollideShapeResult &p_Result,
+                       BackendQueryHit &p_Hit)
+      {
+        p_Hit.position = from_jolt(p_Result.mContactPointOn2);
+        p_Hit.normal =
+            from_jolt(-p_Result.mPenetrationAxis.Normalized());
+        p_Hit.fraction = 0.0f;
+        p_Hit.distance = 0.0f;
+        fill_body_query_hit(p_World, p_Result.mBodyID2, p_Hit);
+        return true;
+      }
+
+      static bool cast_query_shape(WorldBackend *p_World,
+                                   const JPH::Shape *p_Shape,
+                                   const Math::Vector3 &p_Origin,
+                                   const Math::Quaternion &p_Rotation,
+                                   const Math::Vector3 &p_Direction,
+                                   const float p_MaxDistance,
+                                   BackendQueryHit &p_Hit)
+      {
+        LOW_ASSERT(p_World,
+                   "Cannot cast shape in null physics world");
+
+        const float l_DirectionLength = glm::length(p_Direction);
+        if (l_DirectionLength <= LOW_MATH_EPSILON ||
+            p_MaxDistance <= 0.0f) {
+          return false;
+        }
+
+        const JPH::Vec3 l_Direction = to_jolt(
+            (p_Direction / l_DirectionLength) * p_MaxDistance);
+        const JPH::RMat44 l_Start = JPH::RMat44::sRotationTranslation(
+            to_jolt(p_Rotation), to_jolt_position(p_Origin));
+        const JPH::RShapeCast l_Cast =
+            JPH::RShapeCast::sFromWorldTransform(
+                p_Shape, JPH::Vec3::sReplicate(1.0f), l_Start,
+                l_Direction);
+
+        JPH::ShapeCastSettings l_Settings;
+        JPH::ClosestHitCollisionCollector<JPH::CastShapeCollector>
+            l_Collector;
+        p_World->physics_system.GetNarrowPhaseQuery().CastShape(
+            l_Cast, l_Settings, JPH::RVec3::sZero(), l_Collector);
+
+        if (!l_Collector.HadHit()) {
+          return false;
+        }
+
+        return fill_shape_cast_hit(p_World, l_Collector.mHit,
+                                   p_MaxDistance, p_Hit);
+      }
+
+      static bool overlap_query_shape(
+          WorldBackend *p_World, const JPH::Shape *p_Shape,
+          const Math::Vector3 &p_Position,
+          const Math::Quaternion &p_Rotation, BackendQueryHit *p_Hit)
+      {
+        LOW_ASSERT(p_World,
+                   "Cannot overlap shape in null physics world");
+
+        const JPH::RMat44 l_Transform =
+            JPH::RMat44::sRotationTranslation(
+                to_jolt(p_Rotation), to_jolt_position(p_Position));
+
+        JPH::CollideShapeSettings l_Settings;
+        JPH::ClosestHitCollisionCollector<JPH::CollideShapeCollector>
+            l_Collector;
+        p_World->physics_system.GetNarrowPhaseQuery().CollideShape(
+            p_Shape, JPH::Vec3::sReplicate(1.0f), l_Transform,
+            l_Settings, JPH::RVec3::sZero(), l_Collector);
+
+        if (!l_Collector.HadHit()) {
+          return false;
+        }
+
+        if (p_Hit) {
+          fill_overlap_hit(p_World, l_Collector.mHit, *p_Hit);
+        }
+        return true;
+      }
+
       WorldBackend *create_world_backend()
       {
         initialize_jolt_runtime();
@@ -302,9 +481,9 @@ namespace Low {
         LOW_ASSERT(p_World, "Cannot simulate null physics world");
 
         constexpr int l_CollisionSteps = 1;
-        p_World->physics_system.Update(
-            p_Delta, l_CollisionSteps, &p_World->temp_allocator,
-            &p_World->job_system);
+        p_World->physics_system.Update(p_Delta, l_CollisionSteps,
+                                       &p_World->temp_allocator,
+                                       &p_World->job_system);
       }
 
       void set_world_gravity(WorldBackend *p_World,
@@ -326,7 +505,8 @@ namespace Low {
       create_shape(WorldBackend *p_World,
                    const ShapeCreateInfo &p_CreateInfo)
       {
-        LOW_ASSERT(p_World, "Cannot create shape in null physics world");
+        LOW_ASSERT(p_World,
+                   "Cannot create shape in null physics world");
 
         JPH::ShapeRefC l_Shape;
         switch (p_CreateInfo.shape.type) {
@@ -384,8 +564,8 @@ namespace Low {
           l_JoltPoints.push_back(to_jolt(p_Points[i]));
         }
 
-        JPH::ConvexHullShapeSettings l_Settings(l_JoltPoints.data(),
-                                                 (int)l_JoltPoints.size());
+        JPH::ConvexHullShapeSettings l_Settings(
+            l_JoltPoints.data(), (int)l_JoltPoints.size());
         JPH::Shape::ShapeResult l_Result = l_Settings.Create();
         LOW_ASSERT(l_Result.IsValid(),
                    "Could not create Jolt convex hull shape");
@@ -396,21 +576,21 @@ namespace Low {
         return l_Handle;
       }
 
-      ShapeBackendHandle
-      create_convex_hull_shape(WorldBackend *p_World,
-                               const Low::Util::List<Math::Vector3> &p_Points)
+      ShapeBackendHandle create_convex_hull_shape(
+          WorldBackend *p_World,
+          const Low::Util::List<Math::Vector3> &p_Points)
       {
         return create_convex_hull_shape(p_World, p_Points.data(),
                                         (uint32_t)p_Points.size());
       }
 
-      void visualize_convex_hull(
-          WorldBackend *p_World, ShapeBackendHandle p_Shape,
-          Renderer::RenderView p_RenderView,
-          const Math::Vector3 &p_Position,
-          const Math::Quaternion &p_Rotation,
-          const Math::Color &p_Color, bool p_Wireframe,
-          bool p_DepthTest)
+      void visualize_convex_hull(WorldBackend *p_World,
+                                 ShapeBackendHandle p_Shape,
+                                 Renderer::RenderView p_RenderView,
+                                 const Math::Vector3 &p_Position,
+                                 const Math::Quaternion &p_Rotation,
+                                 const Math::Color &p_Color,
+                                 bool p_Wireframe, bool p_DepthTest)
       {
         LOW_ASSERT(p_World,
                    "Cannot visualize shape in null physics world");
@@ -444,8 +624,7 @@ namespace Low {
 
           JPH::Array<JPH::uint> i_Indices;
           i_Indices.resize(i_VertexCount);
-          l_Hull->GetFaceVertices(i, i_VertexCount,
-                                  i_Indices.data());
+          l_Hull->GetFaceVertices(i, i_VertexCount, i_Indices.data());
 
           if (!p_Wireframe) {
             const Math::Vector3 i_FirstPoint =
@@ -454,8 +633,8 @@ namespace Low {
               DebugGeometry::render_triangle(
                   p_RenderView, i_FirstPoint,
                   l_GetPoint(i_Indices[j]),
-                  l_GetPoint(i_Indices[j + 1u]), p_Color,
-                  p_DepthTest, false);
+                  l_GetPoint(i_Indices[j + 1u]), p_Color, p_DepthTest,
+                  false);
             }
           }
 
@@ -497,7 +676,8 @@ namespace Low {
       create_body(WorldBackend *p_World,
                   const BodyCreateInfo &p_CreateInfo)
       {
-        LOW_ASSERT(p_World, "Cannot create body in null physics world");
+        LOW_ASSERT(p_World,
+                   "Cannot create body in null physics world");
         LOW_ASSERT(p_CreateInfo.shape.is_valid(),
                    "Cannot create body without a valid shape");
 
@@ -506,15 +686,16 @@ namespace Low {
                    "Unknown physics shape handle");
 
         JPH::BodyCreationSettings l_Settings(
-            l_ShapeIt->second, to_jolt_position(p_CreateInfo.position),
+            l_ShapeIt->second,
+            to_jolt_position(p_CreateInfo.position),
             to_jolt(p_CreateInfo.rotation),
             to_jolt(p_CreateInfo.motion_type),
             get_layer_for_motion_type(p_CreateInfo.motion_type));
         l_Settings.mOverrideMassProperties =
             JPH::EOverrideMassProperties::CalculateInertia;
-        l_Settings.mMassPropertiesOverride.mMass =
-            p_CreateInfo.mass;
-        l_Settings.mGravityFactor = p_CreateInfo.gravity ? 1.0f : 0.0f;
+        l_Settings.mMassPropertiesOverride.mMass = p_CreateInfo.mass;
+        l_Settings.mGravityFactor =
+            p_CreateInfo.gravity ? 1.0f : 0.0f;
         l_Settings.mUserData =
             reinterpret_cast<uint64_t>(p_CreateInfo.user_data);
 
@@ -535,7 +716,8 @@ namespace Low {
         return l_Handle;
       }
 
-      void destroy_body(WorldBackend *p_World, BodyBackendHandle p_Body)
+      void destroy_body(WorldBackend *p_World,
+                        BodyBackendHandle p_Body)
       {
         LOW_ASSERT(p_World,
                    "Cannot destroy body in null physics world");
@@ -568,10 +750,9 @@ namespace Low {
                    "Unknown physics body handle");
 
         p_World->physics_system.GetBodyInterface()
-            .SetPositionAndRotation(l_BodyIt->second,
-                                    to_jolt_position(p_Position),
-                                    to_jolt(p_Rotation),
-                                    JPH::EActivation::Activate);
+            .SetPositionAndRotation(
+                l_BodyIt->second, to_jolt_position(p_Position),
+                to_jolt(p_Rotation), JPH::EActivation::Activate);
       }
 
       Math::Vector3 get_body_position(WorldBackend *p_World,
@@ -599,16 +780,18 @@ namespace Low {
         LOW_ASSERT(l_BodyIt != p_World->bodies.end(),
                    "Unknown physics body handle");
 
-        return from_jolt(p_World->physics_system.GetBodyInterface()
-                             .GetRotation(l_BodyIt->second));
+        return from_jolt(
+            p_World->physics_system.GetBodyInterface().GetRotation(
+                l_BodyIt->second));
       }
 
       void set_body_linear_velocity(WorldBackend *p_World,
                                     BodyBackendHandle p_Body,
                                     const Math::Vector3 &p_Velocity)
       {
-        LOW_ASSERT(p_World,
-                   "Cannot set body linear velocity in null physics world");
+        LOW_ASSERT(
+            p_World,
+            "Cannot set body linear velocity in null physics world");
 
         auto l_BodyIt = p_World->bodies.find(p_Body.id);
         LOW_ASSERT(l_BodyIt != p_World->bodies.end(),
@@ -621,8 +804,9 @@ namespace Low {
       Math::Vector3 get_body_linear_velocity(WorldBackend *p_World,
                                              BodyBackendHandle p_Body)
       {
-        LOW_ASSERT(p_World,
-                   "Cannot get body linear velocity in null physics world");
+        LOW_ASSERT(
+            p_World,
+            "Cannot get body linear velocity in null physics world");
 
         auto l_BodyIt = p_World->bodies.find(p_Body.id);
         LOW_ASSERT(l_BodyIt != p_World->bodies.end(),
@@ -636,8 +820,9 @@ namespace Low {
                                      BodyBackendHandle p_Body,
                                      const Math::Vector3 &p_Velocity)
       {
-        LOW_ASSERT(p_World,
-                   "Cannot set body angular velocity in null physics world");
+        LOW_ASSERT(
+            p_World,
+            "Cannot set body angular velocity in null physics world");
 
         auto l_BodyIt = p_World->bodies.find(p_Body.id);
         LOW_ASSERT(l_BodyIt != p_World->bodies.end(),
@@ -647,11 +832,13 @@ namespace Low {
             l_BodyIt->second, to_jolt(p_Velocity));
       }
 
-      Math::Vector3 get_body_angular_velocity(WorldBackend *p_World,
-                                              BodyBackendHandle p_Body)
+      Math::Vector3
+      get_body_angular_velocity(WorldBackend *p_World,
+                                BodyBackendHandle p_Body)
       {
-        LOW_ASSERT(p_World,
-                   "Cannot get body angular velocity in null physics world");
+        LOW_ASSERT(
+            p_World,
+            "Cannot get body angular velocity in null physics world");
 
         auto l_BodyIt = p_World->bodies.find(p_Body.id);
         LOW_ASSERT(l_BodyIt != p_World->bodies.end(),
@@ -661,19 +848,96 @@ namespace Low {
                              .GetAngularVelocity(l_BodyIt->second));
       }
 
+      bool raycast_world(WorldBackend *p_World,
+                         const Math::Vector3 &p_Origin,
+                         const Math::Vector3 &p_Direction,
+                         float p_MaxDistance, BackendQueryHit &p_Hit)
+      {
+        LOW_ASSERT(p_World, "Cannot raycast in null physics world");
+
+        const float l_DirectionLength = glm::length(p_Direction);
+        if (l_DirectionLength <= LOW_MATH_EPSILON ||
+            p_MaxDistance <= 0.0f) {
+          return false;
+        }
+
+        const JPH::RRayCast l_Ray(
+            to_jolt_position(p_Origin),
+            to_jolt((p_Direction / l_DirectionLength) *
+                    p_MaxDistance));
+
+        JPH::RayCastResult l_Result;
+        if (!p_World->physics_system.GetNarrowPhaseQuery().CastRay(
+                l_Ray, l_Result)) {
+          return false;
+        }
+
+        return fill_raycast_hit(p_World, l_Ray, l_Result,
+                                p_MaxDistance, p_Hit);
+      }
+
+      bool sphere_cast_world(WorldBackend *p_World,
+                             const Math::Vector3 &p_Origin,
+                             float p_Radius,
+                             const Math::Vector3 &p_Direction,
+                             float p_MaxDistance, BackendQueryHit &p_Hit)
+      {
+        JPH::ShapeRefC l_Shape = create_sphere_query_shape(p_Radius);
+        return cast_query_shape(
+            p_World, l_Shape.GetPtr(), p_Origin,
+            Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f), p_Direction,
+            p_MaxDistance, p_Hit);
+      }
+
+      bool box_cast_world(WorldBackend *p_World,
+                          const Math::Vector3 &p_Origin,
+                          const Math::Vector3 &p_HalfExtents,
+                          const Math::Quaternion &p_Rotation,
+                          const Math::Vector3 &p_Direction,
+                          float p_MaxDistance, BackendQueryHit &p_Hit)
+      {
+        JPH::ShapeRefC l_Shape =
+            create_box_query_shape(p_HalfExtents);
+        return cast_query_shape(p_World, l_Shape.GetPtr(), p_Origin,
+                                p_Rotation, p_Direction,
+                                p_MaxDistance, p_Hit);
+      }
+
+      bool overlap_sphere_world(WorldBackend *p_World,
+                                const Math::Vector3 &p_Position,
+                                float p_Radius, BackendQueryHit *p_Hit)
+      {
+        JPH::ShapeRefC l_Shape = create_sphere_query_shape(p_Radius);
+        return overlap_query_shape(
+            p_World, l_Shape.GetPtr(), p_Position,
+            Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f), p_Hit);
+      }
+
+      bool overlap_box_world(WorldBackend *p_World,
+                             const Math::Vector3 &p_Position,
+                             const Math::Vector3 &p_HalfExtents,
+                             const Math::Quaternion &p_Rotation,
+                             BackendQueryHit *p_Hit)
+      {
+        JPH::ShapeRefC l_Shape =
+            create_box_query_shape(p_HalfExtents);
+        return overlap_query_shape(p_World, l_Shape.GetPtr(),
+                                   p_Position, p_Rotation, p_Hit);
+      }
+
       CapsuleControllerBackendHandle create_capsule_controller(
           WorldBackend *p_World,
           const CapsuleControllerCreateInfo &p_CreateInfo)
       {
-        LOW_ASSERT(p_World,
-                   "Cannot create capsule controller in null physics world");
+        LOW_ASSERT(
+            p_World,
+            "Cannot create capsule controller in null physics world");
 
         const float l_Radius = std::max(p_CreateInfo.radius, 0.001f);
         const float l_TotalHeight =
             std::max(p_CreateInfo.height, l_Radius * 2.0f + 0.002f);
-        const float l_HalfCylinderHeight =
-            std::max((l_TotalHeight - (l_Radius * 2.0f)) * 0.5f,
-                     0.001f);
+        const float l_HalfCylinderHeight = std::max(
+            (l_TotalHeight - (l_Radius * 2.0f)) * 0.5f, 0.001f);
         const float l_CenterOffset = l_HalfCylinderHeight + l_Radius;
 
         JPH::Ref<JPH::CharacterVirtualSettings> l_Settings =
@@ -719,8 +983,10 @@ namespace Low {
         WorldBackend::CapsuleControllerBackend l_Backend;
         l_Backend.controller = l_Controller;
         l_Backend.center_offset = l_CenterOffset;
-        l_Backend.step_offset = std::max(p_CreateInfo.step_offset, 0.0f);
-        l_Backend.skin_width = std::max(p_CreateInfo.skin_width, 0.0f);
+        l_Backend.step_offset =
+            std::max(p_CreateInfo.step_offset, 0.0f);
+        l_Backend.skin_width =
+            std::max(p_CreateInfo.skin_width, 0.0f);
         p_World->capsule_controllers[l_Handle.id] = l_Backend;
 
         l_Controller->RefreshContacts(
@@ -737,9 +1003,8 @@ namespace Low {
           WorldBackend *p_World,
           CapsuleControllerBackendHandle p_Controller)
       {
-        LOW_ASSERT(
-            p_World,
-            "Cannot destroy capsule controller in null physics world");
+        LOW_ASSERT(p_World, "Cannot destroy capsule controller in "
+                            "null physics world");
         if (!p_Controller.is_valid()) {
           return;
         }
@@ -752,8 +1017,9 @@ namespace Low {
           WorldBackend *p_World,
           CapsuleControllerBackendHandle p_Controller)
       {
-        LOW_ASSERT(p_World,
-                   "Cannot access capsule controller in null physics world");
+        LOW_ASSERT(
+            p_World,
+            "Cannot access capsule controller in null physics world");
         auto l_ControllerIt =
             p_World->capsule_controllers.find(p_Controller.id);
         LOW_ASSERT(l_ControllerIt !=
@@ -782,7 +1048,8 @@ namespace Low {
             to_jolt(p_Delta) / p_DeltaTime;
         l_Backend.controller->SetLinearVelocity(l_DesiredVelocity);
 
-        JPH::CharacterVirtual::ExtendedUpdateSettings l_UpdateSettings;
+        JPH::CharacterVirtual::ExtendedUpdateSettings
+            l_UpdateSettings;
         const JPH::Vec3 l_Up = l_Backend.controller->GetUp();
         l_UpdateSettings.mWalkStairsStepUp =
             l_Up * l_Backend.step_offset;
@@ -869,5 +1136,5 @@ namespace Low {
                                         l_Position);
       }
     } // namespace Physics
-  }   // namespace Core
+  } // namespace Core
 } // namespace Low

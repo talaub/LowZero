@@ -8,6 +8,7 @@
 #include "LowUtilSerialization.h"
 
 #include "LowMath.h"
+#include "LowCorePhysics.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
@@ -145,6 +146,27 @@ namespace Low {
         void set_name(Low::Util::Name p_Value);
 
         void simulate(float p_Delta);
+        bool raycast(Low::Math::Vector3 p_Origin,
+                     Low::Math::Vector3 p_Direction,
+                     float p_MaxDistance,
+                     Low::Core::Physics::QueryHit *p_Hit);
+        bool sphere_cast(Low::Math::Vector3 p_Origin, float p_Radius,
+                         Low::Math::Vector3 p_Direction,
+                         float p_MaxDistance,
+                         Low::Core::Physics::QueryHit *p_Hit);
+        bool box_cast(Low::Math::Vector3 p_Origin,
+                      Low::Math::Vector3 p_HalfExtents,
+                      Low::Math::Quaternion p_Rotation,
+                      Low::Math::Vector3 p_Direction,
+                      float p_MaxDistance,
+                      Low::Core::Physics::QueryHit *p_Hit);
+        bool overlap_sphere(Low::Math::Vector3 p_Position,
+                            float p_Radius,
+                            Low::Core::Physics::QueryHit *p_Hit);
+        bool overlap_box(Low::Math::Vector3 p_Position,
+                         Low::Math::Vector3 p_HalfExtents,
+                         Low::Math::Quaternion p_Rotation,
+                         Low::Core::Physics::QueryHit *p_Hit);
         Low::Math::Vector3 get_gravity();
         void set_gravity(Low::Math::Vector3 p_Value);
         static bool get_page_for_index(const u32 p_Index,

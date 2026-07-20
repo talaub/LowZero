@@ -33,6 +33,7 @@ namespace Low {
       static bool g_Initialized = false;
 
       void expose(asIScriptEngine *p_Engine);
+      void expose_late(asIScriptEngine *p_Engine);
       void register_interfaces(asIScriptEngine *p_Engine);
 
       static bool load_script_to_file(const char *p_Path,
@@ -720,6 +721,7 @@ namespace Low {
         expose(g_Engine);
         register_types(g_Engine);
         expose_types(g_Engine);
+        expose_late(g_Engine);
         register_interfaces(g_Engine);
 
         LOW_ASSERT(init_modules(),

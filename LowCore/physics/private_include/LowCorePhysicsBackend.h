@@ -1,5 +1,6 @@
 #pragma once
 
+#include "LowCorePhysics.h"
 #include "LowMath.h"
 #include "LowCorePhysicsBodyMotionType.h"
 #include "LowRendererRenderView.h"
@@ -71,6 +72,16 @@ namespace Low {
         void *user_data = nullptr;
       };
 
+      struct BackendQueryHit
+      {
+        Math::Vector3 position = Math::Vector3(0.0f);
+        Math::Vector3 normal = Math::Vector3(0.0f);
+        float fraction = 0.0f;
+        float distance = 0.0f;
+        uint64_t body_backend_id = 0u;
+        void *user_data = nullptr;
+      };
+
       WorldBackend *create_world_backend();
       void destroy_world_backend(WorldBackend *p_World);
 
@@ -121,6 +132,33 @@ namespace Low {
                                      const Math::Vector3 &p_Velocity);
       Math::Vector3 get_body_angular_velocity(WorldBackend *p_World,
                                               BodyBackendHandle p_Body);
+
+      bool raycast_world(WorldBackend *p_World,
+                         const Math::Vector3 &p_Origin,
+                         const Math::Vector3 &p_Direction,
+                         float p_MaxDistance, BackendQueryHit &p_Hit);
+      bool sphere_cast_world(WorldBackend *p_World,
+                             const Math::Vector3 &p_Origin,
+                             float p_Radius,
+                             const Math::Vector3 &p_Direction,
+                             float p_MaxDistance,
+                             BackendQueryHit &p_Hit);
+      bool box_cast_world(WorldBackend *p_World,
+                          const Math::Vector3 &p_Origin,
+                          const Math::Vector3 &p_HalfExtents,
+                          const Math::Quaternion &p_Rotation,
+                          const Math::Vector3 &p_Direction,
+                          float p_MaxDistance,
+                          BackendQueryHit &p_Hit);
+      bool overlap_sphere_world(WorldBackend *p_World,
+                                const Math::Vector3 &p_Position,
+                                float p_Radius,
+                                BackendQueryHit *p_Hit = nullptr);
+      bool overlap_box_world(WorldBackend *p_World,
+                             const Math::Vector3 &p_Position,
+                             const Math::Vector3 &p_HalfExtents,
+                             const Math::Quaternion &p_Rotation,
+                             BackendQueryHit *p_Hit = nullptr);
 
       CapsuleControllerBackendHandle create_capsule_controller(
           WorldBackend *p_World,

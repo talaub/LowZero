@@ -30,6 +30,7 @@ namespace Low {
           uint64_t backend_id;
           World world;
           Shape shape;
+          Low::Util::Handle owner;
           Low::Util::Name name;
 
           static size_t get_size()
@@ -151,6 +152,9 @@ namespace Low {
         World get_world() const;
 
         Shape get_shape() const;
+
+        Low::Util::Handle get_owner() const;
+        void set_owner(Low::Util::Handle p_Value);
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
