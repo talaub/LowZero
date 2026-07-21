@@ -14,3 +14,6 @@ LowCore:
   AssetGenerator: 9
   TweenEase: 13
   BodyMotionType: 14
+  SourceMode: 15
+  SourceGeometryType: 16
+  AreaType: 17

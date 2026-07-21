@@ -1,0 +1,84 @@
+module: LowCore
+source_path: navigation/src
+header_path: navigation/include
+prefix: LowCoreNavigation
+namespace:
+  - Low
+  - Core
+  - Navigation
+dll_macro: LOW_CORE_API
+types:
+  Source:
+    identifier_name: NavigationSource
+    component: true
+    scripting_expose: false
+    editor:
+      icon: route
+      display_name: Navigation Source
+    header_imports:
+      - LowCoreNavigationSourceMode.h
+      - LowCoreNavigationSourceGeometryType.h
+      - LowCoreNavigationAreaType.h
+    properties:
+      mode:
+        type: SourceMode
+        enum: true
+        editor_editable: true
+      geometry_type:
+        type: SourceGeometryType
+        enum: true
+        editor_editable: true
+      area_type:
+        type: AreaType
+        enum: true
+        editor_editable: true
+      agent_mask:
+        type: uint32_t
+        editor_editable: true
+      include_children:
+        type: bool
+        editor_editable: true
+      tile_dirty:
+        type: bool
+        editor_editable: false
+        skip_serialization: true
+        skip_deserialization: true
+
+  World:
+    identifier_name: NavigationWorld
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    no_auto_duplicate: true
+    scripting_expose: false
+    header_imports:
+      - LowCoreNavigation.h
+    properties:
+      world_ptr:
+        type: void*
+        private_setter: true
+    functions:
+      build_from_geometry:
+        return_type: bool
+        parameters:
+          - name: geometry
+            type: Low::Core::Navigation::BuildGeometry*
+      find_nearest_point:
+        return_type: bool
+        parameters:
+          - name: position
+            type: Low::Math::Vector3
+          - name: halfExtents
+            type: Low::Math::Vector3
+          - name: result
+            type: Low::Core::Navigation::NearestPointResult*
+      find_path:
+        return_type: bool
+        parameters:
+          - name: start
+            type: Low::Math::Vector3
+          - name: end
+            type: Low::Math::Vector3
+          - name: halfExtents
+            type: Low::Math::Vector3
+          - name: result
+            type: Low::Core::Navigation::PathResult*

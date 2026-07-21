@@ -1,0 +1,31 @@
+module: LowCore
+source_path: navigation/src
+header_path: navigation/include
+prefix: LowCoreNavigation
+namespace:
+  - Low
+  - Core
+  - Navigation
+dll_macro: LOW_CORE_API
+enums:
+  SourceMode:
+    options:
+      - name: Surface
+        aliases:
+          - Walkable
+      - name: Obstacle
+      - name: Modifier
+      - name: Ignore
+  SourceGeometryType:
+    options:
+      - name: Collider
+      - name: RenderMesh
+      - name: Terrain
+      - name: CustomMesh
+  AreaType:
+    options:
+      - name: Preferred
+      - name: Normal
+      - name: Rough
+      - name: Difficult
+      - name: Blocked

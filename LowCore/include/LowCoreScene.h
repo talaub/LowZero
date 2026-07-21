@@ -8,6 +8,7 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
+#include "LowCoreNavigationWorld.h"
 #include "LowCorePhysicsWorld.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
@@ -26,6 +27,7 @@ namespace Low {
         Low::Util::Set<Util::UniqueId> regions;
         bool loaded;
         Low::Core::Physics::World physics_world;
+        Low::Core::Navigation::World navigation_world;
         Low::Util::UniqueId unique_id;
         Low::Util::Name name;
 
@@ -146,6 +148,8 @@ namespace Low {
 
       Low::Core::Physics::World get_physics_world() const;
 
+      Low::Core::Navigation::World get_navigation_world() const;
+
       Low::Util::UniqueId get_unique_id() const;
 
       Low::Util::Name get_name() const;
@@ -166,6 +170,7 @@ namespace Low {
       void set_loaded(bool p_Value);
       void toggle_loaded();
       void set_physics_world(Low::Core::Physics::World p_Value);
+      void set_navigation_world(Low::Core::Navigation::World p_Value);
       void set_unique_id(Low::Util::UniqueId p_Value);
       void _load();
 

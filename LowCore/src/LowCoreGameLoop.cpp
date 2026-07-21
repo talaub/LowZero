@@ -14,6 +14,7 @@
 #include "LowCoreCameraSystem.h"
 #include "LowCoreGameplaySystem.h"
 #include "LowCoreGameplaySystemInstance.h"
+#include "LowCoreNavigation.h"
 
 #include "LowCoreInput.h"
 #include "LowCoreScriptAsset.h"
@@ -119,6 +120,7 @@ namespace Low {
         if (!l_FirstRun) {
           // System::Navmesh::tick(p_Delta, get_engine_state());
         }
+        Navigation::render_debug_geometry();
 
         Scripting::tick(p_Delta, get_engine_state());
 

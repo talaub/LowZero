@@ -262,7 +262,11 @@ function generate_enum_source(p_Enum) {
 
   t += line(`${l_EnumString} entry_value(Low::Util::Name p_Name) {`);
   for (let i_Option of p_Enum.options) {
-    t += line(`if (p_Name == N(${i_Option.name})) {`);
+    const l_EntryNames = [i_Option.name].concat(i_Option.aliases || []);
+    const l_Condition = l_EntryNames
+      .map((i_Name) => `p_Name == N(${i_Name})`)
+      .join(" || ");
+    t += line(`if (${l_Condition}) {`);
     t += line(`return ${l_EnumString}::${i_Option.uppercase};`);
     t += line("}");
   }
@@ -890,7 +894,7 @@ function generate_source(p_Type) {
 
   t += line(`u16 ${p_Type.name}::ms_TypeId = 0;`, n);
   t += line(
-    `const Low::Util::TypeIdentifier ${p_Type.name}::IDENTIFIER(LOW_NAME(${hash_name(p_Type.module)}), LOW_NAME(${hash_name(p_Type.name)}));`,
+    `const Low::Util::TypeIdentifier ${p_Type.name}::IDENTIFIER(LOW_NAME(${hash_name(p_Type.module)}), LOW_NAME(${hash_name(p_Type.identifier_name)}));`,
     n,
   );
   t += line(`uint32_t ${p_Type.name}::ms_Capacity = 0u;`, n);
@@ -1139,7 +1143,7 @@ function generate_source(p_Type) {
   t += empty();
   t += line(`void ${p_Type.name}::initialize() {`);
   t += line(
-    `const Low::Util::TypeIdentifier l_IdentifierNames(N(${p_Type.module}), N(${p_Type.name}));`,
+    `const Low::Util::TypeIdentifier l_IdentifierNames(N(${p_Type.module}), N(${p_Type.identifier_name}));`,
   );
   t += empty();
   if (true) {

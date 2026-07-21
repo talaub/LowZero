@@ -62,6 +62,9 @@ namespace Low {
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Scene, physics_world,
                                  Low::Core::Physics::World))
           Low::Core::Physics::World();
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Scene, navigation_world,
+                                 Low::Core::Navigation::World))
+          Low::Core::Navigation::World();
       ACCESSOR_TYPE_SOA(l_Handle, Scene, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -79,6 +82,7 @@ namespace Low {
                                     l_Handle.get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+      l_Handle.set_navigation_world(Navigation::World::make(p_Name));
       l_Handle.set_physics_world(PhysicsWorld::make(p_Name));
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
@@ -93,6 +97,9 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
         if (get_physics_world().is_alive()) {
           get_physics_world().destroy();
+        }
+        if (get_navigation_world().is_alive()) {
+          get_navigation_world().destroy();
         }
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
@@ -249,6 +256,35 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: physics_world
+      }
+      {
+        // Property: navigation_world
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(navigation_world);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(Scene::Data, navigation_world);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType =
+            Low::Core::Navigation::World::IDENTIFIER;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          Scene l_Handle = p_Handle.get_id();
+          l_Handle.get_navigation_world();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, Scene, navigation_world,
+              Low::Core::Navigation::World);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Scene l_Handle = p_Handle.get_id();
+          *((Low::Core::Navigation::World *)p_Data) =
+              l_Handle.get_navigation_world();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: navigation_world
       }
       {
         // Property: unique_id
@@ -469,6 +505,9 @@ namespace Low {
       if (get_physics_world().is_alive()) {
         l_Handle.set_physics_world(get_physics_world());
       }
+      if (get_navigation_world().is_alive()) {
+        l_Handle.set_navigation_world(get_navigation_world());
+      }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
 
@@ -653,6 +692,34 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_physics_world
 
       broadcast_observable(N(physics_world));
+    }
+
+    Low::Core::Navigation::World Scene::get_navigation_world() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_navigation_world
+      // LOW_CODEGEN::END::CUSTOM:GETTER_navigation_world
+
+      return TYPE_SOA(Scene, navigation_world,
+                      Low::Core::Navigation::World);
+    }
+    void
+    Scene::set_navigation_world(Low::Core::Navigation::World p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_navigation_world
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_navigation_world
+
+      // Set new value
+      TYPE_SOA(Scene, navigation_world,
+               Low::Core::Navigation::World) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_navigation_world
+      // LOW_CODEGEN::END::CUSTOM:SETTER_navigation_world
+
+      broadcast_observable(N(navigation_world));
     }
 
     Low::Util::UniqueId Scene::get_unique_id() const

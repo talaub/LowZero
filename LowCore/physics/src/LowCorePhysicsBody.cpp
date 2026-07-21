@@ -27,7 +27,7 @@ namespace Low {
       u16 Body::ms_TypeId = 0;
       const Low::Util::TypeIdentifier
           Body::IDENTIFIER(LOW_NAME(1181529166),
-                           LOW_NAME(2073732236));
+                           LOW_NAME(3677642492));
       uint32_t Body::ms_Capacity = 0u;
       uint32_t Body::ms_PageSize = 0u;
       Low::Util::List<Body> Body::ms_LivingInstances;
@@ -108,8 +108,8 @@ namespace Low {
 
       void Body::initialize()
       {
-        const Low::Util::TypeIdentifier l_IdentifierNames(N(LowCore),
-                                                          N(Body));
+        const Low::Util::TypeIdentifier l_IdentifierNames(
+            N(LowCore), N(PhysicsBody));
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE

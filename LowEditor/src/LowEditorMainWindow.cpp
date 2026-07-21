@@ -41,6 +41,7 @@
 #include "LowEditorVisualScriptFileWidget.h"
 #include "LowEditorRendererDebugWidget.h"
 #include "LowEditorJobWidget.h"
+#include "LowEditorNavigationDebugWidget.h"
 #include "LowEditor.h"
 #include "LowEditorNodeGraph.h"
 #include "LowUtil.h"
@@ -1315,6 +1316,8 @@ namespace Low {
                              new VersionControlWidget, false);
 
       register_widget("Debug/Jobs", new JobWidget(), false);
+      register_widget("Debug/Navigation",
+                      new NavigationDebugWidget(), false);
       register_widget("Debug/Renderer Debug",
                       new RendererDebugWidget(), false);
 

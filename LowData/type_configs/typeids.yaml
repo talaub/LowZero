@@ -69,6 +69,9 @@ LowCore:
   CharacterController: 131
   CapsuleController: 132
   ConvexHullCollider: 133
+  NavigationWorld: 134
+  NavigationSource: 135
+  Source: 136
 LowRenderer2:
   GraphicsPipeline: 32
   Pipeline: 45

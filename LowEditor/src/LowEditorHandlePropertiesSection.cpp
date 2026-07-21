@@ -1,5 +1,6 @@
 #include "LowEditorHandlePropertiesSection.h"
 
+#include "LowEditorMetadata.h"
 #include "LowUtilGlobals.h"
 #include "LowUtilLogger.h"
 #include "imgui.h"
@@ -130,11 +131,10 @@ namespace Low {
           if (l_Entity.has_component(*it)) {
             continue;
           }
-          Util::RTTI::TypeInfo &i_TypeInfo =
-              Util::Handle::get_type_info(*it);
+          TypeMetadata &i_TypeMetadata = get_type_metadata(*it);
 
-          if (ImGui::MenuItem(i_TypeInfo.name.c_str())) {
-            i_TypeInfo.make_component(l_Entity.get_id());
+          if (ImGui::MenuItem(i_TypeMetadata.friendlyName.c_str())) {
+            i_TypeMetadata.typeInfo.make_component(l_Entity.get_id());
             set_selected_entity(l_Entity);
             l_Added = true;
           }
@@ -166,7 +166,7 @@ namespace Low {
               ICON_LC_COG)) {
               */
 
-      Util::String title = m_Metadata.name.c_str();
+      Util::String title = m_Metadata.friendlyName.c_str();
       const char *t = title.c_str();
       Util::String l_HeaderTitle = "";
       if (m_Metadata.editor.hasIcon) {

@@ -1,4 +1,4 @@
-#include "LowCorePhysicsWorld.h"
+#include "LowCoreNavigationWorld.h"
 
 #include <algorithm>
 
@@ -12,72 +12,19 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
-#include "LowCoreBoxCollider.h"
-#include "LowCoreCharacterController.h"
-#include "LowCoreConvexHullCollider.h"
-#include "LowCorePhysicsBackend.h"
-#include "LowCorePhysicsBody.h"
-#include "LowCoreRigidbody.h"
-#include "LowCoreSphereCollider.h"
+#include "LowCoreNavigationBackend.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Core {
-    namespace Physics {
-// LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-#define BACKEND_WORLD() static_cast<WorldBackend *>(get_world_ptr())
-      static HitObjectFamily
-      get_hit_object_family(Low::Util::Handle p_Owner)
-      {
-        if (p_Owner.get_id() == 0u ||
-            p_Owner.get_id() == Low::Util::Handle::DEAD) {
-          return HitObjectFamily::BODY;
-        }
-
-        const uint16_t l_Type = p_Owner.get_type();
-        if (l_Type == Component::Rigidbody::type_id()) {
-          return HitObjectFamily::RIGIDBODY;
-        }
-        if (l_Type == Component::BoxCollider::type_id() ||
-            l_Type == Component::SphereCollider::type_id() ||
-            l_Type == Component::ConvexHullCollider::type_id()) {
-          return HitObjectFamily::STATIC_COLLIDER;
-        }
-        if (l_Type == Component::CharacterController::type_id()) {
-          return HitObjectFamily::CHARACTER_CONTROLLER;
-        }
-
-        return HitObjectFamily::UNKNOWN;
-      }
-
-      static QueryHit to_query_hit(const BackendQueryHit &p_Hit)
-      {
-        QueryHit l_Hit;
-        l_Hit.position = p_Hit.position;
-        l_Hit.normal = p_Hit.normal;
-        l_Hit.fraction = p_Hit.fraction;
-        l_Hit.distance = p_Hit.distance;
-
-        if (!p_Hit.user_data) {
-          return l_Hit;
-        }
-
-        Body l_Body = reinterpret_cast<uint64_t>(p_Hit.user_data);
-        if (!l_Body.is_alive()) {
-          return l_Hit;
-        }
-
-        l_Hit.body = l_Body.get_id();
-        l_Hit.owner = l_Body.get_owner();
-        l_Hit.family = get_hit_object_family(l_Hit.owner);
-        return l_Hit;
-      }
+    namespace Navigation {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       u16 World::ms_TypeId = 0;
       const Low::Util::TypeIdentifier
           World::IDENTIFIER(LOW_NAME(1181529166),
-                            LOW_NAME(2870206849));
+                            LOW_NAME(433497520));
       uint32_t World::ms_Capacity = 0u;
       uint32_t World::ms_PageSize = 0u;
       Low::Util::List<World> World::ms_LivingInstances;
@@ -108,7 +55,7 @@ namespace Low {
         ms_LivingInstances.push_back(l_Handle);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
-        l_Handle.set_world_ptr(create_world_backend());
+        l_Handle.set_world_ptr(create_world_backend(BuildSettings()));
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -149,7 +96,7 @@ namespace Low {
       void World::initialize()
       {
         const Low::Util::TypeIdentifier l_IdentifierNames(
-            N(LowCore), N(PhysicsWorld));
+            N(LowCore), N(NavigationWorld));
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -250,229 +197,26 @@ namespace Low {
           // End property: name
         }
         {
-          // Virtual property: gravity
-          Low::Util::RTTI::VirtualPropertyInfo l_PropertyInfo;
-          l_PropertyInfo.name = N(gravity);
-          l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.type =
-              Low::Util::RTTI::PropertyType::VECTOR3;
-          l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
-                                  void *p_Data) {
-            World l_Handle = p_Handle.get_id();
-            Low::Math::Vector3 l_Data = l_Handle.get_gravity();
-            memcpy(p_Data, &l_Data, sizeof(Low::Math::Vector3));
-          };
-          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                  const void *p_Data) -> void {
-            World l_Handle = p_Handle.get_id();
-            l_Handle.set_gravity(*(Low::Math::Vector3 *)p_Data);
-          };
-          l_TypeInfo.virtualProperties[l_PropertyInfo.name] =
-              l_PropertyInfo;
-          // End virtual property: gravity
-        }
-        {
-          // Function: simulate
+          // Function: build_from_geometry
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
-          l_FunctionInfo.name = N(simulate);
-          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
-          l_FunctionInfo.handleType = 0;
-          {
-            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_Delta);
-            l_ParameterInfo.type =
-                Low::Util::RTTI::PropertyType::FLOAT;
-            l_ParameterInfo.handleType = 0;
-            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
-          }
-          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
-          // End function: simulate
-        }
-        {
-          // Function: raycast
-          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
-          l_FunctionInfo.name = N(raycast);
+          l_FunctionInfo.name = N(build_from_geometry);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_FunctionInfo.handleType = 0;
           {
             Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_Origin);
-            l_ParameterInfo.type =
-                Low::Util::RTTI::PropertyType::VECTOR3;
-            l_ParameterInfo.handleType = 0;
-            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
-          }
-          {
-            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_Direction);
-            l_ParameterInfo.type =
-                Low::Util::RTTI::PropertyType::VECTOR3;
-            l_ParameterInfo.handleType = 0;
-            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
-          }
-          {
-            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_MaxDistance);
-            l_ParameterInfo.type =
-                Low::Util::RTTI::PropertyType::FLOAT;
-            l_ParameterInfo.handleType = 0;
-            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
-          }
-          {
-            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_Hit);
+            l_ParameterInfo.name = N(p_Geometry);
             l_ParameterInfo.type =
                 Low::Util::RTTI::PropertyType::UNKNOWN;
             l_ParameterInfo.handleType = 0;
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
-          // End function: raycast
+          // End function: build_from_geometry
         }
         {
-          // Function: sphere_cast
+          // Function: find_nearest_point
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
-          l_FunctionInfo.name = N(sphere_cast);
-          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
-          l_FunctionInfo.handleType = 0;
-          {
-            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_Origin);
-            l_ParameterInfo.type =
-                Low::Util::RTTI::PropertyType::VECTOR3;
-            l_ParameterInfo.handleType = 0;
-            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
-          }
-          {
-            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_Radius);
-            l_ParameterInfo.type =
-                Low::Util::RTTI::PropertyType::FLOAT;
-            l_ParameterInfo.handleType = 0;
-            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
-          }
-          {
-            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_Direction);
-            l_ParameterInfo.type =
-                Low::Util::RTTI::PropertyType::VECTOR3;
-            l_ParameterInfo.handleType = 0;
-            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
-          }
-          {
-            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_MaxDistance);
-            l_ParameterInfo.type =
-                Low::Util::RTTI::PropertyType::FLOAT;
-            l_ParameterInfo.handleType = 0;
-            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
-          }
-          {
-            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_Hit);
-            l_ParameterInfo.type =
-                Low::Util::RTTI::PropertyType::UNKNOWN;
-            l_ParameterInfo.handleType = 0;
-            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
-          }
-          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
-          // End function: sphere_cast
-        }
-        {
-          // Function: box_cast
-          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
-          l_FunctionInfo.name = N(box_cast);
-          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
-          l_FunctionInfo.handleType = 0;
-          {
-            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_Origin);
-            l_ParameterInfo.type =
-                Low::Util::RTTI::PropertyType::VECTOR3;
-            l_ParameterInfo.handleType = 0;
-            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
-          }
-          {
-            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_HalfExtents);
-            l_ParameterInfo.type =
-                Low::Util::RTTI::PropertyType::VECTOR3;
-            l_ParameterInfo.handleType = 0;
-            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
-          }
-          {
-            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_Rotation);
-            l_ParameterInfo.type =
-                Low::Util::RTTI::PropertyType::QUATERNION;
-            l_ParameterInfo.handleType = 0;
-            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
-          }
-          {
-            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_Direction);
-            l_ParameterInfo.type =
-                Low::Util::RTTI::PropertyType::VECTOR3;
-            l_ParameterInfo.handleType = 0;
-            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
-          }
-          {
-            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_MaxDistance);
-            l_ParameterInfo.type =
-                Low::Util::RTTI::PropertyType::FLOAT;
-            l_ParameterInfo.handleType = 0;
-            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
-          }
-          {
-            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_Hit);
-            l_ParameterInfo.type =
-                Low::Util::RTTI::PropertyType::UNKNOWN;
-            l_ParameterInfo.handleType = 0;
-            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
-          }
-          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
-          // End function: box_cast
-        }
-        {
-          // Function: overlap_sphere
-          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
-          l_FunctionInfo.name = N(overlap_sphere);
-          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
-          l_FunctionInfo.handleType = 0;
-          {
-            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_Position);
-            l_ParameterInfo.type =
-                Low::Util::RTTI::PropertyType::VECTOR3;
-            l_ParameterInfo.handleType = 0;
-            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
-          }
-          {
-            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_Radius);
-            l_ParameterInfo.type =
-                Low::Util::RTTI::PropertyType::FLOAT;
-            l_ParameterInfo.handleType = 0;
-            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
-          }
-          {
-            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_Hit);
-            l_ParameterInfo.type =
-                Low::Util::RTTI::PropertyType::UNKNOWN;
-            l_ParameterInfo.handleType = 0;
-            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
-          }
-          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
-          // End function: overlap_sphere
-        }
-        {
-          // Function: overlap_box
-          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
-          l_FunctionInfo.name = N(overlap_box);
+          l_FunctionInfo.name = N(find_nearest_point);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_FunctionInfo.handleType = 0;
           {
@@ -493,49 +237,55 @@ namespace Low {
           }
           {
             Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_Rotation);
-            l_ParameterInfo.type =
-                Low::Util::RTTI::PropertyType::QUATERNION;
-            l_ParameterInfo.handleType = 0;
-            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
-          }
-          {
-            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_Hit);
+            l_ParameterInfo.name = N(p_Result);
             l_ParameterInfo.type =
                 Low::Util::RTTI::PropertyType::UNKNOWN;
             l_ParameterInfo.handleType = 0;
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
-          // End function: overlap_box
+          // End function: find_nearest_point
         }
         {
-          // Function: get_gravity
+          // Function: find_path
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
-          l_FunctionInfo.name = N(get_gravity);
-          l_FunctionInfo.type =
-              Low::Util::RTTI::PropertyType::VECTOR3;
-          l_FunctionInfo.handleType = 0;
-          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
-          // End function: get_gravity
-        }
-        {
-          // Function: set_gravity
-          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
-          l_FunctionInfo.name = N(set_gravity);
-          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.name = N(find_path);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_FunctionInfo.handleType = 0;
           {
             Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_Value);
+            l_ParameterInfo.name = N(p_Start);
             l_ParameterInfo.type =
                 Low::Util::RTTI::PropertyType::VECTOR3;
             l_ParameterInfo.handleType = 0;
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_End);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::VECTOR3;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_HalfExtents);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::VECTOR3;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Result);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
-          // End function: set_gravity
+          // End function: find_path
         }
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
@@ -646,13 +396,10 @@ namespace Low {
       {
         _LOW_ASSERT(is_alive());
 
-        World l_Handle = make(p_Name);
-        l_Handle.set_world_ptr(get_world_ptr());
-
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+        LOW_ASSERT_WARN(false, "Not implemented");
+        return 0;
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
-
-        return l_Handle;
       }
 
       World World::duplicate(World p_Handle, Low::Util::Name p_Name)
@@ -671,8 +418,6 @@ namespace Low {
       {
         _LOW_ASSERT(is_alive());
 
-        p_Node["name"] = get_name().c_str();
-
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
@@ -688,18 +433,10 @@ namespace Low {
       World::deserialize(Low::Util::Serial::Node &p_Node,
                          Low::Util::Handle p_Creator)
       {
-        World l_Handle = World::make(N(World));
-
-        if (p_Node["world_ptr"]) {
-        }
-        if (p_Node["name"]) {
-          l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());
-        }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+        return Low::Util::Handle::DEAD;
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
-
-        return l_Handle;
       }
 
       void
@@ -799,112 +536,48 @@ namespace Low {
         broadcast_observable(N(name));
       }
 
-      void World::simulate(float p_Delta)
+      bool World::build_from_geometry(
+          Low::Core::Navigation::BuildGeometry *p_Geometry)
       {
-        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_simulate
-        simulate_world(BACKEND_WORLD(), p_Delta);
-        // LOW_CODEGEN::END::CUSTOM:FUNCTION_simulate
-      }
-
-      bool World::raycast(Low::Math::Vector3 p_Origin,
-                          Low::Math::Vector3 p_Direction,
-                          float p_MaxDistance,
-                          Low::Core::Physics::QueryHit *p_Hit)
-      {
-        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_raycast
-        BackendQueryHit l_BackendHit;
-        const bool l_Result =
-            raycast_world(BACKEND_WORLD(), p_Origin, p_Direction,
-                          p_MaxDistance, l_BackendHit);
-        if (l_Result && p_Hit) {
-          *p_Hit = to_query_hit(l_BackendHit);
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_build_from_geometry
+        if (!p_Geometry) {
+          return false;
         }
-        return l_Result;
-        // LOW_CODEGEN::END::CUSTOM:FUNCTION_raycast
+        return build_navmesh_from_geometry(
+            static_cast<WorldBackend *>(get_world_ptr()),
+            *p_Geometry);
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_build_from_geometry
       }
 
-      bool World::sphere_cast(Low::Math::Vector3 p_Origin,
-                              float p_Radius,
-                              Low::Math::Vector3 p_Direction,
-                              float p_MaxDistance,
-                              Low::Core::Physics::QueryHit *p_Hit)
+      bool World::find_nearest_point(
+          Low::Math::Vector3 p_Position,
+          Low::Math::Vector3 p_HalfExtents,
+          Low::Core::Navigation::NearestPointResult *p_Result)
       {
-        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_sphere_cast
-        BackendQueryHit l_BackendHit;
-        const bool l_Result = sphere_cast_world(
-            BACKEND_WORLD(), p_Origin, p_Radius, p_Direction,
-            p_MaxDistance, l_BackendHit);
-        if (l_Result && p_Hit) {
-          *p_Hit = to_query_hit(l_BackendHit);
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_find_nearest_point
+        if (!p_Result) {
+          return false;
         }
-        return l_Result;
-        // LOW_CODEGEN::END::CUSTOM:FUNCTION_sphere_cast
+        return Navigation::find_nearest_point(
+            static_cast<WorldBackend *>(get_world_ptr()), p_Position,
+            p_HalfExtents, *p_Result);
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_find_nearest_point
       }
 
-      bool World::box_cast(Low::Math::Vector3 p_Origin,
-                           Low::Math::Vector3 p_HalfExtents,
-                           Low::Math::Quaternion p_Rotation,
-                           Low::Math::Vector3 p_Direction,
-                           float p_MaxDistance,
-                           Low::Core::Physics::QueryHit *p_Hit)
+      bool
+      World::find_path(Low::Math::Vector3 p_Start,
+                       Low::Math::Vector3 p_End,
+                       Low::Math::Vector3 p_HalfExtents,
+                       Low::Core::Navigation::PathResult *p_Result)
       {
-        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_box_cast
-        BackendQueryHit l_BackendHit;
-        const bool l_Result = box_cast_world(
-            BACKEND_WORLD(), p_Origin, p_HalfExtents, p_Rotation,
-            p_Direction, p_MaxDistance, l_BackendHit);
-        if (l_Result && p_Hit) {
-          *p_Hit = to_query_hit(l_BackendHit);
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_find_path
+        if (!p_Result) {
+          return false;
         }
-        return l_Result;
-        // LOW_CODEGEN::END::CUSTOM:FUNCTION_box_cast
-      }
-
-      bool World::overlap_sphere(Low::Math::Vector3 p_Position,
-                                 float p_Radius,
-                                 Low::Core::Physics::QueryHit *p_Hit)
-      {
-        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_overlap_sphere
-        BackendQueryHit l_BackendHit;
-        const bool l_Result = overlap_sphere_world(
-            BACKEND_WORLD(), p_Position, p_Radius,
-            p_Hit ? &l_BackendHit : nullptr);
-        if (l_Result && p_Hit) {
-          *p_Hit = to_query_hit(l_BackendHit);
-        }
-        return l_Result;
-        // LOW_CODEGEN::END::CUSTOM:FUNCTION_overlap_sphere
-      }
-
-      bool World::overlap_box(Low::Math::Vector3 p_Position,
-                              Low::Math::Vector3 p_HalfExtents,
-                              Low::Math::Quaternion p_Rotation,
-                              Low::Core::Physics::QueryHit *p_Hit)
-      {
-        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_overlap_box
-        BackendQueryHit l_BackendHit;
-        const bool l_Result = overlap_box_world(
-            BACKEND_WORLD(), p_Position, p_HalfExtents, p_Rotation,
-            p_Hit ? &l_BackendHit : nullptr);
-        if (l_Result && p_Hit) {
-          *p_Hit = to_query_hit(l_BackendHit);
-        }
-        return l_Result;
-        // LOW_CODEGEN::END::CUSTOM:FUNCTION_overlap_box
-      }
-
-      Low::Math::Vector3 World::get_gravity()
-      {
-        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_gravity
-        return get_world_gravity(BACKEND_WORLD());
-        // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_gravity
-      }
-
-      void World::set_gravity(Low::Math::Vector3 p_Value)
-      {
-        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_gravity
-        set_world_gravity(BACKEND_WORLD(), p_Value);
-        // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_gravity
+        return Navigation::find_path(
+            static_cast<WorldBackend *>(get_world_ptr()), p_Start,
+            p_End, p_HalfExtents, *p_Result);
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_find_path
       }
 
       uint32_t World::create_instance(u32 &p_PageIndex,
@@ -976,8 +649,19 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+      bool collect_navmesh_geometry(World p_World,
+                                    BuildGeometry *p_Geometry)
+      {
+        if (!p_World.is_alive()) {
+          return false;
+        }
+
+        return Navigation::collect_navmesh_geometry(
+            static_cast<WorldBackend *>(p_World.get_world_ptr()),
+            p_Geometry);
+      }
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
-    } // namespace Physics
+    } // namespace Navigation
   } // namespace Core
 } // namespace Low

@@ -154,7 +154,6 @@ function load_project_info(p_FullProjectPath) {
     }
 
     const i_ModuleConfig = read_yaml_file(i_ModuleConfigPath);
-
     //console.log(`📂 Found module ${i_ModuleDirectory}`);
     const i_ModuleSettings = {
       name: i_ModuleDirectory,
@@ -298,6 +297,9 @@ function process_file(p_Path, p_FileName, p_Project = false) {
     i_Type.module = l_Config.module;
     i_Type.prefix = l_Config.prefix ? l_Config.prefix : l_Config.module;
     i_Type.api_file = `${i_Type.module}Api.h`;
+    if (!i_Type.identifier_name) {
+      i_Type.identifier_name = i_Type.name;
+    }
     if (!i_Type.scripting_name) {
       i_Type.scripting_name = i_TypeName;
     }
@@ -311,7 +313,7 @@ function process_file(p_Path, p_FileName, p_Project = false) {
     }
     i_Type.scripting_static_namespace += `${i_Type.name}s`;
 
-    i_Type.identifier = `${i_Type.module}:${i_Type.name}`;
+    i_Type.identifier = `${i_Type.module}:${i_Type.identifier_name}`;
 
     i_Type.full_scripting_string = i_Type.scripting_name;
     if (i_Type.scripting_namespace) {
@@ -942,9 +944,9 @@ function type_desc(p_Desc, p_Handle) {
 }
 
 function insert_type_into_db(p_Type, db) {
-  //console.log(`NAME: ${p_Type.name}, ${p_Type.identifier}`)
   let l_Type = {
     id: p_Type.identifier,
+    identifier_name: p_Type.identifier_name,
     identifier: p_Type.identifier,
     name: p_Type.name,
     namespace: p_Type.namespace,

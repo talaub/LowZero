@@ -35,6 +35,11 @@
 #include "LowCorePhysicsWorld.h"
 #include "LowCorePhysicsCapsuleController.h"
 #include "LowCorePhysicsBodyMotionType.h"
+#include "LowCoreNavigationWorld.h"
+#include "LowCoreNavigationSource.h"
+#include "LowCoreNavigationSourceMode.h"
+#include "LowCoreNavigationSourceGeometryType.h"
+#include "LowCoreNavigationAreaType.h"
 
 #include "LowCoreScriptClass.h"
 #include "LowCoreScriptAsset.h"
@@ -148,6 +153,7 @@ namespace Low {
       Component::PrefabInstance::initialize();
       Component::NavmeshAgent::initialize();
       Component::Camera::initialize();
+      Navigation::Source::initialize();
     }
 
     static void initialize_base_types()
@@ -201,10 +207,19 @@ namespace Low {
       Physics::CapsuleController::initialize();
     }
 
+    static void initialize_navigation_types()
+    {
+      Navigation::SourceModeEnumHelper::initialize();
+      Navigation::SourceGeometryTypeEnumHelper::initialize();
+      Navigation::AreaTypeEnumHelper::initialize();
+      Navigation::World::initialize();
+    }
+
     static void initialize_types()
     {
       initialize_asset_types();
       initialize_physics_types();
+      initialize_navigation_types();
       initialize_base_types();
       initialize_component_types();
       initialize_ui_types();
@@ -343,6 +358,7 @@ namespace Low {
 
     static void cleanup_component_types()
     {
+      Navigation::Source::cleanup();
       Component::Camera::cleanup();
       Component::NavmeshAgent::cleanup();
       Component::PrefabInstance::cleanup();
@@ -410,8 +426,17 @@ namespace Low {
       Physics::BodyMotionTypeEnumHelper::cleanup();
     }
 
+    static void cleanup_navigation_types()
+    {
+      Navigation::World::cleanup();
+      Navigation::AreaTypeEnumHelper::cleanup();
+      Navigation::SourceGeometryTypeEnumHelper::cleanup();
+      Navigation::SourceModeEnumHelper::cleanup();
+    }
+
     static void cleanup_types()
     {
+      cleanup_navigation_types();
       cleanup_physics_types();
       cleanup_component_types();
       cleanup_base_types();

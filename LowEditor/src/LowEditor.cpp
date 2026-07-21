@@ -1732,14 +1732,24 @@ namespace Low {
       }
 
       for (auto [i_TypeName, i_TypeNode] : p_Node["types"]) {
+        Util::Name i_TypeIdentifierName =
+            LOW_NAME(i_TypeName->c_str());
+        if (i_TypeNode["identifier_name"]) {
+          i_TypeIdentifierName =
+              i_TypeNode["identifier_name"].as<Util::Name>();
+        }
         const Util::TypeIdentifier i_TypeIdentifier(
-            LOW_NAME(l_ModuleString.c_str()),
-            LOW_NAME(i_TypeName->c_str()));
+            LOW_NAME(l_ModuleString.c_str()), i_TypeIdentifierName);
         TypeMetadata i_Metadata(i_TypeIdentifier);
 
         i_Metadata.name = LOW_NAME(i_TypeName->c_str());
 
         i_Metadata.friendlyName = prettify_name(i_Metadata.name);
+        if (i_TypeNode["editor"] &&
+            i_TypeNode["editor"]["display_name"]) {
+          i_Metadata.friendlyName =
+              i_TypeNode["editor"]["display_name"].as<Util::String>();
+        }
         i_Metadata.module = l_ModuleString;
         if (Util::Handle::is_registered_type(i_Metadata.identifier)) {
           i_Metadata.typeId =

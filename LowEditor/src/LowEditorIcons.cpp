@@ -23,6 +23,7 @@ namespace Low {
       static const Util::Name l_Robot = N(robot);
       static const Util::Name l_Skeleton = N(skeleton);
       static const Util::Name l_Person = N(person);
+      static const Util::Name l_Route = N(route);
 
       if (p_IconName == l_Cube) {
         return LOW_EDITOR_ICON_CUBE;
@@ -62,6 +63,8 @@ namespace Low {
         return LOW_EDITOR_ICON_SKELETON;
       } else if (p_IconName == l_Person) {
         return LOW_EDITOR_ICON_PERSON;
+      } else if (p_IconName == l_Route) {
+        return LOW_EDITOR_ICON_ROUTE;
       }
 
       return LOW_EDITOR_ICON_MISSING;

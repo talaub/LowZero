@@ -172,6 +172,10 @@ types:
         type: Low::Core::Physics::World
         handle: true
         private_setter: true
+      navigation_world:
+        type: Low::Core::Navigation::World
+        handle: true
+        private_setter: true
     functions:
       load:
         return_type: void

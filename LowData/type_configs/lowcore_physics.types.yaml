@@ -13,6 +13,7 @@ types:
     no_auto_deserialize: true
     no_auto_duplicate: true
     private_make: true
+    identifier_name: PhysicsShape
     header_imports:
       - LowMath.h
       - LowCorePhysicsWorld.h
@@ -72,6 +73,7 @@ types:
     no_auto_serialize: true
     no_auto_deserialize: true
     no_auto_duplicate: true
+    identifier_name: PhysicsBody
     private_make: true
     header_imports:
       - LowMath.h
@@ -135,6 +137,7 @@ types:
     no_auto_deserialize: true
     no_auto_duplicate: true
     private_make: true
+    identifier_name: PhysicsCapsuleController
     header_imports:
       - LowMath.h
       - LowCorePhysicsWorld.h
@@ -187,6 +190,7 @@ types:
   World:
     scripting_expose: true
     scripting_name: PhysicsWorld
+    identifier_name: PhysicsWorld
     header_imports:
       - LowMath.h
       - LowCorePhysics.h
