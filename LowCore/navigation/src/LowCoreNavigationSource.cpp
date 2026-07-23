@@ -13,12 +13,53 @@
 
 #include "LowCorePrefabInstance.h"
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+#include "LowCoreNavigation.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Core {
     namespace Navigation {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+      static void observe_component(Source p_Source,
+                                    Low::Util::Handle p_Component,
+                                    Low::Util::Name p_Observable)
+      {
+        if (!p_Source.is_alive()) {
+          return;
+        }
+
+        Low::Util::RTTI::TypeInfo &l_TypeInfo =
+            Low::Util::Handle::get_type_info(p_Component.get_type());
+        if (!l_TypeInfo.is_alive(p_Component)) {
+          return;
+        }
+
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = p_Component.get_id();
+        l_Key.observableName = p_Observable.m_Index;
+        Low::Util::observe(l_Key, p_Source);
+      }
+
+      static void register_source_dirty_observers(Source p_Source)
+      {
+        if (!p_Source.is_alive()) {
+          return;
+        }
+
+        Low::Core::Entity l_Entity = p_Source.get_entity();
+        if (!l_Entity.is_alive()) {
+          return;
+        }
+
+        for (auto &i_Component : l_Entity.get_components()) {
+          Low::Util::Handle i_Handle = i_Component.second;
+          if (i_Handle.get_id() == p_Source.get_id()) {
+            continue;
+          }
+          observe_component(p_Source, i_Handle, N(dirty));
+          observe_component(p_Source, i_Handle, N(world_dirty));
+        }
+      }
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       u16 Source::ms_TypeId = 0;
@@ -66,6 +107,11 @@ namespace Low {
         ACCESSOR_TYPE_SOA(l_Handle, Source, include_children, bool) =
             false;
         ACCESSOR_TYPE_SOA(l_Handle, Source, tile_dirty, bool) = false;
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Source, bounds,
+                                   Low::Math::Bounds))
+            Low::Math::Bounds();
+        ACCESSOR_TYPE_SOA(l_Handle, Source, bounds_valid, bool) =
+            false;
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Source, entity,
                                    Low::Core::Entity))
             Low::Core::Entity();
@@ -89,6 +135,8 @@ namespace Low {
         l_Handle.set_geometry_type(SourceGeometryType::COLLIDER);
         l_Handle.set_area_type(AreaType::NORMAL);
         l_Handle.set_agent_mask(1u);
+        register_source_dirty_observers(l_Handle);
+        l_Handle.mark_dirty();
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -349,6 +397,64 @@ namespace Low {
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: tile_dirty
+        }
+        {
+          // Property: bounds
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(bounds);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset = offsetof(Source::Data, bounds);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            Source l_Handle = p_Handle.get_id();
+            l_Handle.get_bounds();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Source, bounds, Low::Math::Bounds);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            Source l_Handle = p_Handle.get_id();
+            l_Handle.set_bounds(*(Low::Math::Bounds *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Source l_Handle = p_Handle.get_id();
+            *((Low::Math::Bounds *)p_Data) = l_Handle.get_bounds();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: bounds
+        }
+        {
+          // Property: bounds_valid
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(bounds_valid);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(Source::Data, bounds_valid);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            Source l_Handle = p_Handle.get_id();
+            l_Handle.is_bounds_valid();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Source,
+                                              bounds_valid, bool);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            Source l_Handle = p_Handle.get_id();
+            l_Handle.set_bounds_valid(*(bool *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Source l_Handle = p_Handle.get_id();
+            *((bool *)p_Data) = l_Handle.is_bounds_valid();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: bounds_valid
         }
         {
           // Property: entity
@@ -635,6 +741,11 @@ namespace Low {
                           Low::Util::Name p_Observable)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+        (void)p_Observed;
+        if (p_Observable == N(dirty) ||
+            p_Observable == N(world_dirty)) {
+          mark_dirty();
+        }
         // LOW_CODEGEN::END::CUSTOM:NOTIFY
       }
 
@@ -662,28 +773,35 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mode
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_mode
 
-        // Set new value
-        TYPE_SOA(Source, mode, SourceMode) = p_Value;
-        {
-          Low::Core::Entity l_Entity = get_entity();
-          if (l_Entity.has_component(
-                  Low::Core::Component::PrefabInstance::type_id())) {
-            Low::Core::Component::PrefabInstance l_Instance =
-                l_Entity.get_component(
-                    Low::Core::Component::PrefabInstance::type_id());
-            Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
-            if (l_Prefab.is_alive()) {
-              l_Instance.override(
-                  ms_TypeId, N(mode),
-                  !l_Prefab.compare_property(*this, N(mode)));
+        if (get_mode() != p_Value) {
+          // Set dirty flags
+          mark_dirty();
+
+          // Set new value
+          TYPE_SOA(Source, mode, SourceMode) = p_Value;
+          {
+            Low::Core::Entity l_Entity = get_entity();
+            if (l_Entity.has_component(
+                    Low::Core::Component::PrefabInstance::
+                        type_id())) {
+              Low::Core::Component::PrefabInstance l_Instance =
+                  l_Entity.get_component(
+                      Low::Core::Component::PrefabInstance::
+                          type_id());
+              Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
+              if (l_Prefab.is_alive()) {
+                l_Instance.override(
+                    ms_TypeId, N(mode),
+                    !l_Prefab.compare_property(*this, N(mode)));
+              }
             }
           }
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mode
+          // LOW_CODEGEN::END::CUSTOM:SETTER_mode
+
+          broadcast_observable(N(mode));
         }
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mode
-        // LOW_CODEGEN::END::CUSTOM:SETTER_mode
-
-        broadcast_observable(N(mode));
       }
 
       SourceGeometryType Source::get_geometry_type() const
@@ -702,28 +820,36 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_geometry_type
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_geometry_type
 
-        // Set new value
-        TYPE_SOA(Source, geometry_type, SourceGeometryType) = p_Value;
-        {
-          Low::Core::Entity l_Entity = get_entity();
-          if (l_Entity.has_component(
-                  Low::Core::Component::PrefabInstance::type_id())) {
-            Low::Core::Component::PrefabInstance l_Instance =
-                l_Entity.get_component(
-                    Low::Core::Component::PrefabInstance::type_id());
-            Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
-            if (l_Prefab.is_alive()) {
-              l_Instance.override(ms_TypeId, N(geometry_type),
-                                  !l_Prefab.compare_property(
-                                      *this, N(geometry_type)));
+        if (get_geometry_type() != p_Value) {
+          // Set dirty flags
+          mark_dirty();
+
+          // Set new value
+          TYPE_SOA(Source, geometry_type, SourceGeometryType) =
+              p_Value;
+          {
+            Low::Core::Entity l_Entity = get_entity();
+            if (l_Entity.has_component(
+                    Low::Core::Component::PrefabInstance::
+                        type_id())) {
+              Low::Core::Component::PrefabInstance l_Instance =
+                  l_Entity.get_component(
+                      Low::Core::Component::PrefabInstance::
+                          type_id());
+              Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
+              if (l_Prefab.is_alive()) {
+                l_Instance.override(ms_TypeId, N(geometry_type),
+                                    !l_Prefab.compare_property(
+                                        *this, N(geometry_type)));
+              }
             }
           }
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_geometry_type
+          // LOW_CODEGEN::END::CUSTOM:SETTER_geometry_type
+
+          broadcast_observable(N(geometry_type));
         }
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_geometry_type
-        // LOW_CODEGEN::END::CUSTOM:SETTER_geometry_type
-
-        broadcast_observable(N(geometry_type));
       }
 
       AreaType Source::get_area_type() const
@@ -742,28 +868,35 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_area_type
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_area_type
 
-        // Set new value
-        TYPE_SOA(Source, area_type, AreaType) = p_Value;
-        {
-          Low::Core::Entity l_Entity = get_entity();
-          if (l_Entity.has_component(
-                  Low::Core::Component::PrefabInstance::type_id())) {
-            Low::Core::Component::PrefabInstance l_Instance =
-                l_Entity.get_component(
-                    Low::Core::Component::PrefabInstance::type_id());
-            Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
-            if (l_Prefab.is_alive()) {
-              l_Instance.override(
-                  ms_TypeId, N(area_type),
-                  !l_Prefab.compare_property(*this, N(area_type)));
+        if (get_area_type() != p_Value) {
+          // Set dirty flags
+          mark_dirty();
+
+          // Set new value
+          TYPE_SOA(Source, area_type, AreaType) = p_Value;
+          {
+            Low::Core::Entity l_Entity = get_entity();
+            if (l_Entity.has_component(
+                    Low::Core::Component::PrefabInstance::
+                        type_id())) {
+              Low::Core::Component::PrefabInstance l_Instance =
+                  l_Entity.get_component(
+                      Low::Core::Component::PrefabInstance::
+                          type_id());
+              Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
+              if (l_Prefab.is_alive()) {
+                l_Instance.override(
+                    ms_TypeId, N(area_type),
+                    !l_Prefab.compare_property(*this, N(area_type)));
+              }
             }
           }
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_area_type
+          // LOW_CODEGEN::END::CUSTOM:SETTER_area_type
+
+          broadcast_observable(N(area_type));
         }
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_area_type
-        // LOW_CODEGEN::END::CUSTOM:SETTER_area_type
-
-        broadcast_observable(N(area_type));
       }
 
       uint32_t Source::get_agent_mask() const
@@ -782,28 +915,35 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_agent_mask
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_agent_mask
 
-        // Set new value
-        TYPE_SOA(Source, agent_mask, uint32_t) = p_Value;
-        {
-          Low::Core::Entity l_Entity = get_entity();
-          if (l_Entity.has_component(
-                  Low::Core::Component::PrefabInstance::type_id())) {
-            Low::Core::Component::PrefabInstance l_Instance =
-                l_Entity.get_component(
-                    Low::Core::Component::PrefabInstance::type_id());
-            Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
-            if (l_Prefab.is_alive()) {
-              l_Instance.override(
-                  ms_TypeId, N(agent_mask),
-                  !l_Prefab.compare_property(*this, N(agent_mask)));
+        if (get_agent_mask() != p_Value) {
+          // Set dirty flags
+          mark_dirty();
+
+          // Set new value
+          TYPE_SOA(Source, agent_mask, uint32_t) = p_Value;
+          {
+            Low::Core::Entity l_Entity = get_entity();
+            if (l_Entity.has_component(
+                    Low::Core::Component::PrefabInstance::
+                        type_id())) {
+              Low::Core::Component::PrefabInstance l_Instance =
+                  l_Entity.get_component(
+                      Low::Core::Component::PrefabInstance::
+                          type_id());
+              Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
+              if (l_Prefab.is_alive()) {
+                l_Instance.override(
+                    ms_TypeId, N(agent_mask),
+                    !l_Prefab.compare_property(*this, N(agent_mask)));
+              }
             }
           }
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_agent_mask
+          // LOW_CODEGEN::END::CUSTOM:SETTER_agent_mask
+
+          broadcast_observable(N(agent_mask));
         }
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_agent_mask
-        // LOW_CODEGEN::END::CUSTOM:SETTER_agent_mask
-
-        broadcast_observable(N(agent_mask));
       }
 
       bool Source::is_include_children() const
@@ -827,28 +967,35 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_include_children
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_include_children
 
-        // Set new value
-        TYPE_SOA(Source, include_children, bool) = p_Value;
-        {
-          Low::Core::Entity l_Entity = get_entity();
-          if (l_Entity.has_component(
-                  Low::Core::Component::PrefabInstance::type_id())) {
-            Low::Core::Component::PrefabInstance l_Instance =
-                l_Entity.get_component(
-                    Low::Core::Component::PrefabInstance::type_id());
-            Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
-            if (l_Prefab.is_alive()) {
-              l_Instance.override(ms_TypeId, N(include_children),
-                                  !l_Prefab.compare_property(
-                                      *this, N(include_children)));
+        if (is_include_children() != p_Value) {
+          // Set dirty flags
+          mark_dirty();
+
+          // Set new value
+          TYPE_SOA(Source, include_children, bool) = p_Value;
+          {
+            Low::Core::Entity l_Entity = get_entity();
+            if (l_Entity.has_component(
+                    Low::Core::Component::PrefabInstance::
+                        type_id())) {
+              Low::Core::Component::PrefabInstance l_Instance =
+                  l_Entity.get_component(
+                      Low::Core::Component::PrefabInstance::
+                          type_id());
+              Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
+              if (l_Prefab.is_alive()) {
+                l_Instance.override(ms_TypeId, N(include_children),
+                                    !l_Prefab.compare_property(
+                                        *this, N(include_children)));
+              }
             }
           }
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_include_children
+          // LOW_CODEGEN::END::CUSTOM:SETTER_include_children
+
+          broadcast_observable(N(include_children));
         }
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_include_children
-        // LOW_CODEGEN::END::CUSTOM:SETTER_include_children
-
-        broadcast_observable(N(include_children));
       }
 
       bool Source::is_tile_dirty() const
@@ -879,6 +1026,61 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_tile_dirty
 
         broadcast_observable(N(tile_dirty));
+      }
+
+      Low::Math::Bounds &Source::get_bounds() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_bounds
+        // LOW_CODEGEN::END::CUSTOM:GETTER_bounds
+
+        return TYPE_SOA(Source, bounds, Low::Math::Bounds);
+      }
+      void Source::set_bounds(Low::Math::Bounds &p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_bounds
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_bounds
+
+        // Set new value
+        TYPE_SOA(Source, bounds, Low::Math::Bounds) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_bounds
+        // LOW_CODEGEN::END::CUSTOM:SETTER_bounds
+
+        broadcast_observable(N(bounds));
+      }
+
+      bool Source::is_bounds_valid() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_bounds_valid
+        // LOW_CODEGEN::END::CUSTOM:GETTER_bounds_valid
+
+        return TYPE_SOA(Source, bounds_valid, bool);
+      }
+      void Source::toggle_bounds_valid()
+      {
+        set_bounds_valid(!is_bounds_valid());
+      }
+
+      void Source::set_bounds_valid(bool p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_bounds_valid
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_bounds_valid
+
+        // Set new value
+        TYPE_SOA(Source, bounds_valid, bool) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_bounds_valid
+        // LOW_CODEGEN::END::CUSTOM:SETTER_bounds_valid
+
+        broadcast_observable(N(bounds_valid));
       }
 
       Low::Core::Entity Source::get_entity() const
@@ -929,6 +1131,13 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
 
         broadcast_observable(N(unique_id));
+      }
+
+      void Source::mark_dirty()
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+        Low::Core::Navigation::mark_source_dirty(*this);
+        // LOW_CODEGEN::END::CUSTOM:MARK_dirty
       }
 
       uint32_t Source::create_instance(u32 &p_PageIndex,

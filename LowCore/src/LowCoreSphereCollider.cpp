@@ -878,28 +878,35 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_trigger
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_trigger
 
-        // Set new value
-        TYPE_SOA(SphereCollider, trigger, bool) = p_Value;
-        {
-          Low::Core::Entity l_Entity = get_entity();
-          if (l_Entity.has_component(
-                  Low::Core::Component::PrefabInstance::type_id())) {
-            Low::Core::Component::PrefabInstance l_Instance =
-                l_Entity.get_component(
-                    Low::Core::Component::PrefabInstance::type_id());
-            Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
-            if (l_Prefab.is_alive()) {
-              l_Instance.override(
-                  ms_TypeId, N(trigger),
-                  !l_Prefab.compare_property(*this, N(trigger)));
+        if (is_trigger() != p_Value) {
+          // Set dirty flags
+          mark_dirty();
+
+          // Set new value
+          TYPE_SOA(SphereCollider, trigger, bool) = p_Value;
+          {
+            Low::Core::Entity l_Entity = get_entity();
+            if (l_Entity.has_component(
+                    Low::Core::Component::PrefabInstance::
+                        type_id())) {
+              Low::Core::Component::PrefabInstance l_Instance =
+                  l_Entity.get_component(
+                      Low::Core::Component::PrefabInstance::
+                          type_id());
+              Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
+              if (l_Prefab.is_alive()) {
+                l_Instance.override(
+                    ms_TypeId, N(trigger),
+                    !l_Prefab.compare_property(*this, N(trigger)));
+              }
             }
           }
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_trigger
+          // LOW_CODEGEN::END::CUSTOM:SETTER_trigger
+
+          broadcast_observable(N(trigger));
         }
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_trigger
-        // LOW_CODEGEN::END::CUSTOM:SETTER_trigger
-
-        broadcast_observable(N(trigger));
       }
 
       Low::Core::Physics::Shape SphereCollider::get_shape() const
@@ -1080,6 +1087,7 @@ namespace Low {
           TYPE_SOA(SphereCollider, dirty, bool) = true;
           // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
           ms_Dirty.insert(get_id());
+          broadcast_observable(N(dirty));
           // LOW_CODEGEN::END::CUSTOM:MARK_dirty
         }
       }

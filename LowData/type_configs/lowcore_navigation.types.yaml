@@ -16,33 +16,70 @@ types:
       icon: route
       display_name: Navigation Source
     header_imports:
+      - LowMath.h
       - LowCoreNavigationSourceMode.h
       - LowCoreNavigationSourceGeometryType.h
       - LowCoreNavigationAreaType.h
+    dirty_flags:
+      dirty:
+        no_data: true
     properties:
       mode:
         type: SourceMode
         enum: true
         editor_editable: true
+        dirty_flag: dirty
       geometry_type:
         type: SourceGeometryType
         enum: true
         editor_editable: true
+        dirty_flag: dirty
       area_type:
         type: AreaType
         enum: true
         editor_editable: true
+        dirty_flag: dirty
       agent_mask:
         type: uint32_t
         editor_editable: true
+        dirty_flag: dirty
       include_children:
         type: bool
         editor_editable: true
+        dirty_flag: dirty
       tile_dirty:
         type: bool
         editor_editable: false
         skip_serialization: true
         skip_deserialization: true
+      bounds:
+        type: Low::Math::Bounds
+        editor_editable: false
+        skip_serialization: true
+        skip_deserialization: true
+        skip_duplication: true
+      bounds_valid:
+        type: bool
+        editor_editable: false
+        skip_serialization: true
+        skip_deserialization: true
+        skip_duplication: true
+
+  Invoker:
+    identifier_name: NavigationInvoker
+    component: true
+    unique_id: true
+    scripting_expose: false
+    editor:
+      icon: route
+      display_name: Navigation Invoker
+    properties:
+      generation_radius:
+        type: float
+        editor_editable: true
+      removal_radius:
+        type: float
+        editor_editable: true
 
   World:
     identifier_name: NavigationWorld
@@ -82,3 +119,5 @@ types:
             type: Low::Math::Vector3
           - name: result
             type: Low::Core::Navigation::PathResult*
+      get_navmesh_revision:
+        return_type: uint64_t

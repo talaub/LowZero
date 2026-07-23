@@ -154,6 +154,7 @@ namespace Low {
                        Low::Math::Vector3 p_End,
                        Low::Math::Vector3 p_HalfExtents,
                        Low::Core::Navigation::PathResult *p_Result);
+        uint64_t get_navmesh_revision();
         static bool get_page_for_index(const u32 p_Index,
                                        u32 &p_PageIndex,
                                        u32 &p_SlotIndex);

@@ -6,6 +6,8 @@ SET(CFLAT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/Cflat")
 
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE INCLUDES "include/*.h")
+list(APPEND SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/LowCoreNavigationSystem.cpp")
+list(APPEND INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/include/LowCoreNavigationSystem.h")
 file(GLOB_RECURSE ANIMATION_SOURCES "animation/src/*.cpp")
 file(GLOB_RECURSE ANIMATION_INCLUDES "animation/include/*.h")
 file(GLOB_RECURSE ANIMATION_PRIVATE_INCLUDES

@@ -13,14 +13,15 @@
 #include <cmath>
 #include <cstring>
 
-namespace {
-  constexpr unsigned char LOW_NAV_AREA_PREFERRED = 1u;
-  constexpr unsigned char LOW_NAV_AREA_NORMAL = 2u;
-  constexpr unsigned char LOW_NAV_AREA_ROUGH = 3u;
-  constexpr unsigned char LOW_NAV_AREA_DIFFICULT = 4u;
-  constexpr unsigned short LOW_NAV_POLYFLAG_WALK = 1u;
-  constexpr int LOW_NAV_MAX_PATH_POLYS = 256;
-  constexpr int LOW_NAV_MAX_STRAIGHT_PATH_POINTS = 256;
+constexpr unsigned char LOW_NAV_AREA_PREFERRED = 1u;
+constexpr unsigned char LOW_NAV_AREA_NORMAL = 2u;
+constexpr unsigned char LOW_NAV_AREA_ROUGH = 3u;
+constexpr unsigned char LOW_NAV_AREA_DIFFICULT = 4u;
+constexpr unsigned short LOW_NAV_POLYFLAG_WALK = 1u;
+constexpr int LOW_NAV_MAX_PATH_POLYS = 256;
+constexpr int LOW_NAV_MAX_STRAIGHT_PATH_POINTS = 256;
+constexpr int LOW_NAV_DEFAULT_MAX_TILES = 4096;
+constexpr int LOW_NAV_DEFAULT_MAX_POLYS_PER_TILE = 1024;
 
   static void copy_vector(const Low::Math::Vector3 &p_Vector,
                           float *p_Out)
@@ -85,8 +86,6 @@ namespace {
     p_Filter.setAreaCost(LOW_NAV_AREA_ROUGH, 2.5f);
     p_Filter.setAreaCost(LOW_NAV_AREA_DIFFICULT, 5.0f);
   }
-} // namespace
-
 namespace Low {
   namespace Core {
     namespace Navigation {
@@ -96,6 +95,10 @@ namespace Low {
         dtNavMesh *navmesh = nullptr;
         dtNavMeshQuery *navmesh_query = nullptr;
         BuildSettings build_settings;
+        Low::Util::Map<TileCoord, Tile> tiles;
+        Low::Util::List<TileCoord> build_queue;
+        Low::Util::List<TileCoord> dirty_tiles;
+        uint64_t navmesh_revision = 0ull;
       };
 
       static void clear_navmesh(WorldBackend *p_World)
@@ -142,6 +145,11 @@ namespace Low {
         LOW_ASSERT(p_World,
                    "Cannot set build settings on null navmesh world");
         p_World->build_settings = p_BuildSettings;
+        clear_navmesh(p_World);
+        p_World->tiles.clear();
+        p_World->build_queue.clear();
+        p_World->dirty_tiles.clear();
+        ++p_World->navmesh_revision;
       }
 
       const BuildSettings &
@@ -153,12 +161,333 @@ namespace Low {
         return p_World->build_settings;
       }
 
-      bool
-      build_navmesh_from_geometry(WorldBackend *p_World,
-                                  const BuildGeometry &p_Geometry)
+      void clear_tile_registry(WorldBackend *p_World)
+      {
+        LOW_ASSERT(p_World,
+                   "Cannot clear tile registry on null navigation world");
+        clear_navmesh(p_World);
+        p_World->tiles.clear();
+        p_World->build_queue.clear();
+        p_World->dirty_tiles.clear();
+        ++p_World->navmesh_revision;
+      }
+
+      static bool is_tile_queued(WorldBackend *p_World,
+                                 TileCoord p_Coord)
+      {
+        for (const TileCoord &i_Coord : p_World->build_queue) {
+          if (i_Coord == p_Coord) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      static bool is_tile_dirty_tracked(WorldBackend *p_World,
+                                        TileCoord p_Coord)
+      {
+        for (const TileCoord &i_Coord : p_World->dirty_tiles) {
+          if (i_Coord == p_Coord) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      static void remove_tile_from_queue(WorldBackend *p_World,
+                                         TileCoord p_Coord)
+      {
+        for (auto it = p_World->build_queue.begin();
+             it != p_World->build_queue.end();) {
+          if (*it == p_Coord) {
+            it = p_World->build_queue.erase(it);
+          } else {
+            ++it;
+          }
+        }
+      }
+
+      static void remove_tile_from_dirty_list(WorldBackend *p_World,
+                                              TileCoord p_Coord)
+      {
+        for (auto it = p_World->dirty_tiles.begin();
+             it != p_World->dirty_tiles.end();) {
+          if (*it == p_Coord) {
+            it = p_World->dirty_tiles.erase(it);
+          } else {
+            ++it;
+          }
+        }
+      }
+
+      static void add_tile_to_dirty_list(WorldBackend *p_World,
+                                         TileCoord p_Coord)
+      {
+        if (!is_tile_dirty_tracked(p_World, p_Coord)) {
+          p_World->dirty_tiles.push_back(p_Coord);
+        }
+      }
+
+      bool ensure_tile(WorldBackend *p_World, TileCoord p_Coord,
+                       float p_MinY, float p_MaxY, Tile *p_Tile)
+      {
+        LOW_ASSERT(p_World,
+                   "Cannot ensure tile on null navigation world");
+
+        auto i_It = p_World->tiles.find(p_Coord);
+        if (i_It == p_World->tiles.end()) {
+          Tile l_Tile;
+          l_Tile.coord = p_Coord;
+          l_Tile.bounds = tile_coord_to_bounds(
+              p_Coord, get_tile_world_size(p_World->build_settings),
+              p_MinY, p_MaxY);
+          l_Tile.state = TileState::Empty;
+          i_It = p_World->tiles.insert(eastl::make_pair(
+                                           p_Coord, l_Tile))
+                     .first;
+        }
+
+        if (p_Tile) {
+          *p_Tile = i_It->second;
+        }
+        return true;
+      }
+
+      bool set_tile_state(WorldBackend *p_World, TileCoord p_Coord,
+                          TileState p_State)
+      {
+        LOW_ASSERT(p_World,
+                   "Cannot set tile state on null navigation world");
+
+        auto i_It = p_World->tiles.find(p_Coord);
+        if (i_It == p_World->tiles.end()) {
+          return false;
+        }
+
+        i_It->second.state = p_State;
+        if (p_State == TileState::Dirty) {
+          add_tile_to_dirty_list(p_World, p_Coord);
+        } else {
+          remove_tile_from_dirty_list(p_World, p_Coord);
+        }
+        return true;
+      }
+
+      bool get_tile(WorldBackend *p_World, TileCoord p_Coord,
+                    Tile *p_Tile)
+      {
+        LOW_ASSERT(p_World,
+                   "Cannot get tile from null navigation world");
+        if (!p_Tile) {
+          return false;
+        }
+
+        auto i_It = p_World->tiles.find(p_Coord);
+        if (i_It == p_World->tiles.end()) {
+          return false;
+        }
+
+        *p_Tile = i_It->second;
+        return true;
+      }
+
+      void collect_tiles(WorldBackend *p_World,
+                         Low::Util::List<Tile> *p_Tiles)
+      {
+        LOW_ASSERT(p_World,
+                   "Cannot collect tiles from null navigation world");
+        if (!p_Tiles) {
+          return;
+        }
+
+        p_Tiles->clear();
+        p_Tiles->reserve(static_cast<uint32_t>(p_World->tiles.size()));
+        for (const auto &i_Entry : p_World->tiles) {
+          p_Tiles->push_back(i_Entry.second);
+        }
+      }
+
+      void collect_dirty_tiles(WorldBackend *p_World,
+                               Low::Util::List<Tile> *p_Tiles)
+      {
+        LOW_ASSERT(p_World,
+                   "Cannot collect dirty tiles from null navigation world");
+        if (!p_Tiles) {
+          return;
+        }
+
+        p_Tiles->clear();
+        p_Tiles->reserve(
+            static_cast<uint32_t>(p_World->dirty_tiles.size()));
+        for (const TileCoord &i_Coord : p_World->dirty_tiles) {
+          auto i_It = p_World->tiles.find(i_Coord);
+          if (i_It == p_World->tiles.end() ||
+              i_It->second.state != TileState::Dirty) {
+            continue;
+          }
+          p_Tiles->push_back(i_It->second);
+        }
+      }
+
+      bool remove_tile(WorldBackend *p_World, TileCoord p_Coord)
+      {
+        LOW_ASSERT(p_World,
+                   "Cannot remove tile from null navigation world");
+
+        auto i_It = p_World->tiles.find(p_Coord);
+        if (i_It == p_World->tiles.end()) {
+          remove_tile_from_queue(p_World, p_Coord);
+          remove_tile_from_dirty_list(p_World, p_Coord);
+          return false;
+        }
+
+        if (p_World->navmesh &&
+            i_It->second.backend_tile_ref != 0u) {
+          unsigned char *l_RemovedData = nullptr;
+          int l_RemovedDataSize = 0;
+          p_World->navmesh->removeTile(
+              static_cast<dtTileRef>(
+                  i_It->second.backend_tile_ref),
+              &l_RemovedData, &l_RemovedDataSize);
+          if (l_RemovedData) {
+            dtFree(l_RemovedData);
+          }
+        }
+
+        remove_tile_from_queue(p_World, p_Coord);
+        remove_tile_from_dirty_list(p_World, p_Coord);
+        p_World->tiles.erase(i_It);
+        ++p_World->navmesh_revision;
+        return true;
+      }
+
+      bool queue_tile(WorldBackend *p_World, TileCoord p_Coord)
+      {
+        LOW_ASSERT(p_World,
+                   "Cannot queue tile on null navigation world");
+
+        auto i_It = p_World->tiles.find(p_Coord);
+        if (i_It == p_World->tiles.end() ||
+            is_tile_queued(p_World, p_Coord)) {
+          return false;
+        }
+
+        i_It->second.state = TileState::Queued;
+        remove_tile_from_dirty_list(p_World, p_Coord);
+        p_World->build_queue.push_back(p_Coord);
+        return true;
+      }
+
+      uint32_t queue_dirty_tiles(WorldBackend *p_World,
+                                 uint32_t p_MaxTilesToQueue)
+      {
+        LOW_ASSERT(p_World,
+                   "Cannot queue dirty tiles on null navigation world");
+
+        uint32_t l_QueuedCount = 0u;
+        Low::Util::List<TileCoord> l_DirtyTiles =
+            p_World->dirty_tiles;
+        for (const TileCoord &i_Coord : l_DirtyTiles) {
+          if (p_MaxTilesToQueue > 0u &&
+              l_QueuedCount >= p_MaxTilesToQueue) {
+            break;
+          }
+
+          auto i_It = p_World->tiles.find(i_Coord);
+          if (i_It == p_World->tiles.end() ||
+              i_It->second.state != TileState::Dirty ||
+              is_tile_queued(p_World, i_Coord)) {
+            remove_tile_from_dirty_list(p_World, i_Coord);
+            continue;
+          }
+
+          if (queue_tile(p_World, i_Coord)) {
+            ++l_QueuedCount;
+          }
+        }
+        return l_QueuedCount;
+      }
+
+      uint32_t get_queued_tile_count(WorldBackend *p_World)
+      {
+        LOW_ASSERT(p_World,
+                   "Cannot count queued tiles on null navigation world");
+
+        return static_cast<uint32_t>(p_World->build_queue.size());
+      }
+
+      uint64_t get_navmesh_revision(WorldBackend *p_World)
+      {
+        LOW_ASSERT(
+            p_World,
+            "Cannot get navmesh revision from null navigation world");
+
+        return p_World->navmesh_revision;
+      }
+
+      bool pop_next_queued_tile(WorldBackend *p_World,
+                                TileCoord *p_Coord)
+      {
+        LOW_ASSERT(p_World,
+                   "Cannot pop queued tile from null navigation world");
+        if (!p_Coord || p_World->build_queue.empty()) {
+          return false;
+        }
+
+        *p_Coord = p_World->build_queue.front();
+        p_World->build_queue.erase(p_World->build_queue.begin());
+        return true;
+      }
+
+      static bool ensure_tiled_navmesh(WorldBackend *p_World)
+      {
+        LOW_ASSERT(p_World,
+                   "Cannot initialize null navigation world");
+
+        if (p_World->navmesh && p_World->navmesh_query) {
+          return true;
+        }
+
+        clear_navmesh(p_World);
+
+        p_World->navmesh = dtAllocNavMesh();
+        p_World->navmesh_query = dtAllocNavMeshQuery();
+        if (!p_World->navmesh || !p_World->navmesh_query) {
+          clear_navmesh(p_World);
+          return false;
+        }
+
+        dtNavMeshParams l_Params;
+        std::memset(&l_Params, 0, sizeof(l_Params));
+        l_Params.orig[0] = 0.0f;
+        l_Params.orig[1] = 0.0f;
+        l_Params.orig[2] = 0.0f;
+        const float l_TileWorldSize =
+            get_tile_world_size(p_World->build_settings);
+        l_Params.tileWidth = l_TileWorldSize;
+        l_Params.tileHeight = l_TileWorldSize;
+        l_Params.maxTiles = LOW_NAV_DEFAULT_MAX_TILES;
+        l_Params.maxPolys = LOW_NAV_DEFAULT_MAX_POLYS_PER_TILE;
+
+        if (!dtStatusSucceed(p_World->navmesh->init(&l_Params)) ||
+            !dtStatusSucceed(p_World->navmesh_query->init(
+                p_World->navmesh, 2048))) {
+          clear_navmesh(p_World);
+          return false;
+        }
+
+        return true;
+      }
+
+      static bool build_tile_data_from_geometry(
+          WorldBackend *p_World, TileCoord p_Coord,
+          const BuildGeometry &p_Geometry, unsigned char **p_NavData,
+          int *p_NavDataSize)
       {
         LOW_ASSERT(p_World,
                    "Cannot build navmesh in null navigation world");
+        LOW_ASSERT(p_NavData && p_NavDataSize,
+                   "Cannot write tile navmesh data to null output");
 
         const int l_VertexCount =
             static_cast<int>(p_Geometry.vertices.size());
@@ -212,11 +541,15 @@ namespace Low {
         l_Config.maxVertsPerPoly = 6;
         l_Config.detailSampleDist = l_Config.cs * 6.0f;
         l_Config.detailSampleMaxError = l_Config.ch;
+        l_Config.tileSize = l_Settings.tile_size;
+        l_Config.borderSize = l_Config.walkableRadius + 3;
+        l_Config.width =
+            l_Config.tileSize + l_Config.borderSize * 2;
+        l_Config.height =
+            l_Config.tileSize + l_Config.borderSize * 2;
 
-        copy_vector(p_Geometry.bounds.minimum, l_Config.bmin);
-        copy_vector(p_Geometry.bounds.maximum, l_Config.bmax);
-        rcCalcGridSize(l_Config.bmin, l_Config.bmax, l_Config.cs,
-                       &l_Config.width, &l_Config.height);
+        copy_vector(p_Geometry.bounds.min, l_Config.bmin);
+        copy_vector(p_Geometry.bounds.max, l_Config.bmax);
 
         if (l_Config.width <= 0 || l_Config.height <= 0) {
           LOW_LOG_WARN << "Invalid navigation build bounds"
@@ -392,6 +725,9 @@ namespace Low {
         l_Params.cs = l_Config.cs;
         l_Params.ch = l_Config.ch;
         l_Params.buildBvTree = true;
+        l_Params.tileX = p_Coord.x;
+        l_Params.tileY = p_Coord.z;
+        l_Params.tileLayer = 0;
 
         if (!dtCreateNavMeshData(&l_Params, &l_NavData,
                                  &l_NavDataSize)) {
@@ -399,36 +735,129 @@ namespace Low {
           return false;
         }
 
-        clear_navmesh(p_World);
-        p_World->navmesh = dtAllocNavMesh();
-        p_World->navmesh_query = dtAllocNavMeshQuery();
-        if (!p_World->navmesh || !p_World->navmesh_query) {
-          if (l_NavData) {
-            dtFree(l_NavData);
-          }
-          clear_navmesh(p_World);
-          cleanup();
-          return false;
-        }
-
-        if (!dtStatusSucceed(p_World->navmesh->init(
-                l_NavData, l_NavDataSize, DT_TILE_FREE_DATA))) {
-          dtFree(l_NavData);
-          clear_navmesh(p_World);
-          cleanup();
-          return false;
-        }
+        *p_NavData = l_NavData;
+        *p_NavDataSize = l_NavDataSize;
         l_NavData = nullptr;
-
-        if (!dtStatusSucceed(p_World->navmesh_query->init(
-                p_World->navmesh, 2048))) {
-          clear_navmesh(p_World);
-          cleanup();
-          return false;
-        }
 
         cleanup();
         return true;
+      }
+
+      bool build_navmesh_tile_from_geometry(
+          WorldBackend *p_World, TileCoord p_Coord,
+          const BuildGeometry &p_Geometry)
+      {
+        LOW_ASSERT(p_World,
+                   "Cannot build navmesh tile in null navigation world");
+
+        auto i_It = p_World->tiles.find(p_Coord);
+        if (i_It == p_World->tiles.end()) {
+          return false;
+        }
+
+        i_It->second.state = TileState::Building;
+        remove_tile_from_dirty_list(p_World, p_Coord);
+
+        if (!ensure_tiled_navmesh(p_World)) {
+          i_It->second.state = TileState::Failed;
+          remove_tile_from_dirty_list(p_World, p_Coord);
+          return false;
+        }
+
+        if (i_It->second.backend_tile_ref != 0u) {
+          unsigned char *l_RemovedData = nullptr;
+          int l_RemovedDataSize = 0;
+          p_World->navmesh->removeTile(
+              static_cast<dtTileRef>(
+                  i_It->second.backend_tile_ref),
+              &l_RemovedData, &l_RemovedDataSize);
+          if (l_RemovedData) {
+            dtFree(l_RemovedData);
+          }
+          i_It->second.backend_tile_ref = 0u;
+        }
+
+        unsigned char *l_NavData = nullptr;
+        int l_NavDataSize = 0;
+        if (!build_tile_data_from_geometry(
+                p_World, p_Coord, p_Geometry, &l_NavData,
+                &l_NavDataSize)) {
+          i_It->second.state = TileState::Failed;
+          remove_tile_from_dirty_list(p_World, p_Coord);
+          return false;
+        }
+
+        dtTileRef l_TileRef = 0;
+        if (!dtStatusSucceed(p_World->navmesh->addTile(
+                l_NavData, l_NavDataSize, DT_TILE_FREE_DATA, 0,
+                &l_TileRef))) {
+          dtFree(l_NavData);
+          i_It->second.state = TileState::Failed;
+          remove_tile_from_dirty_list(p_World, p_Coord);
+          return false;
+        }
+
+        i_It->second.backend_tile_ref =
+            static_cast<uint64_t>(l_TileRef);
+        i_It->second.state = TileState::Ready;
+        remove_tile_from_dirty_list(p_World, p_Coord);
+        ++p_World->navmesh_revision;
+        return true;
+      }
+
+      bool
+      build_navmesh_from_geometry(WorldBackend *p_World,
+                                  const BuildGeometry &p_Geometry)
+      {
+        LOW_ASSERT(p_World,
+                   "Cannot build navmesh in null navigation world");
+
+        clear_navmesh(p_World);
+        p_World->tiles.clear();
+        p_World->build_queue.clear();
+        p_World->dirty_tiles.clear();
+        ++p_World->navmesh_revision;
+
+        if (p_Geometry.vertices.empty() ||
+            p_Geometry.indices.empty()) {
+          LOW_LOG_WARN << "Invalid navigation build geometry"
+                       << LOW_LOG_END;
+          return false;
+        }
+
+        const float l_TileWorldSize =
+            get_tile_world_size(p_World->build_settings);
+        const int l_WalkableRadius = static_cast<int>(std::ceil(
+            p_World->build_settings.agent_radius /
+            p_World->build_settings.cell_size));
+        const float l_BorderPadding =
+            static_cast<float>(l_WalkableRadius + 3) *
+            p_World->build_settings.cell_size;
+        const TileRange l_Range =
+            tile_range_for_bounds(p_Geometry.bounds,
+                                  l_TileWorldSize);
+
+        bool l_BuiltAnyTile = false;
+        for (int x = l_Range.minimum.x; x <= l_Range.maximum.x;
+             ++x) {
+          for (int z = l_Range.minimum.z; z <= l_Range.maximum.z;
+               ++z) {
+            const TileCoord i_Coord{x, z};
+            Tile i_Tile;
+            ensure_tile(p_World, i_Coord, p_Geometry.bounds.min.y,
+                        p_Geometry.bounds.max.y, &i_Tile);
+
+            BuildGeometry i_TileGeometry = p_Geometry;
+            i_TileGeometry.bounds =
+                expand_bounds(i_Tile.bounds, l_BorderPadding);
+            if (build_navmesh_tile_from_geometry(
+                    p_World, i_Coord, i_TileGeometry)) {
+              l_BuiltAnyTile = true;
+            }
+          }
+        }
+
+        return l_BuiltAnyTile;
       }
 
       bool collect_navmesh_geometry(WorldBackend *p_World,
@@ -498,21 +927,21 @@ namespace Low {
                 p_Geometry->vertices.push_back(i_Vertex);
 
                 if (p_Geometry->vertices.size() == 1u) {
-                  p_Geometry->bounds.minimum = i_Vertex;
-                  p_Geometry->bounds.maximum = i_Vertex;
+                  p_Geometry->bounds.min = i_Vertex;
+                  p_Geometry->bounds.max = i_Vertex;
                 } else {
-                  p_Geometry->bounds.minimum.x = std::min(
-                      p_Geometry->bounds.minimum.x, i_Vertex.x);
-                  p_Geometry->bounds.minimum.y = std::min(
-                      p_Geometry->bounds.minimum.y, i_Vertex.y);
-                  p_Geometry->bounds.minimum.z = std::min(
-                      p_Geometry->bounds.minimum.z, i_Vertex.z);
-                  p_Geometry->bounds.maximum.x = std::max(
-                      p_Geometry->bounds.maximum.x, i_Vertex.x);
-                  p_Geometry->bounds.maximum.y = std::max(
-                      p_Geometry->bounds.maximum.y, i_Vertex.y);
-                  p_Geometry->bounds.maximum.z = std::max(
-                      p_Geometry->bounds.maximum.z, i_Vertex.z);
+                  p_Geometry->bounds.min.x = std::min(
+                      p_Geometry->bounds.min.x, i_Vertex.x);
+                  p_Geometry->bounds.min.y = std::min(
+                      p_Geometry->bounds.min.y, i_Vertex.y);
+                  p_Geometry->bounds.min.z = std::min(
+                      p_Geometry->bounds.min.z, i_Vertex.z);
+                  p_Geometry->bounds.max.x = std::max(
+                      p_Geometry->bounds.max.x, i_Vertex.x);
+                  p_Geometry->bounds.max.y = std::max(
+                      p_Geometry->bounds.max.y, i_Vertex.y);
+                  p_Geometry->bounds.max.z = std::max(
+                      p_Geometry->bounds.max.z, i_Vertex.z);
                 }
               }
             }
@@ -570,6 +999,7 @@ namespace Low {
         LOW_ASSERT(p_World,
                    "Cannot find path in null navigation world");
         p_Result.points.clear();
+        p_Result.navmesh_revision = get_navmesh_revision(p_World);
         p_Result.partial = false;
 
         if (!p_World->navmesh || !p_World->navmesh_query) {

@@ -19,6 +19,236 @@ namespace Low {
   namespace Core {
     namespace Navigation {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+      static Low::Util::Name setting_name(const char *p_Name)
+      {
+        Low::Util::String l_FullName = "navigation/";
+        l_FullName += p_Name;
+        return LOW_NAME(l_FullName.c_str());
+      }
+
+      BuildSettings get_project_build_settings()
+      {
+        BuildSettings l_Settings;
+        const Low::Util::ConfigSettings &l_ProjectSettings =
+            Low::Util::get_project().settings;
+
+        l_Settings.cell_size = l_ProjectSettings.get_float(
+            setting_name("cell_size"), l_Settings.cell_size);
+        l_Settings.cell_height = l_ProjectSettings.get_float(
+            setting_name("cell_height"), l_Settings.cell_height);
+        l_Settings.agent_height = l_ProjectSettings.get_float(
+            setting_name("agent_height"), l_Settings.agent_height);
+        l_Settings.agent_radius = l_ProjectSettings.get_float(
+            setting_name("agent_radius"), l_Settings.agent_radius);
+        l_Settings.agent_max_climb = l_ProjectSettings.get_float(
+            setting_name("agent_max_climb"),
+            l_Settings.agent_max_climb);
+        l_Settings.agent_max_slope = l_ProjectSettings.get_float(
+            setting_name("agent_max_slope"),
+            l_Settings.agent_max_slope);
+        l_Settings.tile_size =
+            static_cast<int>(l_ProjectSettings.get_u32(
+                setting_name("tile_size"),
+                static_cast<u32>(l_Settings.tile_size)));
+
+        return l_Settings;
+      }
+
+      bool save_project_build_settings(
+          const BuildSettings &p_BuildSettings)
+      {
+        Low::Util::ConfigSettings &l_ProjectSettings =
+            Low::Util::get_project_settings();
+
+        l_ProjectSettings.set_float(setting_name("cell_size"),
+                                    p_BuildSettings.cell_size);
+        l_ProjectSettings.set_float(setting_name("cell_height"),
+                                    p_BuildSettings.cell_height);
+        l_ProjectSettings.set_float(setting_name("agent_height"),
+                                    p_BuildSettings.agent_height);
+        l_ProjectSettings.set_float(setting_name("agent_radius"),
+                                    p_BuildSettings.agent_radius);
+        l_ProjectSettings.set_float(setting_name("agent_max_climb"),
+                                    p_BuildSettings.agent_max_climb);
+        l_ProjectSettings.set_float(setting_name("agent_max_slope"),
+                                    p_BuildSettings.agent_max_slope);
+        l_ProjectSettings.set_u32(
+            setting_name("tile_size"),
+            static_cast<u32>(p_BuildSettings.tile_size));
+
+        return Low::Util::save_project_settings();
+      }
+
+      void apply_build_settings(World p_World,
+                                const BuildSettings &p_BuildSettings)
+      {
+        LOW_ASSERT(
+            p_World.is_alive(),
+            "Cannot apply build settings to dead navigation world");
+
+        set_world_build_settings(
+            static_cast<WorldBackend *>(p_World.get_world_ptr()),
+            p_BuildSettings);
+      }
+
+      BuildSettings get_build_settings(World p_World)
+      {
+        LOW_ASSERT(
+            p_World.is_alive(),
+            "Cannot get build settings from dead navigation world");
+
+        return get_world_build_settings(
+            static_cast<WorldBackend *>(p_World.get_world_ptr()));
+      }
+
+      void clear_tile_registry(World p_World)
+      {
+        LOW_ASSERT(
+            p_World.is_alive(),
+            "Cannot clear tile registry on dead navigation world");
+
+        Navigation::clear_tile_registry(
+            static_cast<WorldBackend *>(p_World.get_world_ptr()));
+      }
+
+      bool ensure_tile(World p_World, TileCoord p_Coord, float p_MinY,
+                       float p_MaxY, Tile *p_Tile)
+      {
+        LOW_ASSERT(p_World.is_alive(),
+                   "Cannot ensure tile on dead navigation world");
+
+        return Navigation::ensure_tile(
+            static_cast<WorldBackend *>(p_World.get_world_ptr()),
+            p_Coord, p_MinY, p_MaxY, p_Tile);
+      }
+
+      bool set_tile_state(World p_World, TileCoord p_Coord,
+                          TileState p_State)
+      {
+        LOW_ASSERT(p_World.is_alive(),
+                   "Cannot set tile state on dead navigation world");
+
+        return Navigation::set_tile_state(
+            static_cast<WorldBackend *>(p_World.get_world_ptr()),
+            p_Coord, p_State);
+      }
+
+      bool get_tile(World p_World, TileCoord p_Coord, Tile *p_Tile)
+      {
+        LOW_ASSERT(p_World.is_alive(),
+                   "Cannot get tile from dead navigation world");
+
+        return Navigation::get_tile(
+            static_cast<WorldBackend *>(p_World.get_world_ptr()),
+            p_Coord, p_Tile);
+      }
+
+      void collect_tiles(World p_World,
+                         Low::Util::List<Tile> *p_Tiles)
+      {
+        LOW_ASSERT(p_World.is_alive(),
+                   "Cannot collect tiles from dead navigation world");
+
+        Navigation::collect_tiles(
+            static_cast<WorldBackend *>(p_World.get_world_ptr()),
+            p_Tiles);
+      }
+
+      void collect_dirty_tiles(World p_World,
+                               Low::Util::List<Tile> *p_Tiles)
+      {
+        LOW_ASSERT(
+            p_World.is_alive(),
+            "Cannot collect dirty tiles from dead navigation world");
+
+        Navigation::collect_dirty_tiles(
+            static_cast<WorldBackend *>(p_World.get_world_ptr()),
+            p_Tiles);
+      }
+
+      bool remove_tile(World p_World, TileCoord p_Coord)
+      {
+        LOW_ASSERT(
+            p_World.is_alive(),
+            "Cannot remove tile from dead navigation world");
+
+        return Navigation::remove_tile(
+            static_cast<WorldBackend *>(p_World.get_world_ptr()),
+            p_Coord);
+      }
+
+      bool queue_tile(World p_World, TileCoord p_Coord)
+      {
+        LOW_ASSERT(p_World.is_alive(),
+                   "Cannot queue tile on dead navigation world");
+
+        return Navigation::queue_tile(
+            static_cast<WorldBackend *>(p_World.get_world_ptr()),
+            p_Coord);
+      }
+
+      uint32_t get_queued_tile_count(World p_World)
+      {
+        LOW_ASSERT(
+            p_World.is_alive(),
+            "Cannot count queued tiles on dead navigation world");
+
+        return Navigation::get_queued_tile_count(
+            static_cast<WorldBackend *>(p_World.get_world_ptr()));
+      }
+
+      uint64_t get_navmesh_revision(World p_World)
+      {
+        LOW_ASSERT(
+            p_World.is_alive(),
+            "Cannot get navmesh revision from dead navigation world");
+
+        return Navigation::get_navmesh_revision(
+            static_cast<WorldBackend *>(p_World.get_world_ptr()));
+      }
+
+      uint32_t update_tile_builds(World p_World,
+                                  uint32_t p_MaxTilesToBuild)
+      {
+        LOW_ASSERT(
+            p_World.is_alive(),
+            "Cannot update tile builds on dead navigation world");
+
+        uint32_t l_BuiltTileCount = 0u;
+        WorldBackend *l_Backend =
+            static_cast<WorldBackend *>(p_World.get_world_ptr());
+        while (l_BuiltTileCount < p_MaxTilesToBuild) {
+          TileCoord i_Coord;
+          if (!Navigation::pop_next_queued_tile(l_Backend,
+                                                &i_Coord)) {
+            break;
+          }
+
+          Tile i_Tile;
+          if (!get_tile(p_World, i_Coord, &i_Tile) ||
+              (i_Tile.state != TileState::Queued &&
+               i_Tile.state != TileState::Dirty)) {
+            continue;
+          }
+
+          build_tile(p_World, i_Coord);
+          ++l_BuiltTileCount;
+        }
+
+        return l_BuiltTileCount;
+      }
+
+      bool build_tile_from_geometry(
+          World p_World, TileCoord p_Coord,
+          const BuildGeometry &p_Geometry)
+      {
+        LOW_ASSERT(p_World.is_alive(),
+                   "Cannot build tile on dead navigation world");
+
+        return Navigation::build_navmesh_tile_from_geometry(
+            static_cast<WorldBackend *>(p_World.get_world_ptr()),
+            p_Coord, p_Geometry);
+      }
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       u16 World::ms_TypeId = 0;
@@ -55,7 +285,8 @@ namespace Low {
         ms_LivingInstances.push_back(l_Handle);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
-        l_Handle.set_world_ptr(create_world_backend(BuildSettings()));
+        l_Handle.set_world_ptr(
+            create_world_backend(get_project_build_settings()));
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -286,6 +517,15 @@ namespace Low {
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
           // End function: find_path
+        }
+        {
+          // Function: get_navmesh_revision
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(get_navmesh_revision);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: get_navmesh_revision
         }
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
@@ -578,6 +818,14 @@ namespace Low {
             static_cast<WorldBackend *>(get_world_ptr()), p_Start,
             p_End, p_HalfExtents, *p_Result);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_find_path
+      }
+
+      uint64_t World::get_navmesh_revision()
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_navmesh_revision
+        return Navigation::get_navmesh_revision(
+            static_cast<WorldBackend *>(get_world_ptr()));
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_navmesh_revision
       }
 
       uint32_t World::create_instance(u32 &p_PageIndex,

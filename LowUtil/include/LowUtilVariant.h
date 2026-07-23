@@ -127,6 +127,10 @@ namespace Low {
       void LOW_EXPORT serialize_variant(Node &p_Node,
                                         Low::Util::Variant p_Variant);
       Low::Util::Variant LOW_EXPORT deserialize_variant(Node &p_Node);
+      bool LOW_EXPORT node_to_variant(const Node &p_Node,
+                                      Low::Util::Variant &p_Variant);
+      Low::Util::Variant LOW_EXPORT
+      node_to_variant(const Node &p_Node);
 
     } // namespace Serial
   } // namespace Util

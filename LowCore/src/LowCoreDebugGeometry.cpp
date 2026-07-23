@@ -247,6 +247,57 @@ namespace Low {
         p_RenderView.get_debug_geometry_lines().push_back(l_Draw);
       }
 
+      void render_point(Math::Vector3 p_Point, Math::Color p_Color,
+                        bool p_DepthTest, float p_Radius)
+      {
+        render_point(Renderer::get_editor_renderview(), p_Point,
+                     p_Color, p_DepthTest, p_Radius);
+      }
+
+      void render_point(Renderer::RenderView p_RenderView,
+                        Math::Vector3 p_Point, Math::Color p_Color,
+                        bool p_DepthTest, float p_Radius)
+      {
+        Math::Sphere l_Sphere;
+        l_Sphere.position = p_Point;
+        l_Sphere.radius = p_Radius;
+
+        Math::Matrix4x4 l_Transform =
+            glm::translate(glm::mat4(1.0f), l_Sphere.position) *
+            glm::toMat4(Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f)) *
+            glm::scale(glm::mat4(1.0f),
+                       Math::Vector3(l_Sphere.radius));
+
+        render_mesh(p_RenderView,
+                    Renderer::get_primitives().unitIcoSphere, p_Color,
+                    l_Transform, p_DepthTest, false);
+      }
+
+      void render_path(const Util::List<Math::Vector3> &p_Points,
+                       Math::Color p_Color, bool p_DepthTest,
+                       float p_PointRadius, float p_LineThickness)
+      {
+        render_path(Renderer::get_editor_renderview(), p_Points,
+                    p_Color, p_DepthTest, p_PointRadius,
+                    p_LineThickness);
+      }
+
+      void render_path(Renderer::RenderView p_RenderView,
+                       const Util::List<Math::Vector3> &p_Points,
+                       Math::Color p_Color, bool p_DepthTest,
+                       float p_PointRadius, float p_LineThickness)
+      {
+        for (uint32_t i = 0u; i < p_Points.size(); ++i) {
+          render_point(p_RenderView, p_Points[i], p_Color,
+                       p_DepthTest, p_PointRadius);
+
+          if (i + 1u < p_Points.size()) {
+            render_line(p_RenderView, p_Points[i], p_Points[i + 1u],
+                        p_Color, p_DepthTest, p_LineThickness);
+          }
+        }
+      }
+
       glm::mat4 generateModelMatrix(const glm::vec3 &v0,
                                     const glm::vec3 &v1,
                                     const glm::vec3 &v2)

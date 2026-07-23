@@ -37,6 +37,7 @@
 #include "LowCorePhysicsBodyMotionType.h"
 #include "LowCoreNavigationWorld.h"
 #include "LowCoreNavigationSource.h"
+#include "LowCoreNavigationInvoker.h"
 #include "LowCoreNavigationSourceMode.h"
 #include "LowCoreNavigationSourceGeometryType.h"
 #include "LowCoreNavigationAreaType.h"
@@ -154,6 +155,7 @@ namespace Low {
       Component::NavmeshAgent::initialize();
       Component::Camera::initialize();
       Navigation::Source::initialize();
+      Navigation::Invoker::initialize();
     }
 
     static void initialize_base_types()
@@ -358,6 +360,7 @@ namespace Low {
 
     static void cleanup_component_types()
     {
+      Navigation::Invoker::cleanup();
       Navigation::Source::cleanup();
       Component::Camera::cleanup();
       Component::NavmeshAgent::cleanup();

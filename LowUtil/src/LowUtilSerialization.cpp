@@ -9,6 +9,129 @@
 namespace Low {
   namespace Util {
     namespace Serial {
+      namespace {
+        bool scalar_to_variant(const Node::Scalar &p_Scalar,
+                               Variant &p_Variant)
+        {
+          if (std::holds_alternative<bool>(p_Scalar.value)) {
+            p_Variant = std::get<bool>(p_Scalar.value);
+            return true;
+          }
+          if (std::holds_alternative<float>(p_Scalar.value)) {
+            p_Variant = std::get<float>(p_Scalar.value);
+            return true;
+          }
+          if (std::holds_alternative<u64>(p_Scalar.value)) {
+            p_Variant = std::get<u64>(p_Scalar.value);
+            return true;
+          }
+          if (std::holds_alternative<i64>(p_Scalar.value)) {
+            const i64 l_Value = std::get<i64>(p_Scalar.value);
+            if (l_Value >= LOW_INT_MIN && l_Value <= LOW_INT_MAX) {
+              p_Variant = static_cast<i32>(l_Value);
+            } else if (l_Value >= 0) {
+              p_Variant = static_cast<u64>(l_Value);
+            } else {
+              return false;
+            }
+            return true;
+          }
+          if (std::holds_alternative<String>(p_Scalar.value)) {
+            p_Variant = std::get<String>(p_Scalar.value);
+            return true;
+          }
+
+          return false;
+        }
+
+        bool has_field(const Node &p_Node, const char *p_Field)
+        {
+          return p_Node.find(p_Field) != nullptr;
+        }
+
+        bool only_has_fields(const Node &p_Node,
+                             const char **p_Fields,
+                             const u32 p_FieldCount)
+        {
+          if (!p_Node.is_dict() || p_Node.size() != p_FieldCount) {
+            return false;
+          }
+
+          for (u32 i = 0; i < p_FieldCount; ++i) {
+            if (!has_field(p_Node, p_Fields[i])) {
+              return false;
+            }
+          }
+
+          return true;
+        }
+
+        bool is_quaternion(const Math::Vector4 &p_Value)
+        {
+          const float l_MagnitudeSquared =
+              (p_Value.x * p_Value.x) + (p_Value.y * p_Value.y) +
+              (p_Value.z * p_Value.z) + (p_Value.w * p_Value.w);
+
+          return Math::Util::abs(l_MagnitudeSquared - 1.0f) <= 0.001f;
+        }
+
+        bool vector_node_to_variant(const Node &p_Node,
+                                    Variant &p_Variant)
+        {
+          if (p_Node.is_seq()) {
+            if (p_Node.size() == 2) {
+              p_Variant = p_Node.as<Math::Vector2>();
+              return true;
+            }
+            if (p_Node.size() == 3) {
+              p_Variant = p_Node.as<Math::Vector3>();
+              return true;
+            }
+            if (p_Node.size() == 4) {
+              Math::Vector4 l_Value;
+              l_Value.x = p_Node[0].as<float>();
+              l_Value.y = p_Node[1].as<float>();
+              l_Value.z = p_Node[2].as<float>();
+              l_Value.w = p_Node[3].as<float>();
+              p_Variant = l_Value;
+              return true;
+            }
+
+            return false;
+          }
+
+          if (!p_Node.is_dict()) {
+            return false;
+          }
+
+          const char *l_Vector2Fields[] = {"x", "y"};
+          if (only_has_fields(p_Node, l_Vector2Fields, 2)) {
+            p_Variant = p_Node.as<Math::Vector2>();
+            return true;
+          }
+
+          const char *l_Vector3Fields[] = {"x", "y", "z"};
+          if (only_has_fields(p_Node, l_Vector3Fields, 3)) {
+            p_Variant = p_Node.as<Math::Vector3>();
+            return true;
+          }
+
+          const char *l_Vector4Fields[] = {"x", "y", "z", "w"};
+          if (only_has_fields(p_Node, l_Vector4Fields, 4)) {
+            Math::Vector4 l_Value = p_Node.as<Math::Vector4>();
+            if (is_quaternion(l_Value)) {
+              p_Variant = Math::Quaternion(l_Value.w, l_Value.x,
+                                           l_Value.y, l_Value.z);
+            } else {
+              p_Variant = l_Value;
+            }
+            return true;
+          }
+
+          return false;
+        }
+      } // namespace
+
       Node load_yaml_file(const char *p_Path)
       {
         Yaml::Node l_YamlNode = Yaml::load_file(p_Path);
@@ -193,6 +316,24 @@ namespace Low {
         LOW_ASSERT(false,
                    "Could not deserialize variant. Unknown type");
         return Variant(0);
+      }
+
+      bool node_to_variant(const Node &p_Node, Variant &p_Variant)
+      {
+        if (const Node::Scalar *l_Scalar =
+                std::get_if<Node::Scalar>(&p_Node.data)) {
+          return scalar_to_variant(*l_Scalar, p_Variant);
+        }
+
+        return vector_node_to_variant(p_Node, p_Variant);
+      }
+
+      Variant node_to_variant(const Node &p_Node)
+      {
+        Variant l_Variant;
+        LOW_ASSERT(node_to_variant(p_Node, l_Variant),
+                   "Could not convert node to variant");
+        return l_Variant;
       }
 
       u8 deserialize_enum(Node &p_Node)

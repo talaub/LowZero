@@ -1473,7 +1473,7 @@ namespace Low {
         if (!is_dirty()) {
           TYPE_SOA(Transform, dirty, bool) = true;
           // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
-
+          broadcast_observable(N(dirty));
           // LOW_CODEGEN::END::CUSTOM:MARK_dirty
         }
       }
@@ -1530,7 +1530,7 @@ namespace Low {
         if (!is_world_dirty()) {
           TYPE_SOA(Transform, world_dirty, bool) = true;
           // LOW_CODEGEN:BEGIN:CUSTOM:MARK_world_dirty
-
+          broadcast_observable(N(world_dirty));
           // LOW_CODEGEN::END::CUSTOM:MARK_world_dirty
         }
       }

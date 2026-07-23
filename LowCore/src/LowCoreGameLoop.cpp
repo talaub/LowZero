@@ -10,6 +10,7 @@
 #include "LowCoreTaskScheduler.h"
 #include "LowCoreTransform.h"
 #include "LowCoreNavmeshSystem.h"
+#include "LowCoreNavigationSystem.h"
 #include "LowCoreCflatScripting.h"
 #include "LowCoreCameraSystem.h"
 #include "LowCoreGameplaySystem.h"
@@ -117,6 +118,7 @@ namespace Low {
         System::Region::tick(p_Delta, get_engine_state());
         System::Camera::tick(p_Delta, get_engine_state());
         System::Tween::tick(p_Delta, get_engine_state());
+        System::Navigation::tick(p_Delta, get_engine_state());
         if (!l_FirstRun) {
           // System::Navmesh::tick(p_Delta, get_engine_state());
         }

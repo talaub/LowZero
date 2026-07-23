@@ -293,6 +293,7 @@ types:
       trigger:
         type: bool
         editor_editable: true
+        dirty_flag: dirty
       shape:
         type: Low::Core::Physics::Shape
         handle: true
@@ -330,9 +331,11 @@ types:
       points:
         type: Low::Util::List<Low::Math::Vector3>
         editor_editable: true
+        dirty_flag: dirty
       trigger:
         type: bool
         editor_editable: true
+        dirty_flag: dirty
       shape:
         type: Low::Core::Physics::Shape
         handle: true
@@ -375,6 +378,7 @@ types:
       trigger:
         type: bool
         editor_editable: true
+        dirty_flag: dirty
       shape:
         type: Low::Core::Physics::Shape
         handle: true

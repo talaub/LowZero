@@ -55,6 +55,27 @@ namespace Low {
           Math::Vector3 p_End, Math::Color p_Color, bool p_DepthTest,
           float p_Thickness = 0.02f);
 
+      LOW_CORE_API void render_point(Math::Vector3 p_Point,
+                                     Math::Color p_Color,
+                                     bool p_DepthTest,
+                                     float p_Radius = 0.2f);
+      LOW_CORE_API void render_point(
+          Renderer::RenderView p_RenderView, Math::Vector3 p_Point,
+          Math::Color p_Color, bool p_DepthTest,
+          float p_Radius = 0.2f);
+
+      LOW_CORE_API void
+      render_path(const Util::List<Math::Vector3> &p_Points,
+                  Math::Color p_Color, bool p_DepthTest,
+                  float p_PointRadius = 0.2f,
+                  float p_LineThickness = 0.04f);
+      LOW_CORE_API void
+      render_path(Renderer::RenderView p_RenderView,
+                  const Util::List<Math::Vector3> &p_Points,
+                  Math::Color p_Color, bool p_DepthTest,
+                  float p_PointRadius = 0.2f,
+                  float p_LineThickness = 0.04f);
+
       LOW_CORE_API void render_triangle(Math::Vector3 p_Vertex0,
                                         Math::Vector3 p_Vertex1,
                                         Math::Vector3 p_Vertex2,
