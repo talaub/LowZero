@@ -12,6 +12,7 @@
 #include "LowUtilFileIO.h"
 #include "LowUtilHandle.h"
 #include "LowUtilLogger.h"
+#include "LowUtilString.h"
 #include "angelscript.h"
 
 #include <angelscript.h>
@@ -27,14 +28,22 @@ namespace Low {
     void expose_types(asIScriptEngine *p_Engine);
     void register_types(asIScriptEngine *p_Engine);
     namespace Scripting {
+      using FunctionPtr = void (*)(int);
+
       static asIScriptEngine *g_Engine = nullptr;
       static asIScriptContext *g_TickContext = nullptr;
+
+      Util::List<FunctionInfo> g_RegisteredFunctions;
 
       static bool g_Initialized = false;
 
       void expose(asIScriptEngine *p_Engine);
       void expose_late(asIScriptEngine *p_Engine);
       void register_interfaces(asIScriptEngine *p_Engine);
+
+      void produce_as_function_signature(
+          Util::StringBuilder &p_Builder,
+          const FunctionInfo &p_FunctionInfo);
 
       static bool load_script_to_file(const char *p_Path,
                                       Util::String &p_Source)
@@ -816,6 +825,26 @@ namespace Low {
           }
           call_ticking_functions(i_Module);
         }
+      }
+
+      void register_function(const FunctionInfo &p_FunctionInfo)
+      {
+        int r = g_Engine->SetDefaultNamespace("");
+        LOW_ASSERT(r >= 0, "Failed to set namespace");
+
+        FunctionPtr l_AsFuncPtr =
+            reinterpret_cast<FunctionPtr>(p_FunctionInfo.ptr);
+
+        Util::StringBuilder l_SignatureBuilder;
+        produce_as_function_signature(l_SignatureBuilder,
+                                      p_FunctionInfo);
+
+        r = g_Engine->RegisterGlobalFunction(
+            l_SignatureBuilder.get().c_str(), asFUNCTION(l_AsFuncPtr),
+            asCALL_CDECL);
+        LOW_ASSERT(r >= 0, "Failed to register function.");
+
+        g_RegisteredFunctions.push_back(p_FunctionInfo);
       }
     } // namespace Scripting
   } // namespace Core
