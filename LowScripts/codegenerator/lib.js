@@ -824,7 +824,7 @@ function removeItemOnce(arr, value) {
   return arr;
 }
 
-function collect_enums_for_project(p_Path) {
+function collect_enums_for_project(p_Path, p_WriteIds = true) {
   const l_TypeConfigsPath = `${p_Path}data/_internal/type_configs`;
   const l_FileList = fs.readdirSync(l_TypeConfigsPath);
 
@@ -854,7 +854,7 @@ function collect_enums_for_project(p_Path) {
     l_Enums.push(...process_enum_file(p_Path, i_FileName, true));
   }
 
-  if (Object.keys(g_EnumIdMap).length > 0)
+  if (p_WriteIds && Object.keys(g_EnumIdMap).length > 0)
     fs.writeFileSync(
       `${l_TypeConfigsPath}/enumids.yaml`,
       YAML.stringify(g_EnumIdMap),
@@ -863,7 +863,7 @@ function collect_enums_for_project(p_Path) {
   return l_Enums;
 }
 
-function collect_enums_for_low(p_Path) {
+function collect_enums_for_low(p_Path, p_WriteIds = true) {
   const l_TypeConfigsPath = `${p_Path}LowData/type_configs`;
   const l_FileList = fs.readdirSync(l_TypeConfigsPath);
 
@@ -893,7 +893,7 @@ function collect_enums_for_low(p_Path) {
     l_Enums.push(...process_enum_file(p_Path, i_FileName, false));
   }
 
-  if (Object.keys(g_EnumIdMap).length > 0) {
+  if (p_WriteIds && Object.keys(g_EnumIdMap).length > 0) {
     fs.writeFileSync(
       `${l_TypeConfigsPath}/enumids.yaml`,
       YAML.stringify(g_EnumIdMap),
@@ -1139,7 +1139,7 @@ function build_database_for(p_Path) {
   return db;
 }
 
-function collect_types_for_low(p_Path) {
+function collect_types_for_low(p_Path, p_WriteIds = true) {
   const l_TypeIdContent = read_file(
     `${p_Path}LowData/type_configs/typeids.yaml`,
   );
@@ -1166,15 +1166,17 @@ function collect_types_for_low(p_Path) {
     l_Types.push(...process_file(p_Path, i_FileName, false));
   }
 
-  fs.writeFileSync(
-    `${p_Path}LowData/type_configs/typeids.yaml`,
-    YAML.stringify(g_TypeIdMap),
-  );
+  if (p_WriteIds) {
+    fs.writeFileSync(
+      `${p_Path}LowData/type_configs/typeids.yaml`,
+      YAML.stringify(g_TypeIdMap),
+    );
+  }
 
   return l_Types;
 }
 
-function collect_types_for_project(p_Path) {
+function collect_types_for_project(p_Path, p_WriteIds = true) {
   const l_TypeIdContent = read_file(
     `${p_Path}data/_internal/type_configs/typeids.yaml`,
   );
@@ -1205,7 +1207,7 @@ function collect_types_for_project(p_Path) {
     l_Types.push(...process_file(p_Path, i_FileName, true));
   }
 
-  if (Object.keys(g_TypeIdMap).length > 0) {
+  if (p_WriteIds && Object.keys(g_TypeIdMap).length > 0) {
     fs.writeFileSync(
       `${p_Path}data/_internal/type_configs/typeids.yaml`,
       YAML.stringify(g_TypeIdMap),

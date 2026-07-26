@@ -84,7 +84,9 @@ namespace Low {
       {
         produce_type_info_string(p_Builder,
                                  p_FunctionInfo.return_type);
-        p_Builder.append(" ").append(p_FunctionInfo.name).append("(");
+        p_Builder.append(" ")
+            .append(p_FunctionInfo.bind_name)
+            .append("(");
 
         int i = 0;
         for (const FunctionParameterInfo &i_Param :
@@ -99,6 +101,9 @@ namespace Low {
         }
 
         p_Builder.append(")");
+        if (p_FunctionInfo.is_property) {
+          p_Builder.append(" property");
+        }
       }
     } // namespace Scripting
   } // namespace Core

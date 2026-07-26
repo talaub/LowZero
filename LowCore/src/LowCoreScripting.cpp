@@ -1,5 +1,7 @@
 #include "LowCoreScripting.h"
 
+void register_lowcore_scripting();
+
 #include "LowCoreEventManager.h"
 #include "LowCoreEntity.h"
 #include "LowCoreGameplaySystem.h"
@@ -729,6 +731,7 @@ namespace Low {
 
         expose(g_Engine);
         register_types(g_Engine);
+        register_lowcore_scripting();
         expose_types(g_Engine);
         expose_late(g_Engine);
         register_interfaces(g_Engine);
@@ -829,7 +832,8 @@ namespace Low {
 
       void register_function(const FunctionInfo &p_FunctionInfo)
       {
-        int r = g_Engine->SetDefaultNamespace("");
+        int r = g_Engine->SetDefaultNamespace(
+            p_FunctionInfo.bind_namespace.c_str());
         LOW_ASSERT(r >= 0, "Failed to set namespace");
 
         FunctionPtr l_AsFuncPtr =
@@ -845,6 +849,106 @@ namespace Low {
         LOW_ASSERT(r >= 0, "Failed to register function.");
 
         g_RegisteredFunctions.push_back(p_FunctionInfo);
+
+        r = g_Engine->SetDefaultNamespace("");
+        LOW_ASSERT(r >= 0, "Failed to reset namespace");
+      }
+      void register_enum(const EnumInfo &p_EnumInfo)
+      {
+        int r = g_Engine->SetDefaultNamespace(
+            p_EnumInfo.bind_namespace.c_str());
+        LOW_ASSERT(r >= 0, "Failed to set namespace");
+
+        const char *l_BindName = p_EnumInfo.bind_name.c_str();
+
+        r = g_Engine->RegisterEnum(l_BindName);
+        LOW_ASSERT(r >= 0, "Failed to register enum");
+
+        Util::RTTI::EnumInfo &l_RttiInfo =
+            Util::get_enum_info(p_EnumInfo.identifier);
+        for (const auto &i_Entry : l_RttiInfo.entries) {
+          r = g_Engine->RegisterEnumValue(
+              l_BindName, i_Entry.name.c_str(),
+              static_cast<int>(i_Entry.value));
+          LOW_ASSERT(r >= 0, "Failed to register enum value");
+        }
+
+        Util::StringBuilder l_Sig;
+
+        l_Sig.append("Name ").append(l_BindName).append("_name(").append(l_BindName).append(" value)");
+        r = g_Engine->RegisterGlobalFunction(
+            l_Sig.get().c_str(),
+            asFUNCTION(p_EnumInfo.entry_name_ptr), asCALL_CDECL);
+        LOW_ASSERT(r >= 0, "Failed to register enum entry_name");
+
+        l_Sig = Util::StringBuilder();
+        l_Sig.append(l_BindName).append(" ").append(l_BindName).append("_value(Name name)");
+        r = g_Engine->RegisterGlobalFunction(
+            l_Sig.get().c_str(),
+            asFUNCTION(p_EnumInfo.entry_value_ptr), asCALL_CDECL);
+        LOW_ASSERT(r >= 0, "Failed to register enum entry_value");
+
+        r = g_Engine->SetDefaultNamespace("");
+        LOW_ASSERT(r >= 0, "Failed to reset namespace");
+      }
+      void register_struct(const StructInfo &p_StructInfo)
+      {
+        int r = g_Engine->SetDefaultNamespace(
+            p_StructInfo.bind_namespace.c_str());
+        LOW_ASSERT(r >= 0, "Failed to set namespace");
+
+        const char *l_BindName = p_StructInfo.bind_name.c_str();
+
+        Util::RTTI::StructInfo &l_RttiInfo =
+            Util::get_struct_info(p_StructInfo.identifier);
+
+        r = g_Engine->RegisterObjectType(
+            l_BindName, static_cast<int>(l_RttiInfo.size),
+            asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
+        LOW_ASSERT(r >= 0, "Failed to register struct type");
+
+        r = g_Engine->RegisterObjectBehaviour(
+            l_BindName, asBEHAVE_CONSTRUCT, "void f()",
+            asFUNCTION(p_StructInfo.default_constructor),
+            asCALL_CDECL_OBJLAST);
+        LOW_ASSERT(r >= 0, "Failed to register struct default ctor");
+
+        Util::StringBuilder l_CopySig;
+        l_CopySig.append("void f(const ").append(l_BindName).append(" &in)");
+        r = g_Engine->RegisterObjectBehaviour(
+            l_BindName, asBEHAVE_CONSTRUCT,
+            l_CopySig.get().c_str(),
+            asFUNCTION(p_StructInfo.copy_constructor),
+            asCALL_CDECL_OBJLAST);
+        LOW_ASSERT(r >= 0, "Failed to register struct copy ctor");
+
+        r = g_Engine->RegisterObjectBehaviour(
+            l_BindName, asBEHAVE_DESTRUCT, "void f()",
+            asFUNCTION(p_StructInfo.destructor),
+            asCALL_CDECL_OBJLAST);
+        LOW_ASSERT(r >= 0, "Failed to register struct destructor");
+
+        Util::StringBuilder l_AssignSig;
+        l_AssignSig.append(l_BindName).append(" &opAssign(const ").append(l_BindName).append(" &in)");
+        r = g_Engine->RegisterObjectMethod(
+            l_BindName, l_AssignSig.get().c_str(),
+            asFUNCTION(p_StructInfo.assign),
+            asCALL_CDECL_OBJLAST);
+        LOW_ASSERT(r >= 0, "Failed to register struct assignment");
+
+        for (const Util::RTTI::StructFieldInfo &i_Field :
+             l_RttiInfo.fields) {
+          if (i_Field.as_type.empty()) continue;
+          Util::StringBuilder l_PropDecl;
+          l_PropDecl.append(i_Field.as_type).append(" ").append(i_Field.name);
+          r = g_Engine->RegisterObjectProperty(
+              l_BindName, l_PropDecl.get().c_str(),
+              static_cast<int>(i_Field.offset));
+          LOW_ASSERT(r >= 0, "Failed to register struct property");
+        }
+
+        r = g_Engine->SetDefaultNamespace("");
+        LOW_ASSERT(r >= 0, "Failed to reset namespace");
       }
     } // namespace Scripting
   } // namespace Core

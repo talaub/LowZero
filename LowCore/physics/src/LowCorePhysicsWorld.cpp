@@ -31,23 +31,23 @@ namespace Low {
       {
         if (p_Owner.get_id() == 0u ||
             p_Owner.get_id() == Low::Util::Handle::DEAD) {
-          return HitObjectFamily::BODY;
+          return HitObjectFamily::Body;
         }
 
         const uint16_t l_Type = p_Owner.get_type();
         if (l_Type == Component::Rigidbody::type_id()) {
-          return HitObjectFamily::RIGIDBODY;
+          return HitObjectFamily::Rigidbody;
         }
         if (l_Type == Component::BoxCollider::type_id() ||
             l_Type == Component::SphereCollider::type_id() ||
             l_Type == Component::ConvexHullCollider::type_id()) {
-          return HitObjectFamily::STATIC_COLLIDER;
+          return HitObjectFamily::StaticCollider;
         }
         if (l_Type == Component::CharacterController::type_id()) {
-          return HitObjectFamily::CHARACTER_CONTROLLER;
+          return HitObjectFamily::CharacterController;
         }
 
-        return HitObjectFamily::UNKNOWN;
+        return HitObjectFamily::Unknown;
       }
 
       static QueryHit to_query_hit(const BackendQueryHit &p_Hit)

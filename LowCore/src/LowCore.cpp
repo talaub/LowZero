@@ -1,5 +1,7 @@
 #include "LowCore.h"
 
+void register_lowcore();
+
 #include "LowCoreScene.h"
 #include "LowCoreRegion.h"
 #include "LowCoreEntity.h"
@@ -219,6 +221,7 @@ namespace Low {
 
     static void initialize_types()
     {
+      register_lowcore();
       initialize_asset_types();
       initialize_physics_types();
       initialize_navigation_types();

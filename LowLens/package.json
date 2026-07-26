@@ -1,0 +1,22 @@
+{
+  "name": "lowlens",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "tree-sitter": "^0.21.1",
+    "tree-sitter-cpp": "^0.23.4",
+    "yaml": "^2.9.0"
+  },
+  "allowScripts": {
+    "tree-sitter@0.21.1": true,
+    "tree-sitter-cpp@0.23.4": true,
+    "tree-sitter-c@0.23.6": true
+  }
+}

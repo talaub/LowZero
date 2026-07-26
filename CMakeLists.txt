@@ -187,6 +187,8 @@ else()
   add_compile_definitions(LOW_JOBMANAGER_TRACKING=0)
 endif()
 
+include(${LOW_SOURCE_PATH}/LowLens/cmake/LowLens.cmake)
+
 add_subdirectory(LowDependencies)
 add_subdirectory(LowMath)
 add_subdirectory(LowUtil)

@@ -210,7 +210,12 @@ namespace Low {
       void serialize_enum(Node &p_Node, u16 p_EnumId, u8 p_EnumValue)
       {
         RTTI::EnumInfo &l_EnumInfo = Util::get_enum_info(p_EnumId);
-        p_Node["enum_id"] = p_EnumId;
+        if (l_EnumInfo.identifier.name.m_Index != 0) {
+          p_Node["enum_identifier"] =
+              ((Util::String)l_EnumInfo.identifier).c_str();
+        } else {
+          p_Node["enum_id"] = p_EnumId;
+        }
         p_Node["enum_value"] =
             l_EnumInfo.entry_name(p_EnumValue).c_str();
       }
@@ -338,10 +343,181 @@ namespace Low {
 
       u8 deserialize_enum(Node &p_Node)
       {
-        RTTI::EnumInfo &l_EnumInfo =
-            get_enum_info(p_Node["enum_id"].as<u16>());
-        return l_EnumInfo.entry_value(
+        RTTI::EnumInfo *l_EnumInfo = nullptr;
+
+        if (p_Node["enum_identifier"]) {
+          TypeIdentifier l_Identifier = TypeIdentifier::from_string(
+              p_Node["enum_identifier"].as<String>());
+          l_EnumInfo = &get_enum_info(l_Identifier);
+        } else {
+          l_EnumInfo = &get_enum_info(p_Node["enum_id"].as<u16>());
+        }
+
+        return l_EnumInfo->entry_value(
             p_Node["enum_value"].as<Name>());
+      }
+      static void serialize_field(Node &p_Node,
+                                    const RTTI::StructFieldInfo &p_Field,
+                                    void *p_Instance)
+      {
+        void *l_FieldPtr =
+            static_cast<char *>(p_Instance) + p_Field.offset;
+
+        switch (p_Field.type) {
+        case RTTI::PropertyType::FLOAT:
+          p_Node = *static_cast<float *>(l_FieldPtr);
+          break;
+        case RTTI::PropertyType::BOOL:
+          p_Node = *static_cast<bool *>(l_FieldPtr);
+          break;
+        case RTTI::PropertyType::INT:
+          p_Node = *static_cast<int *>(l_FieldPtr);
+          break;
+        case RTTI::PropertyType::UINT8:
+          p_Node = *static_cast<u8 *>(l_FieldPtr);
+          break;
+        case RTTI::PropertyType::UINT16:
+          p_Node = *static_cast<u16 *>(l_FieldPtr);
+          break;
+        case RTTI::PropertyType::UINT32:
+          p_Node = *static_cast<u32 *>(l_FieldPtr);
+          break;
+        case RTTI::PropertyType::UINT64:
+          p_Node = *static_cast<u64 *>(l_FieldPtr);
+          break;
+        case RTTI::PropertyType::NAME:
+          p_Node = *static_cast<Name *>(l_FieldPtr);
+          break;
+        case RTTI::PropertyType::STRING:
+          p_Node = *static_cast<String *>(l_FieldPtr);
+          break;
+        case RTTI::PropertyType::VECTOR2:
+          p_Node = *static_cast<Math::Vector2 *>(l_FieldPtr);
+          break;
+        case RTTI::PropertyType::VECTOR3:
+          p_Node = *static_cast<Math::Vector3 *>(l_FieldPtr);
+          break;
+        case RTTI::PropertyType::VECTOR4:
+          p_Node = *static_cast<Math::Vector4 *>(l_FieldPtr);
+          break;
+        case RTTI::PropertyType::QUATERNION:
+          p_Node = *static_cast<Math::Quaternion *>(l_FieldPtr);
+          break;
+        case RTTI::PropertyType::HANDLE:
+          serialize_handle(p_Node,
+                           *static_cast<Handle *>(l_FieldPtr));
+          break;
+        case RTTI::PropertyType::ENUM:
+          serialize_enum(p_Node,
+                         get_enum_id(p_Field.referenced_type),
+                         *static_cast<u8 *>(l_FieldPtr));
+          break;
+        case RTTI::PropertyType::STRUCT:
+          serialize_struct(p_Node, p_Field.referenced_type,
+                           l_FieldPtr);
+          break;
+        default:
+          break;
+        }
+      }
+
+      static void deserialize_field(Node &p_Node,
+                                     const RTTI::StructFieldInfo &p_Field,
+                                     void *p_Instance)
+      {
+        void *l_FieldPtr =
+            static_cast<char *>(p_Instance) + p_Field.offset;
+
+        switch (p_Field.type) {
+        case RTTI::PropertyType::FLOAT:
+          *static_cast<float *>(l_FieldPtr) = p_Node.as<float>();
+          break;
+        case RTTI::PropertyType::BOOL:
+          *static_cast<bool *>(l_FieldPtr) = p_Node.as<bool>();
+          break;
+        case RTTI::PropertyType::INT:
+          *static_cast<int *>(l_FieldPtr) = p_Node.as<int>();
+          break;
+        case RTTI::PropertyType::UINT8:
+          *static_cast<u8 *>(l_FieldPtr) = p_Node.as<u8>();
+          break;
+        case RTTI::PropertyType::UINT16:
+          *static_cast<u16 *>(l_FieldPtr) = p_Node.as<u16>();
+          break;
+        case RTTI::PropertyType::UINT32:
+          *static_cast<u32 *>(l_FieldPtr) = p_Node.as<u32>();
+          break;
+        case RTTI::PropertyType::UINT64:
+          *static_cast<u64 *>(l_FieldPtr) = p_Node.as<u64>();
+          break;
+        case RTTI::PropertyType::NAME:
+          *static_cast<Name *>(l_FieldPtr) = p_Node.as<Name>();
+          break;
+        case RTTI::PropertyType::STRING:
+          *static_cast<String *>(l_FieldPtr) = p_Node.as<String>();
+          break;
+        case RTTI::PropertyType::VECTOR2:
+          *static_cast<Math::Vector2 *>(l_FieldPtr) =
+              p_Node.as<Math::Vector2>();
+          break;
+        case RTTI::PropertyType::VECTOR3:
+          *static_cast<Math::Vector3 *>(l_FieldPtr) =
+              p_Node.as<Math::Vector3>();
+          break;
+        case RTTI::PropertyType::VECTOR4:
+          *static_cast<Math::Vector4 *>(l_FieldPtr) =
+              p_Node.as<Math::Vector4>();
+          break;
+        case RTTI::PropertyType::QUATERNION:
+          *static_cast<Math::Quaternion *>(l_FieldPtr) =
+              p_Node.as<Math::Quaternion>();
+          break;
+        case RTTI::PropertyType::HANDLE:
+          *static_cast<Handle *>(l_FieldPtr) =
+              deserialize_handle(p_Node);
+          break;
+        case RTTI::PropertyType::ENUM:
+          *static_cast<u8 *>(l_FieldPtr) = deserialize_enum(p_Node);
+          break;
+        case RTTI::PropertyType::STRUCT:
+          deserialize_struct(p_Node, l_FieldPtr);
+          break;
+        default:
+          break;
+        }
+      }
+
+      void serialize_struct(Node &p_Node, TypeIdentifier p_Identifier,
+                            void *p_Instance)
+      {
+        RTTI::StructInfo &l_Info = get_struct_info(p_Identifier);
+
+        p_Node["struct_type"] =
+            ((String)l_Info.identifier).c_str();
+
+        Node &l_Fields = p_Node["fields"];
+        for (const RTTI::StructFieldInfo &i_Field : l_Info.fields) {
+          serialize_field(l_Fields[i_Field.name.c_str()], i_Field,
+                          p_Instance);
+        }
+      }
+
+      void deserialize_struct(Node &p_Node, void *p_Instance)
+      {
+        LOW_ASSERT(p_Node["struct_type"] && p_Node["fields"],
+                   "Node is not a serialized struct");
+
+        TypeIdentifier l_Identifier = TypeIdentifier::from_string(
+            p_Node["struct_type"].as<String>());
+        RTTI::StructInfo &l_Info = get_struct_info(l_Identifier);
+
+        Node &l_Fields = p_Node["fields"];
+        for (const RTTI::StructFieldInfo &i_Field : l_Info.fields) {
+          if (l_Fields[i_Field.name.c_str()]) {
+            deserialize_field(l_Fields[i_Field.name.c_str()], i_Field,
+                              p_Instance);
+          }
+        }
       }
     } // namespace Serial
   } // namespace Util

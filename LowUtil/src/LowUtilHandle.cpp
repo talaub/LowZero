@@ -19,6 +19,15 @@ namespace Low {
   namespace Util {
     Map<uint16_t, RTTI::EnumInfo> g_EnumInfos;
     List<uint16_t> g_EnumIds;
+    Map<u64, u16> g_EnumIdentifierToRuntimeId;
+    Map<u16, u64> g_EnumRuntimeIdToIdentifier;
+    u16 g_EnumTypeIdCounter = 0;
+
+    Map<uint16_t, RTTI::StructInfo> g_StructInfos;
+    List<uint16_t> g_StructIds;
+    Map<u64, u16> g_StructIdentifierToRuntimeId;
+    Map<u16, u64> g_StructRuntimeIdToIdentifier;
+    u16 g_StructTypeIdCounter = 0;
     Set<u64> g_RegisteredTypes;
     Map<uint16_t, RTTI::TypeInfo> g_TypeInfos;
     List<uint16_t> g_ComponentTypes;
@@ -190,6 +199,27 @@ namespace Low {
       g_EnumIds.push_back(p_EnumId);
     }
 
+    u16 register_enum_info(TypeIdentifier p_Identifier,
+                           RTTI::EnumInfo &p_EnumInfo)
+    {
+      LOW_ASSERT(
+          g_EnumIdentifierToRuntimeId.find((u64)p_Identifier) ==
+              g_EnumIdentifierToRuntimeId.end(),
+          "Enum already registered.");
+
+      const u16 l_EnumId = ++g_EnumTypeIdCounter;
+
+      p_EnumInfo.enumId = l_EnumId;
+      p_EnumInfo.identifier = p_Identifier;
+
+      g_EnumInfos[l_EnumId] = p_EnumInfo;
+      g_EnumIds.push_back(l_EnumId);
+      g_EnumIdentifierToRuntimeId[(u64)p_Identifier] = l_EnumId;
+      g_EnumRuntimeIdToIdentifier[l_EnumId] = (u64)p_Identifier;
+
+      return l_EnumId;
+    }
+
     RTTI::EnumInfo &get_enum_info(u16 p_EnumId)
     {
       LOW_ASSERT(g_EnumInfos.find(p_EnumId) != g_EnumInfos.end(),
@@ -198,9 +228,90 @@ namespace Low {
       return g_EnumInfos[p_EnumId];
     }
 
+    RTTI::EnumInfo &get_enum_info(TypeIdentifier p_Identifier)
+    {
+      return get_enum_info(get_enum_id(p_Identifier));
+    }
+
+    u16 get_enum_id(TypeIdentifier p_Identifier)
+    {
+      LOW_ASSERT(
+          g_EnumIdentifierToRuntimeId.find((u64)p_Identifier) !=
+              g_EnumIdentifierToRuntimeId.end(),
+          "Enum has not been registered for this identifier.");
+
+      return g_EnumIdentifierToRuntimeId[(u64)p_Identifier];
+    }
+
+    TypeIdentifier enum_identifier(u16 p_EnumId)
+    {
+      LOW_ASSERT(
+          g_EnumRuntimeIdToIdentifier.find(p_EnumId) !=
+              g_EnumRuntimeIdToIdentifier.end(),
+          "No identifier registered for this enum id.");
+
+      return TypeIdentifier(g_EnumRuntimeIdToIdentifier[p_EnumId]);
+    }
+
     List<u16> &get_enum_ids()
     {
       return g_EnumIds;
+    }
+
+    u16 register_struct_info(TypeIdentifier p_Identifier,
+                             RTTI::StructInfo &p_StructInfo)
+    {
+      LOW_ASSERT(
+          g_StructIdentifierToRuntimeId.find((u64)p_Identifier) ==
+              g_StructIdentifierToRuntimeId.end(),
+          "Struct already registered.");
+
+      const u16 l_StructId = ++g_StructTypeIdCounter;
+
+      p_StructInfo.structId = l_StructId;
+      p_StructInfo.identifier = p_Identifier;
+
+      g_StructInfos[l_StructId] = p_StructInfo;
+      g_StructIds.push_back(l_StructId);
+      g_StructIdentifierToRuntimeId[(u64)p_Identifier] = l_StructId;
+      g_StructRuntimeIdToIdentifier[l_StructId] = (u64)p_Identifier;
+
+      return l_StructId;
+    }
+
+    RTTI::StructInfo &get_struct_info(u16 p_StructId)
+    {
+      LOW_ASSERT(g_StructInfos.find(p_StructId) != g_StructInfos.end(),
+                 "Struct info has not been registered for struct id");
+      return g_StructInfos[p_StructId];
+    }
+
+    RTTI::StructInfo &get_struct_info(TypeIdentifier p_Identifier)
+    {
+      return get_struct_info(get_struct_id(p_Identifier));
+    }
+
+    u16 get_struct_id(TypeIdentifier p_Identifier)
+    {
+      LOW_ASSERT(
+          g_StructIdentifierToRuntimeId.find((u64)p_Identifier) !=
+              g_StructIdentifierToRuntimeId.end(),
+          "Struct has not been registered for this identifier.");
+      return g_StructIdentifierToRuntimeId[(u64)p_Identifier];
+    }
+
+    TypeIdentifier struct_identifier(u16 p_StructId)
+    {
+      LOW_ASSERT(
+          g_StructRuntimeIdToIdentifier.find(p_StructId) !=
+              g_StructRuntimeIdToIdentifier.end(),
+          "No identifier registered for this struct id.");
+      return TypeIdentifier(g_StructRuntimeIdToIdentifier[p_StructId]);
+    }
+
+    List<u16> &get_struct_ids()
+    {
+      return g_StructIds;
     }
 
     UniqueId generate_unique_id(Handle p_Handle)

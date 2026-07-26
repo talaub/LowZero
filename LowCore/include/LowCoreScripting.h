@@ -73,12 +73,26 @@ namespace Low {
       struct FunctionInfo
       {
         Util::Name name;
+        Util::Name bind_name;
+        Util::String bind_namespace = "";
+
         TypeInfo return_type;
         Util::List<FunctionParameterInfo> parameters;
+
+        bool is_property;
 
         void *ptr;
 
         VisualScriptFunctionInfo visual_script_info;
+      };
+
+      struct EnumInfo
+      {
+        Util::Name bind_name;
+        Util::String bind_namespace = "";
+        Util::TypeIdentifier identifier;
+        void *entry_name_ptr;
+        void *entry_value_ptr;
       };
 
       void LOW_CORE_API initialize_as();
@@ -90,8 +104,23 @@ namespace Low {
       void LOW_CORE_API build_module(Module p_Module);
       bool LOW_CORE_API fill_member_fields(ClassInstance p_Instance);
 
+      struct StructInfo
+      {
+        Util::Name bind_name;
+        Util::String bind_namespace = "";
+        Util::TypeIdentifier identifier;
+        void *default_constructor;
+        void *copy_constructor;
+        void *destructor;
+        void *assign;
+      };
+
       void LOW_CORE_API
       register_function(const FunctionInfo &p_FunctionInfo);
+      void LOW_CORE_API
+      register_enum(const EnumInfo &p_EnumInfo);
+      void LOW_CORE_API
+      register_struct(const StructInfo &p_StructInfo);
     } // namespace Scripting
   } // namespace Core
 } // namespace Low

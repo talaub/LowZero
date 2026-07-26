@@ -26,3 +26,6 @@ LowDebugVisualizerExtension/merged.source.extension.vsixmanifest
 .rgignore
 .clangflags
 misteda-crash-reporter
+LowLens/node_modules/
+LowLens/*.gen.cpp
+LowLens/*.gen.h

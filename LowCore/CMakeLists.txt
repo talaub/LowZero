@@ -104,6 +104,9 @@ target_link_libraries(LowCorePhysics PRIVATE
   Jolt
 )
 
+low_lens_generate(LowCorePhysics LowCorePhysics
+                  ${CMAKE_CURRENT_SOURCE_DIR}/physics/include)
+
 add_library(LowCoreNavigation STATIC
   ${NAVIGATION_SOURCES}
   ${NAVIGATION_INCLUDES}
@@ -146,6 +149,8 @@ target_link_libraries(LowCoreNavigation PRIVATE
   Detour
 )
 
+low_lens_generate(LowCoreNavigation LowCoreNavigation
+                  ${CMAKE_CURRENT_SOURCE_DIR}/navigation/include)
 
 add_library(LowCore SHARED
   ${CFLAT_SOURCES}
@@ -243,3 +248,7 @@ function(mark_includes_as_system consumer thirdparty)
 endfunction()
 
 mark_includes_as_system(LowCore physx)
+
+low_lens_generate(LowCore LowCore ${CMAKE_CURRENT_SOURCE_DIR}/include
+  YAML_CONFIGS "${LOW_SOURCE_PATH}/"
+)

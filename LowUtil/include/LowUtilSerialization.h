@@ -7,6 +7,12 @@
 #include "LowUtilName.h"
 #include "LowUtilYaml.h"
 
+namespace Low {
+  namespace Util {
+    struct TypeIdentifier;
+  }
+}
+
 #include <any>
 #include <variant>
 #include <type_traits>
@@ -387,6 +393,12 @@ namespace Low {
       LOW_EXPORT void serialize_enum(Node &p_Node, u16 p_EnumId,
                                      u8 p_EnumValue);
       [[nodiscard]] LOW_EXPORT u8 deserialize_enum(Node &p_Node);
+
+      LOW_EXPORT void serialize_struct(Node &p_Node,
+                                       TypeIdentifier p_Identifier,
+                                       void *p_Instance);
+      LOW_EXPORT void deserialize_struct(Node &p_Node,
+                                         void *p_Instance);
 #include "LowUtilSerializationConverters.inl"
     } // namespace Serial
   } // namespace Util

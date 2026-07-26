@@ -158,6 +158,8 @@ namespace Low {
           SHAPE,
           STRING,
           ENUM,
+          VECTOR4,
+          STRUCT,
           VOID
         };
       }
@@ -236,11 +238,33 @@ namespace Low {
       {
         Name name;
         u16 enumId;
+        TypeIdentifier identifier;
 
         List<EnumEntryInfo> entries;
 
         Name (*entry_name)(u8);
         u8 (*entry_value)(Name);
+      };
+
+      struct StructFieldInfo
+      {
+        Name name;
+        u32 type;
+        TypeIdentifier referenced_type;
+        String as_type;
+        size_t offset;
+        void *getter;
+        void *setter;
+      };
+
+      struct StructInfo
+      {
+        Name name;
+        u16 structId;
+        TypeIdentifier identifier;
+        size_t size = 0;
+
+        List<StructFieldInfo> fields;
       };
     } // namespace RTTI
 
@@ -321,10 +345,24 @@ namespace Low {
                          RTTI::TypeInfo &p_TypeInfo);
     };
 
+    u16 LOW_EXPORT register_struct_info(TypeIdentifier p_Identifier,
+                                        RTTI::StructInfo &p_StructInfo);
+    LOW_EXPORT RTTI::StructInfo &get_struct_info(u16 p_StructId);
+    LOW_EXPORT RTTI::StructInfo &
+    get_struct_info(TypeIdentifier p_Identifier);
+    LOW_EXPORT List<u16> &get_struct_ids();
+    u16 LOW_EXPORT get_struct_id(TypeIdentifier p_Identifier);
+    LOW_EXPORT TypeIdentifier struct_identifier(u16 p_StructId);
+
     void LOW_EXPORT register_enum_info(u16 p_EnumId,
                                        RTTI::EnumInfo &p_EnumInfo);
+    u16 LOW_EXPORT register_enum_info(TypeIdentifier p_Identifier,
+                                      RTTI::EnumInfo &p_EnumInfo);
     LOW_EXPORT RTTI::EnumInfo &get_enum_info(u16 p_EnumId);
+    LOW_EXPORT RTTI::EnumInfo &get_enum_info(TypeIdentifier p_Identifier);
     LOW_EXPORT List<u16> &get_enum_ids();
+    u16 LOW_EXPORT get_enum_id(TypeIdentifier p_Identifier);
+    LOW_EXPORT TypeIdentifier enum_identifier(u16 p_EnumId);
 
     UniqueId LOW_EXPORT generate_unique_id(Handle p_Handle);
     void LOW_EXPORT register_unique_id(UniqueId p_UniqueId,
