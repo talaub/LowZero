@@ -64,6 +64,18 @@ function parse_args(p_Args) {
   return l_Result;
 }
 
+function write_file_if_changed(p_FilePath, p_Content) {
+  if (fs.existsSync(p_FilePath)) {
+    const l_Current = fs.readFileSync(p_FilePath, 'utf8');
+    if (l_Current === p_Content) {
+      return false;
+    }
+  }
+
+  fs.writeFileSync(p_FilePath, p_Content);
+  return true;
+}
+
 module.exports = { process_file, process_directory };
 
 // CLI:
@@ -121,8 +133,9 @@ if (require.main === module) {
       if (i_Result.enums.length > 0 || i_Result.structs.length > 0) {
         const l_GenHeaderName = `${path.basename(l_BaseName, path.extname(l_BaseName))}.gen.h`;
         const l_GenHeaderPath = path.join(l_GenDir, l_GenHeaderName);
-        fs.writeFileSync(l_GenHeaderPath, generate_header_file(i_Result.enums, i_Result.structs));
-        console.log(`LowLens: wrote ${l_GenHeaderPath}`);
+        if (write_file_if_changed(l_GenHeaderPath, generate_header_file(i_Result.enums, i_Result.structs))) {
+          console.log(`LowLens: wrote ${l_GenHeaderPath}`);
+        }
         patch_source_header(i_Result.file, l_GenHeaderName);
       }
 
@@ -130,8 +143,9 @@ if (require.main === module) {
 
     // Write module .gen.cpp
     const l_CppPath = path.join(l_OutputDir, `${l_ModuleName}.gen.cpp`);
-    fs.writeFileSync(l_CppPath, generate_module_file(l_ModuleName, l_AllFunctions, l_AllEnums, l_AllStructs, l_Headers));
-    console.log(`LowLens: wrote ${l_CppPath} (${l_AllFunctions.length} function(s), ${l_AllEnums.length} enum(s), ${l_AllStructs.length} struct(s))`);
+    if (write_file_if_changed(l_CppPath, generate_module_file(l_ModuleName, l_AllFunctions, l_AllEnums, l_AllStructs, l_Headers))) {
+      console.log(`LowLens: wrote ${l_CppPath} (${l_AllFunctions.length} function(s), ${l_AllEnums.length} enum(s), ${l_AllStructs.length} struct(s))`);
+    }
 
     // Write this module's lensdb for downstream consumers
     const l_DbPath = path.join(l_OutputDir, `${l_ModuleName}.lensdb.yaml`);

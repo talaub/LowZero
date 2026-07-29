@@ -67,6 +67,18 @@ function load_db(p_FilePath) {
   }
 }
 
+function write_file_if_changed(p_FilePath, p_Content) {
+  if (fs.existsSync(p_FilePath)) {
+    const l_Current = fs.readFileSync(p_FilePath, 'utf8');
+    if (l_Current === p_Content) {
+      return false;
+    }
+  }
+
+  fs.writeFileSync(p_FilePath, p_Content);
+  return true;
+}
+
 // Write this module's discovered types to a lensdb.yaml
 function write_db(p_FilePath, p_ModuleName, p_Enums, p_Structs) {
   const l_Types = {};
@@ -95,7 +107,7 @@ function write_db(p_FilePath, p_ModuleName, p_Enums, p_Structs) {
     };
   }
 
-  fs.writeFileSync(p_FilePath, YAML.stringify({ types: l_Types }));
+  return write_file_if_changed(p_FilePath, YAML.stringify({ types: l_Types }));
 }
 
 // Ingest YAML type configs from lib.js (handle types and YAML enums)

@@ -14,6 +14,7 @@ function(low_lens_generate p_Target p_ModuleName p_IncludeDir)
 
   set(l_Output "${CMAKE_CURRENT_BINARY_DIR}/${p_ModuleName}.gen.cpp")
   set(l_DbOutput "${CMAKE_CURRENT_BINARY_DIR}/${p_ModuleName}.lensdb.yaml")
+  set(l_Stamp "${CMAKE_CURRENT_BINARY_DIR}/${p_ModuleName}.lowlens.stamp")
   set(l_GenDir "${CMAKE_CURRENT_BINARY_DIR}/gen")
 
   file(GLOB_RECURSE l_Headers
@@ -46,22 +47,30 @@ function(low_lens_generate p_Target p_ModuleName p_IncludeDir)
             ${l_ExtraArgs}
   )
 
-  # Re-run at build time for incremental rebuilds
+  # Re-run at build time for incremental rebuilds. The stamp is the actual
+  # custom-command output so generated files can keep stable timestamps when
+  # their content has not changed.
   add_custom_command(
-    OUTPUT  "${l_Output}"
+    OUTPUT  "${l_Stamp}"
+    BYPRODUCTS "${l_Output}" "${l_DbOutput}"
     COMMAND "${LOW_NODE_EXECUTABLE}" "${LOW_LENSGEN_SCRIPT}"
             "${p_IncludeDir}"
             "${CMAKE_CURRENT_BINARY_DIR}"
             "${p_ModuleName}"
             ${l_ExtraArgs}
+    COMMAND "${CMAKE_COMMAND}" -E touch "${l_Stamp}"
     DEPENDS "${LOW_LENSGEN_SCRIPT}" ${l_Headers} ${LENS_UPSTREAM_DB}
     COMMENT "LowLens: generating ${p_ModuleName}.gen.cpp"
     VERBATIM
   )
 
+  add_custom_target(${p_Target}_LowLensGenerate DEPENDS "${l_Stamp}")
+  add_dependencies(${p_Target} ${p_Target}_LowLensGenerate)
+
   # Expose the lensdb path so downstream targets can reference it
   set(LOW_LENSDB_${p_ModuleName} "${l_DbOutput}" CACHE INTERNAL "")
 
+  set_source_files_properties("${l_Output}" PROPERTIES GENERATED TRUE)
   target_sources(${p_Target} PRIVATE "${l_Output}")
   target_include_directories(${p_Target} PUBLIC "${l_GenDir}")
 endfunction()
