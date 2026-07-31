@@ -258,9 +258,13 @@ function generate_parameter_type_info(p_VarName, p_Param, p_Indent) {
 
   if (l_Direction === 'value') {
     t += `${l_I}${p_VarName}.reference = false;\n`;
-    t += `${l_I}${p_VarName}.direction = "";\n`;
   } else if (l_Direction) {
-    t += `${l_I}${p_VarName}.direction = "${l_Direction}";\n`;
+    const l_DirectionEnum = {
+      in: 'In',
+      out: 'Out',
+      inout: 'InOut',
+    }[l_Direction];
+    t += `${l_I}${p_VarName}.direction = Low::Core::Scripting::ParameterDirection::${l_DirectionEnum};\n`;
   }
 
   return t;
@@ -288,6 +292,24 @@ function generate_function_registration(p_Fn) {
     t += generate_parameter_type_info('l_Param.type', i_Param, 3);
     t += `      l_FunctionInfo.parameters.push_back(l_Param);\n`;
     t += `    }\n`;
+  }
+
+  const l_Vs = p_Fn.macro_args.vs;
+  if (l_Vs) {
+    t += `\n`;
+    t += `    l_FunctionInfo.visual_script_info.exposed = true;\n`;
+    if (typeof l_Vs === 'object') {
+      if (l_Vs.icon) {
+        t += `    l_FunctionInfo.visual_script_info.icon_name = N(${l_Vs.icon});\n`;
+      }
+      if (l_Vs.category) {
+        t += `    l_FunctionInfo.visual_script_info.category = N(${l_Vs.category});\n`;
+      }
+      if (Array.isArray(l_Vs.color) && l_Vs.color.length === 3) {
+        const [r, g, b] = l_Vs.color;
+        t += `    l_FunctionInfo.visual_script_info.color = {${r}f, ${g}f, ${b}f};\n`;
+      }
+    }
   }
 
   t += `\n`;

@@ -247,7 +247,8 @@ namespace Low {
       collect_build_geometry_from_scene(Scene p_Scene,
                                         BuildGeometry *p_Geometry);
 
-      LOW_FUNCTION(scripting, bind_namespace = "Navigation")
+      LOW_FUNCTION(scripting, bind_namespace = "Navigation",
+                   vs = (category = "Navigation", icon = "route"))
       LOW_CORE_API
       bool find_nearest_point(const Math::Vector3 &p_Position,
                               const Math::Vector3 &p_HalfExtents,

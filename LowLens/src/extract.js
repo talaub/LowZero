@@ -1,5 +1,7 @@
 'use strict';
 
+const { parse_args } = require('./args');
+
 function node_text(p_Node, p_Src) {
   return p_Src.slice(p_Node.startIndex, p_Node.endIndex).trim();
 }
@@ -13,22 +15,7 @@ function is_declaration_macro_identifier(p_Name) {
 }
 
 function parse_macro_args_text(p_RawArgs) {
-  const l_Args = {};
-  if (!p_RawArgs.trim()) return l_Args;
-
-  for (const i_Part of p_RawArgs.split(',')) {
-    const [l_Key, ...l_Rest] = i_Part.split('=');
-    const l_TrimmedKey = l_Key.trim();
-    if (!l_TrimmedKey) continue;
-
-    if (l_Rest.length > 0) {
-      l_Args[l_TrimmedKey] = l_Rest.join('=').trim().replace(/^["']|["']$/g, '');
-    } else {
-      l_Args[l_TrimmedKey] = true;
-    }
-  }
-
-  return l_Args;
+  return parse_args(p_RawArgs);
 }
 
 function extract_low_param(p_ParamText) {

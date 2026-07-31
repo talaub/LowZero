@@ -94,6 +94,7 @@ namespace Low {
         Util::String subtitle;
         Util::String category;
         Util::String variable_name;
+        Util::String function_name;
         Util::SharedPtr<NodeUserData> user_data;
         Util::TypeIdentifier handle_type;
         Util::Name member_name;
@@ -322,8 +323,7 @@ namespace Low {
         virtual Util::String get_category(const Graph &p_Graph,
                                           NodeId p_NodeId) const;
 
-        virtual Util::SharedPtr<NodeUserData>
-        create_user_data() const
+        virtual Util::SharedPtr<NodeUserData> create_user_data() const
         {
           return nullptr;
         }

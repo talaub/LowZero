@@ -1,6 +1,9 @@
+#include "LowCoreScripting.h"
 #include "LowEditorVisualScriptNodes.h"
 
 #include "IconsCodicons.h"
+#include "LowEditorIcons.h"
+#include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 
 namespace Low {
@@ -19,6 +22,102 @@ namespace Low {
             }
 
             return p_Graph.find_variable(l_Node->variable_name);
+          }
+
+          static const Core::Scripting::FunctionInfo &
+          get_selected_global_cpp_function(const Graph &p_Graph,
+                                           NodeId p_NodeId)
+          {
+            const Node *l_Node = p_Graph.find_node(p_NodeId);
+            if (!l_Node || l_Node->function_name.empty()) {
+              _LOW_ASSERT(false);
+            }
+
+            return Core::Scripting::
+                find_registered_global_function_checked(
+                    l_Node->function_name);
+          }
+
+          static PinType scripting_type_to_pin_type(
+              const Core::Scripting::TypeInfo &p_Type)
+          {
+            using TypeKind = Core::Scripting::TypeKind;
+
+            if (p_Type.as_type == "Vector2")
+              return PinType::Vector2;
+            if (p_Type.as_type == "Vector3")
+              return PinType::Vector3;
+            if (p_Type.as_type == "Vector4")
+              return PinType::Vector4;
+            if (p_Type.as_type == "Quaternion")
+              return PinType::Quaternion;
+
+            switch (p_Type.kind) {
+            case TypeKind::Bool:
+              return PinType::Bool;
+            case TypeKind::Float:
+            case TypeKind::Int32:
+            case TypeKind::UInt32:
+            case TypeKind::UInt64:
+              return PinType::Number;
+            case TypeKind::String:
+            case TypeKind::Name:
+              return PinType::String;
+            case TypeKind::Handle:
+              return PinType::Handle;
+            default:
+              return PinType::Dynamic;
+            }
+          }
+
+          static NumberSubtype scripting_type_to_number_subtype(
+              const Core::Scripting::TypeInfo &p_Type)
+          {
+            using TypeKind = Core::Scripting::TypeKind;
+            switch (p_Type.kind) {
+            case TypeKind::Int32:
+              return NumberSubtype::Int32;
+            case TypeKind::UInt32:
+              return NumberSubtype::UInt32;
+            case TypeKind::UInt64:
+              return NumberSubtype::UInt64;
+            default:
+              return NumberSubtype::Float;
+            }
+          }
+
+          static PinContainerType
+          scripting_container_to_pin_container(
+              Core::Scripting::TypeContainer p_Container)
+          {
+            if (p_Container == Core::Scripting::TypeContainer::List) {
+              return PinContainerType::List;
+            }
+            return PinContainerType::None;
+          }
+
+          static Pin make_pin_metadata_from_function_parameter_info(
+              const Core::Scripting::FunctionParameterInfo
+                  &p_ParamInfo,
+              const Util::String &p_DisplayName)
+          {
+            Pin l_Pin;
+            l_Pin.display_name = p_DisplayName;
+            l_Pin.type = scripting_type_to_pin_type(p_ParamInfo.type);
+            l_Pin.number_subtype =
+                scripting_type_to_number_subtype(p_ParamInfo.type);
+            l_Pin.string_subtype =
+                p_ParamInfo.type.kind ==
+                        Core::Scripting::TypeKind::Name
+                    ? StringSubtype::Name
+                    : StringSubtype::String;
+            l_Pin.handle_type = p_ParamInfo.type.referenced_type;
+            l_Pin.container_type =
+                scripting_container_to_pin_container(
+                    p_ParamInfo.type.container);
+            l_Pin.widget = PinWidget::DefaultValue;
+            l_Pin.show_default_value_when_unlinked = true;
+            return l_Pin;
           }
 
           static Pin make_pin_metadata_from_variable(
@@ -641,12 +740,119 @@ namespace Low {
             }
           };
 
+          struct GlobalFunctionCallNodeClass : public NodeClass
+          {
+            virtual Util::Name get_name() const override
+            {
+              return N(vs_syntax_global_function_call);
+            }
+
+            virtual Util::String
+            get_title(const Graph &p_Graph,
+                      NodeId p_NodeId) const override
+            {
+              const Node *l_Node = p_Graph.find_node(p_NodeId);
+              if (!l_Node || l_Node->variable_name.empty()) {
+                return "Call global C++ function";
+              }
+              return l_Node->function_name;
+            }
+
+            virtual Util::String get_subtitle(const Graph &,
+                                              NodeId) const override
+            {
+              return "Call C++ function";
+            }
+
+            virtual Util::String get_category(const Graph &,
+                                              NodeId) const override
+            {
+              return "Syntax";
+            }
+
+            virtual Util::String get_icon(const Graph &,
+                                          NodeId) const override
+            {
+              return ICON_LC_CIRCLE;
+            }
+
+            virtual ImU32 get_color(const Graph &,
+                                    NodeId) const override
+            {
+              return g_SyntaxColor;
+            }
+
+            virtual void setup_default_pins(
+                Graph &p_Graph, NodeId p_NodeId,
+                const NodeGraphSchema *p_Schema) const override
+            {
+              const Core::Scripting::FunctionInfo &l_Function =
+                  get_selected_global_cpp_function(p_Graph, p_NodeId);
+
+              Editor::Pin l_ExecIn =
+                  make_input_pin(p_Graph, p_NodeId);
+              Pin l_ExecInMetadata =
+                  make_execution_pin_metadata("Exec");
+              p_Graph.add_pin(l_ExecIn, l_ExecInMetadata, p_Schema);
+
+              Editor::Pin l_ExecOut =
+                  make_output_pin(p_Graph, p_NodeId);
+              Pin l_ExecOutMetadata =
+                  make_execution_pin_metadata("Then");
+              p_Graph.add_pin(l_ExecOut, l_ExecOutMetadata, p_Schema);
+
+              for (const Core::Scripting::FunctionParameterInfo
+                       &i_Param : l_Function.parameters) {
+                if (i_Param.type.direction ==
+                    Core::Scripting::ParameterDirection::None) {
+                  continue;
+                } else if (i_Param.type.direction ==
+                           Core::Scripting::ParameterDirection::
+                               InOut) {
+                  continue;
+                } else if (i_Param.type.direction ==
+                           Core::Scripting::ParameterDirection::
+                               Value) {
+                  continue;
+                } else if (i_Param.type.direction ==
+                           Core::Scripting::ParameterDirection::In) {
+                  Editor::Pin i_ParamPin =
+                      make_input_pin(p_Graph, p_NodeId);
+
+                  Pin i_Metadata =
+                      make_pin_metadata_from_function_parameter_info(
+                          i_Param, i_Param.name.c_str());
+
+                  p_Graph.add_pin(i_ParamPin, i_Metadata);
+                } else if (i_Param.type.direction ==
+                           Core::Scripting::ParameterDirection::Out) {
+                  Editor::Pin i_ParamPin =
+                      make_output_pin(p_Graph, p_NodeId);
+
+                  Pin i_Metadata =
+                      make_pin_metadata_from_function_parameter_info(
+                          i_Param, i_Param.name.c_str());
+
+                  p_Graph.add_pin(i_ParamPin, i_Metadata);
+                }
+              }
+            }
+
+            virtual void
+            compile(Graph &p_Graph, NodeId p_NodeId,
+                    CompileContext &p_CompileContext) const override
+            {
+            }
+          };
+
           static GetVariableNodeClass g_GetVariableNodeClass;
           static SetVariableNodeClass g_SetVariableNodeClass;
           static ReturnNumberNodeClass g_ReturnNumberNodeClass;
           static ReturnBoolNodeClass g_ReturnBoolNodeClass;
           static ForNodeClass g_ForNodeClass;
           static IfNodeClass g_IfNodeClass;
+          static GlobalFunctionCallNodeClass
+              g_GlobalFunctionCallNodeClass;
         } // namespace
 
         void register_nodes(Graph &p_Graph)
@@ -657,6 +863,7 @@ namespace Low {
           p_Graph.register_node_class(g_ReturnBoolNodeClass);
           p_Graph.register_node_class(g_ForNodeClass);
           p_Graph.register_node_class(g_IfNodeClass);
+          p_Graph.register_node_class(g_GlobalFunctionCallNodeClass);
 
           NodeSpawnEntry l_ReturnNumberEntry;
           l_ReturnNumberEntry.id = N(vs_spawn_syntax_return_number);
@@ -695,6 +902,46 @@ namespace Low {
           l_IfEntry.search_text = "if branch condition true false";
           l_IfEntry.node_class = g_IfNodeClass.get_name();
           p_Graph.register_spawn_entry(l_IfEntry);
+
+          // TODO: register global C++ functions using
+          // register_spawn_entry
+
+          const Util::List<Core::Scripting::FunctionInfo>
+              &l_RegisteredCppGlobalFunctions =
+                  Core::Scripting::get_registered_global_functions();
+
+          for (const Core::Scripting::FunctionInfo &i_Function :
+               l_RegisteredCppGlobalFunctions) {
+            if (!i_Function.visual_script_info.exposed) {
+              continue;
+            }
+            NodeSpawnEntry i_Entry;
+
+            Util::String i_EntryId = "vs_spawn_global_cpp_function_";
+            i_EntryId += i_Function.bind_namespace +
+                         "::" + i_Function.bind_name.c_str();
+
+            i_Entry.id = LOW_NAME(i_EntryId.c_str());
+            i_Entry.category =
+                i_Function.visual_script_info.category.c_str();
+            i_Entry.title = i_Function.name.c_str();
+            i_Entry.subtitle = "C++ Function";
+            i_Entry.node_class =
+                g_GlobalFunctionCallNodeClass.get_name();
+            i_Entry.search_text = i_Function.name.c_str();
+
+            i_Entry.initialize_node = [&i_Function](Graph &,
+                                                    Node &p_Node) {
+              Util::String l_FnName = i_Function.bind_namespace;
+              if (!l_FnName.empty()) {
+                l_FnName += "::";
+              }
+              l_FnName += i_Function.bind_name.c_str();
+              p_Node.function_name = l_FnName;
+            };
+
+            p_Graph.register_spawn_entry(i_Entry);
+          }
         }
       } // namespace SyntaxNodes
     } // namespace VisualScript

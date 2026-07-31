@@ -1,6 +1,7 @@
 'use strict';
 
 const { extract_function, extract_enum, find_enum_specifier, extract_struct, find_struct_specifier } = require('./extract');
+const { parse_args } = require('./args');
 
 const g_LowFunctionMacro = 'LOW_FUNCTION';
 const g_LowEnumMacro = 'LOW_ENUM';
@@ -55,19 +56,8 @@ function get_macro_args(p_Node, p_Src) {
   const l_ArgList = l_Node.namedChildren.find(n => n.type === 'argument_list');
   if (!l_ArgList) return {};
 
-  const l_Args = {};
   const l_Raw = p_Src.slice(l_ArgList.startIndex + 1, l_ArgList.endIndex - 1).trim();
-  if (!l_Raw) return l_Args;
-
-  for (const i_Part of l_Raw.split(',')) {
-    const [l_Key, ...l_Rest] = i_Part.split('=');
-    if (l_Rest.length > 0) {
-      l_Args[l_Key.trim()] = l_Rest.join('=').trim().replace(/^["']|["']$/g, '');
-    } else if (l_Key.trim()) {
-      l_Args[l_Key.trim()] = true;
-    }
-  }
-  return l_Args;
+  return parse_args(l_Raw);
 }
 
 function walk_children(p_Children, p_Src, p_NamespaceStack, p_Functions, p_Enums, p_Structs) {

@@ -6,6 +6,7 @@
 #include "LowCoreScriptClassInstance.h"
 #include <vulkan/vulkan_core.h>
 #include "LowCoreScriptAsset.h"
+#include "LowMath.h"
 #include "LowUtilHandle.h"
 
 class asIScriptEngine;
@@ -50,6 +51,15 @@ namespace Low {
         List,
       };
 
+      enum class ParameterDirection
+      {
+        None,
+        In,
+        Out,
+        InOut,
+        Value,
+      };
+
       struct TypeInfo
       {
         TypeKind kind = TypeKind::Void;
@@ -61,7 +71,7 @@ namespace Low {
         bool constant = false;
 
         bool reference = false;
-        Util::String direction = "";
+        ParameterDirection direction = ParameterDirection::None;
 
         TypeContainer container = TypeContainer::None;
       };
@@ -73,7 +83,12 @@ namespace Low {
       };
 
       struct VisualScriptFunctionInfo
-      {};
+      {
+        bool exposed = false;
+        Util::Name category;
+        Math::ColorRGB color;
+        Util::Name icon_name;
+      };
 
       struct FunctionInfo
       {
@@ -126,6 +141,16 @@ namespace Low {
       void LOW_CORE_API
       register_struct(const StructInfo &p_StructInfo);
       LOW_CORE_API asIScriptEngine *get_engine();
+
+      LOW_CORE_API
+      const FunctionInfo &find_registered_global_function_checked(
+          const Util::String &p_Namespace, const Util::Name p_Name);
+      LOW_CORE_API
+      const FunctionInfo &find_registered_global_function_checked(
+          const Util::String &p_Name);
+      LOW_CORE_API
+      const Util::List<FunctionInfo> &
+      get_registered_global_functions();
     } // namespace Scripting
   } // namespace Core
 } // namespace Low

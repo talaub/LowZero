@@ -7,6 +7,20 @@
 namespace Low {
   namespace Core {
     namespace Scripting {
+      Util::String parameter_direction_to_string(ParameterDirection p_Direction)
+      {
+        switch (p_Direction) {
+        case ParameterDirection::In:
+          return "in";
+        case ParameterDirection::Out:
+          return "out";
+        case ParameterDirection::InOut:
+          return "inout";
+        default:
+          return "";
+        }
+      }
+
       Util::String simple_type_kind_to_string(const TypeKind p_Kind)
       {
         static Util::String l_Float = "float";
@@ -77,8 +91,10 @@ namespace Low {
 
         if (p_Type.reference) {
           p_Builder.append(" &");
-          if (p_Type.direction.length()) {
-            p_Builder.append(p_Type.direction);
+          const Util::String l_Dir =
+              parameter_direction_to_string(p_Type.direction);
+          if (l_Dir.length()) {
+            p_Builder.append(l_Dir);
           }
         }
       }

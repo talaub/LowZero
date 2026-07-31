@@ -880,14 +880,21 @@ namespace Low {
 
         Util::StringBuilder l_Sig;
 
-        l_Sig.append("Name ").append(l_BindName).append("_name(").append(l_BindName).append(" value)");
+        l_Sig.append("Name ")
+            .append(l_BindName)
+            .append("_name(")
+            .append(l_BindName)
+            .append(" value)");
         r = g_Engine->RegisterGlobalFunction(
             l_Sig.get().c_str(),
             asFUNCTION(p_EnumInfo.entry_name_ptr), asCALL_CDECL);
         LOW_ASSERT(r >= 0, "Failed to register enum entry_name");
 
         l_Sig = Util::StringBuilder();
-        l_Sig.append(l_BindName).append(" ").append(l_BindName).append("_value(Name name)");
+        l_Sig.append(l_BindName)
+            .append(" ")
+            .append(l_BindName)
+            .append("_value(Name name)");
         r = g_Engine->RegisterGlobalFunction(
             l_Sig.get().c_str(),
             asFUNCTION(p_EnumInfo.entry_value_ptr), asCALL_CDECL);
@@ -919,10 +926,11 @@ namespace Low {
         LOW_ASSERT(r >= 0, "Failed to register struct default ctor");
 
         Util::StringBuilder l_CopySig;
-        l_CopySig.append("void f(const ").append(l_BindName).append(" &in)");
+        l_CopySig.append("void f(const ")
+            .append(l_BindName)
+            .append(" &in)");
         r = g_Engine->RegisterObjectBehaviour(
-            l_BindName, asBEHAVE_CONSTRUCT,
-            l_CopySig.get().c_str(),
+            l_BindName, asBEHAVE_CONSTRUCT, l_CopySig.get().c_str(),
             asFUNCTION(p_StructInfo.copy_constructor),
             asCALL_CDECL_OBJLAST);
         LOW_ASSERT(r >= 0, "Failed to register struct copy ctor");
@@ -934,16 +942,19 @@ namespace Low {
         LOW_ASSERT(r >= 0, "Failed to register struct destructor");
 
         Util::StringBuilder l_AssignSig;
-        l_AssignSig.append(l_BindName).append(" &opAssign(const ").append(l_BindName).append(" &in)");
+        l_AssignSig.append(l_BindName)
+            .append(" &opAssign(const ")
+            .append(l_BindName)
+            .append(" &in)");
         r = g_Engine->RegisterObjectMethod(
             l_BindName, l_AssignSig.get().c_str(),
-            asFUNCTION(p_StructInfo.assign),
-            asCALL_CDECL_OBJLAST);
+            asFUNCTION(p_StructInfo.assign), asCALL_CDECL_OBJLAST);
         LOW_ASSERT(r >= 0, "Failed to register struct assignment");
 
         for (const Util::RTTI::StructFieldInfo &i_Field :
              l_RttiInfo.fields) {
-          if (i_Field.as_type.empty()) continue;
+          if (i_Field.as_type.empty())
+            continue;
           if (i_Field.scripting_getter) {
             const Util::String &l_GetType =
                 i_Field.scripting_get_type.empty()
@@ -981,7 +992,8 @@ namespace Low {
                        "Failed to register struct property setter");
           }
 
-          if (!i_Field.scripting_getter && !i_Field.scripting_setter) {
+          if (!i_Field.scripting_getter &&
+              !i_Field.scripting_setter) {
             Util::StringBuilder l_PropDecl;
             l_PropDecl.append(i_Field.as_type)
                 .append(" ")
@@ -995,6 +1007,43 @@ namespace Low {
 
         r = g_Engine->SetDefaultNamespace("");
         LOW_ASSERT(r >= 0, "Failed to reset namespace");
+      }
+
+      const Util::List<FunctionInfo> &
+      get_registered_global_functions()
+      {
+        return g_RegisteredFunctions;
+      }
+
+      const FunctionInfo &find_registered_global_function_checked(
+          const Util::String &p_Namespace, const Util::Name p_Name)
+      {
+        for (const FunctionInfo &i_Function : g_RegisteredFunctions) {
+          if (i_Function.bind_namespace == p_Namespace &&
+              i_Function.bind_name == p_Name) {
+            return i_Function;
+          }
+        }
+        _LOW_ASSERT(false);
+        return g_RegisteredFunctions[0];
+      }
+
+      const FunctionInfo &find_registered_global_function_checked(
+          const Util::String &p_Name)
+      {
+        for (const FunctionInfo &i_Function : g_RegisteredFunctions) {
+          Util::String i_FunctionName = i_Function.bind_namespace;
+          if (!i_Function.bind_namespace.empty()) {
+            i_FunctionName += "::";
+          }
+          i_FunctionName += i_Function.bind_name.c_str();
+
+          if (i_FunctionName == p_Name) {
+            return i_Function;
+          }
+        }
+        _LOW_ASSERT(false);
+        return g_RegisteredFunctions[0];
       }
     } // namespace Scripting
   } // namespace Core
