@@ -222,8 +222,8 @@ namespace Low {
                        Math::Color p_Color, bool p_DepthTest,
                        float p_Thickness)
       {
-        render_line(Renderer::get_editor_renderview(), p_Start,
-                    p_End, p_Color, p_DepthTest, p_Thickness);
+        render_line(Renderer::get_editor_renderview(), p_Start, p_End,
+                    p_Color, p_DepthTest, p_Thickness);
       }
 
       void render_line(Renderer::RenderView p_RenderView,
@@ -376,6 +376,16 @@ namespace Low {
       {
         return Renderer::get_primitives().unitQuad;
       }
+
+      void draw_sphere(const Math::Vector3 &p_Position,
+                       float p_Radius, const Math::Color p_Color)
+      {
+        Math::Sphere l_Sphere;
+        l_Sphere.radius = p_Radius;
+        l_Sphere.position = p_Position;
+        render_sphere(l_Sphere, p_Color, true, false);
+      }
+
     } // namespace DebugGeometry
   } // namespace Core
 } // namespace Low

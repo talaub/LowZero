@@ -168,9 +168,8 @@ namespace Low {
 
       bool remove_tile(World p_World, TileCoord p_Coord)
       {
-        LOW_ASSERT(
-            p_World.is_alive(),
-            "Cannot remove tile from dead navigation world");
+        LOW_ASSERT(p_World.is_alive(),
+                   "Cannot remove tile from dead navigation world");
 
         return Navigation::remove_tile(
             static_cast<WorldBackend *>(p_World.get_world_ptr()),
@@ -238,9 +237,8 @@ namespace Low {
         return l_BuiltTileCount;
       }
 
-      bool build_tile_from_geometry(
-          World p_World, TileCoord p_Coord,
-          const BuildGeometry &p_Geometry)
+      bool build_tile_from_geometry(World p_World, TileCoord p_Coord,
+                                    const BuildGeometry &p_Geometry)
       {
         LOW_ASSERT(p_World.is_alive(),
                    "Cannot build tile on dead navigation world");

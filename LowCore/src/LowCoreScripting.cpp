@@ -39,6 +39,11 @@ namespace Low {
 
       static bool g_Initialized = false;
 
+      asIScriptEngine *get_engine()
+      {
+        return g_Engine;
+      }
+
       void expose(asIScriptEngine *p_Engine);
       void expose_late(asIScriptEngine *p_Engine);
       void register_interfaces(asIScriptEngine *p_Engine);
@@ -939,12 +944,53 @@ namespace Low {
         for (const Util::RTTI::StructFieldInfo &i_Field :
              l_RttiInfo.fields) {
           if (i_Field.as_type.empty()) continue;
-          Util::StringBuilder l_PropDecl;
-          l_PropDecl.append(i_Field.as_type).append(" ").append(i_Field.name);
-          r = g_Engine->RegisterObjectProperty(
-              l_BindName, l_PropDecl.get().c_str(),
-              static_cast<int>(i_Field.offset));
-          LOW_ASSERT(r >= 0, "Failed to register struct property");
+          if (i_Field.scripting_getter) {
+            const Util::String &l_GetType =
+                i_Field.scripting_get_type.empty()
+                    ? i_Field.as_type
+                    : i_Field.scripting_get_type;
+            Util::StringBuilder l_GetDecl;
+            l_GetDecl.append(l_GetType)
+                .append(" get_")
+                .append(i_Field.name)
+                .append("() const property");
+            r = g_Engine->RegisterObjectMethod(
+                l_BindName, l_GetDecl.get().c_str(),
+                asFUNCTION(i_Field.scripting_getter),
+                asCALL_CDECL_OBJFIRST);
+            LOW_ASSERT(r >= 0,
+                       "Failed to register struct property getter");
+          }
+
+          if (i_Field.scripting_setter) {
+            const Util::String &l_SetType =
+                i_Field.scripting_set_type.empty()
+                    ? i_Field.as_type
+                    : i_Field.scripting_set_type;
+            Util::StringBuilder l_SetDecl;
+            l_SetDecl.append("void set_")
+                .append(i_Field.name)
+                .append("(")
+                .append(l_SetType)
+                .append(") property");
+            r = g_Engine->RegisterObjectMethod(
+                l_BindName, l_SetDecl.get().c_str(),
+                asFUNCTION(i_Field.scripting_setter),
+                asCALL_CDECL_OBJFIRST);
+            LOW_ASSERT(r >= 0,
+                       "Failed to register struct property setter");
+          }
+
+          if (!i_Field.scripting_getter && !i_Field.scripting_setter) {
+            Util::StringBuilder l_PropDecl;
+            l_PropDecl.append(i_Field.as_type)
+                .append(" ")
+                .append(i_Field.name);
+            r = g_Engine->RegisterObjectProperty(
+                l_BindName, l_PropDecl.get().c_str(),
+                static_cast<int>(i_Field.offset));
+            LOW_ASSERT(r >= 0, "Failed to register struct property");
+          }
         }
 
         r = g_Engine->SetDefaultNamespace("");

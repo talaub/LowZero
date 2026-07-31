@@ -85,15 +85,21 @@ namespace Low {
         Bounds bounds;
       };
 
+      LOW_STRUCT(scripting, bind_namespace = "Navigation")
       struct NearestPointResult
       {
+        LOW_FIELD()
         Math::Vector3 position = Math::Vector3(0.0f);
       };
 
+      LOW_STRUCT(scripting, bind_namespace = "Navigation")
       struct PathResult
       {
+        LOW_FIELD()
         Low::Util::List<Math::Vector3> points;
+        LOW_FIELD()
         uint64_t navmesh_revision = 0ull;
+        LOW_FIELD()
         bool partial = false;
       };
 
@@ -115,18 +121,16 @@ namespace Low {
 
       LOW_CORE_API bool mark_source_dirty(Source p_Source);
 
-      LOW_CORE_API TileCoord
-      world_to_tile_coord(Math::Vector3 p_Position,
-                          float p_TileWorldSize);
+      LOW_CORE_API TileCoord world_to_tile_coord(
+          Math::Vector3 p_Position, float p_TileWorldSize);
 
-      LOW_CORE_API Bounds
-      tile_coord_to_bounds(TileCoord p_Coord,
-                           float p_TileWorldSize, float p_MinY,
-                           float p_MaxY);
+      LOW_CORE_API Bounds tile_coord_to_bounds(TileCoord p_Coord,
+                                               float p_TileWorldSize,
+                                               float p_MinY,
+                                               float p_MaxY);
 
-      LOW_CORE_API TileRange
-      tile_range_for_bounds(const Bounds &p_Bounds,
-                            float p_TileWorldSize);
+      LOW_CORE_API TileRange tile_range_for_bounds(
+          const Bounds &p_Bounds, float p_TileWorldSize);
 
       LOW_CORE_API TileRange
       tile_range_for_radius(Math::Vector3 p_Position, float p_Radius,
@@ -157,14 +161,13 @@ namespace Low {
       LOW_CORE_API void collect_tiles(World p_World,
                                       Low::Util::List<Tile> *p_Tiles);
 
-      LOW_CORE_API void collect_dirty_tiles(
-          World p_World, Low::Util::List<Tile> *p_Tiles);
+      LOW_CORE_API void
+      collect_dirty_tiles(World p_World,
+                          Low::Util::List<Tile> *p_Tiles);
 
-      LOW_CORE_API bool remove_tile(World p_World,
-                                    TileCoord p_Coord);
+      LOW_CORE_API bool remove_tile(World p_World, TileCoord p_Coord);
 
-      LOW_CORE_API bool queue_tile(World p_World,
-                                   TileCoord p_Coord);
+      LOW_CORE_API bool queue_tile(World p_World, TileCoord p_Coord);
 
       LOW_CORE_API uint32_t update_invoker_tiles(World p_World,
                                                  float p_MinY,
@@ -173,8 +176,9 @@ namespace Low {
       LOW_CORE_API uint32_t evict_tiles_outside_invokers(
           World p_World, uint32_t p_MaxTilesToEvict = 0u);
 
-      LOW_CORE_API bool should_run_eviction(
-          World p_World, uint32_t p_EvictionIntervalTicks);
+      LOW_CORE_API bool
+      should_run_eviction(World p_World,
+                          uint32_t p_EvictionIntervalTicks);
 
       LOW_CORE_API uint32_t queue_dirty_tiles(
           World p_World, uint32_t p_MaxTilesToQueue = 0u);
@@ -183,20 +187,19 @@ namespace Low {
 
       LOW_CORE_API uint64_t get_navmesh_revision(World p_World);
 
-      LOW_CORE_API uint32_t update_tile_builds(
-          World p_World, uint32_t p_MaxTilesToBuild);
+      LOW_CORE_API uint32_t
+      update_tile_builds(World p_World, uint32_t p_MaxTilesToBuild);
 
-      LOW_CORE_API bool build_tile(World p_World,
-                                   TileCoord p_Coord);
+      LOW_CORE_API bool build_tile(World p_World, TileCoord p_Coord);
 
-      LOW_CORE_API bool build_tile_from_geometry(
-          World p_World, TileCoord p_Coord,
-          const BuildGeometry &p_Geometry);
+      LOW_CORE_API bool
+      build_tile_from_geometry(World p_World, TileCoord p_Coord,
+                               const BuildGeometry &p_Geometry);
 
       LOW_CORE_API BuildSettings get_project_build_settings();
 
-      LOW_CORE_API bool
-      save_project_build_settings(const BuildSettings &p_BuildSettings);
+      LOW_CORE_API bool save_project_build_settings(
+          const BuildSettings &p_BuildSettings);
 
       LOW_CORE_API void
       apply_build_settings(World p_World,
@@ -243,6 +246,21 @@ namespace Low {
       LOW_CORE_API bool
       collect_build_geometry_from_scene(Scene p_Scene,
                                         BuildGeometry *p_Geometry);
+
+      LOW_FUNCTION(scripting, bind_namespace = "Navigation")
+      LOW_CORE_API
+      bool find_nearest_point(const Math::Vector3 &p_Position,
+                              const Math::Vector3 &p_HalfExtents,
+                              LOW_PARAM(out)
+                                  NearestPointResult *p_Result);
+      LOW_FUNCTION(scripting, bind_namespace = "Navigation")
+      LOW_CORE_API
+      bool find_path(const Math::Vector3 &p_Position,
+                     const Math::Vector3 &p_End,
+                     const Math::Vector3 &p_HalfExtents,
+                     LOW_PARAM(out) PathResult *p_Result);
     } // namespace Navigation
   } // namespace Core
 } // namespace Low
+
+#include "LowCoreNavigation.gen.h"

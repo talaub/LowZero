@@ -9,6 +9,7 @@
 #include "LowRendererRenderView.h"
 #include "LowRendererMesh.h"
 #include "LowRendererEditorImage.h"
+#include "LowUtilHandle.h"
 
 namespace Low {
   namespace Core {
@@ -50,19 +51,21 @@ namespace Low {
                                     Math::Color p_Color,
                                     bool p_DepthTest,
                                     float p_Thickness = 0.02f);
-      LOW_CORE_API void render_line(
-          Renderer::RenderView p_RenderView, Math::Vector3 p_Start,
-          Math::Vector3 p_End, Math::Color p_Color, bool p_DepthTest,
-          float p_Thickness = 0.02f);
+      LOW_CORE_API void render_line(Renderer::RenderView p_RenderView,
+                                    Math::Vector3 p_Start,
+                                    Math::Vector3 p_End,
+                                    Math::Color p_Color,
+                                    bool p_DepthTest,
+                                    float p_Thickness = 0.02f);
 
       LOW_CORE_API void render_point(Math::Vector3 p_Point,
                                      Math::Color p_Color,
                                      bool p_DepthTest,
                                      float p_Radius = 0.2f);
-      LOW_CORE_API void render_point(
-          Renderer::RenderView p_RenderView, Math::Vector3 p_Point,
-          Math::Color p_Color, bool p_DepthTest,
-          float p_Radius = 0.2f);
+      LOW_CORE_API void
+      render_point(Renderer::RenderView p_RenderView,
+                   Math::Vector3 p_Point, Math::Color p_Color,
+                   bool p_DepthTest, float p_Radius = 0.2f);
 
       LOW_CORE_API void
       render_path(const Util::List<Math::Vector3> &p_Points,
@@ -83,10 +86,9 @@ namespace Low {
                                         bool p_DepthTest,
                                         bool p_Wireframe);
       LOW_CORE_API void render_triangle(
-          Renderer::RenderView p_RenderView,
-          Math::Vector3 p_Vertex0, Math::Vector3 p_Vertex1,
-          Math::Vector3 p_Vertex2, Math::Color p_Color,
-          bool p_DepthTest, bool p_Wireframe);
+          Renderer::RenderView p_RenderView, Math::Vector3 p_Vertex0,
+          Math::Vector3 p_Vertex1, Math::Vector3 p_Vertex2,
+          Math::Color p_Color, bool p_DepthTest, bool p_Wireframe);
 
       // Complex predefined objects
       LOW_CORE_API
@@ -102,6 +104,12 @@ namespace Low {
           Renderer::EditorImage p_EditorImage, Entity p_Entity);
 
       Renderer::Mesh get_plane();
+
+      LOW_FUNCTION(scripting, bind_name = "draw_sphere",
+                   bind_namespace = "Debug")
+      void draw_sphere(const Math::Vector3 &p_Position,
+                       float p_Radius, const Math::Color p_Color);
+
     } // namespace DebugGeometry
   } // namespace Core
 } // namespace Low

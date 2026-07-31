@@ -1,6 +1,7 @@
 #include "LowCoreInput.h"
 
 #include "LowMath.h"
+#include "LowMathVectorUtil.h"
 #include "LowRenderer.h"
 
 #include "LowUtilEnums.h"
@@ -8,6 +9,7 @@
 #include "LowUtilLogger.h"
 #include "SDL_events.h"
 #include "SDL_keyboard.h"
+#include "SDL_video.h"
 
 namespace Low {
   namespace Core {
@@ -133,23 +135,84 @@ namespace Low {
 
       void mouse_position(Math::Vector2 &p_Position)
       {
-        // HACK: Find correct condition to go by
+        int l_MouseX = 0;
+        int l_MouseY = 0;
+        SDL_GetGlobalMouseState(&l_MouseX, &l_MouseY);
 
-        p_Position = g_MousePosition;
+        Math::Vector2 l_MousePosition((float)l_MouseX,
+                                      (float)l_MouseY);
 
-#if 1
-        // Math::Vector2 l_MousePosition;
-        // Renderer::get_window().mouse_position(l_MousePosition);
-        // Math::Vector2 l_WindowPosition;
-        // Renderer::get_window().position(l_WindowPosition);
-        // Math::Vector2 l_EditingWidgetPosition =
-        //     Util::Globals::get(N(LOW_SCREEN_OFFSET));
-        //
-        // p_Position = (l_MousePosition + l_WindowPosition) -
-        //              l_EditingWidgetPosition;
-#else
-        Renderer::get_window().mouse_position(p_Position);
-#endif
+        Math::Vector2 l_ViewportPosition =
+            Util::Globals::get(N(LOW_SCREEN_OFFSET));
+
+        p_Position = l_MousePosition - l_ViewportPosition;
+      }
+
+      bool mouse_world_ray(Math::Vector3 *p_Origin,
+                           Math::Vector3 *p_Direction)
+      {
+        if (!p_Origin || !p_Direction) {
+          return false;
+        }
+
+        Renderer::RenderView l_RenderView =
+            Renderer::get_game_renderview();
+        if (!l_RenderView.is_alive()) {
+          return false;
+        }
+
+        const Math::UVector2 l_Dimensions =
+            l_RenderView.get_dimensions();
+        if (l_Dimensions.x == 0u || l_Dimensions.y == 0u) {
+          return false;
+        }
+
+        Math::Vector2 l_MousePosition;
+        mouse_position(l_MousePosition);
+
+        if (l_MousePosition.x < 0.0f ||
+            l_MousePosition.y < 0.0f ||
+            l_MousePosition.x > (float)l_Dimensions.x ||
+            l_MousePosition.y > (float)l_Dimensions.y) {
+          return false;
+        }
+
+        const float l_NdcX =
+            ((l_MousePosition.x / (float)l_Dimensions.x) * 2.0f) -
+            1.0f;
+        const float l_NdcY =
+            1.0f -
+            ((l_MousePosition.y / (float)l_Dimensions.y) * 2.0f);
+
+        const float l_Aspect =
+            (float)l_Dimensions.x / (float)l_Dimensions.y;
+        const float l_HalfFovTan =
+            glm::tan(glm::radians(l_RenderView.get_camera_fov()) *
+                     0.5f);
+
+        Math::Vector3 l_Forward = l_RenderView.get_camera_direction();
+        if (glm::dot(l_Forward, l_Forward) < LOW_MATH_EPSILON) {
+          l_Forward = LOW_VECTOR3_FRONT;
+        } else {
+          l_Forward = Math::VectorUtil::normalize(l_Forward);
+        }
+        Math::Vector3 l_Right =
+            glm::cross(l_Forward, LOW_VECTOR3_UP);
+        if (glm::dot(l_Right, l_Right) < LOW_MATH_EPSILON) {
+          l_Right = LOW_VECTOR3_RIGHT;
+        } else {
+          l_Right = Math::VectorUtil::normalize(l_Right);
+        }
+
+        const Math::Vector3 l_Up =
+            Math::VectorUtil::normalize(glm::cross(l_Right, l_Forward));
+
+        *p_Origin = l_RenderView.get_camera_position();
+        *p_Direction = Math::VectorUtil::normalize(
+            l_Forward + (l_Right * l_NdcX * l_HalfFovTan * l_Aspect) +
+            (l_Up * l_NdcY * l_HalfFovTan));
+
+        return true;
       }
 
       void late_tick(float p_Delta)

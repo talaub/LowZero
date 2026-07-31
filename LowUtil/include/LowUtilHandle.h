@@ -255,6 +255,10 @@ namespace Low {
         size_t offset;
         void *getter;
         void *setter;
+        void *scripting_getter = nullptr;
+        void *scripting_setter = nullptr;
+        String scripting_get_type;
+        String scripting_set_type;
       };
 
       struct StructInfo
@@ -345,8 +349,8 @@ namespace Low {
                          RTTI::TypeInfo &p_TypeInfo);
     };
 
-    u16 LOW_EXPORT register_struct_info(TypeIdentifier p_Identifier,
-                                        RTTI::StructInfo &p_StructInfo);
+    u16 LOW_EXPORT register_struct_info(
+        TypeIdentifier p_Identifier, RTTI::StructInfo &p_StructInfo);
     LOW_EXPORT RTTI::StructInfo &get_struct_info(u16 p_StructId);
     LOW_EXPORT RTTI::StructInfo &
     get_struct_info(TypeIdentifier p_Identifier);
@@ -359,7 +363,8 @@ namespace Low {
     u16 LOW_EXPORT register_enum_info(TypeIdentifier p_Identifier,
                                       RTTI::EnumInfo &p_EnumInfo);
     LOW_EXPORT RTTI::EnumInfo &get_enum_info(u16 p_EnumId);
-    LOW_EXPORT RTTI::EnumInfo &get_enum_info(TypeIdentifier p_Identifier);
+    LOW_EXPORT RTTI::EnumInfo &
+    get_enum_info(TypeIdentifier p_Identifier);
     LOW_EXPORT List<u16> &get_enum_ids();
     u16 LOW_EXPORT get_enum_id(TypeIdentifier p_Identifier);
     LOW_EXPORT TypeIdentifier enum_identifier(u16 p_EnumId);

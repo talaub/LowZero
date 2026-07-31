@@ -21,7 +21,6 @@
 namespace Low {
   namespace Core {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     u16 Entity::ms_TypeId = 0;
@@ -78,7 +77,6 @@ namespace Low {
                                     l_Handle.get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
-
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;

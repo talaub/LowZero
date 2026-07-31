@@ -16,6 +16,7 @@
 #include "LowCore.h"
 
 #include <scriptstdstring/scriptstdstring.h>
+#include <scriptarray/scriptarray.h>
 
 namespace Low {
   namespace Core {
@@ -76,6 +77,12 @@ namespace Low {
         return Low::Core::Input::keyboard_button_down(p_Button);
       }
 
+      static bool
+      input_is_mouse_down(Low::Util::MouseButton p_Button)
+      {
+        return Low::Core::Input::mouse_button_down(p_Button);
+      }
+
       static void expose_input(asIScriptEngine *p_Engine)
       {
         int r = p_Engine->SetDefaultNamespace("Input");
@@ -121,10 +128,31 @@ namespace Low {
 
 #undef LOW_AS_REGISTER_KEYBOARD_BUTTON
 
+        r = p_Engine->RegisterEnum("MouseButton");
+        LOW_ASSERT(r >= 0, "Failed to register Input::MouseButton");
+
+#define LOW_AS_REGISTER_MOUSE_BUTTON(x)                              \
+  r = p_Engine->RegisterEnumValue(                                   \
+      "MouseButton", #x,                                             \
+      static_cast<int>(Low::Util::MouseButton::x));                  \
+  LOW_ASSERT(r >= 0, "Failed to register "                           \
+                     "Input::MouseButton::" #x)
+
+        LOW_AS_REGISTER_MOUSE_BUTTON(LEFT);
+        LOW_AS_REGISTER_MOUSE_BUTTON(RIGHT);
+
+#undef LOW_AS_REGISTER_MOUSE_BUTTON
+
         r = p_Engine->RegisterGlobalFunction(
             "bool is_key_down(KeyboardButton)",
             asFUNCTION(input_is_key_down), asCALL_CDECL);
         LOW_ASSERT(r >= 0, "Failed to register Input::is_key_down");
+
+        r = p_Engine->RegisterGlobalFunction(
+            "bool is_mouse_down(MouseButton)",
+            asFUNCTION(input_is_mouse_down), asCALL_CDECL);
+        LOW_ASSERT(r >= 0,
+                   "Failed to register Input::is_mouse_down");
 
         r = p_Engine->SetDefaultNamespace("");
         LOW_ASSERT(r >= 0, "Failed to reset namespace");
@@ -1298,6 +1326,7 @@ namespace Low {
       static void register_base_types(asIScriptEngine *p_Engine)
       {
         RegisterStdString(p_Engine);
+        RegisterScriptArray(p_Engine, true);
       }
 
       void expose(asIScriptEngine *p_Engine)

@@ -57,8 +57,10 @@ namespace Low {
           p_Builder.append("array<");
         }
 
-        if (p_Type.kind == TypeKind::Handle) {
-
+        if (p_Type.as_type.length()) {
+          p_Builder.append(p_Type.as_type);
+        } else if (p_Type.kind == TypeKind::Handle) {
+          p_Builder.append(simple_type_kind_to_string(p_Type.kind));
         } else if (p_Type.kind == TypeKind::Enum) {
 
         } else {
@@ -70,11 +72,14 @@ namespace Low {
         }
 
         for (int i = 0; i < p_Type.pointer_level; ++i) {
-          p_Builder.append("*");
+          p_Builder.append(l_IsContainer ? "@" : "*");
         }
 
         if (p_Type.reference) {
-          p_Builder.append("&");
+          p_Builder.append(" &");
+          if (p_Type.direction.length()) {
+            p_Builder.append(p_Type.direction);
+          }
         }
       }
 

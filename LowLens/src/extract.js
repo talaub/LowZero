@@ -4,6 +4,95 @@ function node_text(p_Node, p_Src) {
   return p_Src.slice(p_Node.startIndex, p_Node.endIndex).trim();
 }
 
+function strip_declaration_macros(p_Text) {
+  return p_Text.replace(/\b[A-Z][A-Z0-9_]*_API\b/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function is_declaration_macro_identifier(p_Name) {
+  return /^[A-Z][A-Z0-9_]*_API$/.test(p_Name);
+}
+
+function parse_macro_args_text(p_RawArgs) {
+  const l_Args = {};
+  if (!p_RawArgs.trim()) return l_Args;
+
+  for (const i_Part of p_RawArgs.split(',')) {
+    const [l_Key, ...l_Rest] = i_Part.split('=');
+    const l_TrimmedKey = l_Key.trim();
+    if (!l_TrimmedKey) continue;
+
+    if (l_Rest.length > 0) {
+      l_Args[l_TrimmedKey] = l_Rest.join('=').trim().replace(/^["']|["']$/g, '');
+    } else {
+      l_Args[l_TrimmedKey] = true;
+    }
+  }
+
+  return l_Args;
+}
+
+function extract_low_param(p_ParamText) {
+  const l_Match = p_ParamText.match(/^LOW_PARAM\s*\(([^)]*)\)\s*/);
+  if (!l_Match) return { text: p_ParamText, args: {} };
+
+  return {
+    text: p_ParamText.slice(l_Match[0].length).trim(),
+    args: parse_macro_args_text(l_Match[1]),
+  };
+}
+
+function extract_param_from_text(p_ParamText) {
+  const { text: l_Text, args: l_ParamArgs } = extract_low_param(p_ParamText);
+  const l_NoDefault = l_Text.replace(/\s*=\s*.*$/, '').trim();
+  const l_NameMatch = l_NoDefault.match(/([A-Za-z_][A-Za-z0-9_]*)\s*$/);
+
+  if (!l_NameMatch) {
+    return {
+      type: l_NoDefault,
+      name: '',
+      bind_name: '',
+      param_args: l_ParamArgs,
+    };
+  }
+
+  const l_Name = l_NameMatch[1];
+  const l_Type = l_NoDefault.slice(0, l_NameMatch.index).trim();
+
+  return {
+    type: l_Type,
+    name: l_Name,
+    bind_name: l_ParamArgs.bind_name || l_Name,
+    param_args: l_ParamArgs,
+  };
+}
+
+function split_parameter_list_text(p_ParamListText) {
+  const l_Inner = p_ParamListText.trim().replace(/^\(/, '').replace(/\)$/, '');
+  const l_Params = [];
+  let l_Current = '';
+  let l_Depth = 0;
+
+  for (let i = 0; i < l_Inner.length; ++i) {
+    const l_Char = l_Inner[i];
+
+    if (l_Char === '(' || l_Char === '<' || l_Char === '[') {
+      l_Depth++;
+    } else if (l_Char === ')' || l_Char === '>' || l_Char === ']') {
+      l_Depth = Math.max(0, l_Depth - 1);
+    }
+
+    if (l_Char === ',' && l_Depth === 0) {
+      if (l_Current.trim()) l_Params.push(l_Current.trim());
+      l_Current = '';
+    } else {
+      l_Current += l_Char;
+    }
+  }
+
+  if (l_Current.trim()) l_Params.push(l_Current.trim());
+  return l_Params;
+}
+
 function extract_declarator_name(p_Node, p_Src) {
   if (!p_Node) return '';
   if (p_Node.type === 'identifier') return node_text(p_Node, p_Src);
@@ -16,29 +105,20 @@ function extract_declarator_name(p_Node, p_Src) {
 }
 
 function extract_params(p_ParamListNode, p_Src) {
-  const l_Params = [];
+  return split_parameter_list_text(node_text(p_ParamListNode, p_Src))
+      .map(extract_param_from_text);
+}
 
-  for (const i_Child of p_ParamListNode.namedChildren) {
-    if (i_Child.type !== 'parameter_declaration') continue;
+function extract_function_from_text(p_Node, p_Src) {
+  const l_Text = strip_declaration_macros(node_text(p_Node, p_Src).replace(/;\s*$/, ''));
+  const l_Match = l_Text.match(/^(.*?)\s+([A-Za-z_][A-Za-z0-9_:]*)\s*\(([\s\S]*)\)\s*(?:const)?$/);
+  if (!l_Match) return null;
 
-    const l_Children = i_Child.namedChildren;
-    if (l_Children.length === 0) continue;
-
-    const l_Declarator = l_Children[l_Children.length - 1];
-    const l_TypeChildren = l_Children.slice(0, l_Children.length - 1);
-
-    let l_Name = extract_declarator_name(l_Declarator, p_Src);
-    let l_Type = l_TypeChildren.map(n => node_text(n, p_Src)).join(' ');
-
-    if (l_TypeChildren.length === 0) {
-      l_Type = node_text(l_Declarator, p_Src);
-      l_Name = '';
-    }
-
-    l_Params.push({ type: l_Type.trim(), name: l_Name.trim() });
-  }
-
-  return l_Params;
+  return {
+    return_type: l_Match[1].trim(),
+    name: l_Match[2].trim().split('::').pop(),
+    params: split_parameter_list_text(`(${l_Match[3]})`).map(extract_param_from_text),
+  };
 }
 
 function extract_function(p_Node, p_Src) {
@@ -57,6 +137,7 @@ function extract_function(p_Node, p_Src) {
       case 'primitive_type':
       case 'type_identifier':
       case 'scoped_type_identifier':
+      case 'qualified_identifier':
       case 'template_type':
       case 'sized_type_specifier':
         l_ReturnType = node_text(i_Child, p_Src);
@@ -95,6 +176,15 @@ function extract_function(p_Node, p_Src) {
         }
         break;
       }
+    }
+  }
+
+  if (!l_ReturnType || !l_Name || is_declaration_macro_identifier(l_Name) || l_Params.length === 0) {
+    const l_Fallback = extract_function_from_text(p_Node, p_Src);
+    if (l_Fallback) {
+      l_ReturnType = l_Fallback.return_type;
+      l_Name = l_Fallback.name;
+      l_Params = l_Fallback.params;
     }
   }
 

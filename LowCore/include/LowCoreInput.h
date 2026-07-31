@@ -16,7 +16,14 @@ namespace Low {
       bool LOW_CORE_API mouse_button_down(Util::MouseButton p_Button);
       bool LOW_CORE_API mouse_button_up(Util::MouseButton p_Button);
 
-      void LOW_CORE_API mouse_position(Math::Vector2 &p_Position);
+      LOW_FUNCTION(scripting, bind_namespace = "Input")
+      LOW_CORE_API void
+      mouse_position(LOW_PARAM(out) Math::Vector2 &p_Position);
+
+      LOW_FUNCTION(scripting, bind_namespace = "Input")
+      LOW_CORE_API bool
+      mouse_world_ray(LOW_PARAM(out) Math::Vector3 *p_Origin,
+                      LOW_PARAM(out) Math::Vector3 *p_Direction);
 
       bool LOW_CORE_API
       mouse_button_released(Util::MouseButton p_Button);

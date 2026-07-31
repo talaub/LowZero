@@ -7,10 +7,6 @@
 
 #include <cstdint>
 
-#define LOW_ENUM(...)
-#define LOW_STRUCT(...)
-#define LOW_FIELD(...)
-
 namespace Low {
   namespace Core {
     namespace Physics {
@@ -26,7 +22,8 @@ namespace Low {
         Unknown
       };
 
-      LOW_STRUCT(scripting, bind_name="QueryHit", bind_namespace="Physics")
+      LOW_STRUCT(scripting, bind_name = "QueryHit",
+                 bind_namespace = "Physics")
       struct QueryHit
       {
         LOW_FIELD()
@@ -50,6 +47,13 @@ namespace Low {
         LOW_FIELD()
         HitObjectFamily family = HitObjectFamily::None;
       };
+
+      LOW_FUNCTION(scripting, bind_name = "raycast",
+                   bind_namespace = "Physics")
+      bool raycast(const Math::Vector3 &p_Origin,
+                   const Math::Vector3 &p_Direction,
+                   float p_MaxDistance,
+                   LOW_PARAM(out) QueryHit *p_Hit);
 
     } // namespace Physics
   } // namespace Core

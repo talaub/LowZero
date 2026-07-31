@@ -17,23 +17,38 @@ function get_namespace_name(p_Node, p_Src) {
 }
 
 function is_macro_call(p_Node, p_Src, p_MacroName) {
+  return find_macro_call(p_Node, p_Src, p_MacroName) !== null;
+}
+
+function find_macro_call(p_Node, p_Src, p_MacroName) {
   let l_Node = p_Node;
 
   if (l_Node.type === 'expression_statement') {
     l_Node = l_Node.namedChildren[0];
-    if (!l_Node) return false;
+    if (!l_Node) return null;
   }
 
   if (l_Node.type === 'call_expression') {
     const l_Fn = l_Node.namedChildren.find(n => n.type === 'identifier');
-    return l_Fn && p_Src.slice(l_Fn.startIndex, l_Fn.endIndex).trim() === p_MacroName;
+    if (l_Fn && p_Src.slice(l_Fn.startIndex, l_Fn.endIndex).trim() === p_MacroName) {
+      return l_Node;
+    }
   }
 
-  return false;
+  for (const i_Child of l_Node.namedChildren) {
+    const l_Result = find_macro_call(i_Child, p_Src, p_MacroName);
+    if (l_Result) return l_Result;
+  }
+
+  return null;
 }
 
 function get_macro_args(p_Node, p_Src) {
-  let l_Node = p_Node;
+  let l_Node =
+      find_macro_call(p_Node, p_Src, g_LowFunctionMacro) ||
+      find_macro_call(p_Node, p_Src, g_LowEnumMacro) ||
+      find_macro_call(p_Node, p_Src, g_LowStructMacro) ||
+      p_Node;
   if (l_Node.type === 'expression_statement') l_Node = l_Node.namedChildren[0];
   if (!l_Node || l_Node.type !== 'call_expression') return {};
 

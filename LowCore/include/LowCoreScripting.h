@@ -8,6 +8,8 @@
 #include "LowCoreScriptAsset.h"
 #include "LowUtilHandle.h"
 
+class asIScriptEngine;
+
 namespace Low {
   namespace Core {
     namespace Scripting {
@@ -39,7 +41,8 @@ namespace Low {
         Name,
 
         Handle,
-        Enum
+        Enum,
+        Struct
       };
       enum class TypeContainer
       {
@@ -51,12 +54,14 @@ namespace Low {
       {
         TypeKind kind = TypeKind::Void;
 
+        Util::String as_type = "";
         Util::TypeIdentifier referenced_type;
 
         u8 pointer_level = 0;
         bool constant = false;
 
         bool reference = false;
+        Util::String direction = "";
 
         TypeContainer container = TypeContainer::None;
       };
@@ -117,10 +122,10 @@ namespace Low {
 
       void LOW_CORE_API
       register_function(const FunctionInfo &p_FunctionInfo);
-      void LOW_CORE_API
-      register_enum(const EnumInfo &p_EnumInfo);
+      void LOW_CORE_API register_enum(const EnumInfo &p_EnumInfo);
       void LOW_CORE_API
       register_struct(const StructInfo &p_StructInfo);
+      LOW_CORE_API asIScriptEngine *get_engine();
     } // namespace Scripting
   } // namespace Core
 } // namespace Low

@@ -162,15 +162,17 @@ const g_HardcodedTypes = [
   { kinds: ['Low::Util::String', 'Util::String', 'String'],             kind: TypeKind.STRING     },
   { kinds: ['Low::Util::Handle', 'Util::Handle'],                       kind: TypeKind.HANDLE     },
   { kinds: ['Low::Math::Vector2', 'Math::Vector2'],                     kind: TypeKind.VECTOR2    },
+  { kinds: ['Low::Math::UVector2', 'Math::UVector2'],                   kind: TypeKind.HANDLE     },
   { kinds: ['Low::Math::Vector3', 'Math::Vector3'],                     kind: TypeKind.VECTOR3    },
-  { kinds: ['Low::Math::Vector4', 'Math::Vector4'],                     kind: TypeKind.VECTOR4    },
+  { kinds: ['Low::Math::Vector4', 'Math::Vector4',
+            'Low::Math::Color', 'Math::Color', 'Color'],                kind: TypeKind.VECTOR4    },
   { kinds: ['Low::Math::Quaternion', 'Math::Quaternion'],               kind: TypeKind.QUATERNION },
 ];
 
 // Resolve a C++ type string to a { kind, entry } — entry is the DB record for
 // complex types (handle/enum/struct), null for primitives/math.
 function resolve_type(p_TypeStr) {
-  const l_Clean = p_TypeStr.replace(/\s*[*&]+\s*$/, '').trim();
+  const l_Clean = p_TypeStr.replace(/\s*[*&]+\s*$/, '').replace(/^const\s+/, '').trim();
 
   for (const i_Entry of g_HardcodedTypes) {
     if (i_Entry.kinds.includes(l_Clean)) {
@@ -193,7 +195,7 @@ function resolve_type(p_TypeStr) {
 
 // Returns the AngelScript type name string for a C++ type string
 function get_as_type_string(p_TypeStr) {
-  const l_Clean = p_TypeStr.replace(/\s*[*&]+\s*$/, '').trim();
+  const l_Clean = p_TypeStr.replace(/\s*[*&]+\s*$/, '').replace(/^const\s+/, '').trim();
 
   const l_Hardcoded = {
     'float': 'float', 'bool': 'bool',
@@ -206,8 +208,11 @@ function get_as_type_string(p_TypeStr) {
     'Low::Util::String': 'string', 'Util::String': 'string',
     'Low::Util::Handle': 'Handle', 'Util::Handle': 'Handle',
     'Low::Math::Vector2': 'Vector2', 'Math::Vector2': 'Vector2',
+    'Low::Math::UVector2': 'UVector2', 'Math::UVector2': 'UVector2',
     'Low::Math::Vector3': 'Vector3', 'Math::Vector3': 'Vector3',
     'Low::Math::Vector4': 'Vector4', 'Math::Vector4': 'Vector4',
+    'Low::Math::Color': 'Vector4', 'Math::Color': 'Vector4',
+    'Color': 'Vector4',
     'Low::Math::Quaternion': 'Quaternion', 'Math::Quaternion': 'Quaternion',
   };
   if (l_Hardcoded[l_Clean]) return l_Hardcoded[l_Clean];
