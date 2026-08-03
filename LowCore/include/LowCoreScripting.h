@@ -4,7 +4,6 @@
 
 #include "LowCoreScriptModule.h"
 #include "LowCoreScriptClassInstance.h"
-#include <vulkan/vulkan_core.h>
 #include "LowCoreScriptAsset.h"
 #include "LowMath.h"
 #include "LowUtilHandle.h"

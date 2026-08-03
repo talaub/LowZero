@@ -4,7 +4,7 @@ const Parser = require('tree-sitter');
 const Cpp = require('tree-sitter-cpp');
 const fs = require('fs');
 const path = require('path');
-const { parse_file } = require('./src/parse');
+const { parse_file, sanitize_macro_arg_nesting } = require('./src/parse');
 const { generate_header_file, generate_module_file } = require('./src/generate');
 const { patch_source_header } = require('./src/patch');
 const db = require('./src/db');
@@ -14,7 +14,8 @@ g_Parser.setLanguage(Cpp);
 
 function process_file(p_FilePath) {
   const l_Src = fs.readFileSync(p_FilePath, 'utf8');
-  const l_Tree = g_Parser.parse(l_Src);
+  const l_SanitizedSrc = sanitize_macro_arg_nesting(l_Src);
+  const l_Tree = g_Parser.parse(l_SanitizedSrc);
   return parse_file(l_Src, l_Tree);
 }
 

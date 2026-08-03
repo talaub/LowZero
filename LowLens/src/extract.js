@@ -126,9 +126,15 @@ function extract_function(p_Node, p_Src) {
       case 'scoped_type_identifier':
       case 'qualified_identifier':
       case 'template_type':
-      case 'sized_type_specifier':
-        l_ReturnType = node_text(i_Child, p_Src);
+      case 'sized_type_specifier': {
+        const l_Text = node_text(i_Child, p_Src);
+        if (is_declaration_macro_identifier(l_Text)) {
+          l_Qualifiers.push(l_Text);
+        } else {
+          l_ReturnType = l_Text;
+        }
         break;
+      }
 
       case 'function_declarator': {
         const l_NameNode = i_Child.namedChildren.find(

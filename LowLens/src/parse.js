@@ -7,6 +7,87 @@ const g_LowFunctionMacro = 'LOW_FUNCTION';
 const g_LowEnumMacro = 'LOW_ENUM';
 const g_LowStructMacro = 'LOW_STRUCT';
 
+function find_matching_close(p_Src, p_OpenIdx) {
+  const l_Pairs = { '(': ')', '[': ']' };
+  const l_Stack = [l_Pairs[p_Src[p_OpenIdx]]];
+
+  for (let i = p_OpenIdx + 1; i < p_Src.length; i++) {
+    const l_C = p_Src[i];
+
+    if (l_C === '"' || l_C === "'") {
+      const l_Quote = l_C;
+      i++;
+      while (i < p_Src.length && p_Src[i] !== l_Quote) {
+        if (p_Src[i] === '\\') i++;
+        i++;
+      }
+      continue;
+    }
+
+    if (l_C === '(' || l_C === '[') {
+      l_Stack.push(l_Pairs[l_C]);
+    } else if (l_C === ')' || l_C === ']') {
+      if (l_Stack[l_Stack.length - 1] === l_C) {
+        l_Stack.pop();
+        if (l_Stack.length === 0) return i;
+      }
+    }
+  }
+
+  return -1;
+}
+
+function sanitize_macro_arg_nesting(p_Src) {
+  const l_Pattern = /\b(?:LOW_FUNCTION|LOW_ENUM|LOW_STRUCT)\s*\(/g;
+  let l_Chars = null;
+  let l_Match;
+
+  while ((l_Match = l_Pattern.exec(p_Src))) {
+    const l_OpenIdx = l_Match.index + l_Match[0].length - 1;
+    const l_CloseIdx = find_matching_close(p_Src, l_OpenIdx);
+    if (l_CloseIdx === -1) continue;
+
+    let i = l_OpenIdx + 1;
+    while (i < l_CloseIdx) {
+      const l_C = p_Src[i];
+
+      if (l_C === '"' || l_C === "'") {
+        const l_Quote = l_C;
+        i++;
+        while (i < l_CloseIdx && p_Src[i] !== l_Quote) {
+          if (p_Src[i] === '\\') i++;
+          i++;
+        }
+        i++;
+        continue;
+      }
+
+      if (l_C === '(' || l_C === '[') {
+        const l_NestedClose = find_matching_close(p_Src, i);
+        if (l_NestedClose === -1 || l_NestedClose > l_CloseIdx) {
+          i++;
+          continue;
+        }
+
+        if (!l_Chars) l_Chars = p_Src.split('');
+        for (let k = i; k <= l_NestedClose; k++) {
+          if (l_Chars[k] === '\n') continue;
+          l_Chars[k] = (k === i || k === l_NestedClose) ? '"' : '_';
+        }
+
+        i = l_NestedClose + 1;
+        continue;
+      }
+
+      i++;
+    }
+
+    l_Pattern.lastIndex = l_CloseIdx + 1;
+  }
+
+  return l_Chars ? l_Chars.join('') : p_Src;
+}
+
 const g_FunctionNodeTypes = new Set([
   'function_definition',
   'declaration',
@@ -149,4 +230,4 @@ function parse_file(p_Src, p_Tree) {
   return { functions: l_Functions, enums: l_Enums, structs: l_Structs };
 }
 
-module.exports = { parse_file };
+module.exports = { parse_file, sanitize_macro_arg_nesting };

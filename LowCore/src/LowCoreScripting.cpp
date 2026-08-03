@@ -848,6 +848,11 @@ namespace Low {
         produce_as_function_signature(l_SignatureBuilder,
                                       p_FunctionInfo);
 
+        LOW_LOG_DEBUG << "Registering AS function '"
+                      << p_FunctionInfo.bind_namespace << "::"
+                      << l_SignatureBuilder.get().c_str() << "'"
+                      << LOW_LOG_END;
+
         r = g_Engine->RegisterGlobalFunction(
             l_SignatureBuilder.get().c_str(), asFUNCTION(l_AsFuncPtr),
             asCALL_CDECL);

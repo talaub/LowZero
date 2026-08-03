@@ -1,4 +1,5 @@
 #include "LowCoreScripting.h"
+#include "LowEditor.h"
 #include "LowEditorVisualScriptNodes.h"
 
 #include "IconsCodicons.h"
@@ -747,33 +748,88 @@ namespace Low {
               return N(vs_syntax_global_function_call);
             }
 
+            virtual Util::SharedPtr<NodeUserData>
+            create_user_data() const override
+            {
+              return Util::make_shared<GlobalFunctionCallNodeData>();
+            }
+
+            virtual void
+            deserialize(Graph &p_Graph, NodeId p_NodeId,
+                        Util::Serial::Node &p_Data) const override
+            {
+              const Node *l_Node = p_Graph.find_node(p_NodeId);
+              GlobalFunctionCallNodeData *l_Data =
+                  p_Graph
+                      .get_node_user_data<GlobalFunctionCallNodeData>(
+                          p_NodeId);
+              if (!l_Node || !l_Data ||
+                  l_Node->function_name.empty()) {
+                return;
+              }
+
+              l_Data->function_info = Core::Scripting::
+                  find_registered_global_function_checked(
+                      l_Node->function_name);
+            }
+
             virtual Util::String
             get_title(const Graph &p_Graph,
                       NodeId p_NodeId) const override
             {
-              const Node *l_Node = p_Graph.find_node(p_NodeId);
-              if (!l_Node || l_Node->variable_name.empty()) {
+              const GlobalFunctionCallNodeData *l_Data =
+                  p_Graph
+                      .get_node_user_data<GlobalFunctionCallNodeData>(
+                          p_NodeId);
+              if (!l_Data) {
                 return "Call global C++ function";
               }
-              return l_Node->function_name;
+              return prettify_name(l_Data->function_info.name);
             }
 
-            virtual Util::String get_subtitle(const Graph &,
-                                              NodeId) const override
+            virtual Util::String
+            get_subtitle(const Graph &p_Graph,
+                         NodeId p_NodeId) const override
             {
-              return "Call C++ function";
+              const GlobalFunctionCallNodeData *l_Data =
+                  p_Graph
+                      .get_node_user_data<GlobalFunctionCallNodeData>(
+                          p_NodeId);
+              if (!l_Data) {
+                return "Low Function";
+              }
+              return l_Data->function_info.visual_script_info.category
+                  .c_str();
             }
 
-            virtual Util::String get_category(const Graph &,
-                                              NodeId) const override
+            virtual Util::String
+            get_category(const Graph &p_Graph,
+                         NodeId p_NodeId) const override
             {
-              return "Syntax";
+              const GlobalFunctionCallNodeData *l_Data =
+                  p_Graph
+                      .get_node_user_data<GlobalFunctionCallNodeData>(
+                          p_NodeId);
+              if (!l_Data) {
+                return "Syntax";
+              }
+              return l_Data->function_info.visual_script_info.category
+                  .c_str();
             }
 
-            virtual Util::String get_icon(const Graph &,
-                                          NodeId) const override
+            virtual Util::String
+            get_icon(const Graph &p_Graph,
+                     NodeId p_NodeId) const override
             {
-              return ICON_LC_CIRCLE;
+              const GlobalFunctionCallNodeData *l_Data =
+                  p_Graph
+                      .get_node_user_data<GlobalFunctionCallNodeData>(
+                          p_NodeId);
+              if (!l_Data) {
+                return ICON_LC_CIRCLE;
+              }
+              return get_icon_by_name(
+                  l_Data->function_info.visual_script_info.icon_name);
             }
 
             virtual ImU32 get_color(const Graph &,
@@ -801,6 +857,34 @@ namespace Low {
                   make_execution_pin_metadata("Then");
               p_Graph.add_pin(l_ExecOut, l_ExecOutMetadata, p_Schema);
 
+              if (l_Function.return_type.kind !=
+                  Core::Scripting::TypeKind::Void) {
+                Editor::Pin l_ReturnPin =
+                    make_output_pin(p_Graph, p_NodeId);
+
+                Pin l_Metadata;
+                l_Metadata.display_name = "Return value";
+                l_Metadata.type = scripting_type_to_pin_type(
+                    l_Function.return_type);
+                l_Metadata.number_subtype =
+                    scripting_type_to_number_subtype(
+                        l_Function.return_type);
+                l_Metadata.string_subtype =
+                    l_Function.return_type.kind ==
+                            Core::Scripting::TypeKind::Name
+                        ? StringSubtype::Name
+                        : StringSubtype::String;
+                l_Metadata.handle_type =
+                    l_Function.return_type.referenced_type;
+                l_Metadata.container_type =
+                    scripting_container_to_pin_container(
+                        l_Function.return_type.container);
+                l_Metadata.widget = PinWidget::DefaultValue;
+                l_Metadata.show_default_value_when_unlinked = true;
+
+                p_Graph.add_pin(l_ReturnPin, l_Metadata);
+              }
+
               for (const Core::Scripting::FunctionParameterInfo
                        &i_Param : l_Function.parameters) {
                 if (i_Param.type.direction ==
@@ -821,7 +905,7 @@ namespace Low {
 
                   Pin i_Metadata =
                       make_pin_metadata_from_function_parameter_info(
-                          i_Param, i_Param.name.c_str());
+                          i_Param, prettify_name(i_Param.name));
 
                   p_Graph.add_pin(i_ParamPin, i_Metadata);
                 } else if (i_Param.type.direction ==
@@ -831,7 +915,7 @@ namespace Low {
 
                   Pin i_Metadata =
                       make_pin_metadata_from_function_parameter_info(
-                          i_Param, i_Param.name.c_str());
+                          i_Param, prettify_name(i_Param.name));
 
                   p_Graph.add_pin(i_ParamPin, i_Metadata);
                 }
@@ -924,8 +1008,9 @@ namespace Low {
             i_Entry.id = LOW_NAME(i_EntryId.c_str());
             i_Entry.category =
                 i_Function.visual_script_info.category.c_str();
-            i_Entry.title = i_Function.name.c_str();
-            i_Entry.subtitle = "C++ Function";
+            i_Entry.title = prettify_name(i_Function.name);
+            i_Entry.subtitle =
+                i_Function.visual_script_info.category.c_str();
             i_Entry.node_class =
                 g_GlobalFunctionCallNodeClass.get_name();
             i_Entry.search_text = i_Function.name.c_str();
@@ -938,6 +1023,10 @@ namespace Low {
               }
               l_FnName += i_Function.bind_name.c_str();
               p_Node.function_name = l_FnName;
+
+              static_cast<GlobalFunctionCallNodeData *>(
+                  p_Node.user_data.get())
+                  ->function_info = i_Function;
             };
 
             p_Graph.register_spawn_entry(i_Entry);

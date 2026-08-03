@@ -66,10 +66,11 @@ namespace Low {
       String prettify_name(String p_String)
       {
         String l_String = p_String;
-        if (StringHelper::begins_with(l_String, "p_")) {
+        if (StringHelper::begins_with(l_String, "p_") ||
+            StringHelper::begins_with(l_String, "m_")) {
           l_String = l_String.substr(2);
         }
-        l_String = StringHelper::replace(p_String, '_', ' ');
+        l_String = StringHelper::replace(l_String, '_', ' ');
         l_String[0] = toupper(l_String[0]);
         {
           Util::String l_Friendly;

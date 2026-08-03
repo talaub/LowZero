@@ -1,5 +1,6 @@
 #pragma once
 
+#include "LowCoreScripting.h"
 #include "LowEditorVisualScripting.h"
 
 namespace Low {
@@ -30,6 +31,12 @@ namespace Low {
       }
 
       namespace SyntaxNodes {
+        struct LOW_EDITOR_API GlobalFunctionCallNodeData
+            : public NodeUserData
+        {
+          Core::Scripting::FunctionInfo function_info;
+        };
+
         LOW_EDITOR_API void register_nodes(Graph &p_Graph);
       }
 

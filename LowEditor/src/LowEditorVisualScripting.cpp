@@ -1898,6 +1898,10 @@ namespace Low {
             i_NodeNode["variable_name"] =
                 l_NodeMetadata->variable_name;
           }
+          if (!l_NodeMetadata->function_name.empty()) {
+            i_NodeNode["function_name"] =
+                l_NodeMetadata->function_name;
+          }
           if ((u64)l_NodeMetadata->handle_type != 0) {
             i_NodeNode["handle_type"] =
                 (Util::String)l_NodeMetadata->handle_type;
@@ -2050,6 +2054,10 @@ namespace Low {
             if (i_NodeNode["variable_name"]) {
               l_Metadata.variable_name =
                   i_NodeNode["variable_name"].as<Util::String>();
+            }
+            if (i_NodeNode["function_name"]) {
+              l_Metadata.function_name =
+                  i_NodeNode["function_name"].as<Util::String>();
             }
             if (i_NodeNode["handle_type"]) {
               l_Metadata.handle_type =
