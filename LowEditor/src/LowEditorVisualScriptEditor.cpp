@@ -58,6 +58,8 @@ namespace Low {
           OperatorNodes::register_nodes(p_Graph);
           SyntaxNodes::register_nodes(p_Graph);
           FunctionNodes::register_nodes(p_Graph);
+          EnumNodes::register_nodes(p_Graph);
+          StructNodes::register_nodes(p_Graph);
         }
 
         static ContextRegistry *g_ContextRegistry = nullptr;

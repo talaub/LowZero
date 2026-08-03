@@ -11,7 +11,8 @@ namespace Low {
   namespace Core {
     namespace Physics {
       LOW_ENUM(scripting, bind_name = "HitObjectFamily",
-               bind_namespace = "Physics")
+               bind_namespace = "Physics",
+               vs = (category = "Physics", icon = "physics"))
       enum class HitObjectFamily
       {
         None,
@@ -23,7 +24,8 @@ namespace Low {
       };
 
       LOW_STRUCT(scripting, bind_name = "QueryHit",
-                 bind_namespace = "Physics")
+                 bind_namespace = "Physics",
+                 vs = (category = "Physics", icon = "crosshair"))
       struct QueryHit
       {
         LOW_FIELD()
@@ -49,7 +51,8 @@ namespace Low {
       };
 
       LOW_FUNCTION(scripting, bind_name = "raycast",
-                   bind_namespace = "Physics")
+                   bind_namespace = "Physics",
+                   vs = (category = "Physics", icon = "crosshair"))
       bool raycast(const Math::Vector3 &p_Origin,
                    const Math::Vector3 &p_Direction,
                    float p_MaxDistance,

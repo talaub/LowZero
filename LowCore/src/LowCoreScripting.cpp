@@ -36,6 +36,8 @@ namespace Low {
       static asIScriptContext *g_TickContext = nullptr;
 
       Util::List<FunctionInfo> g_RegisteredFunctions;
+      Util::List<StructInfo> g_RegisteredStructs;
+      Util::List<EnumInfo> g_RegisteredEnums;
 
       static bool g_Initialized = false;
 
@@ -905,6 +907,8 @@ namespace Low {
             asFUNCTION(p_EnumInfo.entry_value_ptr), asCALL_CDECL);
         LOW_ASSERT(r >= 0, "Failed to register enum entry_value");
 
+        g_RegisteredEnums.push_back(p_EnumInfo);
+
         r = g_Engine->SetDefaultNamespace("");
         LOW_ASSERT(r >= 0, "Failed to reset namespace");
       }
@@ -1010,6 +1014,8 @@ namespace Low {
           }
         }
 
+        g_RegisteredStructs.push_back(p_StructInfo);
+
         r = g_Engine->SetDefaultNamespace("");
         LOW_ASSERT(r >= 0, "Failed to reset namespace");
       }
@@ -1018,6 +1024,40 @@ namespace Low {
       get_registered_global_functions()
       {
         return g_RegisteredFunctions;
+      }
+
+      const Util::List<StructInfo> &get_registered_structs()
+      {
+        return g_RegisteredStructs;
+      }
+
+      const StructInfo &find_registered_struct_checked(
+          Util::TypeIdentifier p_Identifier)
+      {
+        for (const StructInfo &i_Struct : g_RegisteredStructs) {
+          if ((u64)i_Struct.identifier == (u64)p_Identifier) {
+            return i_Struct;
+          }
+        }
+        _LOW_ASSERT(false);
+        return g_RegisteredStructs[0];
+      }
+
+      const Util::List<EnumInfo> &get_registered_enums()
+      {
+        return g_RegisteredEnums;
+      }
+
+      const EnumInfo &find_registered_enum_checked(
+          Util::TypeIdentifier p_Identifier)
+      {
+        for (const EnumInfo &i_Enum : g_RegisteredEnums) {
+          if ((u64)i_Enum.identifier == (u64)p_Identifier) {
+            return i_Enum;
+          }
+        }
+        _LOW_ASSERT(false);
+        return g_RegisteredEnums[0];
       }
 
       const FunctionInfo &find_registered_global_function_checked(

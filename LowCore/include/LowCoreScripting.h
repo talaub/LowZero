@@ -89,6 +89,14 @@ namespace Low {
         Util::Name icon_name;
       };
 
+      struct VisualScriptTypeInfo
+      {
+        bool exposed = false;
+        Util::Name category;
+        Math::ColorRGB color;
+        Util::Name icon_name;
+      };
+
       struct FunctionInfo
       {
         Util::Name name;
@@ -112,6 +120,8 @@ namespace Low {
         Util::TypeIdentifier identifier;
         void *entry_name_ptr;
         void *entry_value_ptr;
+
+        VisualScriptTypeInfo visual_script_info;
       };
 
       void LOW_CORE_API initialize_as();
@@ -132,6 +142,8 @@ namespace Low {
         void *copy_constructor;
         void *destructor;
         void *assign;
+
+        VisualScriptTypeInfo visual_script_info;
       };
 
       void LOW_CORE_API
@@ -150,6 +162,18 @@ namespace Low {
       LOW_CORE_API
       const Util::List<FunctionInfo> &
       get_registered_global_functions();
+
+      LOW_CORE_API
+      const Util::List<StructInfo> &get_registered_structs();
+      LOW_CORE_API
+      const StructInfo &
+      find_registered_struct_checked(Util::TypeIdentifier p_Identifier);
+
+      LOW_CORE_API
+      const Util::List<EnumInfo> &get_registered_enums();
+      LOW_CORE_API
+      const EnumInfo &
+      find_registered_enum_checked(Util::TypeIdentifier p_Identifier);
     } // namespace Scripting
   } // namespace Core
 } // namespace Low

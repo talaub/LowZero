@@ -70,7 +70,9 @@ namespace Low {
             return true;
           }
 
-          if (p_Left.type == PinType::Handle) {
+          if (p_Left.type == PinType::Handle ||
+              p_Left.type == PinType::Struct ||
+              p_Left.type == PinType::Enum) {
             return ((u64)p_Left.handle_type ==
                     (u64)p_Right.handle_type) ||
                    !((u64)p_Left.handle_type) ||
@@ -97,6 +99,10 @@ namespace Low {
             return IM_COL32(124, 21, 153, 255);
           case PinType::Handle:
             return IM_COL32(51, 150, 215, 255);
+          case PinType::Struct:
+            return IM_COL32(189, 128, 53, 255);
+          case PinType::Enum:
+            return IM_COL32(150, 100, 200, 255);
           case PinType::Vector2:
             return IM_COL32(68, 150, 126, 255);
           case PinType::Vector3:
@@ -307,6 +313,30 @@ namespace Low {
             }
             return;
           }
+          case PinType::Enum:
+            if ((u64)p_PinMetadata.handle_type != 0) {
+              const Core::Scripting::EnumInfo &l_ScriptingEnumInfo =
+                  Core::Scripting::find_registered_enum_checked(
+                      p_PinMetadata.handle_type);
+              Util::RTTI::EnumInfo &l_EnumInfo =
+                  Util::get_enum_info(p_PinMetadata.handle_type);
+              const u8 l_Value =
+                  (u8)p_PinMetadata.default_value.as_u32();
+
+              if (!l_ScriptingEnumInfo.bind_namespace.empty()) {
+                p_CompileContext.main_code.append(
+                    l_ScriptingEnumInfo.bind_namespace);
+                p_CompileContext.main_code.append("::");
+              }
+              p_CompileContext.main_code.append(
+                  l_ScriptingEnumInfo.bind_name);
+              p_CompileContext.main_code.append("::");
+              p_CompileContext.main_code.append(
+                  l_EnumInfo.entry_name(l_Value));
+              return;
+            }
+            p_CompileContext.main_code.append("0");
+            return;
           default:
             p_CompileContext.main_code.append("0");
             return;
@@ -2353,14 +2383,23 @@ namespace Low {
             graph && l_Metadata
                 ? graph->find_node_class(l_Metadata->node_class)
                 : nullptr;
+        const float l_ExtraContentHeight =
+            l_NodeClass
+                ? l_NodeClass->get_above_pins_height(*graph, p_Node.id) +
+                      l_NodeClass->get_below_pins_height(*graph,
+                                                         p_Node.id)
+                : 0.0f;
         if (l_NodeClass &&
             l_NodeClass->is_compact(*graph, p_Node.id)) {
           return Math::Vector2(
-              196.0f, LOW_MATH_MAX(60.0f, 10.0f + l_MaxPins * 34.0f));
+              196.0f, LOW_MATH_MAX(60.0f, 10.0f + l_MaxPins * 34.0f) +
+                          l_ExtraContentHeight);
         }
-        return Math::Vector2(default_node_size.x,
-                             LOW_MATH_MAX(default_node_size.y,
-                                          82.0f + l_MaxPins * 32.0f));
+        return Math::Vector2(
+            default_node_size.x,
+            LOW_MATH_MAX(default_node_size.y,
+                        82.0f + l_MaxPins * 32.0f) +
+                l_ExtraContentHeight);
       }
 
       void
@@ -2558,6 +2597,20 @@ namespace Low {
           }
         }
 
+        if (graph && l_NodeClass) {
+          const float l_AbovePinsHeight =
+              l_NodeClass->get_above_pins_height(*graph, p_Node.id) *
+              l_Zoom;
+          if (l_AbovePinsHeight > 0.0f) {
+            l_NodeClass->render_above_pins(
+                *graph, p_Node.id, p_Context,
+                ImVec2(p_ScreenMin.x, p_ScreenMin.y + l_HeaderHeight),
+                ImVec2(p_ScreenMax.x,
+                      p_ScreenMin.y + l_HeaderHeight +
+                          l_AbovePinsHeight));
+          }
+        }
+
         Util::List<Low::Editor::Pin *> l_NodePins =
             graph ? graph->graph.get_node_pins(p_Node.id)
                   : Util::List<Low::Editor::Pin *>();
@@ -2577,8 +2630,11 @@ namespace Low {
               p_Context.state->hovered_pin == i_Pin->id;
           const float l_Radius = pin_radius * l_Zoom;
 
-          if (l_PinMetadata &&
-              l_PinMetadata->type == PinType::Execution) {
+          if (!i_Pin->connectable) {
+            // Not rendered as a connector at all - this pin only
+            // exists to carry an inline value editor on the node.
+          } else if (l_PinMetadata &&
+                    l_PinMetadata->type == PinType::Execution) {
             draw_execution_pin(p_Context.draw_list, l_PinAnchor,
                                i_Pin->is_input(), l_Radius * 1.45f,
                                l_PinColor, l_PinHovered);
@@ -2622,6 +2678,7 @@ namespace Low {
               p_Context.graph.get_link_count(i_Pin->id) == 0 &&
               l_PinMetadata->type != PinType::Execution &&
               l_PinMetadata->type != PinType::Handle &&
+              l_PinMetadata->type != PinType::Struct &&
               l_PinMetadata->type != PinType::Dynamic) {
             const float l_WidgetStartX =
                 l_Compact
@@ -2701,6 +2758,39 @@ namespace Low {
               l_RenderedWidget = true;
             }
 
+            else if (l_PinMetadata->type == PinType::Enum &&
+                     (u64)l_PinMetadata->handle_type != 0) {
+              Util::RTTI::EnumInfo &l_EnumInfo =
+                  Util::get_enum_info(l_PinMetadata->handle_type);
+              u8 l_CurrentValue =
+                  (u8)l_PinMetadata->default_value.as_u32();
+
+              ImGui::SetCursorScreenPos(
+                  ImVec2(l_ValueMin.x, l_PinAnchor.y - 13.0f));
+              ImGui::PushItemWidth(l_ValueMax.x - l_ValueMin.x);
+              if (ImGui::BeginCombo(
+                      "##defaultvalue",
+                      l_EnumInfo.entry_name(l_CurrentValue).c_str())) {
+                for (u32 i = 0; i < l_EnumInfo.entries.size(); ++i) {
+                  const Util::RTTI::EnumEntryInfo &i_Entry =
+                      l_EnumInfo.entries[i];
+                  if (ImGui::Selectable(
+                          i_Entry.name.c_str(),
+                          l_CurrentValue == i_Entry.value)) {
+                    l_PinMetadata->default_value =
+                        Util::Variant((u32)i_Entry.value);
+                  }
+                }
+                ImGui::EndCombo();
+              }
+              if (p_Context.state &&
+                  (ImGui::IsItemHovered() || ImGui::IsItemActive())) {
+                p_Context.state->interacting_with_widget = true;
+              }
+              ImGui::PopItemWidth();
+              l_RenderedWidget = true;
+            }
+
             else if (l_PinMetadata->type == PinType::Number) {
               ImGui::SetCursorScreenPos(ImVec2(
                   l_ValueMin.x,
@@ -2721,6 +2811,20 @@ namespace Low {
               l_RenderedWidget = true;
             }
             ImGui::PopID();
+          }
+        }
+
+        if (graph && l_NodeClass) {
+          const float l_BelowPinsHeight =
+              l_NodeClass->get_below_pins_height(*graph, p_Node.id);
+          if (l_BelowPinsHeight > 0.0f) {
+            const float l_ContentBottom =
+                p_ScreenMax.y - (l_Compact ? 14.0f : 14.0f);
+            l_NodeClass->render_below_pins(
+                *graph, p_Node.id, p_Context,
+                ImVec2(p_ScreenMin.x,
+                      l_ContentBottom - l_BelowPinsHeight),
+                ImVec2(p_ScreenMax.x, l_ContentBottom));
           }
         }
       }
@@ -2775,10 +2879,20 @@ namespace Low {
             l_Compact ? 8.0f * p_Context.canvas.m_Zoom
                       : title_height * p_Context.canvas.m_Zoom +
                             12.0f * p_Context.canvas.m_Zoom;
+        const float l_AbovePinsHeight =
+            l_NodeClass
+                ? l_NodeClass->get_above_pins_height(*graph, p_Node.id)
+                : 0.0f;
+        const float l_BelowPinsHeight =
+            l_NodeClass
+                ? l_NodeClass->get_below_pins_height(*graph, p_Node.id)
+                : 0.0f;
         const float l_ContentTop = p_ScreenMin.y + l_HeaderHeight +
-                                   (l_Compact ? 14.0f : 4.0f);
-        const float l_ContentBottom =
-            p_ScreenMax.y - (l_Compact ? 14.0f : 14.0f);
+                                   (l_Compact ? 14.0f : 4.0f) +
+                                   l_AbovePinsHeight;
+        const float l_ContentBottom = p_ScreenMax.y -
+                                      (l_Compact ? 14.0f : 14.0f) -
+                                      l_BelowPinsHeight;
         const u32 l_RowCount =
             LOW_MATH_MAX(l_InputCount, l_OutputCount);
         float l_Y = (l_ContentTop + l_ContentBottom) * 0.5f;
@@ -3048,6 +3162,10 @@ namespace Low {
           return "String";
         case PinType::Handle:
           return "Handle";
+        case PinType::Struct:
+          return "Struct";
+        case PinType::Enum:
+          return "Enum";
         case PinType::Dynamic:
           return "Dynamic";
         }
@@ -3083,6 +3201,12 @@ namespace Low {
         }
         if (p_Type == "Handle") {
           return PinType::Handle;
+        }
+        if (p_Type == "Struct") {
+          return PinType::Struct;
+        }
+        if (p_Type == "Enum") {
+          return PinType::Enum;
         }
         if (p_Type == "Dynamic") {
           return PinType::Dynamic;
@@ -3150,6 +3274,8 @@ namespace Low {
                      : Util::VariantType::String;
         case PinType::Handle:
           return Util::VariantType::Handle;
+        case PinType::Enum:
+          return Util::VariantType::UInt32;
         default:
           return Util::VariantType::String;
         }
@@ -3192,6 +3318,15 @@ namespace Low {
           return Util::Variant(Util::String(""));
         case PinType::Handle:
           return Util::Variant::from_handle(Util::Handle());
+        case PinType::Enum:
+          if ((u64)p_Pin.handle_type != 0) {
+            Util::RTTI::EnumInfo &l_EnumInfo =
+                Util::get_enum_info(p_Pin.handle_type);
+            if (!l_EnumInfo.entries.empty()) {
+              return Util::Variant((u32)l_EnumInfo.entries[0].value);
+            }
+          }
+          return Util::Variant((u32)0);
         }
 
         return Util::Variant(Util::String(""));
@@ -3271,6 +3406,32 @@ namespace Low {
         l_Pin.display_name = p_DisplayName;
         l_Pin.type = PinType::Handle;
         l_Pin.handle_type = p_HandleType;
+        l_Pin.container_type = p_ContainerType;
+        l_Pin.default_value = default_value_for_pin(l_Pin);
+        return l_Pin;
+      }
+
+      Pin make_struct_pin_metadata(Util::String p_DisplayName,
+                                   Util::TypeIdentifier p_StructType,
+                                   PinContainerType p_ContainerType)
+      {
+        Pin l_Pin;
+        l_Pin.display_name = p_DisplayName;
+        l_Pin.type = PinType::Struct;
+        l_Pin.handle_type = p_StructType;
+        l_Pin.container_type = p_ContainerType;
+        l_Pin.default_value = default_value_for_pin(l_Pin);
+        return l_Pin;
+      }
+
+      Pin make_enum_pin_metadata(Util::String p_DisplayName,
+                                 Util::TypeIdentifier p_EnumType,
+                                 PinContainerType p_ContainerType)
+      {
+        Pin l_Pin;
+        l_Pin.display_name = p_DisplayName;
+        l_Pin.type = PinType::Enum;
+        l_Pin.handle_type = p_EnumType;
         l_Pin.container_type = p_ContainerType;
         l_Pin.default_value = default_value_for_pin(l_Pin);
         return l_Pin;

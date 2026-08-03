@@ -24,6 +24,9 @@ namespace Low {
       static const Util::Name l_Skeleton = N(skeleton);
       static const Util::Name l_Person = N(person);
       static const Util::Name l_Route = N(route);
+      static const Util::Name l_Crosshair = N(crosshair);
+      static const Util::Name l_Waypoints = N(waypoints);
+      static const Util::Name l_MousePointer = N(mouse_pointer);
 
       if (p_IconName == l_Cube) {
         return LOW_EDITOR_ICON_CUBE;
@@ -65,6 +68,12 @@ namespace Low {
         return LOW_EDITOR_ICON_PERSON;
       } else if (p_IconName == l_Route) {
         return LOW_EDITOR_ICON_ROUTE;
+      } else if (p_IconName == l_Crosshair) {
+        return LOW_EDITOR_ICON_CROSSHAIR;
+      } else if (p_IconName == l_Waypoints) {
+        return LOW_EDITOR_ICON_WAYPOINTS;
+      } else if (p_IconName == l_MousePointer) {
+        return LOW_EDITOR_ICON_MOUSE_POINTER;
       }
 
       return LOW_EDITOR_ICON_MISSING;

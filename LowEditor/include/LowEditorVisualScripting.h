@@ -32,6 +32,8 @@ namespace Low {
         Quaternion,
         String,
         Handle,
+        Struct,
+        Enum,
         Dynamic
       };
 
@@ -363,6 +365,32 @@ namespace Low {
           (void)p_Graph;
           (void)p_NodeId;
           (void)p_Schema;
+        }
+
+        virtual float get_above_pins_height(const Graph &,
+                                            NodeId) const
+        {
+          return 0.0f;
+        }
+
+        virtual float get_below_pins_height(const Graph &,
+                                            NodeId) const
+        {
+          return 0.0f;
+        }
+
+        virtual void render_above_pins(Graph &, NodeId,
+                                       NodeGraphEditorContext &,
+                                       const ImVec2 &,
+                                       const ImVec2 &) const
+        {
+        }
+
+        virtual void render_below_pins(Graph &, NodeId,
+                                       NodeGraphEditorContext &,
+                                       const ImVec2 &,
+                                       const ImVec2 &) const
+        {
         }
 
         virtual void compile(Graph &p_Graph, NodeId p_NodeId,
@@ -704,6 +732,16 @@ namespace Low {
       LOW_EDITOR_API Pin make_handle_pin_metadata(
           Util::String p_DisplayName,
           Util::TypeIdentifier p_HandleType = Util::TypeIdentifier(),
+          PinContainerType p_ContainerType = PinContainerType::None);
+
+      LOW_EDITOR_API Pin make_struct_pin_metadata(
+          Util::String p_DisplayName,
+          Util::TypeIdentifier p_StructType = Util::TypeIdentifier(),
+          PinContainerType p_ContainerType = PinContainerType::None);
+
+      LOW_EDITOR_API Pin make_enum_pin_metadata(
+          Util::String p_DisplayName,
+          Util::TypeIdentifier p_EnumType = Util::TypeIdentifier(),
           PinContainerType p_ContainerType = PinContainerType::None);
 
       LOW_EDITOR_API Pin make_vector2_pin_metadata(

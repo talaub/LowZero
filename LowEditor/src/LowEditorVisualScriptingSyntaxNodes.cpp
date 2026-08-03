@@ -66,6 +66,10 @@ namespace Low {
               return PinType::String;
             case TypeKind::Handle:
               return PinType::Handle;
+            case TypeKind::Struct:
+              return PinType::Struct;
+            case TypeKind::Enum:
+              return PinType::Enum;
             default:
               return PinType::Dynamic;
             }

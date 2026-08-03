@@ -85,14 +85,16 @@ namespace Low {
         Bounds bounds;
       };
 
-      LOW_STRUCT(scripting, bind_namespace = "Navigation")
+      LOW_STRUCT(scripting, bind_namespace = "Navigation",
+                 vs = (category = "Navigation", icon = "route"))
       struct NearestPointResult
       {
         LOW_FIELD()
         Math::Vector3 position = Math::Vector3(0.0f);
       };
 
-      LOW_STRUCT(scripting, bind_namespace = "Navigation")
+      LOW_STRUCT(scripting, bind_namespace = "Navigation",
+                 vs = (category = "Navigation", icon = "waypoints"))
       struct PathResult
       {
         LOW_FIELD()
@@ -254,7 +256,8 @@ namespace Low {
                               const Math::Vector3 &p_HalfExtents,
                               LOW_PARAM(out)
                                   NearestPointResult *p_Result);
-      LOW_FUNCTION(scripting, bind_namespace = "Navigation")
+      LOW_FUNCTION(scripting, bind_namespace = "Navigation",
+                   vs = (category = "Navigation", icon = "waypoints"))
       LOW_CORE_API
       bool find_path(const Math::Vector3 &p_Position,
                      const Math::Vector3 &p_End,

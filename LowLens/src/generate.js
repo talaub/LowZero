@@ -294,27 +294,36 @@ function generate_function_registration(p_Fn) {
     t += `    }\n`;
   }
 
-  const l_Vs = p_Fn.macro_args.vs;
-  if (l_Vs) {
-    t += `\n`;
-    t += `    l_FunctionInfo.visual_script_info.exposed = true;\n`;
-    if (typeof l_Vs === 'object') {
-      if (l_Vs.icon) {
-        t += `    l_FunctionInfo.visual_script_info.icon_name = N(${l_Vs.icon});\n`;
-      }
-      if (l_Vs.category) {
-        t += `    l_FunctionInfo.visual_script_info.category = N(${l_Vs.category});\n`;
-      }
-      if (Array.isArray(l_Vs.color) && l_Vs.color.length === 3) {
-        const [r, g, b] = l_Vs.color;
-        t += `    l_FunctionInfo.visual_script_info.color = {${r}f, ${g}f, ${b}f};\n`;
-      }
-    }
-  }
+  t += generate_visual_script_info(p_Fn.macro_args.vs,
+                                   'l_FunctionInfo.visual_script_info');
 
   t += `\n`;
   t += `    Low::Core::Scripting::register_function(l_FunctionInfo);\n`;
   t += `  }\n`;
+  return t;
+}
+
+// Emits the `<p_VarName>.exposed/category/color/icon_name` assignments
+// from a parsed `vs = (category = "...", icon = "...")` macro arg block.
+// Shared by LOW_FUNCTION, LOW_ENUM and LOW_STRUCT registration.
+function generate_visual_script_info(p_Vs, p_VarName) {
+  if (!p_Vs) return '';
+
+  let t = '';
+  t += `\n`;
+  t += `    ${p_VarName}.exposed = true;\n`;
+  if (typeof p_Vs === 'object') {
+    if (p_Vs.icon) {
+      t += `    ${p_VarName}.icon_name = N(${p_Vs.icon});\n`;
+    }
+    if (p_Vs.category) {
+      t += `    ${p_VarName}.category = N(${p_Vs.category});\n`;
+    }
+    if (Array.isArray(p_Vs.color) && p_Vs.color.length === 3) {
+      const [r, g, b] = p_Vs.color;
+      t += `    ${p_VarName}.color = {${r}f, ${g}f, ${b}f};\n`;
+    }
+  }
   return t;
 }
 
@@ -572,6 +581,8 @@ function generate_enum_scripting_registration(p_Enum) {
   t += `    l_ScriptingInfo.identifier = ${l_HelperNs}::IDENTIFIER;\n`;
   t += `    l_ScriptingInfo.entry_name_ptr = (void*)&${l_HelperNs}::entry_name;\n`;
   t += `    l_ScriptingInfo.entry_value_ptr = (void*)&${l_HelperNs}::entry_value;\n`;
+  t += generate_visual_script_info(p_Enum.macro_args.vs,
+                                   'l_ScriptingInfo.visual_script_info');
   t += `    Low::Core::Scripting::register_enum(l_ScriptingInfo);\n`;
   t += `  }\n`;
   return t;
@@ -773,6 +784,8 @@ function generate_struct_scripting_registration(p_Struct) {
   t += `    l_ScriptingInfo.copy_constructor = (void*)&${l_HelperNs}::as_copy_construct;\n`;
   t += `    l_ScriptingInfo.destructor = (void*)&${l_HelperNs}::as_destruct;\n`;
   t += `    l_ScriptingInfo.assign = (void*)&${l_HelperNs}::as_assign;\n`;
+  t += generate_visual_script_info(p_Struct.macro_args.vs,
+                                   'l_ScriptingInfo.visual_script_info');
   t += `    Low::Core::Scripting::register_struct(l_ScriptingInfo);\n`;
   t += `  }\n`;
   return t;

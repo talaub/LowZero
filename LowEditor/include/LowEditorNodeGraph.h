@@ -104,6 +104,7 @@ namespace Low {
       SameDirection,
       PinNodeMismatch,
       DuplicateLink,
+      NotConnectable,
       CustomRejected
     };
 
@@ -147,6 +148,7 @@ namespace Low {
       PinId id;
       NodeId node;
       PinDirection direction = PinDirection::Input;
+      bool connectable = true;
 
       bool is_valid() const
       {
@@ -627,6 +629,8 @@ namespace Low {
         return "PinNodeMismatch";
       case NodeGraphValidationResult::DuplicateLink:
         return "DuplicateLink";
+      case NodeGraphValidationResult::NotConnectable:
+        return "NotConnectable";
       case NodeGraphValidationResult::CustomRejected:
         return "CustomRejected";
       }
@@ -726,6 +730,12 @@ namespace Low {
       if (!l_StartPin || !l_EndPin) {
         l_Result.validation_result =
             NodeGraphValidationResult::InvalidPin;
+        return l_Result;
+      }
+
+      if (!l_StartPin->connectable || !l_EndPin->connectable) {
+        l_Result.validation_result =
+            NodeGraphValidationResult::NotConnectable;
         return l_Result;
       }
 

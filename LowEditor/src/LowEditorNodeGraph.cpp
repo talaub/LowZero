@@ -305,6 +305,10 @@ namespace Low {
               p_Context.graph.get_node_pins(i_Node.id);
 
           for (Pin *i_Pin : l_NodePins) {
+            if (!i_Pin->connectable) {
+              continue;
+            }
+
             ImVec2 l_PinAnchor;
             if (!l_NodeRenderer->get_pin_anchor(
                     p_Context, i_Node, *i_Pin, l_ScreenMin,

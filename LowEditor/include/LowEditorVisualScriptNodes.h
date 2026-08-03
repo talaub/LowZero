@@ -40,6 +40,14 @@ namespace Low {
         LOW_EDITOR_API void register_nodes(Graph &p_Graph);
       }
 
+      namespace EnumNodes {
+        LOW_EDITOR_API void register_nodes(Graph &p_Graph);
+      } // namespace EnumNodes
+
+      namespace StructNodes {
+        LOW_EDITOR_API void register_nodes(Graph &p_Graph);
+      } // namespace StructNodes
+
       namespace UiControllerNodes {
         enum class InteractionType
         {
