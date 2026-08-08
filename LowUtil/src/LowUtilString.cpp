@@ -76,7 +76,8 @@ namespace Low {
           Util::String l_Friendly;
           for (u32 i = 0; i < l_String.size(); ++i) {
             if (i) {
-              if (islower(l_String[i - 1]) && !islower(l_String[i])) {
+              if (islower(l_String[i - 1]) &&
+                  !islower(l_String[i]) && l_String[i] != ' ') {
                 l_Friendly += " ";
               }
             }

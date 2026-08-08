@@ -120,8 +120,7 @@ namespace Low {
         bool is_valid() const
         {
           return !name.empty() && type != PinType::Execution &&
-                 type != PinType::Dynamic &&
-                 container_type == PinContainerType::None;
+                 type != PinType::Dynamic;
         }
       };
 
@@ -759,6 +758,11 @@ namespace Low {
       LOW_EDITOR_API Util::String
       make_vs_identifier(const Util::String &p_Value,
                          const Util::String &p_Fallback);
+
+      LOW_EDITOR_API Util::String pin_type_to_script_type_string(
+          PinType p_Type, NumberSubtype p_NumberSubtype,
+          StringSubtype p_StringSubtype,
+          Util::TypeIdentifier p_HandleType);
     } // namespace VisualScript
   } // namespace Editor
 } // namespace Low

@@ -356,12 +356,179 @@ namespace Low {
         return l_EnumInfo->entry_value(
             p_Node["enum_value"].as<Name>());
       }
+      template <typename T>
+      static void serialize_scalar_list(Node &p_Node,
+                                        void *p_FieldPtr)
+      {
+        auto &l_List = *static_cast<List<T> *>(p_FieldPtr);
+        p_Node.ensure_seq();
+        for (const T &i_Value : l_List) {
+          p_Node.push_back(i_Value);
+        }
+      }
+
+      template <typename T>
+      static void deserialize_scalar_list(Node &p_Node,
+                                          void *p_FieldPtr)
+      {
+        auto &l_List = *static_cast<List<T> *>(p_FieldPtr);
+        l_List.clear();
+        l_List.reserve(p_Node.size());
+        for (std::size_t i = 0; i < p_Node.size(); ++i) {
+          l_List.push_back(p_Node[i].as<T>());
+        }
+      }
+
+      static void serialize_list_field(Node &p_Node,
+                                       const RTTI::StructFieldInfo &p_Field,
+                                       void *l_FieldPtr)
+      {
+        switch (p_Field.type) {
+        case RTTI::PropertyType::FLOAT:
+          serialize_scalar_list<float>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::BOOL:
+          serialize_scalar_list<bool>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::INT:
+          serialize_scalar_list<int>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::UINT8:
+          serialize_scalar_list<u8>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::UINT16:
+          serialize_scalar_list<u16>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::UINT32:
+          serialize_scalar_list<u32>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::UINT64:
+          serialize_scalar_list<u64>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::NAME:
+          serialize_scalar_list<Name>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::STRING:
+          serialize_scalar_list<String>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::VECTOR2:
+          serialize_scalar_list<Math::Vector2>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::VECTOR3:
+          serialize_scalar_list<Math::Vector3>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::VECTOR4:
+          serialize_scalar_list<Math::Vector4>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::QUATERNION:
+          serialize_scalar_list<Math::Quaternion>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::HANDLE: {
+          auto &l_List = *static_cast<List<Handle> *>(l_FieldPtr);
+          p_Node.ensure_seq();
+          for (Handle &i_Handle : l_List) {
+            Node l_Entry;
+            serialize_handle(l_Entry, i_Handle);
+            p_Node.push_back(l_Entry);
+          }
+          break;
+        }
+        case RTTI::PropertyType::ENUM: {
+          auto &l_List = *static_cast<List<u8> *>(l_FieldPtr);
+          u16 l_EnumId = get_enum_id(p_Field.referenced_type);
+          p_Node.ensure_seq();
+          for (u8 i_Value : l_List) {
+            Node l_Entry;
+            serialize_enum(l_Entry, l_EnumId, i_Value);
+            p_Node.push_back(l_Entry);
+          }
+          break;
+        }
+        default:
+          break;
+        }
+      }
+
+      static void deserialize_list_field(Node &p_Node,
+                                         const RTTI::StructFieldInfo &p_Field,
+                                         void *l_FieldPtr)
+      {
+        switch (p_Field.type) {
+        case RTTI::PropertyType::FLOAT:
+          deserialize_scalar_list<float>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::BOOL:
+          deserialize_scalar_list<bool>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::INT:
+          deserialize_scalar_list<int>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::UINT8:
+          deserialize_scalar_list<u8>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::UINT16:
+          deserialize_scalar_list<u16>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::UINT32:
+          deserialize_scalar_list<u32>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::UINT64:
+          deserialize_scalar_list<u64>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::NAME:
+          deserialize_scalar_list<Name>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::STRING:
+          deserialize_scalar_list<String>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::VECTOR2:
+          deserialize_scalar_list<Math::Vector2>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::VECTOR3:
+          deserialize_scalar_list<Math::Vector3>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::VECTOR4:
+          deserialize_scalar_list<Math::Vector4>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::QUATERNION:
+          deserialize_scalar_list<Math::Quaternion>(p_Node, l_FieldPtr);
+          break;
+        case RTTI::PropertyType::HANDLE: {
+          auto &l_List = *static_cast<List<Handle> *>(l_FieldPtr);
+          l_List.clear();
+          l_List.reserve(p_Node.size());
+          for (std::size_t i = 0; i < p_Node.size(); ++i) {
+            Node l_Entry = p_Node[i];
+            l_List.push_back(deserialize_handle(l_Entry));
+          }
+          break;
+        }
+        case RTTI::PropertyType::ENUM: {
+          auto &l_List = *static_cast<List<u8> *>(l_FieldPtr);
+          l_List.clear();
+          l_List.reserve(p_Node.size());
+          for (std::size_t i = 0; i < p_Node.size(); ++i) {
+            Node l_Entry = p_Node[i];
+            l_List.push_back(deserialize_enum(l_Entry));
+          }
+          break;
+        }
+        default:
+          break;
+        }
+      }
+
       static void serialize_field(Node &p_Node,
                                     const RTTI::StructFieldInfo &p_Field,
                                     void *p_Instance)
       {
         void *l_FieldPtr =
             static_cast<char *>(p_Instance) + p_Field.offset;
+
+        if (p_Field.container == RTTI::ContainerType::LIST) {
+          serialize_list_field(p_Node, p_Field, l_FieldPtr);
+          return;
+        }
 
         switch (p_Field.type) {
         case RTTI::PropertyType::FLOAT:
@@ -427,6 +594,11 @@ namespace Low {
       {
         void *l_FieldPtr =
             static_cast<char *>(p_Instance) + p_Field.offset;
+
+        if (p_Field.container == RTTI::ContainerType::LIST) {
+          deserialize_list_field(p_Node, p_Field, l_FieldPtr);
+          return;
+        }
 
         switch (p_Field.type) {
         case RTTI::PropertyType::FLOAT:

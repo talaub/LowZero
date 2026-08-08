@@ -6,6 +6,7 @@
 #include "LowEditorFonts.h"
 #include "LowEditorGui.h"
 #include "LowEditorMetadata.h"
+#include "LowEditorPropertyEditors.h"
 #include "IconsLucide.h"
 #include "LowEditorThemes.h"
 #include "LowEditorVisualScriptBuilder.h"
@@ -60,6 +61,7 @@ namespace Low {
           FunctionNodes::register_nodes(p_Graph);
           EnumNodes::register_nodes(p_Graph);
           StructNodes::register_nodes(p_Graph);
+          ArrayNodes::register_nodes(p_Graph);
         }
 
         static ContextRegistry *g_ContextRegistry = nullptr;
@@ -526,6 +528,10 @@ namespace Low {
             return "Vector4";
           case PinType::Quaternion:
             return "Quaternion";
+          case PinType::Struct:
+            return "Struct";
+          case PinType::Enum:
+            return "Enum";
           default:
             return "Unsupported";
           }
@@ -562,6 +568,9 @@ namespace Low {
           case PinType::Handle:
             return default_value_for_pin(
                 make_handle_pin_metadata("", p_HandleType));
+          case PinType::Enum:
+            return default_value_for_pin(
+                make_enum_pin_metadata("", p_HandleType));
           case PinType::Vector2: {
             Pin l_Pin;
             l_Pin.type = PinType::Vector2;
@@ -590,6 +599,11 @@ namespace Low {
         static bool
         render_variable_default_editor(Variable &p_Variable)
         {
+          if (p_Variable.container_type == PinContainerType::List) {
+            ImGui::TextDisabled("No default editor");
+            return false;
+          }
+
           switch (p_Variable.type) {
           case PinType::Bool: {
             return Gui::ToggleButtonSimple(
@@ -642,6 +656,20 @@ namespace Low {
           case PinType::Vector3:
             return Base::VariantEdit("##default",
                                      p_Variable.default_value, true);
+          case PinType::Enum: {
+            if ((u64)p_Variable.handle_type == 0) {
+              ImGui::TextDisabled("No default editor");
+              return false;
+            }
+            u8 l_Value = (u8)p_Variable.default_value.as_u32();
+            if (PropertyEditors::render_enum_selector(
+                    Util::get_enum_id(p_Variable.handle_type),
+                    &l_Value, "", false)) {
+              p_Variable.default_value = Util::Variant((u32)l_Value);
+              return true;
+            }
+            return false;
+          }
           default:
             ImGui::TextDisabled("No default editor");
             return false;
@@ -651,9 +679,10 @@ namespace Low {
         static void render_add_variable_form(Editor &p_Editor)
         {
           static const PinType l_TypeOptions[] = {
-              PinType::Bool,    PinType::Number,    PinType::String,
-              PinType::Handle,  PinType::Vector2,   PinType::Vector3,
-              PinType::Vector4, PinType::Quaternion};
+              PinType::Bool,   PinType::Number,     PinType::String,
+              PinType::Handle, PinType::Vector2,    PinType::Vector3,
+              PinType::Vector4, PinType::Quaternion, PinType::Struct,
+              PinType::Enum};
 
           Gui::InputText("##new_variable_name",
                          p_Editor.new_variable_name, 128,
@@ -701,6 +730,84 @@ namespace Low {
             }
           }
 
+          if (p_Editor.new_variable_type == PinType::Struct) {
+            Util::String l_CurrentTypeLabel =
+                ((u64)p_Editor.new_variable_handle_type) != 0
+                    ? (Util::String)p_Editor.new_variable_handle_type
+                    : Util::String("Select struct type");
+            if (ImGui::BeginCombo("##new_variable_struct_type",
+                                  l_CurrentTypeLabel.c_str())) {
+              for (const Core::Scripting::StructInfo &i_Struct :
+                   Core::Scripting::get_registered_structs()) {
+                const bool l_Selected =
+                    (u64)p_Editor.new_variable_handle_type ==
+                    (u64)i_Struct.identifier;
+                if (ImGui::Selectable(i_Struct.bind_name.c_str(),
+                                      l_Selected)) {
+                  p_Editor.new_variable_handle_type =
+                      i_Struct.identifier;
+                }
+                if (l_Selected) {
+                  ImGui::SetItemDefaultFocus();
+                }
+              }
+              ImGui::EndCombo();
+            }
+          }
+
+          if (p_Editor.new_variable_type == PinType::Enum) {
+            Util::String l_CurrentTypeLabel =
+                ((u64)p_Editor.new_variable_handle_type) != 0
+                    ? (Util::String)p_Editor.new_variable_handle_type
+                    : Util::String("Select enum type");
+            if (ImGui::BeginCombo("##new_variable_enum_type",
+                                  l_CurrentTypeLabel.c_str())) {
+              for (const Core::Scripting::EnumInfo &i_Enum :
+                   Core::Scripting::get_registered_enums()) {
+                const bool l_Selected =
+                    (u64)p_Editor.new_variable_handle_type ==
+                    (u64)i_Enum.identifier;
+                if (ImGui::Selectable(i_Enum.bind_name.c_str(),
+                                      l_Selected)) {
+                  p_Editor.new_variable_handle_type =
+                      i_Enum.identifier;
+                }
+                if (l_Selected) {
+                  ImGui::SetItemDefaultFocus();
+                }
+              }
+              ImGui::EndCombo();
+            }
+          }
+
+          static const PinContainerType l_ContainerTypeOptions[] = {
+              PinContainerType::None, PinContainerType::List};
+
+          const char *l_ContainerTypeLabel =
+              p_Editor.new_variable_container_type ==
+                      PinContainerType::List
+                  ? "List"
+                  : "Single";
+          if (ImGui::BeginCombo("##new_variable_container_type",
+                                l_ContainerTypeLabel)) {
+            for (PinContainerType i_ContainerType :
+                 l_ContainerTypeOptions) {
+              const bool l_Selected =
+                  p_Editor.new_variable_container_type ==
+                  i_ContainerType;
+              const char *l_Label =
+                  i_ContainerType == PinContainerType::List ? "List"
+                                                            : "Single";
+              if (ImGui::Selectable(l_Label, l_Selected)) {
+                p_Editor.new_variable_container_type = i_ContainerType;
+              }
+              if (l_Selected) {
+                ImGui::SetItemDefaultFocus();
+              }
+            }
+            ImGui::EndCombo();
+          }
+
           const bool l_AddPressed = Gui::AddButton("Add Variable");
           if (!l_AddPressed) {
             return;
@@ -723,6 +830,8 @@ namespace Low {
           l_Variable.string_subtype =
               p_Editor.new_variable_string_subtype;
           l_Variable.handle_type = p_Editor.new_variable_handle_type;
+          l_Variable.container_type =
+              p_Editor.new_variable_container_type;
           l_Variable.default_value = make_default_variable_value(
               l_Variable.type, l_Variable.number_subtype,
               l_Variable.string_subtype, l_Variable.handle_type);
@@ -750,6 +859,10 @@ namespace Low {
           case PinType::Vector4:
           case PinType::Quaternion:
             return IM_COL32(76, 200, 196, 255);
+          case PinType::Struct:
+            return IM_COL32(189, 128, 53, 255);
+          case PinType::Enum:
+            return IM_COL32(150, 100, 200, 255);
           default:
             return IM_COL32(120, 120, 120, 255);
           }
@@ -772,6 +885,10 @@ namespace Low {
           case PinType::Vector4:
           case PinType::Quaternion:
             return ICON_LC_ROTATE_3D;
+          case PinType::Struct:
+            return ICON_LC_LIST_TREE;
+          case PinType::Enum:
+            return ICON_LC_LIST;
           default:
             return ICON_LC_HASH;
           }
@@ -888,13 +1005,18 @@ namespace Low {
                 ImGui::CalcTextSize(l_Icon).x;
 
             // Variable name
+            Util::String l_DisplayName = i_Variable.name;
+            if (i_Variable.container_type ==
+                PinContainerType::List) {
+              l_DisplayName += "[]";
+            }
             const ImVec2 l_NamePos(
                 l_IconPos.x + l_IconW + 5.0f, l_MidY);
             const ImVec2 l_NameClip(
                 l_End.x - l_DeleteW - 4.0f, l_End.y);
             ImGui::RenderTextEllipsis(
                 l_DrawList, l_NamePos, l_NameClip,
-                l_NameClip.x, i_Variable.name.c_str(),
+                l_NameClip.x, l_DisplayName.c_str(),
                 nullptr, nullptr);
 
             // Trash icon
@@ -914,7 +1036,9 @@ namespace Low {
               ImGui::Indent(8.0f);
               ImGui::Dummy(ImVec2(0.0f, 3.0f));
 
-              if (i_Variable.type == PinType::Handle &&
+              if ((i_Variable.type == PinType::Handle ||
+                  i_Variable.type == PinType::Struct ||
+                  i_Variable.type == PinType::Enum) &&
                   ((u64)i_Variable.handle_type) != 0) {
                 ImGui::TextDisabled(
                     "%s",

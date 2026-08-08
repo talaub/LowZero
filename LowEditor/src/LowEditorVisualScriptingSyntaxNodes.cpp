@@ -39,6 +39,36 @@ namespace Low {
                     l_Node->function_name);
           }
 
+          static Util::String global_function_call_temp_var_name(
+              NodeId p_NodeId, const Util::String &p_PinDisplayName)
+          {
+            Util::StringBuilder l_Name;
+            l_Name.append("__fn_call_")
+                .append((u64)p_NodeId.value)
+                .append("_");
+            if (p_PinDisplayName == "Return value") {
+              l_Name.append("ret");
+            } else {
+              l_Name.append(p_PinDisplayName);
+            }
+            return l_Name.get();
+          }
+
+          static Util::String global_function_call_pin_type_string(
+              const Pin &p_Pin)
+          {
+            Util::String l_Type = pin_type_to_script_type_string(
+                p_Pin.type, p_Pin.number_subtype,
+                p_Pin.string_subtype, p_Pin.handle_type);
+            if (l_Type.empty()) {
+              return l_Type;
+            }
+            if (p_Pin.container_type == PinContainerType::List) {
+              l_Type = "array<" + l_Type + ">";
+            }
+            return l_Type;
+          }
+
           static PinType scripting_type_to_pin_type(
               const Core::Scripting::TypeInfo &p_Type)
           {
@@ -909,7 +939,7 @@ namespace Low {
 
                   Pin i_Metadata =
                       make_pin_metadata_from_function_parameter_info(
-                          i_Param, prettify_name(i_Param.name));
+                          i_Param, i_Param.name.c_str());
 
                   p_Graph.add_pin(i_ParamPin, i_Metadata);
                 } else if (i_Param.type.direction ==
@@ -919,7 +949,7 @@ namespace Low {
 
                   Pin i_Metadata =
                       make_pin_metadata_from_function_parameter_info(
-                          i_Param, prettify_name(i_Param.name));
+                          i_Param, i_Param.name.c_str());
 
                   p_Graph.add_pin(i_ParamPin, i_Metadata);
                 }

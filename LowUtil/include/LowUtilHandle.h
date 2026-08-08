@@ -164,6 +164,14 @@ namespace Low {
         };
       }
 
+      namespace ContainerType {
+        enum Enum
+        {
+          NONE,
+          LIST
+        };
+      }
+
       typedef Util::Handle *(*LivingInstancesGetter)();
 
       struct PropertyInfoBase
@@ -250,6 +258,7 @@ namespace Low {
       {
         Name name;
         u32 type;
+        ContainerType::Enum container = ContainerType::NONE;
         TypeIdentifier referenced_type;
         String as_type;
         size_t offset;

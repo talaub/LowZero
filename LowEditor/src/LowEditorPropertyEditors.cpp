@@ -1993,6 +1993,290 @@ namespace Low {
         ImGui::PopID();
         return l_Result;
       }
+
+      static bool render_struct_field_editor(
+          const Util::RTTI::StructFieldInfo &p_Field, void *p_FieldPtr)
+      {
+        Util::String l_Label = prettify_name(p_Field.name);
+
+        if (p_Field.container == Util::RTTI::ContainerType::LIST) {
+          switch (p_Field.type) {
+          case Util::RTTI::PropertyType::BOOL:
+            return render_list_editor<bool>(
+                l_Label, *reinterpret_cast<Util::List<bool> *>(p_FieldPtr),
+                [](Util::String p_L, bool &p_V) {
+                  return render_checkbox_bool_editor(p_L, p_V, false);
+                });
+          case Util::RTTI::PropertyType::FLOAT:
+            return render_list_editor<float>(
+                l_Label,
+                *reinterpret_cast<Util::List<float> *>(p_FieldPtr),
+                [](Util::String p_L, float &p_V) {
+                  return render_float_editor(p_L, p_V, false);
+                });
+          case Util::RTTI::PropertyType::STRING:
+            return render_list_editor<Util::String>(
+                l_Label,
+                *reinterpret_cast<Util::List<Util::String> *>(
+                    p_FieldPtr),
+                [](Util::String p_L, Util::String &p_V) {
+                  return render_string_editor(p_L, p_V, false, false);
+                });
+          case Util::RTTI::PropertyType::NAME:
+            return render_list_editor<Util::Name>(
+                l_Label,
+                *reinterpret_cast<Util::List<Util::Name> *>(
+                    p_FieldPtr),
+                [](Util::String p_L, Util::Name &p_V) {
+                  return render_name_editor(p_L, p_V, false);
+                });
+          case Util::RTTI::PropertyType::VECTOR2:
+            return render_list_editor<Math::Vector2>(
+                l_Label,
+                *reinterpret_cast<Util::List<Math::Vector2> *>(
+                    p_FieldPtr),
+                [](Util::String p_L, Math::Vector2 &p_V) {
+                  return render_vector2_editor(p_L, p_V, false);
+                });
+          case Util::RTTI::PropertyType::VECTOR3:
+          case Util::RTTI::PropertyType::COLORRGB:
+            return render_list_editor<Math::Vector3>(
+                l_Label,
+                *reinterpret_cast<Util::List<Math::Vector3> *>(
+                    p_FieldPtr),
+                [](Util::String p_L, Math::Vector3 &p_V) {
+                  return render_vector3_editor(p_L, p_V, false);
+                });
+          case Util::RTTI::PropertyType::QUATERNION:
+            return render_list_editor<Math::Quaternion>(
+                l_Label,
+                *reinterpret_cast<Util::List<Math::Quaternion> *>(
+                    p_FieldPtr),
+                [](Util::String p_L, Math::Quaternion &p_V) {
+                  return render_quaternion_editor(p_L, p_V, false);
+                });
+          case Util::RTTI::PropertyType::VECTOR4:
+            return render_list_editor<Math::Vector4>(
+                l_Label,
+                *reinterpret_cast<Util::List<Math::Vector4> *>(
+                    p_FieldPtr),
+                [](Util::String p_L, Math::Vector4 &p_V) {
+                  return render_color_selector(
+                      p_L, reinterpret_cast<Math::Color *>(&p_V));
+                });
+          case Util::RTTI::PropertyType::COLOR:
+            return render_list_editor<Math::Color>(
+                l_Label,
+                *reinterpret_cast<Util::List<Math::Color> *>(
+                    p_FieldPtr),
+                [](Util::String p_L, Math::Color &p_V) {
+                  return render_color_selector(p_L, &p_V);
+                });
+          case Util::RTTI::PropertyType::INT:
+          case Util::RTTI::PropertyType::UINT32:
+            return render_list_editor<u32>(
+                l_Label,
+                *reinterpret_cast<Util::List<u32> *>(p_FieldPtr),
+                [](Util::String p_L, u32 &p_V) {
+                  return render_uint32_editor(p_L, p_V, false);
+                });
+          case Util::RTTI::PropertyType::UINT8:
+            return render_list_editor<uint8_t>(
+                l_Label,
+                *reinterpret_cast<Util::List<uint8_t> *>(p_FieldPtr),
+                [](Util::String p_L, uint8_t &p_V) {
+                  u32 l_Value = p_V;
+                  if (render_uint32_editor(p_L, l_Value, false)) {
+                    p_V = (uint8_t)l_Value;
+                    return true;
+                  }
+                  return false;
+                });
+          case Util::RTTI::PropertyType::UINT16:
+            return render_list_editor<uint16_t>(
+                l_Label,
+                *reinterpret_cast<Util::List<uint16_t> *>(p_FieldPtr),
+                [](Util::String p_L, uint16_t &p_V) {
+                  u32 l_Value = p_V;
+                  if (render_uint32_editor(p_L, l_Value, false)) {
+                    p_V = (uint16_t)l_Value;
+                    return true;
+                  }
+                  return false;
+                });
+          case Util::RTTI::PropertyType::UINT64:
+            return render_list_editor<uint64_t>(
+                l_Label,
+                *reinterpret_cast<Util::List<uint64_t> *>(p_FieldPtr),
+                [](Util::String p_L, uint64_t &p_V) {
+                  u32 l_Value = (u32)p_V;
+                  if (render_uint32_editor(p_L, l_Value, false)) {
+                    p_V = l_Value;
+                    return true;
+                  }
+                  return false;
+                });
+          case Util::RTTI::PropertyType::HANDLE: {
+            const uint16_t l_HandleTypeId =
+                Util::Handle::type_id(p_Field.referenced_type);
+            return render_list_editor<Util::Handle>(
+                l_Label,
+                *reinterpret_cast<Util::List<Util::Handle> *>(
+                    p_FieldPtr),
+                [l_HandleTypeId](Util::String p_L, Util::Handle &p_V) {
+                  return render_handle_selector(
+                      p_L, l_HandleTypeId,
+                      reinterpret_cast<uint64_t *>(&p_V));
+                });
+          }
+          case Util::RTTI::PropertyType::ENUM: {
+            const u16 l_EnumId =
+                Util::get_enum_id(p_Field.referenced_type);
+            return render_list_editor<int>(
+                l_Label,
+                *reinterpret_cast<Util::List<int> *>(p_FieldPtr),
+                [l_EnumId](Util::String p_L, int &p_V) {
+                  u8 l_Value = (u8)p_V;
+                  if (render_enum_selector(l_EnumId, &l_Value, p_L,
+                                           false)) {
+                    p_V = (int)l_Value;
+                    return true;
+                  }
+                  return false;
+                });
+          }
+          default:
+            ImGui::TextDisabled("%s: unsupported list element type",
+                                l_Label.c_str());
+            return false;
+          }
+        }
+
+        switch (p_Field.type) {
+        case Util::RTTI::PropertyType::BOOL:
+          return render_checkbox_bool_editor(
+              l_Label, *reinterpret_cast<bool *>(p_FieldPtr), true);
+        case Util::RTTI::PropertyType::FLOAT:
+          return render_float_editor(
+              l_Label, *reinterpret_cast<float *>(p_FieldPtr), true);
+        case Util::RTTI::PropertyType::INT:
+        case Util::RTTI::PropertyType::UINT32: {
+          u32 l_Value = *reinterpret_cast<u32 *>(p_FieldPtr);
+          if (render_uint32_editor(l_Label, l_Value, true)) {
+            *reinterpret_cast<u32 *>(p_FieldPtr) = l_Value;
+            return true;
+          }
+          return false;
+        }
+        case Util::RTTI::PropertyType::UINT8: {
+          u32 l_Value = *reinterpret_cast<uint8_t *>(p_FieldPtr);
+          if (render_uint32_editor(l_Label, l_Value, true)) {
+            *reinterpret_cast<uint8_t *>(p_FieldPtr) = (uint8_t)l_Value;
+            return true;
+          }
+          return false;
+        }
+        case Util::RTTI::PropertyType::UINT16: {
+          u32 l_Value = *reinterpret_cast<uint16_t *>(p_FieldPtr);
+          if (render_uint32_editor(l_Label, l_Value, true)) {
+            *reinterpret_cast<uint16_t *>(p_FieldPtr) =
+                (uint16_t)l_Value;
+            return true;
+          }
+          return false;
+        }
+        case Util::RTTI::PropertyType::UINT64: {
+          u32 l_Value =
+              (u32) * reinterpret_cast<uint64_t *>(p_FieldPtr);
+          if (render_uint32_editor(l_Label, l_Value, true)) {
+            *reinterpret_cast<uint64_t *>(p_FieldPtr) = l_Value;
+            return true;
+          }
+          return false;
+        }
+        case Util::RTTI::PropertyType::NAME:
+          return render_name_editor(
+              l_Label, *reinterpret_cast<Util::Name *>(p_FieldPtr),
+              true);
+        case Util::RTTI::PropertyType::STRING:
+          return render_string_editor(
+              l_Label, *reinterpret_cast<Util::String *>(p_FieldPtr),
+              false, true);
+        case Util::RTTI::PropertyType::VECTOR2:
+          return render_vector2_editor(
+              l_Label, *reinterpret_cast<Math::Vector2 *>(p_FieldPtr),
+              true);
+        case Util::RTTI::PropertyType::VECTOR3:
+        case Util::RTTI::PropertyType::COLORRGB:
+          return render_vector3_editor(
+              l_Label, *reinterpret_cast<Math::Vector3 *>(p_FieldPtr),
+              true);
+        case Util::RTTI::PropertyType::VECTOR4:
+          return render_color_selector(
+              l_Label, reinterpret_cast<Math::Color *>(p_FieldPtr));
+        case Util::RTTI::PropertyType::COLOR:
+          return render_color_selector(
+              l_Label, reinterpret_cast<Math::Color *>(p_FieldPtr));
+        case Util::RTTI::PropertyType::QUATERNION:
+          return render_quaternion_editor(
+              l_Label,
+              *reinterpret_cast<Math::Quaternion *>(p_FieldPtr), true);
+        case Util::RTTI::PropertyType::HANDLE:
+          return render_handle_selector(
+              l_Label, Util::Handle::type_id(p_Field.referenced_type),
+              reinterpret_cast<uint64_t *>(p_FieldPtr));
+        case Util::RTTI::PropertyType::ENUM: {
+          u8 l_Value =
+              (u8) * reinterpret_cast<int *>(p_FieldPtr);
+          if (render_enum_selector(
+                  Util::get_enum_id(p_Field.referenced_type), &l_Value,
+                  l_Label, true)) {
+            *reinterpret_cast<int *>(p_FieldPtr) = (int)l_Value;
+            return true;
+          }
+          return false;
+        }
+        case Util::RTTI::PropertyType::STRUCT:
+          return render_struct_editor(l_Label, p_Field.referenced_type,
+                                      p_FieldPtr);
+        default:
+          ImGui::TextDisabled("%s: unsupported field type",
+                              l_Label.c_str());
+          return false;
+        }
+      }
+
+      bool render_struct_editor(Util::String p_Label,
+                                Util::TypeIdentifier p_StructType,
+                                void *p_StructPtr)
+      {
+        if (!p_StructPtr || (u64)p_StructType == 0) {
+          return false;
+        }
+
+        bool l_Changed = false;
+
+        ImGui::PushID(p_StructPtr);
+        if (Gui::CollapsibleHeader(p_Label.c_str())) {
+          ImGui::Indent(LOW_EDITOR_SPACING);
+
+          const Util::RTTI::StructInfo &l_StructInfo =
+              Util::get_struct_info(p_StructType);
+          for (const Util::RTTI::StructFieldInfo &i_Field :
+               l_StructInfo.fields) {
+            void *l_FieldPtr =
+                (void *)((char *)p_StructPtr + i_Field.offset);
+            if (render_struct_field_editor(i_Field, l_FieldPtr)) {
+              l_Changed = true;
+            }
+          }
+
+          ImGui::Unindent(LOW_EDITOR_SPACING);
+        }
+        ImGui::PopID();
+
+        return l_Changed;
+      }
     } // namespace PropertyEditors
   } // namespace Editor
 } // namespace Low

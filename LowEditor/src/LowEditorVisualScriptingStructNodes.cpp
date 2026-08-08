@@ -14,48 +14,63 @@ namespace Low {
           static bool make_pin_metadata_from_struct_field(
               const Util::RTTI::StructFieldInfo &p_Field, Pin &p_Pin)
           {
+            const PinContainerType l_Container =
+                p_Field.container == Util::RTTI::ContainerType::LIST
+                    ? PinContainerType::List
+                    : PinContainerType::None;
+
             switch (p_Field.type) {
             case Util::RTTI::PropertyType::BOOL:
               p_Pin = make_bool_pin_metadata(p_Field.name.c_str());
+              p_Pin.container_type = l_Container;
               return true;
             case Util::RTTI::PropertyType::FLOAT:
               p_Pin = make_number_pin_metadata(p_Field.name.c_str(),
-                                              NumberSubtype::Float);
+                                              NumberSubtype::Float,
+                                              l_Container);
               return true;
             case Util::RTTI::PropertyType::INT:
               p_Pin = make_number_pin_metadata(p_Field.name.c_str(),
-                                              NumberSubtype::Int32);
+                                              NumberSubtype::Int32,
+                                              l_Container);
               return true;
             case Util::RTTI::PropertyType::UINT8:
             case Util::RTTI::PropertyType::UINT16:
             case Util::RTTI::PropertyType::UINT32:
               p_Pin = make_number_pin_metadata(p_Field.name.c_str(),
-                                              NumberSubtype::UInt32);
+                                              NumberSubtype::UInt32,
+                                              l_Container);
               return true;
             case Util::RTTI::PropertyType::UINT64:
               p_Pin = make_number_pin_metadata(p_Field.name.c_str(),
-                                              NumberSubtype::UInt64);
+                                              NumberSubtype::UInt64,
+                                              l_Container);
               return true;
             case Util::RTTI::PropertyType::NAME:
               p_Pin = make_string_pin_metadata(p_Field.name.c_str(),
-                                              StringSubtype::Name);
+                                              StringSubtype::Name,
+                                              l_Container);
               return true;
             case Util::RTTI::PropertyType::STRING:
               p_Pin = make_string_pin_metadata(p_Field.name.c_str(),
-                                              StringSubtype::String);
+                                              StringSubtype::String,
+                                              l_Container);
               return true;
             case Util::RTTI::PropertyType::VECTOR2:
-              p_Pin = make_vector2_pin_metadata(p_Field.name.c_str());
+              p_Pin = make_vector2_pin_metadata(p_Field.name.c_str(),
+                                                l_Container);
               return true;
             case Util::RTTI::PropertyType::VECTOR3:
             case Util::RTTI::PropertyType::COLORRGB:
-              p_Pin = make_vector3_pin_metadata(p_Field.name.c_str());
+              p_Pin = make_vector3_pin_metadata(p_Field.name.c_str(),
+                                                l_Container);
               return true;
             case Util::RTTI::PropertyType::VECTOR4:
             case Util::RTTI::PropertyType::COLOR: {
               Pin l_Pin;
               l_Pin.display_name = p_Field.name.c_str();
               l_Pin.type = PinType::Vector4;
+              l_Pin.container_type = l_Container;
               l_Pin.default_value =
                   Util::Variant(Math::Vector4(0.0f));
               p_Pin = l_Pin;
@@ -65,27 +80,29 @@ namespace Low {
               Pin l_Pin;
               l_Pin.display_name = p_Field.name.c_str();
               l_Pin.type = PinType::Quaternion;
+              l_Pin.container_type = l_Container;
               l_Pin.default_value = Util::Variant(Math::Quaternion());
               p_Pin = l_Pin;
               return true;
             }
             case Util::RTTI::PropertyType::HANDLE:
               p_Pin = make_handle_pin_metadata(p_Field.name.c_str(),
-                                              p_Field.referenced_type);
+                                              p_Field.referenced_type,
+                                              l_Container);
               return true;
             case Util::RTTI::PropertyType::ENUM:
               p_Pin = make_enum_pin_metadata(p_Field.name.c_str(),
-                                            p_Field.referenced_type);
+                                            p_Field.referenced_type,
+                                            l_Container);
               return true;
             case Util::RTTI::PropertyType::STRUCT:
-              p_Pin = make_struct_pin_metadata(
-                  p_Field.name.c_str(), p_Field.referenced_type);
+              p_Pin = make_struct_pin_metadata(p_Field.name.c_str(),
+                                              p_Field.referenced_type,
+                                              l_Container);
               return true;
             default:
-              // Covers UNKNOWN (this is also what Util::List<T> fields
-              // resolve to today, since LowLens does not unwrap list
-              // element types when building StructFieldInfo) and VOID
-              // - Break Struct simply does not expose these fields.
+              // Covers UNKNOWN and VOID - Break Struct simply does not
+              // expose these fields.
               return false;
             }
           }

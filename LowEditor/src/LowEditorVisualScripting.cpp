@@ -196,14 +196,18 @@ namespace Low {
                                    bool p_Hovered)
         {
           const float l_Half = p_Hovered ? p_Radius + 1.5f : p_Radius;
-          const ImVec2 l_Min(p_Anchor.x - l_Half,
-                             p_Anchor.y - l_Half);
-          const ImVec2 l_Max(p_Anchor.x + l_Half,
-                             p_Anchor.y + l_Half);
-          p_DrawList->AddRectFilled(l_Min, l_Max, p_Color, 2.0f);
-          p_DrawList->AddRect(l_Min, l_Max,
-                              IM_COL32(22, 22, 27, 255), 2.0f, 0,
-                              1.5f);
+          const float l_DotRadius = l_Half * 0.3f;
+          const float l_Step = l_Half * 0.9f;
+
+          for (int i_Row = -1; i_Row <= 1; ++i_Row) {
+            for (int i_Col = -1; i_Col <= 1; ++i_Col) {
+              const ImVec2 l_DotCenter(
+                  p_Anchor.x + (float)i_Col * l_Step,
+                  p_Anchor.y + (float)i_Row * l_Step);
+              p_DrawList->AddCircleFilled(l_DotCenter, l_DotRadius,
+                                          p_Color);
+            }
+          }
         }
 
         static Util::String
@@ -1023,6 +1027,72 @@ namespace Low {
         return "VisualScriptGameplaySystem";
       }
 
+      Util::String pin_type_to_script_type_string(
+          PinType p_Type, NumberSubtype,
+          StringSubtype p_StringSubtype,
+          Util::TypeIdentifier p_HandleType)
+      {
+        switch (p_Type) {
+        case PinType::Bool:
+          return "bool";
+        case PinType::Number:
+          return "float";
+        case PinType::String:
+          return p_StringSubtype == StringSubtype::Name ? "Name"
+                                                        : "string";
+        case PinType::Vector2:
+          return "Vector2";
+        case PinType::Vector3:
+          return "Vector3";
+        case PinType::Vector4:
+          return "Vector4";
+        case PinType::Quaternion:
+          return "Quaternion";
+        case PinType::Handle:
+          if ((u64)p_HandleType != 0 &&
+              Util::Handle::is_registered_type(p_HandleType)) {
+            const TypeMetadata &l_Meta = get_type_metadata(
+                Util::Handle::type_id(p_HandleType));
+            return !l_Meta.fullScriptingTypeString.empty()
+                      ? l_Meta.fullScriptingTypeString
+                      : l_Meta.fullTypeString;
+          }
+          return "";
+        case PinType::Struct: {
+          if ((u64)p_HandleType == 0) {
+            return "";
+          }
+          const Core::Scripting::StructInfo &l_StructInfo =
+              Core::Scripting::find_registered_struct_checked(
+                  p_HandleType);
+          Util::String l_Type;
+          if (!l_StructInfo.bind_namespace.empty()) {
+            l_Type += l_StructInfo.bind_namespace;
+            l_Type += "::";
+          }
+          l_Type += l_StructInfo.bind_name.c_str();
+          return l_Type;
+        }
+        case PinType::Enum: {
+          if ((u64)p_HandleType == 0) {
+            return "";
+          }
+          const Core::Scripting::EnumInfo &l_EnumInfo =
+              Core::Scripting::find_registered_enum_checked(
+                  p_HandleType);
+          Util::String l_Type;
+          if (!l_EnumInfo.bind_namespace.empty()) {
+            l_Type += l_EnumInfo.bind_namespace;
+            l_Type += "::";
+          }
+          l_Type += l_EnumInfo.bind_name.c_str();
+          return l_Type;
+        }
+        default:
+          return "";
+        }
+      }
+
       void GameplaySystemCompileProfile::emit_members(
           Graph &p_Graph, CompileContext &p_Context) const
       {
@@ -1031,50 +1101,16 @@ namespace Low {
             continue;
           }
 
-          Util::String l_TypeStr;
-          switch (i_Variable.type) {
-          case PinType::Bool:
-            l_TypeStr = "bool";
-            break;
-          case PinType::Number:
-            l_TypeStr = "float";
-            break;
-          case PinType::String:
-            l_TypeStr =
-                i_Variable.string_subtype == StringSubtype::Name
-                    ? "Name"
-                    : "string";
-            break;
-          case PinType::Vector2:
-            l_TypeStr = "Vector2";
-            break;
-          case PinType::Vector3:
-            l_TypeStr = "Vector3";
-            break;
-          case PinType::Vector4:
-            l_TypeStr = "Vector4";
-            break;
-          case PinType::Quaternion:
-            l_TypeStr = "Quaternion";
-            break;
-          case PinType::Handle:
-            if ((u64)i_Variable.handle_type != 0 &&
-                Util::Handle::is_registered_type(
-                    i_Variable.handle_type)) {
-              const TypeMetadata &l_Meta = get_type_metadata(
-                  Util::Handle::type_id(i_Variable.handle_type));
-              l_TypeStr =
-                  !l_Meta.fullScriptingTypeString.empty()
-                      ? l_Meta.fullScriptingTypeString
-                      : l_Meta.fullTypeString;
-            }
-            break;
-          default:
-            continue;
-          }
+          Util::String l_TypeStr = pin_type_to_script_type_string(
+              i_Variable.type, i_Variable.number_subtype,
+              i_Variable.string_subtype, i_Variable.handle_type);
 
           if (l_TypeStr.empty()) {
             continue;
+          }
+
+          if (i_Variable.container_type == PinContainerType::List) {
+            l_TypeStr = "array<" + l_TypeStr + ">";
           }
 
           p_Context.append_line(l_TypeStr + " " +
@@ -2647,14 +2683,10 @@ namespace Low {
                           l_PinColor, l_PinHovered);
           }
 
-          const char *l_PinLabel =
-              l_PinMetadata && !l_PinMetadata->display_name.empty()
-                  ? l_PinMetadata->display_name.c_str()
-                  : "";
-          Util::String l_PinLabelString = l_PinLabel;
-          if (l_PinMetadata && l_PinMetadata->container_type ==
-                                   PinContainerType::List) {
-            l_PinLabelString += "[]";
+          Util::String l_PinLabelString;
+          if (l_PinMetadata && !l_PinMetadata->display_name.empty()) {
+            l_PinLabelString =
+                prettify_name(l_PinMetadata->display_name);
           }
           const ImVec2 l_LabelSize = calc_scaled_text_size(
               l_PinFont, l_PinFontSize, l_PinLabelString.c_str());
@@ -2679,7 +2711,9 @@ namespace Low {
               l_PinMetadata->type != PinType::Execution &&
               l_PinMetadata->type != PinType::Handle &&
               l_PinMetadata->type != PinType::Struct &&
-              l_PinMetadata->type != PinType::Dynamic) {
+              l_PinMetadata->type != PinType::Dynamic &&
+              l_PinMetadata->container_type ==
+                  PinContainerType::None) {
             const float l_WidgetStartX =
                 l_Compact
                     ? p_ScreenMin.x + 28.0f * l_Zoom

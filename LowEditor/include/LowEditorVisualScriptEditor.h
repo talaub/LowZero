@@ -195,6 +195,8 @@ namespace Low {
         StringSubtype new_variable_string_subtype =
             StringSubtype::String;
         Util::TypeIdentifier new_variable_handle_type;
+        PinContainerType new_variable_container_type =
+            PinContainerType::None;
         Util::List<CanvasDropAction> pending_canvas_drop_actions;
 
         bool embedded = false;

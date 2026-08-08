@@ -802,14 +802,19 @@ function generate_struct_rtti_registration(p_Struct, p_ModuleName) {
   t += `    l_StructInfo.name = N(${p_Struct.name});\n`;
 
   for (const i_Field of p_Struct.fields) {
-    const l_Resolved = db.resolve_type(i_Field.type);
+    const l_IsList = is_list_type(i_Field.type);
+    const l_ResolveType = l_IsList ? get_list_element_type(i_Field.type) : i_Field.type;
+    const l_Resolved = db.resolve_type(l_ResolveType);
     const l_PropType = g_TypeKindToPropertyType[l_Resolved.kind] || 'UNKNOWN';
-    const l_AsType = is_list_type(i_Field.type) ? get_list_as_type(i_Field.type) : db.get_as_type_string(i_Field.type);
+    const l_AsType = l_IsList ? get_list_as_type(i_Field.type) : db.get_as_type_string(i_Field.type);
 
     t += `    {\n`;
     t += `      Low::Util::RTTI::StructFieldInfo l_Field;\n`;
     t += `      l_Field.name = N(${i_Field.name});\n`;
     t += `      l_Field.type = Low::Util::RTTI::PropertyType::${l_PropType};\n`;
+    if (l_IsList) {
+      t += `      l_Field.container = Low::Util::RTTI::ContainerType::LIST;\n`;
+    }
     if (l_Resolved.entry) {
       t += `      l_Field.referenced_type = Low::Util::TypeIdentifier(N(${l_Resolved.entry.module}), N(${l_Resolved.entry.name}));\n`;
     }

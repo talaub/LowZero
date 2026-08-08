@@ -2,10 +2,12 @@
 
 #include "LowEditorApi.h"
 
+#include "LowEditorGui.h"
 #include "LowEditorWidget.h"
 #include "LowEditorMetadata.h"
 
 #include "LowUtilHandle.h"
+#include "LowUtilString.h"
 
 namespace Low {
   namespace Editor {
@@ -73,6 +75,58 @@ namespace Low {
 
       bool render_line(Util::String p_Label,
                        const Util::Function<bool()> &p_DrawEditor);
+
+      bool LOW_EDITOR_API render_struct_editor(
+          Util::String p_Label, Util::TypeIdentifier p_StructType,
+          void *p_StructPtr);
+
+      template <typename T>
+      bool render_list_editor(
+          Util::String p_Label, Util::List<T> &p_List,
+          const Util::Function<bool(Util::String, T &)>
+              &p_ElementEditor,
+          T p_DefaultValue = T())
+      {
+        bool l_Changed = false;
+
+        ImGui::PushID(p_Label.c_str());
+
+        if (Gui::CollapsibleHeader(p_Label.c_str())) {
+          int l_RemoveIndex = -1;
+
+          for (u32 i = 0; i < p_List.size(); ++i) {
+            ImGui::PushID((int)i);
+
+            Util::String l_IndexLabel = LOW_TO_STRING(i);
+
+            render_line(l_IndexLabel, [&]() {
+              const bool l_ElementChanged =
+                  p_ElementEditor(l_IndexLabel, p_List[i]);
+              ImGui::SameLine();
+              if (Gui::DeleteButton()) {
+                l_RemoveIndex = (int)i;
+              }
+              return l_ElementChanged;
+            });
+
+            ImGui::PopID();
+          }
+
+          if (l_RemoveIndex >= 0) {
+            p_List.erase(p_List.begin() + l_RemoveIndex);
+            l_Changed = true;
+          }
+
+          if (Gui::AddButton("Add Element")) {
+            p_List.push_back(p_DefaultValue);
+            l_Changed = true;
+          }
+        }
+
+        ImGui::PopID();
+
+        return l_Changed;
+      }
     } // namespace PropertyEditors
   } // namespace Editor
 } // namespace Low
