@@ -130,5 +130,5 @@ namespace Low {
         return 5;
       }
     } // namespace AnimationClipStateEnumHelper
-  } // namespace Renderer
+  }   // namespace Renderer
 } // namespace Low

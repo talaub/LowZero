@@ -10,6 +10,7 @@
 #include "LowCoreUiWidgetAsset.h"
 #include "LowMath.h"
 #include "LowRendererUiDrawCommand.h"
+#include "LowUtilHandle.h"
 #include "LowUtilLogger.h"
 
 #include "LowEditorVisualScriptEditor.h"
@@ -77,6 +78,10 @@ namespace Low {
       char *m_ElementSearch;
 
       bool m_CreatedLocalController = false;
+
+      bool m_OpenWidgetSelectPopup = false;
+
+      Core::UI::WidgetAsset m_CreateWidget = Util::Handle::DEAD;
 
       Core::UI::Element m_SelectedElement;
 

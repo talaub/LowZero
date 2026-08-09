@@ -102,5 +102,5 @@ namespace Low {
         return 3;
       }
     } // namespace EditorImageTypeEnumHelper
-  } // namespace Renderer
+  }   // namespace Renderer
 } // namespace Low

@@ -504,15 +504,13 @@ namespace Flode {
         m_Graph->compile();
 
         {
-          Low::Util::String l_NotificationMessage = "Flode graph ";
-
-          l_NotificationMessage += "'";
-          l_NotificationMessage += m_Graph->m_Name.c_str();
-          l_NotificationMessage += "' compiled.";
+          Low::Util::String l_NotificationSubtitle = "'";
+          l_NotificationSubtitle += m_Graph->m_Name.c_str();
+          l_NotificationSubtitle += "'";
 
           Low::Editor::push_notification(
-              ICON_LC_COG, "Compiled", l_NotificationMessage, 5.0f,
-              Low::Editor::theme_get_current().profile);
+              ICON_LC_COG, "Compiled", l_NotificationSubtitle, "",
+              5.0f, Low::Editor::theme_get_current().profile);
         }
       }
     }
@@ -759,14 +757,12 @@ namespace Flode {
                    << "' to file." << LOW_LOG_END;
 
       {
-        Low::Util::String l_NotificationMessage = "Flode graph ";
-
-        l_NotificationMessage += "'";
-        l_NotificationMessage += m_Graph->m_Name.c_str();
-        l_NotificationMessage += "' saved";
+        Low::Util::String l_NotificationSubtitle = "'";
+        l_NotificationSubtitle += m_Graph->m_Name.c_str();
+        l_NotificationSubtitle += "'";
 
         Low::Editor::push_notification(
-            LOW_EDITOR_ICON_SAVE, "Saved", l_NotificationMessage,
+            LOW_EDITOR_ICON_SAVE, "Saved", l_NotificationSubtitle, "",
             5.0f, Low::Editor::theme_get_current().save);
       }
     }

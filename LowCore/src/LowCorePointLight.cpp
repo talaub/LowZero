@@ -900,5 +900,5 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Component
-  } // namespace Core
+  }   // namespace Core
 } // namespace Low

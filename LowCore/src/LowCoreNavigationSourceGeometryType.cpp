@@ -123,6 +123,6 @@ namespace Low {
           return 4;
         }
       } // namespace SourceGeometryTypeEnumHelper
-    } // namespace Navigation
-  } // namespace Core
+    }   // namespace Navigation
+  }     // namespace Core
 } // namespace Low

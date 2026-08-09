@@ -74,8 +74,8 @@ types:
     no_auto_deserialize: true
     no_auto_duplicate: true
     name_editable: true
-    post_load: true
     scripting_expose: true
+    unique_id: true
     properties:
       state:
         type: Low::Core::UI::LoadState
@@ -84,6 +84,9 @@ types:
         type: Low::Util::List<Low::Core::UI::ElementDescriptor>
         expose_scripting: false
       path:
+        type: Low::Util::String
+        private_setter: true
+      data_path:
         type: Low::Util::String
         private_setter: true
       controller:
@@ -103,6 +106,12 @@ types:
     functions:
       get_next_local_id:
         return_type: uint64_t
+      serialize_content:
+        private: true
+        return_type: void
+        parameters:
+          - name: node
+            type: Low::Util::Serial::Node
       parse_content:
         private: true
         return_type: void
@@ -125,6 +134,22 @@ types:
             type: Low::Renderer::UiCanvas
             handle: true
       spawn_element:
+        return_type: Low::Core::UI::Element
+        return_handle: true
+        parameters:
+          - name: instance
+            type: Low::Core::UI::WidgetInstance
+            handle: true
+          - name: canvas
+            type: Low::Renderer::UiCanvas
+            handle: true
+          - name: descriptor
+            type: Low::Core::UI::ElementDescriptor
+          - name: parent
+            type: Low::Core::UI::Element
+            handle: true
+      spawn_from_element_descriptor:
+        private: true
         return_type: Low::Core::UI::Element
         return_handle: true
         parameters:
@@ -176,6 +201,9 @@ types:
         handle: true
       elements:
         type: Low::Util::List<Low::Core::UI::Element>
+        no_setter: true
+      widgets:
+        type: Low::Util::List<Low::Core::UI::WidgetInstance>
         no_setter: true
       controller_instance:
         type: Low::Core::UI::ControllerInstance
@@ -250,17 +278,17 @@ types:
           - name: node
             type: Util::Serial::Node
       add_element:
-       return_type: void 
-       parameters:
-         - name: element
-           type: Element
-           handle: true
+        return_type: void
+        parameters:
+          - name: element
+            type: Element
+            handle: true
       remove_element:
-       return_type: void 
-       parameters:
-         - name: element
-           type: Element
-           handle: true
+        return_type: void
+        parameters:
+          - name: element
+            type: Element
+            handle: true
       load_elements:
         return_type: void
       unload_elements:
@@ -279,7 +307,7 @@ types:
         parameters:
           - name: name
             type: Low::Util::Name
-      
+
   Element:
     no_auto_serialize: true
     no_auto_deserialize: true
@@ -385,4 +413,3 @@ types:
           - name: creator
             type: Util::Handle
             handle: true
-

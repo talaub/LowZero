@@ -30,5 +30,5 @@ namespace Low {
 
       u8 LOW_RENDERER2_API get_entry_count();
     } // namespace EditorImageTypeEnumHelper
-  } // namespace Renderer
+  }   // namespace Renderer
 } // namespace Low

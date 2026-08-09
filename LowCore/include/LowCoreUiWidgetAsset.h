@@ -23,13 +23,7 @@ namespace Low {
         u16 typeId;
         Util::Serial::Node data;
       };
-      struct ElementDescriptor
-      {
-        Util::Name name;
-        Util::List<ComponentDescriptor> components;
-        Util::List<ElementDescriptor> children;
-        u64 local_id;
-      };
+      struct ElementDescriptor;
       enum class LoadState
       {
         Undefined,
@@ -48,10 +42,12 @@ namespace Low {
           Low::Core::UI::LoadState state;
           Low::Util::List<Low::Core::UI::ElementDescriptor> content;
           Low::Util::String path;
+          Low::Util::String data_path;
           Low::Core::UI::Controller controller;
           bool has_custom_controller;
           uint64_t local_element_id_counter;
           uint64_t custom_controller_id;
+          Low::Util::UniqueId unique_id;
           Low::Util::Name name;
 
           static size_t get_size()
@@ -77,6 +73,8 @@ namespace Low {
 
         static WidgetAsset make(Low::Util::Name p_Name);
         static Low::Util::Handle _make(Low::Util::Name p_Name);
+        static WidgetAsset make(Low::Util::Name p_Name,
+                                Low::Util::UniqueId p_UniqueId);
         explicit WidgetAsset(const WidgetAsset &p_Copy)
             : Low::Util::Handle(p_Copy.m_Id)
         {
@@ -166,15 +164,6 @@ namespace Low {
           l_WidgetAsset.destroy();
         }
 
-        void post_load(Low::Util::Serial::Node &p_Node);
-        static void _post_load(Low::Util::Handle p_Handle,
-                               Low::Util::Serial::Node &p_Node)
-        {
-          _LOW_ASSERT(is_alive(p_Handle));
-          WidgetAsset l_WidgetAsset = p_Handle.get_id();
-          l_WidgetAsset.post_load(p_Node);
-        }
-
         Low::Core::UI::LoadState get_state() const;
         void set_state(Low::Core::UI::LoadState p_Value);
 
@@ -186,6 +175,8 @@ namespace Low {
 
         Low::Util::String get_path() const;
 
+        Low::Util::String get_data_path() const;
+
         Low::Core::UI::Controller get_controller() const;
         void set_controller(Low::Core::UI::Controller p_Value);
 
@@ -195,6 +186,8 @@ namespace Low {
 
         uint64_t get_custom_controller_id() const;
         void set_custom_controller_id(uint64_t p_Value);
+
+        Low::Util::UniqueId get_unique_id() const;
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
@@ -221,13 +214,24 @@ namespace Low {
         static u32 create_page();
         void set_path(Low::Util::String p_Value);
         void set_path(const char *p_Value);
+        void set_data_path(Low::Util::String p_Value);
+        void set_data_path(const char *p_Value);
         uint64_t get_local_element_id_counter() const;
         void set_local_element_id_counter(uint64_t p_Value);
+        void set_unique_id(Low::Util::UniqueId p_Value);
+        void serialize_content(Low::Util::Serial::Node &p_Node);
+
         void parse_content(Low::Util::Serial::Node &p_Node);
 
         void
         parse_element(Low::Util::Serial::Node &p_Node,
                       Low::Core::UI::ElementDescriptor &p_Descriptor);
+
+        Low::Core::UI::Element spawn_from_element_descriptor(
+            Low::Core::UI::WidgetInstance p_Instance,
+            Low::Renderer::UiCanvas p_Canvas,
+            Low::Core::UI::ElementDescriptor &p_Descriptor,
+            Low::Core::UI::Element p_Parent);
 
         void fill_element_descriptor(
             Low::Core::UI::Element p_Element,
@@ -243,11 +247,18 @@ namespace Low {
       };
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
-
+      struct ElementDescriptor
+      {
+        Util::Name name;
+        Util::List<ComponentDescriptor> components;
+        Util::List<ElementDescriptor> children;
+        WidgetAsset widget_reference;
+        u64 local_id;
+      };
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
     } // namespace UI
-  } // namespace Core
+  }   // namespace Core
 } // namespace Low
 
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE

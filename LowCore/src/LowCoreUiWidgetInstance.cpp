@@ -57,6 +57,10 @@ namespace Low {
             l_Handle, WidgetInstance, elements,
             Low::Util::List<Low::Core::UI::Element>))
             Low::Util::List<Low::Core::UI::Element>();
+        new (ACCESSOR_TYPE_SOA_PTR(
+            l_Handle, WidgetInstance, widgets,
+            Low::Util::List<Low::Core::UI::WidgetInstance>))
+            Low::Util::List<Low::Core::UI::WidgetInstance>();
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, WidgetInstance,
                                    controller_instance,
                                    Low::Core::UI::ControllerInstance))
@@ -81,11 +85,13 @@ namespace Low {
 
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-
           if (get_root().is_alive()) {
             get_root().destroy_with_hierarchy();
           }
 
+          for (WidgetInstance i_Instance : get_widgets()) {
+            i_Instance.destroy();
+          }
           // LOW_CODEGEN::END::CUSTOM:DESTROY
         }
 
@@ -219,6 +225,35 @@ namespace Low {
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: elements
+        }
+        {
+          // Property: widgets
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(widgets);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(WidgetInstance::Data, widgets);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            WidgetInstance l_Handle = p_Handle.get_id();
+            l_Handle.get_widgets();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, WidgetInstance, widgets,
+                Low::Util::List<Low::Core::UI::WidgetInstance>);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            WidgetInstance l_Handle = p_Handle.get_id();
+            *((Low::Util::List<Low::Core::UI::WidgetInstance> *)
+                  p_Data) = l_Handle.get_widgets();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: widgets
         }
         {
           // Property: controller_instance
@@ -540,6 +575,19 @@ namespace Low {
                         Low::Util::List<Low::Core::UI::Element>);
       }
 
+      Low::Util::List<Low::Core::UI::WidgetInstance> &
+      WidgetInstance::get_widgets() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_widgets
+        // LOW_CODEGEN::END::CUSTOM:GETTER_widgets
+
+        return TYPE_SOA(
+            WidgetInstance, widgets,
+            Low::Util::List<Low::Core::UI::WidgetInstance>);
+      }
+
       Low::Core::UI::ControllerInstance
       WidgetInstance::get_controller_instance() const
       {
@@ -673,5 +721,5 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace UI
-  } // namespace Core
+  }   // namespace Core
 } // namespace Low

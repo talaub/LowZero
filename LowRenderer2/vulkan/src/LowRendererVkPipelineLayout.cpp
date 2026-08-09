@@ -571,5 +571,5 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Vulkan
-  } // namespace Renderer
+  }   // namespace Renderer
 } // namespace Low

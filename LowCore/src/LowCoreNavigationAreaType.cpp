@@ -127,6 +127,6 @@ namespace Low {
           return 5;
         }
       } // namespace AreaTypeEnumHelper
-    } // namespace Navigation
-  } // namespace Core
+    }   // namespace Navigation
+  }     // namespace Core
 } // namespace Low

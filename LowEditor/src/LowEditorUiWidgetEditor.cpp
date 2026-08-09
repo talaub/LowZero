@@ -6,7 +6,9 @@
 #include "LowCoreScripting.h"
 #include "LowCoreUiText.h"
 #include "LowCoreUiWidgetAsset.h"
+#include "LowCoreUiWidgetInstance.h"
 #include "LowEditorGui.h"
+#include "LowEditorNotifications.h"
 #include "LowEditorThemes.h"
 #include "LowEditorTypeEditor.h"
 #include "LowEditorIcons.h"
@@ -16,6 +18,7 @@
 #include "LowEditorVisualScriptBuilder.h"
 #include "LowEditorVisualScriptEditor.h"
 #include "LowEditorVisualScripting.h"
+#include "LowEditorPropertyEditors.h"
 
 #include "LowCoreUiElement.h"
 #include "LowCoreUiDisplay.h"
@@ -57,6 +60,8 @@ namespace Low {
           m_TopPaneHeight(400.0f),
           m_ElementSearch((char *)calloc(SEARCH_LENGTH, sizeof(char)))
     {
+      Util::AssetManager::load_sync(p_Handle);
+
       m_Viewport = new UiWidgetInteractiveViewport(
           p_Handle, Math::UVector2(500, 500));
 
@@ -397,6 +402,13 @@ namespace Low {
         if (l_Asset.has_custom_controller()) {
           m_VisualScriptEditor.get_document()->save();
         }
+
+        Util::String l_NotificationSubtitle = "'";
+        l_NotificationSubtitle += l_Asset.get_name().c_str();
+        l_NotificationSubtitle += "'";
+        push_notification(LOW_EDITOR_ICON_SAVE, "Saved",
+                          l_NotificationSubtitle, "", 5.0f,
+                          theme_get_current().save);
       }
       if (l_Asset.has_custom_controller() &&
           l_Asset.get_controller().is_alive()) {
@@ -456,6 +468,9 @@ namespace Low {
                                  m_Viewport->m_Instance.get_root());
               set_selected_element(l_Element);
             }
+            if (ImGui::Selectable(LOW_EDITOR_ICON_PLUS " Widget")) {
+              m_OpenWidgetSelectPopup = true;
+            }
             ImGui::Separator();
             if (ImGui::Selectable(LOW_EDITOR_ICON_IMAGE " Image")) {
               Core::UI::Element l_Element =
@@ -479,6 +494,42 @@ namespace Low {
               l_Text.set_size(32);
               l_Text.set_color(Math::Color(1, 1, 1, 1));
               set_selected_element(l_Element);
+            }
+            ImGui::EndPopup();
+          }
+          if (m_OpenWidgetSelectPopup) {
+            ImGui::OpenPopup("Select widget to add");
+            m_OpenWidgetSelectPopup = false;
+          }
+          ImGui::SetNextWindowSize(ImVec2(400.0f, 200.0f),
+                                   ImGuiCond_FirstUseEver);
+          if (ImGui::BeginPopupModal("Select widget to add")) {
+            PropertyEditors::render_handle_selector(
+                "Widget", Core::UI::WidgetAsset::type_id(),
+                (u64 *)&m_CreateWidget);
+
+            if (Gui::AddButton("Create")) {
+              if (m_CreateWidget.is_alive()) {
+                Core::UI::WidgetInstance l_NewInstance =
+                    m_CreateWidget.spawn_instance(
+                        m_Viewport->m_Canvas);
+                if (m_SelectedElement.is_alive()) {
+                  l_NewInstance.get_root().get_display().set_parent(
+                      m_SelectedElement.get_display());
+                } else {
+                  l_NewInstance.get_root().get_display().set_parent(
+                      m_Viewport->m_Instance.get_root()
+                          .get_display());
+                }
+              }
+
+              m_CreateWidget = Util::Handle::DEAD;
+              ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (Gui::Button("Cancel")) {
+              m_CreateWidget = Util::Handle::DEAD;
+              ImGui::CloseCurrentPopup();
             }
             ImGui::EndPopup();
           }

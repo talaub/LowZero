@@ -126,5 +126,5 @@ namespace Low {
         return 5;
       }
     } // namespace SkeletonStateEnumHelper
-  } // namespace Renderer
+  }   // namespace Renderer
 } // namespace Low

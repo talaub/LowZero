@@ -29,5 +29,5 @@ namespace Low {
 
       u8 LOW_RENDERER2_API get_entry_count();
     } // namespace MeshTypeEnumHelper
-  } // namespace Renderer
+  }   // namespace Renderer
 } // namespace Low

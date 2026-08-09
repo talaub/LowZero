@@ -481,6 +481,18 @@ namespace Low {
       }
     }
 
+    static void load_entry(const LoadEntry &p_Entry)
+    {
+      Serial::Node l_Node =
+          Serial::load_yaml_file(p_Entry.path.c_str());
+      // PERF: Maybe cache typeinfo in load entry
+      const RTTI::TypeInfo &l_TypeInfo =
+          Handle::get_type_info(p_Entry.handle.get_type());
+
+      // TODO: Check if handle is still alive
+      l_TypeInfo.post_load(p_Entry.handle, l_Node);
+    }
+
     static void tick_load_queue(const float p_Delta)
     {
       if (g_LoadEntries.empty()) {
@@ -494,15 +506,7 @@ namespace Low {
 
       // PERF: Move out into separate thread
       // TODO: Load yaml on different thread
-
-      Serial::Node l_Node =
-          Serial::load_yaml_file(l_Entry.path.c_str());
-      // PERF: Maybe cache typeinfo in load entry
-      const RTTI::TypeInfo &l_TypeInfo =
-          Handle::get_type_info(l_Entry.handle.get_type());
-
-      // TODO: Check if handle is still alive
-      l_TypeInfo.post_load(l_Entry.handle, l_Node);
+      load_entry(l_Entry);
     }
 
     void AssetManager::tick(const float p_Delta)
@@ -686,6 +690,8 @@ namespace Low {
 
       Handle l_Asset = l_AssetType.creator(p_Name, l_Path);
 
+      _register(l_Asset, l_Path);
+
       _save(l_Asset);
 
       return l_Asset;
@@ -734,6 +740,57 @@ namespace Low {
       Serial::write_yaml_file(l_Path.c_str(), l_SaveNode);
     }
 
+    void AssetManager::_load_sync(Util::Handle p_Handle)
+    {
+      AssetManager::TypeRegistrator l_AssetType;
+      if (!find_asset_type(p_Handle.get_type(), l_AssetType)) {
+        AM_LOG_ERROR << "Tried to load handle but could not find "
+                        "registered asset type for it."
+                     << LOW_LOG_END;
+        return;
+      }
+
+      if (!l_AssetType.supportsLoading) {
+        AM_LOG_ERROR << "Tried to load handle but asset type does "
+                        "not support loading."
+                     << LOW_LOG_END;
+        return;
+      }
+
+      if (!l_AssetType.isLoadable(p_Handle)) {
+        AM_LOG_WARN
+            << "Tried to load handle but handle is not loadable."
+            << LOW_LOG_END;
+        return;
+      }
+
+      if (l_AssetType.loader) {
+        l_AssetType.loader(p_Handle);
+        return;
+      }
+
+      if (!l_AssetType.storeSettings.pathPropertyName.is_valid()) {
+        AM_LOG_ERROR << "Tried to load handle but asset type does "
+                        "not have a valid path property set."
+                     << LOW_LOG_END;
+        return;
+      }
+
+      RTTI::TypeInfo &l_TypeInfo =
+          Handle::get_type_info(p_Handle.get_type());
+      RTTI::PropertyInfo &l_PathProperty =
+          l_TypeInfo
+              .properties[l_AssetType.storeSettings.pathPropertyName];
+      const String l_Path =
+          *(String *)l_PathProperty.get_return(p_Handle);
+
+      LoadEntry l_Entry;
+      l_Entry.handle = p_Handle;
+      l_Entry.path = l_Path;
+
+      load_entry(l_Entry);
+    }
+
     void AssetManager::_load(Util::Handle p_Handle,
                              const LoadPriority p_Priority)
     {
@@ -759,6 +816,7 @@ namespace Low {
         return;
       }
 
+      // TODO: Move to separate thread?
       if (l_AssetType.loader) {
         l_AssetType.loader(p_Handle);
         return;

@@ -59,9 +59,6 @@ namespace Low {
       LOW_LOG_INFO << "Saved " << p_TypeInfo.name << LOW_LOG_END;
 
       {
-        Util::String l_NotificationMessage = "Saved ";
-        l_NotificationMessage += p_TypeInfo.name.c_str();
-
         Util::RTTI::PropertyInfo l_NamePropertyInfo =
             p_TypeInfo.properties[N(name)];
 
@@ -70,12 +67,13 @@ namespace Low {
         l_NamePropertyInfo.get(p_Handle, &l_Name);
         Util::String l_NameString = l_Name.c_str();
 
-        l_NotificationMessage += " '";
-        l_NotificationMessage += l_NameString;
-        l_NotificationMessage += "'";
+        Util::String l_NotificationSubtitle = p_TypeInfo.name.c_str();
+        l_NotificationSubtitle += " '";
+        l_NotificationSubtitle += l_NameString;
+        l_NotificationSubtitle += "'";
 
         push_notification(LOW_EDITOR_ICON_SAVE, "Saved",
-                          l_NotificationMessage, 5.0f,
+                          l_NotificationSubtitle, "", 5.0f,
                           theme_get_current().save);
       }
 

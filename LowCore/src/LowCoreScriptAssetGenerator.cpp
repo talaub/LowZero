@@ -91,6 +91,6 @@ namespace Low {
           return 2;
         }
       } // namespace AssetGeneratorEnumHelper
-    } // namespace Scripting
-  } // namespace Core
+    }   // namespace Scripting
+  }     // namespace Core
 } // namespace Low

@@ -32,6 +32,6 @@ namespace Low {
 
         u8 LOW_CORE_API get_entry_count();
       } // namespace SourceModeEnumHelper
-    } // namespace Navigation
-  } // namespace Core
+    }   // namespace Navigation
+  }     // namespace Core
 } // namespace Low

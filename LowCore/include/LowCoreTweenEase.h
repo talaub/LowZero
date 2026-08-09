@@ -40,5 +40,5 @@ namespace Low {
 
       u8 LOW_CORE_API get_entry_count();
     } // namespace TweenEaseEnumHelper
-  } // namespace Core
+  }   // namespace Core
 } // namespace Low

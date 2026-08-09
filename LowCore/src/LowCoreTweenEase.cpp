@@ -228,5 +228,5 @@ namespace Low {
         return 13;
       }
     } // namespace TweenEaseEnumHelper
-  } // namespace Core
+  }   // namespace Core
 } // namespace Low

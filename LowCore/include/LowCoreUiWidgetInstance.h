@@ -28,6 +28,7 @@ namespace Low {
         public:
           Low::Core::UI::Element root;
           Low::Util::List<Low::Core::UI::Element> elements;
+          Low::Util::List<Low::Core::UI::WidgetInstance> widgets;
           Low::Core::UI::ControllerInstance controller_instance;
           Low::Util::Name name;
 
@@ -149,6 +150,9 @@ namespace Low {
 
         Low::Util::List<Low::Core::UI::Element> &get_elements() const;
 
+        Low::Util::List<Low::Core::UI::WidgetInstance> &
+        get_widgets() const;
+
         Low::Core::UI::ControllerInstance
         get_controller_instance() const;
         void set_controller_instance(
@@ -178,7 +182,7 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
     } // namespace UI
-  } // namespace Core
+  }   // namespace Core
 } // namespace Low
 
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE

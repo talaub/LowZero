@@ -104,6 +104,6 @@ namespace Low {
           return 3;
         }
       } // namespace BodyMotionTypeEnumHelper
-    } // namespace Physics
-  } // namespace Core
+    }   // namespace Physics
+  }     // namespace Core
 } // namespace Low

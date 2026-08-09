@@ -405,12 +405,18 @@ namespace Low {
 
       void LOW_EXPORT _load(Util::Handle p_Handle,
                             const LoadPriority p_Priority);
+      void LOW_EXPORT _load_sync(Util::Handle p_Handle);
 
       void LOW_EXPORT _save(Util::Handle p_Handle);
 
       Util::Handle LOW_EXPORT _create(const u16 p_TypeId,
                                       const Name p_Name,
                                       const String p_Path);
+
+      template <typename T> void load_sync(T p_Handle)
+      {
+        _load_sync(p_Handle.get_id());
+      }
 
       template <typename T>
       void load(T p_Handle,

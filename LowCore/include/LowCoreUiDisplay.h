@@ -249,8 +249,8 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
       } // namespace Component
-    } // namespace UI
-  } // namespace Core
+    }   // namespace UI
+  }     // namespace Core
 } // namespace Low
 
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE

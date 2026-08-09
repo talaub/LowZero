@@ -31,6 +31,6 @@ namespace Low {
 
         u8 LOW_CORE_API get_entry_count();
       } // namespace BodyMotionTypeEnumHelper
-    } // namespace Physics
-  } // namespace Core
+    }   // namespace Physics
+  }     // namespace Core
 } // namespace Low

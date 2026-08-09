@@ -347,13 +347,6 @@ namespace Low {
 
       load_gamemodes();
 
-      {
-        // TODO: remove
-        UI::WidgetAsset l_Asset =
-            UI::WidgetAsset::living_instances()[0];
-        Util::AssetManager::load(
-            l_Asset, Util::AssetManager::LoadPriority::High);
-      }
     }
 
     static void cleanup_asset_types()

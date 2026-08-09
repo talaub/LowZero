@@ -30,6 +30,6 @@ namespace Low {
 
         u8 LOW_CORE_API get_entry_count();
       } // namespace AssetGeneratorEnumHelper
-    } // namespace Scripting
-  } // namespace Core
+    }   // namespace Scripting
+  }     // namespace Core
 } // namespace Low
