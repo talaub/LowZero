@@ -10,7 +10,6 @@
 #include "LowMath.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-
 #include "LowRendererUiCanvas.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
@@ -18,27 +17,23 @@ namespace Low {
   namespace Core {
     namespace UI {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-
       struct Element;
+      struct WidgetAsset;
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      struct LOW_CORE_API View : public Low::Util::Handle
+      struct LOW_CORE_API Screen : public Low::Util::Handle
       {
       public:
         struct Data
         {
         public:
-          bool loaded;
-          Util::Set<Util::UniqueId> elements;
-          bool internal;
-          bool view_template;
+          Util::List<Core::UI::Element> elements;
           Low::Math::Vector2 pixel_position;
-          float rotation;
-          float scale_multiplier;
-          uint32_t layer_offset;
+          Low::Math::Vector2 pixel_size;
+          float zoom;
           Low::Renderer::UiCanvas canvas;
           Low::Util::UniqueId unique_id;
-          bool transform_dirty;
+          bool dirty;
           Low::Util::Name name;
 
           static size_t get_size()
@@ -53,7 +48,7 @@ namespace Low {
       public:
         static Low::Util::List<Low::Util::Instances::Page *> ms_Pages;
 
-        static Low::Util::List<View> ms_LivingInstances;
+        static Low::Util::List<Screen> ms_LivingInstances;
 
         const static Low::Util::TypeIdentifier IDENTIFIER;
 
@@ -62,11 +57,11 @@ namespace Low {
           return ms_TypeId;
         }
 
-        static View make(Low::Util::Name p_Name);
+        static Screen make(Low::Util::Name p_Name);
         static Low::Util::Handle _make(Low::Util::Name p_Name);
-        static View make(Low::Util::Name p_Name,
-                         Low::Util::UniqueId p_UniqueId);
-        explicit View(const View &p_Copy)
+        static Screen make(Low::Util::Name p_Name,
+                           Low::Util::UniqueId p_UniqueId);
+        explicit Screen(const Screen &p_Copy)
             : Low::Util::Handle(p_Copy.m_Id)
         {
         }
@@ -76,34 +71,34 @@ namespace Low {
         static void initialize();
         static void cleanup();
 
-        View(u64 p_Id) : Low::Util::Handle(p_Id)
+        Screen(u64 p_Id) : Low::Util::Handle(p_Id)
         {
         }
-        View() : Low::Util::Handle()
+        Screen() : Low::Util::Handle()
         {
         }
-        View(Low::Util::Handle p_Handle)
+        Screen(Low::Util::Handle p_Handle)
             : Low::Util::Handle(p_Handle.get_id())
         {
         }
 
         using Handle::operator=;
 
-        View &operator=(const View &) = default;
-        View &operator=(View &&) noexcept = default;
+        Screen &operator=(const Screen &) = default;
+        Screen &operator=(Screen &&) noexcept = default;
 
         static uint32_t living_count()
         {
           return static_cast<uint32_t>(ms_LivingInstances.size());
         }
-        static View *living_instances()
+        static Screen *living_instances()
         {
           return ms_LivingInstances.data();
         }
 
-        static View create_handle_by_index(u32 p_Index);
+        static Screen create_handle_by_index(u32 p_Index);
 
-        static View find_by_index(uint32_t p_Index);
+        static Screen find_by_index(uint32_t p_Index);
         static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
         bool is_alive() const;
@@ -126,13 +121,14 @@ namespace Low {
 
         void serialize(Low::Util::Serial::Node &p_Node) const;
 
-        View duplicate(Low::Util::Name p_Name) const;
-        static View duplicate(View p_Handle, Low::Util::Name p_Name);
+        Screen duplicate(Low::Util::Name p_Name) const;
+        static Screen duplicate(Screen p_Handle,
+                                Low::Util::Name p_Name);
         static Low::Util::Handle
         _duplicate(Low::Util::Handle p_Handle,
                    Low::Util::Name p_Name);
 
-        static View find_by_name(Low::Util::Name p_Name);
+        static Screen find_by_name(Low::Util::Name p_Name);
         static Low::Util::Handle
         _find_by_name(Low::Util::Name p_Name);
 
@@ -143,28 +139,18 @@ namespace Low {
                     Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
-          View l_Handle = p_Handle.get_id();
+          Screen l_Handle = p_Handle.get_id();
           return l_Handle.is_alive();
         }
 
         static void destroy(Low::Util::Handle p_Handle)
         {
           _LOW_ASSERT(is_alive(p_Handle));
-          View l_View = p_Handle.get_id();
-          l_View.destroy();
+          Screen l_Screen = p_Handle.get_id();
+          l_Screen.destroy();
         }
 
-        bool is_loaded() const;
-        void set_loaded(bool p_Value);
-        void toggle_loaded();
-
-        Util::Set<Util::UniqueId> &get_elements() const;
-
-        bool is_internal() const;
-
-        bool is_view_template() const;
-        void set_view_template(bool p_Value);
-        void toggle_view_template();
+        Util::List<Core::UI::Element> &get_elements() const;
 
         Low::Math::Vector2 pixel_position() const;
         void pixel_position(Low::Math::Vector2 p_Value);
@@ -172,36 +158,32 @@ namespace Low {
         void pixel_position_x(float p_Value);
         void pixel_position_y(float p_Value);
 
-        float rotation() const;
-        void rotation(float p_Value);
+        Low::Math::Vector2 pixel_size() const;
+        void pixel_size(Low::Math::Vector2 p_Value);
+        void pixel_size(float p_X, float p_Y);
+        void pixel_size_x(float p_Value);
+        void pixel_size_y(float p_Value);
 
-        float scale_multiplier() const;
-        void scale_multiplier(float p_Value);
-
-        uint32_t layer_offset() const;
-        void layer_offset(uint32_t p_Value);
+        float zoom() const;
+        void zoom(float p_Value);
 
         Low::Renderer::UiCanvas get_canvas() const;
         void set_canvas(Low::Renderer::UiCanvas p_Value);
 
         Low::Util::UniqueId get_unique_id() const;
 
-        bool is_transform_dirty() const;
-        void set_transform_dirty(bool p_Value);
-        void toggle_transform_dirty();
-        void mark_transform_dirty();
+        bool is_dirty() const;
+        void set_dirty(bool p_Value);
+        void toggle_dirty();
+        void mark_dirty();
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
 
-        void serialize_elements(Util::Serial::Node &p_Node);
-        void add_element(Element p_Element);
-        void remove_element(Element p_Element);
-        void load_elements();
-        void unload_elements();
-        Low::Core::UI::View spawn_instance(Low::Util::Name p_Name);
-        Low::Core::UI::Element
-        find_element_by_name(Low::Util::Name p_Name);
+        static Low::Core::UI::Screen make_from_widget_asset(
+            Low::Util::Name p_Name,
+            Low::Core::UI::WidgetAsset p_WidgetAsset);
+        void add_element(Low::Core::UI::Element p_Element);
         static bool get_page_for_index(const u32 p_Index,
                                        u32 &p_PageIndex,
                                        u32 &p_SlotIndex);
@@ -212,17 +194,13 @@ namespace Low {
         static u32 create_instance(u32 &p_PageIndex,
                                    u32 &p_SlotIndex);
         static u32 create_page();
-        void set_internal(bool p_Value);
-        void toggle_internal();
         void set_unique_id(Low::Util::UniqueId p_Value);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
-
         // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
       };
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
-
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
     } // namespace UI
@@ -230,5 +208,4 @@ namespace Low {
 } // namespace Low
 
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE
-
 // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_HEADER_CODE

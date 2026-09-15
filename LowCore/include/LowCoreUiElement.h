@@ -7,7 +7,7 @@
 #include "LowUtilContainers.h"
 #include "LowUtilSerialization.h"
 
-#include "LowCoreUiView.h"
+#include "LowCoreUiScreen.h"
 #include "LowRendererUiCanvas.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
@@ -31,7 +31,7 @@ namespace Low {
         {
         public:
           Util::Map<uint16_t, Util::Handle> components;
-          Low::Core::UI::View view;
+          Low::Core::UI::Screen cached_screen;
           bool click_passthrough;
           Low::Renderer::UiCanvas canvas;
           uint64_t widget_instance;
@@ -158,8 +158,7 @@ namespace Low {
 
         Util::Map<uint16_t, Util::Handle> &get_components() const;
 
-        Low::Core::UI::View get_view() const;
-        void set_view(Low::Core::UI::View p_Value);
+        Low::Core::UI::Screen get_cached_screen() const;
 
         bool is_click_passthrough() const;
         void set_click_passthrough(bool p_Value);
@@ -193,6 +192,7 @@ namespace Low {
         static UI::Element
         deserialize_hierarchy(Util::Serial::Node &p_Node,
                               Util::Handle p_Creator);
+        void update_screen(Low::Core::UI::Screen p_Screen);
         static bool get_page_for_index(const u32 p_Index,
                                        u32 &p_PageIndex,
                                        u32 &p_SlotIndex);
@@ -203,6 +203,7 @@ namespace Low {
         static u32 create_instance(u32 &p_PageIndex,
                                    u32 &p_SlotIndex);
         static u32 create_page();
+        void set_cached_screen(Low::Core::UI::Screen p_Value);
         void set_canvas(Low::Renderer::UiCanvas p_Value);
         void set_unique_id(Low::Util::UniqueId p_Value);
 

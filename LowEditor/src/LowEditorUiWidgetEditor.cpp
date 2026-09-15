@@ -13,7 +13,6 @@
 #include "LowEditorTypeEditor.h"
 #include "LowEditorIcons.h"
 #include "LowEditorEditingLayerHelpers.h"
-#include "LowEditorUiWidget.h"
 #include "LowEditorVisualScriptAssetBuilder.h"
 #include "LowEditorVisualScriptBuilder.h"
 #include "LowEditorVisualScriptEditor.h"
@@ -23,6 +22,7 @@
 #include "LowCoreUiElement.h"
 #include "LowCoreUiDisplay.h"
 #include "LowCoreUiImage.h"
+#include "LowCoreUiLayout.h"
 #include "LowMath.h"
 #include "LowRenderer.h"
 #include "LowRendererFont.h"
@@ -66,9 +66,9 @@ namespace Low {
           p_Handle, Math::UVector2(500, 500));
 
       m_SelectedMarker = Renderer::UiDrawCommand::make_standalone(
-          m_Viewport->m_Canvas, Renderer::get_primitives()
-                                    .unitQuad.get_gpu()
-                                    .get_submeshes()[0]);
+          m_Viewport->get_canvas(), Renderer::get_primitives()
+                                        .unitQuad.get_gpu()
+                                        .get_submeshes()[0]);
       m_SelectedMarker.set_material(
           Renderer::get_default_material_ui_outline());
       m_SelectedMarker.set_z_sorting(5000);
@@ -129,7 +129,31 @@ namespace Low {
       Core::UI::Component::Display l_Display =
           p_Element.get_display();
 
-      const bool l_Leaf = l_Display.get_children().empty();
+      Core::UI::WidgetInstance l_Instance =
+          p_Element.get_widget_instance();
+      const bool l_IsMainWidget =
+          l_Instance == m_Viewport->m_Instance;
+      const bool l_ShouldDraw =
+          l_IsMainWidget || l_Instance.get_root() == p_Element;
+
+      Util::String l_DisplayName = p_Element.get_name().c_str();
+
+      bool l_HasChildren = !l_Display.get_children().empty();
+
+      if (!l_IsMainWidget) {
+        Core::UI::WidgetAsset l_Asset = l_Instance.get_asset();
+        l_DisplayName = l_Asset.get_name().c_str();
+        l_HasChildren = false;
+        for (Core::UI::Component::Display i_Child :
+             l_Display.get_children()) {
+          if (i_Child.get_element().get_widget_instance() ==
+              m_Viewport->m_Instance) {
+            l_HasChildren = true;
+          }
+        }
+      }
+
+      const bool l_Leaf = !l_HasChildren;
 
       if (l_Leaf) {
         l_BaseFlags |= ImGuiTreeNodeFlags_Leaf |
@@ -140,131 +164,136 @@ namespace Low {
         l_BaseFlags |= ImGuiTreeNodeFlags_Selected;
       }
 
+      bool l_Destroy = false;
+
       Util::StringBuilder l_IdBuilder;
       l_IdBuilder.append("##row_").append(p_Element.get_id());
 
-      const bool l_Open =
-          ImGui::TreeNodeEx(l_IdBuilder.get().c_str(), l_BaseFlags,
-                            "%s", p_Element.get_name().c_str());
+      if (l_ShouldDraw) {
+        const bool l_Open =
+            ImGui::TreeNodeEx(l_IdBuilder.get().c_str(), l_BaseFlags,
+                              "%s", l_DisplayName.c_str());
 
-      const ImVec2 l_RectMin = ImGui::GetItemRectMin();
-      const ImVec2 l_RectMax = ImGui::GetItemRectMax();
-      const float l_RectHeight = l_RectMax.y - l_RectMin.y;
+        const ImVec2 l_RectMin = ImGui::GetItemRectMin();
+        const ImVec2 l_RectMax = ImGui::GetItemRectMax();
+        const float l_RectHeight = l_RectMax.y - l_RectMin.y;
 
-      if (ImGui::BeginDragDropSource()) {
-        Core::UI::Element l_PayloadElement = p_Element;
+        if (ImGui::BeginDragDropSource()) {
+          Core::UI::Element l_PayloadElement = p_Element;
 
-        ImGui::SetDragDropPayload("UI_ELEMENT", &l_PayloadElement,
-                                  sizeof(Core::UI::Element));
+          ImGui::SetDragDropPayload("UI_ELEMENT", &l_PayloadElement,
+                                    sizeof(Core::UI::Element));
 
-        ImGui::TextUnformatted(p_Element.get_name().c_str());
+          ImGui::TextUnformatted(p_Element.get_name().c_str());
 
-        ImGui::EndDragDropSource();
-      }
+          ImGui::EndDragDropSource();
+        }
 
-      if (ImGui::BeginDragDropTarget()) {
-        if (const ImGuiPayload *l_Payload =
-                ImGui::AcceptDragDropPayload("UI_ELEMENT")) {
-          LOW_ASSERT(l_Payload->DataSize == sizeof(Core::UI::Element),
-                     "Invalid drag payload size");
+        if (ImGui::BeginDragDropTarget()) {
+          if (const ImGuiPayload *l_Payload =
+                  ImGui::AcceptDragDropPayload("UI_ELEMENT")) {
+            LOW_ASSERT(l_Payload->DataSize ==
+                           sizeof(Core::UI::Element),
+                       "Invalid drag payload size");
 
-          Core::UI::Element l_DraggedElement =
-              *static_cast<const Core::UI::Element *>(
-                  l_Payload->Data);
+            Core::UI::Element l_DraggedElement =
+                *static_cast<const Core::UI::Element *>(
+                    l_Payload->Data);
 
-          if (l_DraggedElement != p_Element) {
-            const ImVec2 l_MousePos = ImGui::GetMousePos();
+            if (l_DraggedElement != p_Element) {
+              const ImVec2 l_MousePos = ImGui::GetMousePos();
 
-            enum class DropPosition
-            {
-              Before,
-              On,
-              After
-            };
+              enum class DropPosition
+              {
+                Before,
+                On,
+                After
+              };
 
-            DropPosition l_DropPosition = DropPosition::On;
+              DropPosition l_DropPosition = DropPosition::On;
 
-            const float l_UpperThreshold =
-                l_RectMin.y + l_RectHeight * 0.25f;
-            const float l_LowerThreshold =
-                l_RectMax.y - l_RectHeight * 0.25f;
+              const float l_UpperThreshold =
+                  l_RectMin.y + l_RectHeight * 0.25f;
+              const float l_LowerThreshold =
+                  l_RectMax.y - l_RectHeight * 0.25f;
 
-            /*
-            if (l_MousePos.y < l_UpperThreshold) {
-              l_DropPosition = DropPosition::Before;
-            } else if (l_MousePos.y > l_LowerThreshold) {
-              l_DropPosition = DropPosition::After;
-            } else {
-              l_DropPosition = DropPosition::On;
+              /*
+              if (l_MousePos.y < l_UpperThreshold) {
+                l_DropPosition = DropPosition::Before;
+              } else if (l_MousePos.y > l_LowerThreshold) {
+                l_DropPosition = DropPosition::After;
+              } else {
+                l_DropPosition = DropPosition::On;
+              }
+
+              switch (l_DropPosition) {
+              case DropPosition::Before:
+                move_element_before(l_DraggedElement, p_Element);
+                break;
+              case DropPosition::On:
+                move_element_as_child(l_DraggedElement, p_Element);
+                break;
+              case DropPosition::After:
+                move_element_after(l_DraggedElement, p_Element);
+                break;
+              }
+              */
+
+              l_DraggedElement.get_display().set_parent(
+                  p_Element.get_display());
             }
-
-            switch (l_DropPosition) {
-            case DropPosition::Before:
-              move_element_before(l_DraggedElement, p_Element);
-              break;
-            case DropPosition::On:
-              move_element_as_child(l_DraggedElement, p_Element);
-              break;
-            case DropPosition::After:
-              move_element_after(l_DraggedElement, p_Element);
-              break;
-            }
-            */
-
-            l_DraggedElement.get_display().set_parent(
-                p_Element.get_display());
           }
+
+          ImGui::EndDragDropTarget();
         }
 
-        ImGui::EndDragDropTarget();
-      }
-
-      if (ImGui::IsItemClicked()) {
-        set_selected_element(p_Element);
-      }
-
-      l_IdBuilder.append("element_context_menu");
-
-      ElementAction l_Action = ElementAction::None;
-
-      if (ImGui::BeginPopupContextItem(l_IdBuilder.get().c_str())) {
-        set_selected_element(p_Element);
-
-        if (ImGui::MenuItem("Rename")) {
-          l_Action = ElementAction::Rename;
+        if (ImGui::IsItemClicked()) {
+          set_selected_element(p_Element);
         }
-        if (ImGui::MenuItem("Delete")) {
-          l_Action = ElementAction::Delete;
-        }
-        if (ImGui::MenuItem("Delete hierarchy")) {
-          l_Action = ElementAction::DeleteHierarchy;
-        }
-        ImGui::EndPopup();
-      }
 
-      bool l_Destroy = false;
-      if (l_Action == ElementAction::Rename) {
-        Gui::Rename("Rename element", p_Element.get_id());
-      } else if (l_Action == ElementAction::DeleteHierarchy) {
-        p_Element.destroy_with_hierarchy();
-        l_Destroy = true;
-      } else if (l_Action == ElementAction::Delete) {
-        for (Core::UI::Component::Display i_Display :
-             p_Element.get_display().get_children()) {
-          i_Display.set_parent(p_Element.get_display().get_parent());
-        }
-        p_Element.destroy();
-        l_Destroy = true;
-      }
+        l_IdBuilder.append("element_context_menu");
 
-      if (!l_Leaf && l_Open) {
-        if (!l_Destroy) {
+        ElementAction l_Action = ElementAction::None;
+
+        if (ImGui::BeginPopupContextItem(l_IdBuilder.get().c_str())) {
+          set_selected_element(p_Element);
+
+          if (ImGui::MenuItem("Rename")) {
+            l_Action = ElementAction::Rename;
+          }
+          if (ImGui::MenuItem("Delete")) {
+            l_Action = ElementAction::Delete;
+          }
+          if (ImGui::MenuItem("Delete hierarchy")) {
+            l_Action = ElementAction::DeleteHierarchy;
+          }
+          ImGui::EndPopup();
+        }
+
+        if (l_Action == ElementAction::Rename) {
+          Gui::Rename("Rename element", p_Element.get_id());
+        } else if (l_Action == ElementAction::DeleteHierarchy) {
+          p_Element.destroy_with_hierarchy();
+          l_Destroy = true;
+        } else if (l_Action == ElementAction::Delete) {
           for (Core::UI::Component::Display i_Display :
-               l_Display.get_children()) {
-            l_Destroy = draw_list_element(i_Display.get_element());
+               p_Element.get_display().get_children()) {
+            i_Display.set_parent(
+                p_Element.get_display().get_parent());
           }
+          p_Element.destroy();
+          l_Destroy = true;
         }
-        ImGui::TreePop();
+
+        if (!l_Leaf && l_Open) {
+          if (!l_Destroy) {
+            for (Core::UI::Component::Display i_Display :
+                 l_Display.get_children()) {
+              l_Destroy = draw_list_element(i_Display.get_element());
+            }
+          }
+          ImGui::TreePop();
+        }
       }
       return l_Destroy;
     }
@@ -353,6 +382,11 @@ namespace Low {
           m_Handle, N(controller), LOW_NAME(l_ClassName.c_str()));
 
       l_Builder.save_compile_and_build_module(l_Path);
+
+      if (l_Builder.script_asset.is_alive()) {
+        Util::AssetManager::hard_dependency(l_Asset,
+                                            l_Builder.script_asset);
+      }
 
       m_CreatedLocalController = true;
 
@@ -464,7 +498,7 @@ namespace Low {
           if (ImGui::BeginPopup("create_element_selection_popup")) {
             if (ImGui::Selectable(LOW_EDITOR_ICON_ELEMENT " Empty")) {
               Core::UI::Element l_Element =
-                  create_element("Empty", m_Viewport->m_Canvas,
+                  create_element("Empty", m_Viewport->get_canvas(),
                                  m_Viewport->m_Instance.get_root());
               set_selected_element(l_Element);
             }
@@ -474,7 +508,7 @@ namespace Low {
             ImGui::Separator();
             if (ImGui::Selectable(LOW_EDITOR_ICON_IMAGE " Image")) {
               Core::UI::Element l_Element =
-                  create_element("Image", m_Viewport->m_Canvas,
+                  create_element("Image", m_Viewport->get_canvas(),
                                  m_Viewport->m_Instance.get_root());
               Core::UI::Component::Image l_Image =
                   Core::UI::Component::Image::make(l_Element);
@@ -485,7 +519,7 @@ namespace Low {
             }
             if (ImGui::Selectable(LOW_EDITOR_ICON_TEXT " Text")) {
               Core::UI::Element l_Element =
-                  create_element("Text", m_Viewport->m_Canvas,
+                  create_element("Text", m_Viewport->get_canvas(),
                                  m_Viewport->m_Instance.get_root());
               Core::UI::Component::Text l_Text =
                   Core::UI::Component::Text::make(l_Element);
@@ -510,9 +544,10 @@ namespace Low {
 
             if (Gui::AddButton("Create")) {
               if (m_CreateWidget.is_alive()) {
+                Util::AssetManager::load_sync(m_CreateWidget);
                 Core::UI::WidgetInstance l_NewInstance =
                     m_CreateWidget.spawn_instance(
-                        m_Viewport->m_Canvas);
+                        m_Viewport->get_canvas());
                 if (m_SelectedElement.is_alive()) {
                   l_NewInstance.get_root().get_display().set_parent(
                       m_SelectedElement.get_display());
@@ -607,6 +642,22 @@ namespace Low {
               }
             }
           } else {
+            bool l_HasLayout = m_SelectedElement.has_component(
+                Core::UI::Component::Layout::type_id());
+            if (Gui::ToggleButtonSimple("Layout##Layouttoggle",
+                                        &l_HasLayout)) {
+              if (l_HasLayout) {
+                Core::UI::Component::Layout::make(m_SelectedElement);
+              } else {
+                Core::UI::Component::Layout(
+                    m_SelectedElement.get_component(
+                        Core::UI::Component::Layout::type_id()))
+                    .destroy();
+              }
+              set_selected_element(m_SelectedElement);
+            }
+            ImGui::Dummy(ImVec2(0, 4.0f));
+
             for (auto it = m_DetailsSections.begin();
                  it != m_DetailsSections.end(); ++it) {
               it->render(LOW_DELTA_TIME);
@@ -709,9 +760,6 @@ namespace Low {
     void
     UiWidgetEditor::set_selected_element(Core::UI::Element p_Element)
     {
-      if (m_SelectedElement == p_Element) {
-        return;
-      }
       m_SelectedElement = p_Element;
       m_DetailsSections.clear();
 

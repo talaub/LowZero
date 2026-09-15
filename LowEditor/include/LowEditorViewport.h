@@ -1,5 +1,6 @@
 #pragma once
 
+#include "LowCoreUiScreen.h"
 #include "LowEditorApi.h"
 #include "LowEditorEditingLayer.h"
 
@@ -294,19 +295,36 @@ namespace Low {
           : Viewport(p_Dimensions)
       {
         m_RenderView.add_step_by_name(RENDERSTEP_UI_NAME);
-        m_Canvas = Renderer::UiCanvas::make(N(Viewport Canvas));
-        m_RenderView.add_ui_canvas(m_Canvas);
+        m_Screen = Core::UI::Screen::make(N(Viewport Screen));
+        m_RenderView.add_ui_canvas(m_Screen.get_canvas());
+      }
+
+      ~UiViewport()
+      {
+        m_Screen.destroy();
       }
 
       virtual bool tick(const float p_Delta) override;
 
+      void set_dimensions(const Math::UVector2 p_Dimensions)
+      {
+        Viewport::set_dimensions(p_Dimensions);
+        m_Screen.pixel_size((float)p_Dimensions.x,
+                            (float)p_Dimensions.y);
+      }
+      void set_dimensions(const u32 p_DimenionsX,
+                          const u32 p_DimensionsY)
+      {
+        set_dimensions(Math::UVector2(p_DimenionsX, p_DimensionsY));
+      }
+
       Renderer::UiCanvas get_canvas() const
       {
-        return m_Canvas;
+        return m_Screen.get_canvas();
       }
 
     protected:
-      Renderer::UiCanvas m_Canvas;
+      Core::UI::Screen m_Screen;
     };
   } // namespace Editor
 } // namespace Low

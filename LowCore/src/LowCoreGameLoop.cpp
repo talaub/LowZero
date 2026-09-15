@@ -25,6 +25,7 @@
 #include "LowCoreUiImage.h"
 #include "LowCoreUiText.h"
 #include "LowCoreUiDisplaySystem.h"
+#include "LowCoreUiLayoutSystem.h"
 #include "LowCoreUiImageSystem.h"
 #include "LowCoreUiTextSystem.h"
 #include "LowCoreUiViewSystem.h"
@@ -115,6 +116,7 @@ namespace Low {
         System::Transform::tick(p_Delta, get_engine_state());
         UI::System::View::tick(p_Delta, get_engine_state());
         UI::System::Display::tick(p_Delta, get_engine_state());
+        UI::System::Layout::tick(p_Delta, get_engine_state());
         System::Region::tick(p_Delta, get_engine_state());
         System::Camera::tick(p_Delta, get_engine_state());
         System::Tween::tick(p_Delta, get_engine_state());
@@ -312,82 +314,6 @@ namespace Low {
         Renderer::UiCanvas l_Canvas =
             Renderer::UiCanvas::make(N(TestCanvas));
         Renderer::get_game_renderview().add_ui_canvas(l_Canvas);
-
-        if (0) {
-          using namespace Low::Renderer;
-
-          MaterialTypes &l_MaterialTypes = get_material_types();
-
-          Material l_UiMaterial =
-              Material::make(N(UiMaterial), l_MaterialTypes.uiBase);
-          Material l_TextMaterial =
-              Material::make(N(TextMaterial), l_MaterialTypes.uiText);
-
-          UI::View l_View = UI::View::make(N(View));
-          l_View.set_canvas(l_Canvas);
-
-          if (1) {
-            {
-              UI::Element l_Element =
-                  UI::Element::make(N(Img), l_Canvas);
-              UI::Component::Display l_Display =
-                  UI::Component::Display::make(l_Element);
-
-              l_Display.pixel_position(120.0f, 100.0f);
-              l_Display.pixel_scale(150, 150);
-              l_Display.rotation(0);
-              l_Display.layer(0);
-
-              UI::Component::Image l_Image =
-                  UI::Component::Image::make(l_Element);
-
-              l_Image.set_texture(get_default_texture());
-            }
-
-            if (1) {
-              UI::Element l_Element =
-                  UI::Element::make(N(txt), l_Canvas);
-              UI::Component::Display l_Display =
-                  UI::Component::Display::make(l_Element);
-
-              l_Display.pixel_position(120.0f, 250.0f);
-              l_Display.pixel_scale(300, 150);
-              l_Display.rotation(0);
-              l_Display.layer(0);
-
-              UI::Component::Text l_Text =
-                  UI::Component::Text::make(l_Element);
-              l_Text.set_text("Hello World!");
-              l_Text.set_size(32.0f);
-              Font l_Font = Font::find_by_name(N(roboto));
-              l_Text.set_font(l_Font);
-              l_Text.set_color(Math::Color(1.0f, 1.0f, 1.0f, 1.0f));
-            }
-          }
-
-          if (0) {
-            UiRenderObject l_RenderObject = UiRenderObject::make(
-                l_Canvas, get_primitives().unitQuad);
-
-            l_RenderObject.set_position_x(200.f);
-            l_RenderObject.set_position_y(140.f);
-
-            Font l_Font = Font::find_by_name(N(roboto));
-
-            ResourceManager::load_font(l_Font);
-
-            l_RenderObject.set_texture(l_Font.get_texture());
-
-            l_RenderObject.set_rotation2D(0.f);
-            l_RenderObject.set_z_sorting(1);
-
-            l_RenderObject.set_size(150.0f, 150.0f);
-
-            l_RenderObject.set_material(l_TextMaterial);
-
-            g_FontRenderObject = l_RenderObject;
-          }
-        }
 
         run();
       }

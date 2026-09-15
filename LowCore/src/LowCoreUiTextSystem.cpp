@@ -43,14 +43,18 @@ namespace Low {
           static void setup_drawcommands(Component::Text p_Text)
           {
             Renderer::Font l_Font = p_Text.get_font();
-
-            if (l_Font.get_texture().get_state() !=
+            
+            if (!l_Font.get_texture().is_alive() || l_Font.get_texture().get_state() !=
                 Renderer::TextureState::LOADED) {
               return;
             }
 
             UI::Element l_Element = p_Text.get_element();
             Renderer::UiCanvas l_Canvas = l_Element.get_canvas();
+
+            if (!l_Canvas.is_alive()) {
+              return;
+            }
 
             Renderer::Material l_Material =
                 Renderer::get_default_material_ui_text();
@@ -172,6 +176,9 @@ namespace Low {
             for (uint32_t i = 0u; i < Component::Text::living_count();
                  ++i) {
               Component::Text i_Text = l_Texts[i];
+              if (!i_Text.get_font().is_alive()) {
+                i_Text.set_font(Renderer::Font::living_instances()[0]);
+              }
               Element i_Element = i_Text.get_element();
               Component::Display i_Display = i_Element.get_display();
 
@@ -186,7 +193,7 @@ namespace Low {
                 i_Text.mark_dirty();
               }
 
-              if (i_Text.is_dirty() || i_Display.is_dirty()) {
+              if (i_Text.is_dirty() || i_Display.is_world_dirty()) {
                 align_text(i_Text);
                 i_Text.set_dirty(false);
               }

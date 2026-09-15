@@ -25,7 +25,8 @@ namespace Low {
                                   const Math::UVector2 p_Dimensions)
           : UiViewport(p_Dimensions), m_Asset(p_Asset)
       {
-        m_Instance = m_Asset.spawn_instance(m_Canvas);
+        m_Instance = m_Asset.spawn_instance(get_canvas());
+        m_Screen.add_element(m_Instance.get_root());
       }
       ~UiWidgetInteractiveViewport() override
       {

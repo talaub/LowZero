@@ -22,7 +22,6 @@
 #include "LowEditorSceneWidget.h"
 #include "LowEditorChangeWidget.h"
 #include "LowEditorRegionWidget.h"
-#include "LowEditorUiWidget.h"
 #include "LowEditorFlodeWidget.h"
 #include "LowEditorGui.h"
 #include "LowEditorIcons.h"
@@ -1306,7 +1305,6 @@ namespace Low {
       // register_editor_widget("Resources", new ResourceWidget());
       g_FlodeWidget = new FlodeWidget();
       // register_editor_widget("Flode", g_FlodeWidget, false);
-      register_editor_widget("UI-Views", new UiWidget(), false);
       register_editor_widget("Scripting errors",
                              new ScriptingErrorWidget, false);
       g_ScriptWidget = new ScriptWidget;
@@ -1316,8 +1314,8 @@ namespace Low {
                              new VersionControlWidget, false);
 
       register_widget("Debug/Jobs", new JobWidget(), false);
-      register_widget("Debug/Navigation",
-                      new NavigationDebugWidget(), false);
+      register_widget("Debug/Navigation", new NavigationDebugWidget(),
+                      false);
       register_widget("Debug/Renderer Debug",
                       new RendererDebugWidget(), false);
 

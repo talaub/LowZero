@@ -1277,6 +1277,11 @@ function generate_source(p_Type) {
       t += line(
         `l_PropertyInfo.handleType = ${i_Prop.plain_type}EnumHelper::get_enum_id();`,
       );
+    } else if (i_Prop.lens_enum) {
+      t += line(`l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;`);
+      t += line(
+        `l_PropertyInfo.handleType = ${i_Prop.plain_type}Enum::get_enum_id();`,
+      );
     } else {
       t += line(
         `l_PropertyInfo.type = Low::Util::RTTI::PropertyType::${get_property_type(i_Prop.plain_type)};`,
@@ -1820,6 +1825,10 @@ function generate_source(p_Type) {
         t += line(
           `Low::Util::Serial::serialize_enum(p_Node["${i_PropName}"], ${i_Prop.plain_type}EnumHelper::get_enum_id(), static_cast<${g_EnumType}>(${i_Prop.getter_name}()));`,
         );
+      } else if (i_Prop.lens_enum) {
+        t += line(
+          `Low::Util::Serial::serialize_enum(p_Node["${i_PropName}"], ${i_Prop.plain_type}Enum::get_enum_id(), static_cast<${g_EnumType}>(${i_Prop.getter_name}()));`,
+        );
       }
     }
   }
@@ -1978,6 +1987,10 @@ function generate_source(p_Type) {
           `l_Handle.${i_Prop.setter_name}(${i_Prop.plain_type}::deserialize(p_Node["${i_PropName}"], l_Handle.get_id()).get_id());`,
         );
       } else if (i_Prop.enum) {
+        t += line(
+          `l_Handle.${i_Prop.setter_name}(static_cast<${i_Prop.plain_type}>(Low::Util::Serial::deserialize_enum(p_Node["${i_PropName}"])));`,
+        );
+      } else if (i_Prop.lens_enum) {
         t += line(
           `l_Handle.${i_Prop.setter_name}(static_cast<${i_Prop.plain_type}>(Low::Util::Serial::deserialize_enum(p_Node["${i_PropName}"])));`,
         );

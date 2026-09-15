@@ -661,7 +661,7 @@ namespace Low {
               ImGui::TextDisabled("No default editor");
               return false;
             }
-            u8 l_Value = (u8)p_Variable.default_value.as_u32();
+            int l_Value = (int)p_Variable.default_value.as_u32();
             if (PropertyEditors::render_enum_selector(
                     Util::get_enum_id(p_Variable.handle_type),
                     &l_Value, "", false)) {

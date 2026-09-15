@@ -7,6 +7,9 @@
 #include "LowCoreScriptAsset.h"
 #include "LowMath.h"
 #include "LowUtilHandle.h"
+#include "LowUtilVariant.h"
+
+#include <utility>
 
 class asIScriptEngine;
 
@@ -132,6 +135,44 @@ namespace Low {
 
       void LOW_CORE_API build_module(Module p_Module);
       bool LOW_CORE_API fill_member_fields(ClassInstance p_Instance);
+
+      struct Function
+      {
+        Module module;
+        Util::String declaration;
+      };
+
+      bool LOW_CORE_API
+      call_function_dynamic(Module p_Module,
+                            const Util::String &p_Declaration,
+                            const Util::List<Util::Variant> &p_Args = {});
+
+      bool LOW_CORE_API call_function_internal(
+          Module p_Module, const char *p_Declaration,
+          const void *const *p_Args, const char *const *p_TypeKeys,
+          uint32_t p_ArgCount);
+
+      template <typename... TArgs>
+      bool call_function(Module p_Module, const char *p_Declaration,
+                         TArgs &&...p_Args)
+      {
+        const void *l_Args[] = {(const void *)&p_Args..., nullptr};
+        const char *l_TypeKeys[] = {
+            Detail::ScriptArgTraits<std::remove_cv_t<
+                std::remove_reference_t<TArgs>>>::key()...,
+            nullptr};
+
+        return call_function_internal(p_Module, p_Declaration, l_Args,
+                                      l_TypeKeys, sizeof...(TArgs));
+      }
+
+      template <typename... TArgs>
+      bool call_function(const Function &p_Function, TArgs &&...p_Args)
+      {
+        return call_function(p_Function.module,
+                             p_Function.declaration.c_str(),
+                             std::forward<TArgs>(p_Args)...);
+      }
 
       struct StructInfo
       {

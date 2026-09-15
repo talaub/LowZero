@@ -3,6 +3,7 @@
 #include "LowCoreScripting.h"
 #include "LowCoreScriptAssetGenerator.h"
 #include "LowUtil.h"
+#include "LowUtilAssetManager.h"
 #include "LowUtilSerialization.h"
 
 namespace Low {
@@ -113,6 +114,19 @@ namespace Low {
 
         if (script_asset.is_alive() && !save_script_asset_sidecar()) {
           return false;
+        }
+
+        if (script_asset.is_alive()) {
+          Util::AssetManager::register_bundle(
+              Util::AssetManager::BundleBuilder(script_asset.get_id())
+                  .file(p_VisualScriptPath, N(graph),
+                        Util::AssetManager::OnMissingPolicy::
+                            DeleteBundle)
+                  .file(document.output_path, N(compiled),
+                        Util::AssetManager::OnMissingPolicy::Ignore)
+                  .file(script_asset_sidecar_path, N(sidecar),
+                        Util::AssetManager::OnMissingPolicy::Ignore)
+                  .build());
         }
 
         _LOW_ASSERT(compile_profile_registry);

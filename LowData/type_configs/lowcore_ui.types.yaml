@@ -165,7 +165,7 @@ types:
             type: Low::Core::UI::Element
             handle: true
       fill_element_descriptor:
-        return_type: void
+        return_type: bool
         private: true
         parameters:
           - name: element
@@ -173,6 +173,9 @@ types:
             handle: true
           - name: descriptor
             type: Low::Core::UI::ElementDescriptor
+          - name: instance
+            type: Low::Core::UI::WidgetInstance
+            handle: true
       fill_content_from_instance:
         return_type: void
         parameters:
@@ -208,8 +211,10 @@ types:
       controller_instance:
         type: Low::Core::UI::ControllerInstance
         handle: true
+      asset:
+        type: uint64_t
 
-  View:
+  Screen:
     unique_id: true
     name_editable: true
     no_auto_duplicate: true
@@ -222,91 +227,53 @@ types:
       - LowUtilFileIO.h
       - LowRendererUiCanvas.h
     properties:
-      loaded:
-        type: bool
-        skip_serialization: true
-        skip_deserialization: true
       elements:
-        type: Util::Set<Util::UniqueId>
+        type: Util::List<Core::UI::Element>
         no_setter: true
         skip_serialization: true
         skip_deserialization: true
-      internal:
-        type: bool
-        private_setter: true
-        skip_serialization: true
-        skip_deserialization: true
-      view_template:
-        type: bool
-        editor_editable: true
       pixel_position:
         type: Low::Math::Vector2
         editor_editable: true
         expose_scripting: true
         getter_name: pixel_position
         setter_name: pixel_position
-        dirty_flag: transform_dirty
-      rotation:
+        dirty_flag: dirty
+      pixel_size:
+        type: Low::Math::Vector2
+        editor_editable: true
+        expose_scripting: true
+        getter_name: pixel_size
+        setter_name: pixel_size
+        dirty_flag: dirty
+      zoom:
         type: float
         editor_editable: true
         expose_scripting: true
-        getter_name: rotation
-        setter_name: rotation
-        dirty_flag: transform_dirty
-      scale_multiplier:
-        type: float
-        editor_editable: true
-        expose_scripting: true
-        getter_name: scale_multiplier
-        setter_name: scale_multiplier
-        dirty_flag: transform_dirty
-      layer_offset:
-        type: uint32_t
-        editor_editable: true
-        expose_scripting: true
-        getter_name: layer_offset
-        setter_name: layer_offset
-        dirty_flag: transform_dirty
+        getter_name: zoom
+        setter_name: zoom
+        dirty_flag: dirty
       canvas:
         type: Low::Renderer::UiCanvas
         handle: true
         editor_editable: true
     functions:
-      serialize_elements:
-        return_type: void
+      make_from_widget_asset:
+        return_type: Low::Core::UI::Screen
+        return_handle: true
+        static: true
         parameters:
-          - name: node
-            type: Util::Serial::Node
+          - name: name
+            type: Low::Util::Name
+          - name: widgetAsset
+            type: Low::Core::UI::WidgetAsset
+            handle: true
       add_element:
         return_type: void
         parameters:
           - name: element
-            type: Element
+            type: Low::Core::UI::Element
             handle: true
-      remove_element:
-        return_type: void
-        parameters:
-          - name: element
-            type: Element
-            handle: true
-      load_elements:
-        return_type: void
-      unload_elements:
-        return_type: void
-      spawn_instance:
-        return_type: Low::Core::UI::View
-        return_handle: true
-        expose_scripting: true
-        parameters:
-          - name: name
-            type: Low::Util::Name
-      find_element_by_name:
-        return_type: Low::Core::UI::Element
-        return_handle: true
-        expose_scripting: true
-        parameters:
-          - name: name
-            type: Low::Util::Name
 
   Element:
     no_auto_serialize: true
@@ -318,7 +285,7 @@ types:
     private_make: true
     scripting_namespace: UI
     header_imports:
-      - LowCoreUiView.h
+      - LowCoreUiScreen.h
       - LowRendererUiCanvas.h
     source_imports:
       - LowCoreUiDisplay.h
@@ -326,10 +293,10 @@ types:
       components:
         type: Util::Map<uint16_t, Util::Handle>
         no_setter: true
-      view:
-        type: Low::Core::UI::View
+      cached_screen:
+        type: Low::Core::UI::Screen
         handle: true
-        expose_scripting: true
+        private_setter: true
       click_passthrough:
         type: bool
         expose_scripting: true
@@ -412,4 +379,10 @@ types:
             type: Util::Serial::Node
           - name: creator
             type: Util::Handle
+            handle: true
+      update_screen:
+        return_type: void
+        parameters:
+          - name: screen
+            type: Low::Core::UI::Screen
             handle: true

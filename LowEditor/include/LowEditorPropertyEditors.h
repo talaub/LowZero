@@ -20,8 +20,8 @@ namespace Low {
                                                 Math::Color *p_Color);
 
       bool LOW_EDITOR_API render_enum_selector(
-          u16 p_EnumId, u8 *p_Value, Util::String p_Label,
-          bool p_RenderLabel, Util::List<u8> p_FilterList);
+          u16 p_EnumId, int *p_Value, Util::String p_Label,
+          bool p_RenderLabel, Util::List<int> p_FilterList);
 
       bool LOW_EDITOR_API render_handle_selector(
           Util::String p_Label, Util::RTTI::TypeInfo &p_TypeInfo,
@@ -31,7 +31,7 @@ namespace Low {
                              uint64_t *p_HandleId);
 
       bool LOW_EDITOR_API render_enum_selector(u16 p_EnumId,
-                                               u8 *p_Value,
+                                               int *p_Value,
                                                Util::String p_Label,
                                                bool p_RenderLabel);
 

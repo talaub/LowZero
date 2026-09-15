@@ -60,9 +60,9 @@ namespace Low {
             l_Handle, Element, components,
             SINGLE_ARG(Util::Map<uint16_t, Util::Handle>)))
             Util::Map<uint16_t, Util::Handle>();
-        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Element, view,
-                                   Low::Core::UI::View))
-            Low::Core::UI::View();
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Element, cached_screen,
+                                   Low::Core::UI::Screen))
+            Low::Core::UI::Screen();
         ACCESSOR_TYPE_SOA(l_Handle, Element, click_passthrough,
                           bool) = false;
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Element, canvas,
@@ -131,9 +131,6 @@ namespace Low {
             }
           }
 
-          if (get_view().is_alive()) {
-            get_view().remove_element(*this);
-          }
           // LOW_CODEGEN::END::CUSTOM:DESTROY
         }
 
@@ -239,32 +236,33 @@ namespace Low {
           // End property: components
         }
         {
-          // Property: view
+          // Property: cached_screen
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-          l_PropertyInfo.name = N(view);
+          l_PropertyInfo.name = N(cached_screen);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(Element::Data, view);
+          l_PropertyInfo.dataOffset =
+              offsetof(Element::Data, cached_screen);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_PropertyInfo.handleType = Low::Core::UI::View::IDENTIFIER;
+          l_PropertyInfo.handleType =
+              Low::Core::UI::Screen::IDENTIFIER;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Element l_Handle = p_Handle.get_id();
-            l_Handle.get_view();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Element, view,
-                                              Low::Core::UI::View);
+            l_Handle.get_cached_screen();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Element,
+                                              cached_screen,
+                                              Low::Core::UI::Screen);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                  const void *p_Data) -> void {
-            Element l_Handle = p_Handle.get_id();
-            l_Handle.set_view(*(Low::Core::UI::View *)p_Data);
-          };
+                                  const void *p_Data) -> void {};
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Element l_Handle = p_Handle.get_id();
-            *((Low::Core::UI::View *)p_Data) = l_Handle.get_view();
+            *((Low::Core::UI::Screen *)p_Data) =
+                l_Handle.get_cached_screen();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-          // End property: view
+          // End property: cached_screen
         }
         {
           // Property: click_passthrough
@@ -623,6 +621,24 @@ namespace Low {
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
           // End function: deserialize_hierarchy
         }
+        {
+          // Function: update_screen
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(update_screen);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Screen);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::HANDLE;
+            l_ParameterInfo.handleType =
+                Low::Core::UI::Screen::type_id();
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: update_screen
+        }
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
         // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
@@ -763,7 +779,6 @@ namespace Low {
 
         l_Element.set_click_passthrough(is_click_passthrough());
         l_Element.get_display().set_parent(l_Display.get_parent());
-        get_view().add_element(l_Element);
 
         return l_Element;
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -806,17 +821,6 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
-
-        View l_View = p_Creator.get_id();
-
-        if (!l_View.is_alive()) {
-          if (p_Node["view"]) {
-            l_View = Util::find_handle_by_unique_id(
-                         p_Node["view"].as<Util::U64Id>())
-                         .get_id();
-          }
-        }
-
         Element l_Element =
             Element::make(p_Node["name"].as<Util::Name>());
 
@@ -831,8 +835,6 @@ namespace Low {
           Util::register_unique_id(l_Element.get_unique_id(),
                                    l_Element);
         }
-
-        l_View.add_element(l_Element);
 
         Util::Serial::Node l_ComponentsNode = p_Node["components"];
 
@@ -920,42 +922,35 @@ namespace Low {
             SINGLE_ARG(Util::Map<uint16_t, Util::Handle>));
       }
 
-      Low::Core::UI::View Element::get_view() const
+      Low::Core::UI::Screen Element::get_cached_screen() const
       {
         _LOW_ASSERT(is_alive());
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_view
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_cached_screen
+        // LOW_CODEGEN::END::CUSTOM:GETTER_cached_screen
 
-        // LOW_CODEGEN::END::CUSTOM:GETTER_view
-
-        return TYPE_SOA(Element, view, Low::Core::UI::View);
+        return TYPE_SOA(Element, cached_screen,
+                        Low::Core::UI::Screen);
       }
-      void Element::set_view(Low::Core::UI::View p_Value)
+      void Element::set_cached_screen(Low::Core::UI::Screen p_Value)
       {
         _LOW_ASSERT(is_alive());
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_view
-
-        // LOW_CODEGEN::END::CUSTOM:PRESETTER_view
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_cached_screen
+        set_canvas(Util::Handle::DEAD);
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_cached_screen
 
         // Set new value
-        TYPE_SOA(Element, view, Low::Core::UI::View) = p_Value;
+        TYPE_SOA(Element, cached_screen, Low::Core::UI::Screen) =
+            p_Value;
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_view
-
-        if (get_display().is_alive()) {
-          // If a parent gets a new view assigned all children get
-          // moved to that view as well
-          for (u64 i_ChildId : get_display().get_children()) {
-            Component::Display i_ChildDisplay = i_ChildId;
-            if (p_Value.is_alive()) {
-              p_Value.add_element(i_ChildDisplay.get_element());
-            }
-          }
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_cached_screen
+        if (p_Value.is_alive()) {
+          set_canvas(p_Value.get_canvas());
         }
-        // LOW_CODEGEN::END::CUSTOM:SETTER_view
+        // LOW_CODEGEN::END::CUSTOM:SETTER_cached_screen
 
-        broadcast_observable(N(view));
+        broadcast_observable(N(cached_screen));
       }
 
       bool Element::is_click_passthrough() const
@@ -996,7 +991,6 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_canvas
-
         // LOW_CODEGEN::END::CUSTOM:GETTER_canvas
 
         return TYPE_SOA(Element, canvas, Low::Renderer::UiCanvas);
@@ -1006,14 +1000,12 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_canvas
-
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_canvas
 
         // Set new value
         TYPE_SOA(Element, canvas, Low::Renderer::UiCanvas) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_canvas
-
         // LOW_CODEGEN::END::CUSTOM:SETTER_canvas
 
         broadcast_observable(N(canvas));
@@ -1250,10 +1242,6 @@ namespace Low {
         if (p_AddHandles) {
           p_Node["handle"] = (Util::U64Id)get_id();
         }
-        p_Node["view"] = 0;
-        if (get_view().is_alive()) {
-          p_Node["view"] = (Util::U64Id)get_view().get_unique_id();
-        }
 
         for (auto it = get_components().begin();
              it != get_components().end(); ++it) {
@@ -1314,6 +1302,30 @@ namespace Low {
 
         return l_Element;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_deserialize_hierarchy
+      }
+
+      void Element::update_screen(Low::Core::UI::Screen p_Screen)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_screen
+        Component::Display l_Display = get_display();
+
+        if (p_Screen.is_alive()) {
+          set_cached_screen(p_Screen);
+        } else {
+          set_cached_screen(Util::Handle::DEAD);
+
+          if (l_Display.get_parent().is_alive()) {
+            Element l_Parent = l_Display.get_parent().get_element();
+            set_cached_screen(l_Parent.get_cached_screen());
+          }
+        }
+
+        for (const u64 i_ChildId : l_Display.get_children()) {
+          Component::Display i_Child = i_ChildId;
+
+          i_Child.get_element().update_screen(p_Screen);
+        }
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_update_screen
       }
 
       uint32_t Element::create_instance(u32 &p_PageIndex,

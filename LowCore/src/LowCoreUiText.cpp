@@ -92,6 +92,7 @@ namespace Low {
 
           // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
 
+          p_Element.observe(N(canvas), l_Handle);
           // LOW_CODEGEN::END::CUSTOM:MAKE
 
           return l_Handle;
@@ -727,6 +728,9 @@ namespace Low {
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
 
+          if (p_Observable == N(canvas)) {
+            set_full_dirty(true);
+          }
           // LOW_CODEGEN::END::CUSTOM:NOTIFY
         }
 

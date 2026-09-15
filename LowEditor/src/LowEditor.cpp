@@ -512,131 +512,25 @@ namespace Low {
       return l_Output + ".meshresource.yaml";
     }
 
-    static bool describe_mesh_bundle_from_resource(
-        Renderer::MeshResource p_Resource,
-        Util::AssetManager::AssetBundle &p_OutBundle)
-    {
-      if (!p_Resource.is_alive()) {
-        return false;
-      }
-
-      Renderer::Mesh l_Mesh =
-          Renderer::ResourceManager::find_asset<Renderer::Mesh>(
-              p_Resource.get_mesh_id());
-      if (!l_Mesh.is_alive()) {
-        return false;
-      }
-
-      p_OutBundle.typeId = Renderer::Mesh::type_id();
-      p_OutBundle.primaryHandle = l_Mesh.get_id();
-      p_OutBundle.uniqueId = l_Mesh.get_unique_id();
-      p_OutBundle.name = l_Mesh.get_name();
-      p_OutBundle.handles.push_back(l_Mesh.get_id());
-      p_OutBundle.handles.push_back(p_Resource.get_id());
-
-      p_OutBundle.files.push_back(
-          {p_Resource.get_source_file(),
-           Util::AssetManager::AssetFileRole::Source, false, false});
-      p_OutBundle.files.push_back(
-          {p_Resource.get_path(),
-           Util::AssetManager::AssetFileRole::Manifest, true, true});
-      p_OutBundle.files.push_back(
-          {p_Resource.get_sidecar_path(),
-           Util::AssetManager::AssetFileRole::Derived, true, true});
-      p_OutBundle.files.push_back(
-          {p_Resource.get_mesh_path(),
-           Util::AssetManager::AssetFileRole::Derived, true, true});
-
-      return true;
-    }
-
-    static bool describe_mesh_bundle_from_handle(
-        Util::Handle p_Handle,
-        Util::AssetManager::AssetBundle &p_OutBundle)
+    static bool
+    regenerate_mesh_file(const Util::AssetManager::BundleFileDesc
+                             &p_File,
+                         Util::Handle p_Handle)
     {
       Renderer::Mesh l_Mesh = p_Handle.get_id();
       if (!l_Mesh.is_alive()) {
         return false;
       }
 
-      return describe_mesh_bundle_from_resource(l_Mesh.get_resource(),
-                                                p_OutBundle);
-    }
-
-    static bool describe_mesh_bundle_from_path(
-        const Util::String p_Path,
-        Util::AssetManager::AssetBundle &p_OutBundle)
-    {
-      const Util::String l_Path = Util::PathHelper::normalize(p_Path);
-
-      for (u32 i = 0; i < Renderer::MeshResource::living_count();
-           ++i) {
-        Renderer::MeshResource i_Resource =
-            Renderer::MeshResource::living_instances()[i];
-
-        if (Util::PathHelper::normalize(
-                i_Resource.get_source_file()) == l_Path ||
-            Util::PathHelper::normalize(i_Resource.get_path()) ==
-                l_Path ||
-            Util::PathHelper::normalize(
-                i_Resource.get_sidecar_path()) == l_Path ||
-            Util::PathHelper::normalize(i_Resource.get_mesh_path()) ==
-                l_Path) {
-          return describe_mesh_bundle_from_resource(i_Resource,
-                                                    p_OutBundle);
-        }
+      Renderer::MeshResource l_Resource = l_Mesh.get_resource();
+      if (!l_Resource.is_alive() ||
+          !Util::FileIO::file_exists_sync(
+              l_Resource.get_source_file().c_str())) {
+        return false;
       }
 
-      return false;
-    }
-
-    static void repair_mesh_bundle(
-        const Util::AssetManager::AssetBundle &p_Bundle,
-        const Util::AssetManager::AssetHealth &p_Health)
-    {
-      if (p_Health.state != Util::AssetManager::AssetHealthState::
-                                MissingDerivedFile &&
-          p_Health.state != Util::AssetManager::AssetHealthState::
-                                RequiresReimport &&
-          p_Health.state !=
-              Util::AssetManager::AssetHealthState::Stale) {
-        return;
-      }
-
-      for (const Util::AssetManager::AssetFile &i_File :
-           p_Bundle.files) {
-        if (i_File.role !=
-            Util::AssetManager::AssetFileRole::Source) {
-          continue;
-        }
-
-        if (!Util::FileIO::file_exists_sync(i_File.path.c_str())) {
-          return;
-        }
-
-        import_mesh_asset(i_File.path);
-        return;
-      }
-    }
-
-    static void delete_mesh_bundle(
-        const Util::AssetManager::AssetBundle &p_Bundle,
-        const Util::AssetManager::AssetHealth &p_Health)
-    {
-      for (const Util::AssetManager::AssetFile &i_File :
-           p_Bundle.files) {
-        if (!i_File.deleteWithAsset ||
-            !Util::FileIO::file_exists_sync(i_File.path.c_str())) {
-          continue;
-        }
-
-        Util::FileIO::delete_sync(i_File.path.c_str());
-      }
-
-      Renderer::Mesh l_Mesh = p_Bundle.primaryHandle.get_id();
-      if (l_Mesh.is_alive()) {
-        l_Mesh.destroy();
-      }
+      import_mesh_asset(l_Resource.get_source_file());
+      return true;
     }
 
     static Util::String
@@ -663,131 +557,25 @@ namespace Low {
       return l_Output + ".texresource.yaml";
     }
 
-    static bool describe_texture_bundle_from_resource(
-        Renderer::TextureResource p_Resource,
-        Util::AssetManager::AssetBundle &p_OutBundle)
-    {
-      if (!p_Resource.is_alive()) {
-        return false;
-      }
-
-      Renderer::Texture l_Texture =
-          Renderer::ResourceManager::find_asset<Renderer::Texture>(
-              p_Resource.get_texture_id());
-      if (!l_Texture.is_alive()) {
-        return false;
-      }
-
-      p_OutBundle.typeId = Renderer::Texture::type_id();
-      p_OutBundle.primaryHandle = l_Texture.get_id();
-      p_OutBundle.uniqueId = l_Texture.get_unique_id();
-      p_OutBundle.name = l_Texture.get_name();
-      p_OutBundle.handles.push_back(l_Texture.get_id());
-      p_OutBundle.handles.push_back(p_Resource.get_id());
-
-      p_OutBundle.files.push_back(
-          {p_Resource.get_source_file(),
-           Util::AssetManager::AssetFileRole::Source, false, false});
-      p_OutBundle.files.push_back(
-          {p_Resource.get_path(),
-           Util::AssetManager::AssetFileRole::Manifest, true, true});
-      p_OutBundle.files.push_back(
-          {p_Resource.get_sidecar_path(),
-           Util::AssetManager::AssetFileRole::Derived, true, true});
-      p_OutBundle.files.push_back(
-          {p_Resource.get_texture_path(),
-           Util::AssetManager::AssetFileRole::Derived, true, true});
-
-      return true;
-    }
-
-    static bool describe_texture_bundle_from_handle(
-        Util::Handle p_Handle,
-        Util::AssetManager::AssetBundle &p_OutBundle)
+    static bool
+    regenerate_texture_file(const Util::AssetManager::BundleFileDesc
+                                &p_File,
+                            Util::Handle p_Handle)
     {
       Renderer::Texture l_Texture = p_Handle.get_id();
       if (!l_Texture.is_alive()) {
         return false;
       }
 
-      return describe_texture_bundle_from_resource(
-          l_Texture.get_resource(), p_OutBundle);
-    }
-
-    static bool describe_texture_bundle_from_path(
-        const Util::String p_Path,
-        Util::AssetManager::AssetBundle &p_OutBundle)
-    {
-      const Util::String l_Path = Util::PathHelper::normalize(p_Path);
-
-      for (u32 i = 0; i < Renderer::TextureResource::living_count();
-           ++i) {
-        Renderer::TextureResource i_Resource =
-            Renderer::TextureResource::living_instances()[i];
-
-        if (Util::PathHelper::normalize(
-                i_Resource.get_source_file()) == l_Path ||
-            Util::PathHelper::normalize(i_Resource.get_path()) ==
-                l_Path ||
-            Util::PathHelper::normalize(
-                i_Resource.get_sidecar_path()) == l_Path ||
-            Util::PathHelper::normalize(
-                i_Resource.get_texture_path()) == l_Path) {
-          return describe_texture_bundle_from_resource(i_Resource,
-                                                       p_OutBundle);
-        }
+      Renderer::TextureResource l_Resource = l_Texture.get_resource();
+      if (!l_Resource.is_alive() ||
+          !Util::FileIO::file_exists_sync(
+              l_Resource.get_source_file().c_str())) {
+        return false;
       }
 
-      return false;
-    }
-
-    static void repair_texture_bundle(
-        const Util::AssetManager::AssetBundle &p_Bundle,
-        const Util::AssetManager::AssetHealth &p_Health)
-    {
-      if (p_Health.state != Util::AssetManager::AssetHealthState::
-                                MissingDerivedFile &&
-          p_Health.state != Util::AssetManager::AssetHealthState::
-                                RequiresReimport &&
-          p_Health.state !=
-              Util::AssetManager::AssetHealthState::Stale) {
-        return;
-      }
-
-      for (const Util::AssetManager::AssetFile &i_File :
-           p_Bundle.files) {
-        if (i_File.role !=
-            Util::AssetManager::AssetFileRole::Source) {
-          continue;
-        }
-
-        if (!Util::FileIO::file_exists_sync(i_File.path.c_str())) {
-          return;
-        }
-
-        import_texture_asset(i_File.path);
-        return;
-      }
-    }
-
-    static void delete_texture_bundle(
-        const Util::AssetManager::AssetBundle &p_Bundle,
-        const Util::AssetManager::AssetHealth &p_Health)
-    {
-      for (const Util::AssetManager::AssetFile &i_File :
-           p_Bundle.files) {
-        if (!i_File.deleteWithAsset ||
-            !Util::FileIO::file_exists_sync(i_File.path.c_str())) {
-          continue;
-        }
-
-        Util::FileIO::delete_sync(i_File.path.c_str());
-      }
-
-      Renderer::Texture l_Texture = p_Bundle.primaryHandle.get_id();
-      if (l_Texture.is_alive()) {
-        l_Texture.destroy();
-      }
+      import_texture_asset(l_Resource.get_source_file());
+      return true;
     }
 
     static Util::String
@@ -798,20 +586,6 @@ namespace Low {
                        Util::hash_to_string(p_Asset.get_unique_id()) +
                        ".script.yaml";
       return l_SidecarPath;
-    }
-
-    static Util::String
-    normalize_script_absolute_path(const Util::String p_Path)
-    {
-      std::filesystem::path l_Path(p_Path.c_str());
-      if (!l_Path.is_absolute()) {
-        l_Path = std::filesystem::path(
-                     Util::get_project().rootPath.c_str()) /
-                 l_Path;
-      }
-
-      return Util::PathHelper::normalize(
-          std::filesystem::weakly_canonical(l_Path).string().c_str());
     }
 
     static Util::String
@@ -865,74 +639,29 @@ namespace Low {
       return Util::PathHelper::normalize(l_Path.string().c_str());
     }
 
-    static Util::String
-    get_script_source_compare_path(const Util::String p_SourcePath)
+    static void register_script_bundle(Core::ScriptAsset p_Asset,
+                                       const Util::String p_SourcePath)
     {
-      std::filesystem::path l_Path(p_SourcePath.c_str());
-      if (!l_Path.is_absolute()) {
-        std::filesystem::path l_DataRelative =
-            std::filesystem::path(
-                Util::get_project().dataPath.c_str()) /
-            l_Path;
-        if (Util::FileIO::file_exists_sync(
-                l_DataRelative.string().c_str())) {
-          l_Path = l_DataRelative;
-        } else {
-          l_Path = std::filesystem::path(
-                       Util::get_project().rootPath.c_str()) /
-                   l_Path;
-        }
-      }
-
-      return normalize_script_absolute_path(
-          Util::PathHelper::normalize(l_Path.string().c_str()));
-    }
-
-    static Core::ScriptAsset
-    find_script_asset_by_source_path(const Util::String p_Path)
-    {
-      const Util::String l_ComparePath =
-          get_script_source_compare_path(p_Path);
-
-      for (u32 i = 0; i < Core::ScriptAsset::living_count(); ++i) {
-        Core::ScriptAsset i_Script =
-            Core::ScriptAsset::living_instances()[i];
-        if (get_script_source_compare_path(
-                i_Script.get_source_path()) == l_ComparePath) {
-          return i_Script;
-        }
-      }
-
-      Util::List<Util::String> l_SidecarPaths;
-      Util::FileSystem::collect_files_with_suffix(
-          Util::get_project().assetCachePath.c_str(), ".script.yaml",
-          l_SidecarPaths, false);
-
-      for (Util::String i_SidecarPath : l_SidecarPaths) {
-        Util::Serial::Node i_Node =
-            Util::Serial::load_yaml_file(i_SidecarPath.c_str());
-        if (!i_Node["source"] ||
-            get_script_source_compare_path(
-                i_Node["source"].as<Util::String>()) !=
-                l_ComparePath) {
-          continue;
-        }
-
-        Core::ScriptAsset i_Asset = Core::ScriptAsset::deserialize(
-            i_Node, Util::Handle::DEAD);
-        Util::AssetManager::_register(i_Asset.get_id(),
-                                      i_SidecarPath);
-        return i_Asset;
-      }
-
-      return Util::Handle::DEAD;
+      Util::AssetManager::register_bundle(
+          Util::AssetManager::BundleBuilder(p_Asset.get_id())
+              .file(p_SourcePath, N(source),
+                    Util::AssetManager::OnMissingPolicy::DeleteBundle)
+              .file(get_script_sidecar_path(p_Asset), N(sidecar),
+                    Util::AssetManager::OnMissingPolicy::Regenerate)
+              .build());
     }
 
     static Util::String import_script_asset(const Util::String p_Path)
     {
       Core::ScriptAsset l_Asset =
-          find_script_asset_by_source_path(p_Path);
+          Util::AssetManager::find_by_path<Core::ScriptAsset>(p_Path);
       const bool l_Reimport = l_Asset.is_alive();
+
+      if (l_Reimport &&
+          l_Asset.get_generator() ==
+              Core::Scripting::AssetGenerator::VISUALSCRIPT) {
+        return get_script_sidecar_path(l_Asset);
+      }
 
       const Util::String l_FileName =
           Util::PathHelper::get_base_name_no_ext(p_Path);
@@ -950,7 +679,10 @@ namespace Low {
           get_script_source_storage_path(p_Path);
 
       if (l_Reimport) {
-        if (l_Asset.get_source_path() != l_StoragePath) {
+        const bool l_NeedsRewrite =
+            l_Asset.get_source_path() != l_StoragePath ||
+            !Util::FileIO::file_exists_sync(l_SidecarPath.c_str());
+        if (l_NeedsRewrite) {
           l_Asset.set_source_path(l_StoragePath);
 
           Util::Serial::Node l_OutNode;
@@ -958,7 +690,6 @@ namespace Low {
           Util::Serial::write_yaml_file(l_SidecarPath.c_str(),
                                         l_OutNode);
         }
-        Core::Scripting::build_module(l_Asset.get_module());
       } else {
         l_Asset.set_source_path(l_StoragePath);
         l_Asset.set_module(
@@ -968,105 +699,28 @@ namespace Low {
         l_Asset.serialize(l_OutNode);
         Util::Serial::write_yaml_file(l_SidecarPath.c_str(),
                                       l_OutNode);
-
-        Core::Scripting::build_module(l_Asset.get_module());
       }
+
+      register_script_bundle(l_Asset, p_Path);
+      Core::Scripting::build_module(l_Asset.get_module());
 
       return l_SidecarPath;
     }
 
-    static bool describe_script_bundle_from_handle(
-        Util::Handle p_Handle,
-        Util::AssetManager::AssetBundle &p_OutBundle)
+    static bool
+    regenerate_script_sidecar(const Util::AssetManager::BundleFileDesc
+                                   &p_File,
+                              Util::Handle p_Handle)
     {
       Core::ScriptAsset l_Asset = p_Handle.get_id();
-      if (!l_Asset.is_alive()) {
+      if (!l_Asset.is_alive() ||
+          !Util::FileIO::file_exists_sync(
+              l_Asset.get_full_path().c_str())) {
         return false;
       }
 
-      p_OutBundle.typeId = Core::ScriptAsset::type_id();
-      p_OutBundle.primaryHandle = l_Asset.get_id();
-      p_OutBundle.uniqueId = l_Asset.get_unique_id();
-      p_OutBundle.name = l_Asset.get_name();
-      p_OutBundle.handles.push_back(l_Asset.get_id());
-      p_OutBundle.files.push_back(
-          {l_Asset.get_source_path(),
-           Util::AssetManager::AssetFileRole::Source, false, false});
-      p_OutBundle.files.push_back(
-          {get_script_sidecar_path(l_Asset),
-           Util::AssetManager::AssetFileRole::Manifest, true, true});
-
+      import_script_asset(l_Asset.get_full_path());
       return true;
-    }
-
-    static bool describe_script_bundle_from_path(
-        const Util::String p_Path,
-        Util::AssetManager::AssetBundle &p_OutBundle)
-    {
-      const Util::String l_Path = Util::PathHelper::normalize(p_Path);
-
-      for (u32 i = 0; i < Core::ScriptAsset::living_count(); ++i) {
-        Core::ScriptAsset i_Asset =
-            Core::ScriptAsset::living_instances()[i];
-        if (Util::PathHelper::normalize(i_Asset.get_source_path()) ==
-                l_Path ||
-            Util::PathHelper::normalize(
-                get_script_sidecar_path(i_Asset)) == l_Path) {
-          return describe_script_bundle_from_handle(i_Asset.get_id(),
-                                                    p_OutBundle);
-        }
-      }
-
-      return false;
-    }
-
-    static void repair_script_bundle(
-        const Util::AssetManager::AssetBundle &p_Bundle,
-        const Util::AssetManager::AssetHealth &p_Health)
-    {
-      if (p_Health.state !=
-              Util::AssetManager::AssetHealthState::MissingManifest &&
-          p_Health.state != Util::AssetManager::AssetHealthState::
-                                RequiresReimport &&
-          p_Health.state !=
-              Util::AssetManager::AssetHealthState::Stale) {
-        return;
-      }
-
-      for (const Util::AssetManager::AssetFile &i_File :
-           p_Bundle.files) {
-        if (i_File.role !=
-            Util::AssetManager::AssetFileRole::Source) {
-          continue;
-        }
-
-        if (!Util::FileIO::file_exists_sync(i_File.path.c_str())) {
-          return;
-        }
-
-        import_script_asset(i_File.path);
-        return;
-      }
-    }
-
-    static void delete_script_bundle(
-        const Util::AssetManager::AssetBundle &p_Bundle,
-        const Util::AssetManager::AssetHealth &p_Health)
-    {
-      for (const Util::AssetManager::AssetFile &i_File :
-           p_Bundle.files) {
-        if (!i_File.deleteWithAsset ||
-            !Util::FileIO::file_exists_sync(i_File.path.c_str())) {
-          continue;
-        }
-
-        Util::FileIO::delete_sync(i_File.path.c_str());
-      }
-
-      Core::ScriptAsset l_Asset = p_Bundle.primaryHandle.get_id();
-      if (l_Asset.is_alive()) {
-        l_Asset.destroy();
-      }
     }
 
     static bool g_ScriptAssetAuthoringTypesRegistered = false;
@@ -1080,28 +734,26 @@ namespace Low {
           .add_raw_suffix(".fbx")
           .add_import_directory(Util::get_project().dataPath, true,
                                 true)
-          .importer(import_mesh_asset)
-          .describe_from_handle(describe_mesh_bundle_from_handle)
-          .describe_from_path(describe_mesh_bundle_from_path)
-          .repair(repair_mesh_bundle)
-          .delete_asset(delete_mesh_bundle);
+          .importer(import_mesh_asset);
 
       Util::AssetManager::register_asset_authoring_type(
           l_MeshBuilder.build());
+
+      Util::AssetManager::register_regenerator(
+          Renderer::Mesh::type_id(), regenerate_mesh_file);
 
       Util::AssetManager::AuthoringTypeRegistratorBuilder
           l_TextureBuilder(N(Texture), Renderer::Texture::IDENTIFIER);
       l_TextureBuilder.add_raw_suffix(".png")
           .add_import_directory(Util::get_project().dataPath, true,
                                 true)
-          .importer(import_texture_asset)
-          .describe_from_handle(describe_texture_bundle_from_handle)
-          .describe_from_path(describe_texture_bundle_from_path)
-          .repair(repair_texture_bundle)
-          .delete_asset(delete_texture_bundle);
+          .importer(import_texture_asset);
 
       Util::AssetManager::register_asset_authoring_type(
           l_TextureBuilder.build());
+
+      Util::AssetManager::register_regenerator(
+          Renderer::Texture::type_id(), regenerate_texture_file);
     }
 
     static void register_script_asset_authoring_types()
@@ -1115,14 +767,13 @@ namespace Low {
       l_ScriptBuilder.add_raw_suffix(".as")
           .add_import_directory(Util::get_project().dataPath, true,
                                 true)
-          .importer(import_script_asset)
-          .describe_from_handle(describe_script_bundle_from_handle)
-          .describe_from_path(describe_script_bundle_from_path)
-          .repair(repair_script_bundle)
-          .delete_asset(delete_script_bundle);
+          .importer(import_script_asset);
 
       Util::AssetManager::register_asset_authoring_type(
           l_ScriptBuilder.build());
+
+      Util::AssetManager::register_regenerator(
+          Core::ScriptAsset::type_id(), regenerate_script_sidecar);
 
       g_ScriptAssetAuthoringTypesRegistered = true;
     }

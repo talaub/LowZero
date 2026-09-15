@@ -822,6 +822,208 @@ namespace Low {
         }
       }
 
+      static asIScriptContext *
+      prepare_function_call(Module p_Module, const char *p_Declaration,
+                            asIScriptFunction *&p_OutFunction,
+                            asIScriptEngine *&p_OutEngine)
+      {
+        asIScriptModule *l_Module =
+            (asIScriptModule *)p_Module.get_as_module();
+        if (!l_Module) {
+          return nullptr;
+        }
+
+        p_OutFunction = l_Module->GetFunctionByDecl(p_Declaration);
+        if (!p_OutFunction) {
+          return nullptr;
+        }
+
+        p_OutEngine = l_Module->GetEngine();
+        asIScriptContext *l_Context = p_OutEngine->RequestContext();
+        if (!l_Context) {
+          return nullptr;
+        }
+
+        if (l_Context->Prepare(p_OutFunction) < 0) {
+          p_OutEngine->ReturnContext(l_Context);
+          return nullptr;
+        }
+
+        return l_Context;
+      }
+
+      static bool set_arg(asIScriptContext *p_Context, asUINT p_Index,
+                          const void *p_Value, const char *p_TypeKey)
+      {
+        if (strcmp(p_TypeKey, "bool") == 0) {
+          return p_Context->SetArgByte(
+                     p_Index, static_cast<asBYTE>(
+                                  (*(const bool *)p_Value) ? 1 : 0)) >=
+                 0;
+        } else if (strcmp(p_TypeKey, "int8") == 0) {
+          return p_Context->SetArgByte(
+                     p_Index, static_cast<asBYTE>(
+                                  *(const int8_t *)p_Value)) >= 0;
+        } else if (strcmp(p_TypeKey, "uint8") == 0) {
+          return p_Context->SetArgByte(
+                     p_Index, static_cast<asBYTE>(
+                                  *(const uint8_t *)p_Value)) >= 0;
+        } else if (strcmp(p_TypeKey, "int16") == 0) {
+          return p_Context->SetArgWord(
+                     p_Index, static_cast<asWORD>(
+                                  *(const int16_t *)p_Value)) >= 0;
+        } else if (strcmp(p_TypeKey, "uint16") == 0) {
+          return p_Context->SetArgWord(
+                     p_Index, static_cast<asWORD>(
+                                  *(const uint16_t *)p_Value)) >= 0;
+        } else if (strcmp(p_TypeKey, "int32") == 0 ||
+                   strcmp(p_TypeKey, "int") == 0) {
+          return p_Context->SetArgDWord(
+                     p_Index, static_cast<asDWORD>(
+                                  *(const int32_t *)p_Value)) >= 0;
+        } else if (strcmp(p_TypeKey, "uint32") == 0 ||
+                   strcmp(p_TypeKey, "u32") == 0) {
+          return p_Context->SetArgDWord(
+                     p_Index, static_cast<asDWORD>(
+                                  *(const uint32_t *)p_Value)) >= 0;
+        } else if (strcmp(p_TypeKey, "int64") == 0) {
+          return p_Context->SetArgQWord(
+                     p_Index, static_cast<asQWORD>(
+                                  *(const int64_t *)p_Value)) >= 0;
+        } else if (strcmp(p_TypeKey, "uint64") == 0 ||
+                   strcmp(p_TypeKey, "u64") == 0) {
+          return p_Context->SetArgQWord(
+                     p_Index, static_cast<asQWORD>(
+                                  *(const uint64_t *)p_Value)) >= 0;
+        } else if (strcmp(p_TypeKey, "float") == 0) {
+          return p_Context->SetArgFloat(
+                     p_Index, *(const float *)p_Value) >= 0;
+        } else if (strcmp(p_TypeKey, "double") == 0) {
+          return p_Context->SetArgDouble(
+                     p_Index, *(const double *)p_Value) >= 0;
+        } else if (strcmp(p_TypeKey, "pointer") == 0) {
+          return p_Context->SetArgAddress(
+                     p_Index, const_cast<void *>(p_Value)) >= 0;
+        } else {
+          return p_Context->SetArgObject(
+                     p_Index, const_cast<void *>(p_Value)) >= 0;
+        }
+      }
+
+      bool call_function_internal(Module p_Module,
+                                  const char *p_Declaration,
+                                  const void *const *p_Args,
+                                  const char *const *p_TypeKeys,
+                                  uint32_t p_ArgCount)
+      {
+        asIScriptFunction *l_Function = nullptr;
+        asIScriptEngine *l_Engine = nullptr;
+        asIScriptContext *l_Context = prepare_function_call(
+            p_Module, p_Declaration, l_Function, l_Engine);
+        if (!l_Context) {
+          return false;
+        }
+
+        for (uint32_t i = 0; i < p_ArgCount; ++i) {
+          if (!set_arg(l_Context, i, p_Args[i], p_TypeKeys[i])) {
+            l_Engine->ReturnContext(l_Context);
+            return false;
+          }
+        }
+
+        const int l_Result = l_Context->Execute();
+        l_Engine->ReturnContext(l_Context);
+
+        return l_Result == asEXECUTION_FINISHED;
+      }
+
+      static bool set_variant_arg(asIScriptContext *p_Context,
+                                  asUINT p_Index,
+                                  const Util::Variant &p_Variant)
+      {
+        switch (p_Variant.m_Type) {
+        case Util::VariantType::Bool:
+          return p_Context->SetArgByte(
+                     p_Index, static_cast<asBYTE>(
+                                  p_Variant.as_bool() ? 1 : 0)) >= 0;
+        case Util::VariantType::Int32: {
+          int32_t l_Value = (int32_t)p_Variant;
+          return p_Context->SetArgDWord(
+                     p_Index, static_cast<asDWORD>(l_Value)) >= 0;
+        }
+        case Util::VariantType::UInt32:
+          return p_Context->SetArgDWord(
+                     p_Index,
+                     static_cast<asDWORD>(p_Variant.as_u32())) >= 0;
+        case Util::VariantType::UInt64:
+          return p_Context->SetArgQWord(
+                     p_Index,
+                     static_cast<asQWORD>(p_Variant.as_u64())) >= 0;
+        case Util::VariantType::Float:
+          return p_Context->SetArgFloat(
+                     p_Index, p_Variant.as_float()) >= 0;
+        case Util::VariantType::UVector2: {
+          Math::UVector2 l_Value = (Math::UVector2)p_Variant;
+          return p_Context->SetArgObject(p_Index, &l_Value) >= 0;
+        }
+        case Util::VariantType::Vector2: {
+          Math::Vector2 l_Value = (Math::Vector2)p_Variant;
+          return p_Context->SetArgObject(p_Index, &l_Value) >= 0;
+        }
+        case Util::VariantType::Vector3: {
+          Math::Vector3 l_Value = p_Variant.as_vector3();
+          return p_Context->SetArgObject(p_Index, &l_Value) >= 0;
+        }
+        case Util::VariantType::Vector4: {
+          Math::Vector4 l_Value = (Math::Vector4)p_Variant;
+          return p_Context->SetArgObject(p_Index, &l_Value) >= 0;
+        }
+        case Util::VariantType::Quaternion: {
+          Math::Quaternion l_Value = (Math::Quaternion)p_Variant;
+          return p_Context->SetArgObject(p_Index, &l_Value) >= 0;
+        }
+        case Util::VariantType::Name: {
+          Util::Name l_Value = p_Variant.as_name();
+          return p_Context->SetArgObject(p_Index, &l_Value) >= 0;
+        }
+        case Util::VariantType::Handle: {
+          Util::Handle l_Value = (Util::Handle)p_Variant.as_u64();
+          return p_Context->SetArgObject(p_Index, &l_Value) >= 0;
+        }
+        case Util::VariantType::String: {
+          Util::String l_Value = p_Variant.as_string();
+          return p_Context->SetArgObject(p_Index, &l_Value) >= 0;
+        }
+        default:
+          return false;
+        }
+      }
+
+      bool call_function_dynamic(
+          Module p_Module, const Util::String &p_Declaration,
+          const Util::List<Util::Variant> &p_Args)
+      {
+        asIScriptFunction *l_Function = nullptr;
+        asIScriptEngine *l_Engine = nullptr;
+        asIScriptContext *l_Context = prepare_function_call(
+            p_Module, p_Declaration.c_str(), l_Function, l_Engine);
+        if (!l_Context) {
+          return false;
+        }
+
+        for (uint32_t i = 0; i < p_Args.size(); ++i) {
+          if (!set_variant_arg(l_Context, i, p_Args[i])) {
+            l_Engine->ReturnContext(l_Context);
+            return false;
+          }
+        }
+
+        const int l_Result = l_Context->Execute();
+        l_Engine->ReturnContext(l_Context);
+
+        return l_Result == asEXECUTION_FINISHED;
+      }
+
       void tick_as(const float p_Delta)
       {
         if (!g_Initialized) {

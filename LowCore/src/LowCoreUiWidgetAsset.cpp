@@ -4,7 +4,6 @@
 
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
-#include "LowUtilHandle.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
@@ -646,7 +645,7 @@ namespace Low {
           // Function: fill_element_descriptor
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(fill_element_descriptor);
-          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_FunctionInfo.handleType = 0;
           {
             Low::Util::RTTI::ParameterInfo l_ParameterInfo;
@@ -663,6 +662,15 @@ namespace Low {
             l_ParameterInfo.type =
                 Low::Util::RTTI::PropertyType::UNKNOWN;
             l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Instance);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::HANDLE;
+            l_ParameterInfo.handleType =
+                Low::Core::UI::WidgetInstance::type_id();
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
@@ -805,6 +813,18 @@ namespace Low {
                 const Util::String l_DataPath =
                     Util::project_asset_cache_path(l_DataFileName);
                 l_Asset.set_data_path(l_DataPath);
+
+                Util::AssetManager::register_bundle(
+                    Util::AssetManager::BundleBuilder(
+                        l_Asset.get_id())
+                        .file(l_Asset.get_path(), N(discovery),
+                              Util::AssetManager::OnMissingPolicy::
+                                  DeleteBundle)
+                        .file(l_Asset.get_data_path(), N(payload),
+                              Util::AssetManager::OnMissingPolicy::
+                                  Ignore)
+                        .build());
+
                 return l_Asset.get_id();
               })
               .creatable()
@@ -820,6 +840,17 @@ namespace Low {
                     Util::project_asset_cache_path(l_DataFileName);
 
                 l_Asset.set_data_path(l_DataPath);
+
+                Util::AssetManager::register_bundle(
+                    Util::AssetManager::BundleBuilder(
+                        l_Asset.get_id())
+                        .file(l_Asset.get_path(), N(discovery),
+                              Util::AssetManager::OnMissingPolicy::
+                                  DeleteBundle)
+                        .file(l_Asset.get_data_path(), N(payload),
+                              Util::AssetManager::OnMissingPolicy::
+                                  Ignore)
+                        .build());
 
                 return l_Asset.get_id();
               })
@@ -1435,16 +1466,29 @@ namespace Low {
         p_Descriptor.name = p_Node["name"].as<Util::Name>();
         p_Descriptor.local_id = p_Node["local_id"].as<Util::U64Id>();
 
-        Util::Serial::Node &l_ComponentsNode = p_Node["components"];
-        if (l_ComponentsNode) {
-          for (u32 i = 0; i < l_ComponentsNode.size(); ++i) {
-            ComponentDescriptor i_Descriptor;
-            i_Descriptor.typeId = Util::Handle::type_id(
-                Util::TypeIdentifier::from_string(
-                    l_ComponentsNode[i]["type"].as<Util::String>()));
-            i_Descriptor.data = l_ComponentsNode[i]["data"];
+        if (p_Node["widget_reference"]) {
+          const u64 l_WidgetUniqueId =
+              p_Node["widget_reference"].as<Util::U64Id>();
+          p_Descriptor.widget_reference =
+              Util::find_handle_by_unique_id(l_WidgetUniqueId);
+          p_Descriptor.widget_offset = Math::Vector2(0);
+          if (p_Node["widget_offset"]) {
+            p_Descriptor.widget_offset =
+                p_Node["widget_offset"].as<Math::Vector2>();
+          }
+        } else {
+          Util::Serial::Node &l_ComponentsNode = p_Node["components"];
+          if (l_ComponentsNode) {
+            for (u32 i = 0; i < l_ComponentsNode.size(); ++i) {
+              ComponentDescriptor i_Descriptor;
+              i_Descriptor.typeId = Util::Handle::type_id(
+                  Util::TypeIdentifier::from_string(
+                      l_ComponentsNode[i]["type"]
+                          .as<Util::String>()));
+              i_Descriptor.data = l_ComponentsNode[i]["data"];
 
-            p_Descriptor.components.push_back(i_Descriptor);
+              p_Descriptor.components.push_back(i_Descriptor);
+            }
           }
         }
 
@@ -1466,6 +1510,7 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_spawn_instance
 
         WidgetInstance l_Instance = WidgetInstance::make(get_name());
+        l_Instance.set_asset(get_id());
 
         if (get_controller().is_alive()) {
           l_Instance.set_controller_instance(
@@ -1476,6 +1521,7 @@ namespace Low {
         l_RootElement.set_widget_instance(l_Instance);
         Component::Display l_RootDisplay =
             Component::Display::make(l_RootElement);
+        l_RootDisplay.pixel_scale(100, 100);
         l_RootElement.set_click_passthrough(true);
 
         l_Instance.set_root(l_RootElement);
@@ -1523,11 +1569,15 @@ namespace Low {
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_spawn_from_element_descriptor
         if (p_Descriptor.widget_reference.is_alive()) {
+          Util::AssetManager::load_sync(
+              p_Descriptor.widget_reference);
           WidgetInstance l_Instance =
               p_Descriptor.widget_reference.spawn_instance(p_Canvas);
           Component::Display l_Display =
               l_Instance.get_root().get_display();
           l_Display.set_parent(p_Parent.get_display());
+
+          l_Display.pixel_position(p_Descriptor.widget_offset);
 
           p_Instance.get_widgets().push_back(l_Instance);
 
@@ -1560,44 +1610,70 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_spawn_from_element_descriptor
       }
 
-      void WidgetAsset::fill_element_descriptor(
+      bool WidgetAsset::fill_element_descriptor(
           Low::Core::UI::Element p_Element,
-          Low::Core::UI::ElementDescriptor &p_Descriptor)
+          Low::Core::UI::ElementDescriptor &p_Descriptor,
+          Low::Core::UI::WidgetInstance p_Instance)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_fill_element_descriptor
+        WidgetInstance l_Instance = p_Element.get_widget_instance();
 
         Component::Display l_Display = p_Element.get_display();
         p_Descriptor.name = p_Element.get_name();
         p_Descriptor.local_id = p_Element.get_local_id();
         p_Descriptor.widget_reference = Util::Handle::DEAD;
+
+        bool l_AddToHierarchy = true;
+
         if (p_Descriptor.local_id == 0) {
           p_Descriptor.local_id = get_next_local_id();
         }
 
-        for (auto &i_ComponentEntry : p_Element.get_components()) {
-          Util::Handle i_Component = i_ComponentEntry.second;
-          Util::RTTI::TypeInfo &i_ComponentType =
-              Util::Handle::get_type_info(i_ComponentEntry.first);
+        const bool l_IsMainWidget =
+            p_Element.get_widget_instance() == p_Instance.get_id();
+        const bool l_IsRoot = l_Instance.get_root() == p_Element;
 
-          ComponentDescriptor i_ComponentDescriptor;
-          i_ComponentDescriptor.typeId = i_Component.get_type();
-          i_ComponentType.serialize(i_Component,
-                                    i_ComponentDescriptor.data);
+        if (!l_IsMainWidget) {
+          if (!l_IsRoot) {
+            l_AddToHierarchy = false;
+          } else {
+            p_Descriptor.widget_offset =
+                p_Element.get_display().pixel_position();
+          }
+          WidgetAsset l_Asset = l_Instance.get_asset();
+          if (l_Asset.is_alive()) {
+            p_Descriptor.widget_reference = l_Asset;
+          }
+        } else {
+          for (auto &i_ComponentEntry : p_Element.get_components()) {
+            Util::Handle i_Component = i_ComponentEntry.second;
+            Util::RTTI::TypeInfo &i_ComponentType =
+                Util::Handle::get_type_info(i_ComponentEntry.first);
 
-          i_ComponentDescriptor.data.remove("_unique_id");
-          i_ComponentDescriptor.data.remove("unique_id");
+            ComponentDescriptor i_ComponentDescriptor;
+            i_ComponentDescriptor.typeId = i_Component.get_type();
+            i_ComponentType.serialize(i_Component,
+                                      i_ComponentDescriptor.data);
 
-          p_Descriptor.components.push_back(i_ComponentDescriptor);
+            i_ComponentDescriptor.data.remove("_unique_id");
+            i_ComponentDescriptor.data.remove("unique_id");
+
+            p_Descriptor.components.push_back(i_ComponentDescriptor);
+          }
         }
 
         for (Component::Display i_Display :
              l_Display.get_children()) {
           Element i_Element = i_Display.get_element();
           ElementDescriptor i_ElementDescriptor;
-          fill_element_descriptor(i_Element, i_ElementDescriptor);
+          const bool i_Add = fill_element_descriptor(
+              i_Element, i_ElementDescriptor, p_Instance);
 
-          p_Descriptor.children.push_back(i_ElementDescriptor);
+          if (i_Add) {
+            p_Descriptor.children.push_back(i_ElementDescriptor);
+          }
         }
+        return l_AddToHierarchy;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_fill_element_descriptor
       }
 
@@ -1616,8 +1692,11 @@ namespace Low {
           Element i_Element = i_Display.get_element();
           ElementDescriptor i_Descriptor;
 
-          fill_element_descriptor(i_Element, i_Descriptor);
-          get_content().push_back(i_Descriptor);
+          const bool i_Add = fill_element_descriptor(
+              i_Element, i_Descriptor, p_Instance);
+          if (i_Add) {
+            get_content().push_back(i_Descriptor);
+          }
         }
 
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_fill_content_from_instance
@@ -1632,19 +1711,23 @@ namespace Low {
         p_Node["name"] = p_Descriptor.name;
         p_Node["local_id"] = Util::U64Id{p_Descriptor.local_id};
         if (p_Descriptor.widget_reference.is_alive()) {
-        }
-        Util::Serial::Node &i_ComponentsNode = p_Node["components"];
-        for (const ComponentDescriptor &i_Component :
-             p_Descriptor.components) {
-          Util::Serial::Node i_ComponentNode;
-          i_ComponentNode["type"] =
-              Util::Handle::identifier(i_Component.typeId);
-          i_ComponentNode["data"] = i_Component.data;
-          if (i_ComponentNode["data"]["_unique_id"]) {
-            i_ComponentNode["data"].remove("_unique_id");
-          }
+          p_Node["widget_reference"] = Util::U64Id{
+              p_Descriptor.widget_reference.get_unique_id()};
+          p_Node["widget_offset"] = p_Descriptor.widget_offset;
+        } else {
+          Util::Serial::Node &i_ComponentsNode = p_Node["components"];
+          for (const ComponentDescriptor &i_Component :
+               p_Descriptor.components) {
+            Util::Serial::Node i_ComponentNode;
+            i_ComponentNode["type"] =
+                Util::Handle::identifier(i_Component.typeId);
+            i_ComponentNode["data"] = i_Component.data;
+            if (i_ComponentNode["data"]["_unique_id"]) {
+              i_ComponentNode["data"].remove("_unique_id");
+            }
 
-          i_ComponentsNode.push_back(i_ComponentNode);
+            i_ComponentsNode.push_back(i_ComponentNode);
+          }
         }
         if (!p_Descriptor.children.empty()) {
           Util::Serial::Node &l_ChildrenNode = p_Node["children"];
@@ -1731,5 +1814,5 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace UI
-  } // namespace Core
+  }   // namespace Core
 } // namespace Low

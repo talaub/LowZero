@@ -49,15 +49,16 @@ void register_lowcore();
 #include "LowCoreScriptClassInstance.h"
 #include "LowCoreScriptAssetGenerator.h"
 
-#include "LowCoreUiView.h"
 #include "LowCoreUiElement.h"
 #include "LowCoreUiDisplay.h"
+#include "LowCoreUiLayout.h"
 #include "LowCoreUiImage.h"
 #include "LowCoreUiText.h"
 #include "LowCoreUiWidgetAsset.h"
 #include "LowCoreUiWidgetInstance.h"
 #include "LowCoreUiController.h"
 #include "LowCoreUiControllerInstance.h"
+#include "LowCoreUiScreen.h"
 
 #include "LowRenderer.h"
 
@@ -175,14 +176,15 @@ namespace Low {
     static void initialize_ui_component_types()
     {
       UI::Component::Display::initialize();
+      UI::Component::Layout::initialize();
       UI::Component::Image::initialize();
       UI::Component::Text::initialize();
     }
 
     static void initialize_ui_types()
     {
+      UI::Screen::initialize();
       UI::Element::initialize();
-      UI::View::initialize();
       UI::WidgetAsset::initialize();
       UI::WidgetInstance::initialize();
       UI::Controller::initialize();
@@ -346,7 +348,6 @@ namespace Low {
       // load_scenes();
 
       load_gamemodes();
-
     }
 
     static void cleanup_asset_types()
@@ -391,6 +392,7 @@ namespace Low {
     {
       UI::Component::Text::cleanup();
       UI::Component::Image::cleanup();
+      UI::Component::Layout::cleanup();
       UI::Component::Display::cleanup();
     }
 
@@ -399,8 +401,8 @@ namespace Low {
       cleanup_ui_component_types();
 
       UI::WidgetInstance::cleanup();
-      UI::View::cleanup();
       UI::Element::cleanup();
+      UI::Screen::cleanup();
       UI::WidgetAsset::cleanup();
 
       UI::ControllerInstance::cleanup();

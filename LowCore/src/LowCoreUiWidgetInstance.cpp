@@ -289,6 +289,35 @@ namespace Low {
           // End property: controller_instance
         }
         {
+          // Property: asset
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(asset);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(WidgetInstance::Data, asset);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            WidgetInstance l_Handle = p_Handle.get_id();
+            l_Handle.get_asset();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, WidgetInstance, asset, uint64_t);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            WidgetInstance l_Handle = p_Handle.get_id();
+            l_Handle.set_asset(*(uint64_t *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            WidgetInstance l_Handle = p_Handle.get_id();
+            *((uint64_t *)p_Data) = l_Handle.get_asset();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: asset
+        }
+        {
           // Property: name
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(name);
@@ -618,6 +647,31 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_controller_instance
 
         broadcast_observable(N(controller_instance));
+      }
+
+      uint64_t WidgetInstance::get_asset() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_asset
+        // LOW_CODEGEN::END::CUSTOM:GETTER_asset
+
+        return TYPE_SOA(WidgetInstance, asset, uint64_t);
+      }
+      void WidgetInstance::set_asset(uint64_t p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_asset
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_asset
+
+        // Set new value
+        TYPE_SOA(WidgetInstance, asset, uint64_t) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_asset
+        // LOW_CODEGEN::END::CUSTOM:SETTER_asset
+
+        broadcast_observable(N(asset));
       }
 
       Low::Util::Name WidgetInstance::get_name() const

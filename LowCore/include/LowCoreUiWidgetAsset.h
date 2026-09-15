@@ -233,9 +233,10 @@ namespace Low {
             Low::Core::UI::ElementDescriptor &p_Descriptor,
             Low::Core::UI::Element p_Parent);
 
-        void fill_element_descriptor(
+        bool fill_element_descriptor(
             Low::Core::UI::Element p_Element,
-            Low::Core::UI::ElementDescriptor &p_Descriptor);
+            Low::Core::UI::ElementDescriptor &p_Descriptor,
+            Low::Core::UI::WidgetInstance p_Instance);
 
         void serialize_element_descriptor(
             const Low::Core::UI::ElementDescriptor &p_Descriptor,
@@ -253,6 +254,7 @@ namespace Low {
         Util::List<ComponentDescriptor> components;
         Util::List<ElementDescriptor> children;
         WidgetAsset widget_reference;
+        Math::Vector2 widget_offset;
         u64 local_id;
       };
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE

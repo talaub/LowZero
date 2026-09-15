@@ -1190,6 +1190,8 @@ namespace Low {
             if (l_Parent.is_alive()) {
               l_Parent.get_children().push_back(get_id());
             }
+
+            get_element().update_screen(Util::Handle::DEAD);
             // LOW_CODEGEN::END::CUSTOM:SETTER_parent
 
             broadcast_observable(N(parent));
@@ -1545,11 +1547,6 @@ namespace Low {
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_dirty
 
-          if (get_element().get_view().is_alive() &&
-              get_element().get_view().is_transform_dirty()) {
-            return true;
-          }
-
           if (TYPE_SOA(Display, world_dirty, bool)) {
             return TYPE_SOA(Display, world_dirty, bool);
           }
@@ -1560,6 +1557,13 @@ namespace Low {
             return l_Parent.is_world_dirty() ||
                    l_Parent.is_world_updated();
           }
+          Element l_Element = get_element();
+          Screen l_Screen = l_Element.get_cached_screen();
+          if (l_Screen.is_alive()) {
+            return l_Screen.is_dirty();
+          }
+
+          return false;
           // LOW_CODEGEN::END::CUSTOM:GETTER_world_dirty
 
           return TYPE_SOA(Display, world_dirty, bool);
@@ -1623,9 +1627,6 @@ namespace Low {
           Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
 
           if (l_Parent.is_alive()) {
-            if (l_Element.get_view().is_alive()) {
-              l_Position *= l_Element.get_view().scale_multiplier();
-            }
             if (l_Parent.is_world_dirty()) {
               l_Parent.recalculate_world_transform();
             }
@@ -1644,14 +1645,13 @@ namespace Low {
             // on display to scale everything while keeping
             // dimensions l_Scale *= l_ParentScale;
             l_Layer += l_ParentLayer;
-          } else if (l_Element.get_view().is_alive()) {
-            l_Position += l_Element.get_view().pixel_position();
-            l_Rotation += l_Element.get_view().rotation();
-            l_Layer += l_Element.get_view().layer_offset();
-          }
-
-          if (l_Element.get_view().is_alive()) {
-            l_Scale *= l_Element.get_view().scale_multiplier();
+          } else {
+            Screen l_Screen = l_Element.get_cached_screen();
+            if (l_Screen.is_alive()) {
+              l_Position = l_Screen.pixel_position() +
+                           l_Position * l_Screen.zoom();
+              l_Scale *= l_Screen.zoom();
+            }
           }
 
           set_absolute_pixel_position(l_Position);

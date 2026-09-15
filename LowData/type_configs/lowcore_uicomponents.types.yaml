@@ -124,6 +124,93 @@ types:
           - name: point
             type: Low::Math::Vector2
 
+  Layout:
+    ui_component: true
+    scripting_expose: true
+    header_imports:
+      - LowMath.h
+    properties:
+      anchor_min:
+        type: Low::Math::Vector2
+        editor_editable: true
+        expose_scripting: true
+        dirty_flag:
+          - dirty
+          - world_dirty
+      anchor_max:
+        type: Low::Math::Vector2
+        editor_editable: true
+        expose_scripting: true
+        dirty_flag:
+          - dirty
+          - world_dirty
+      margin_left:
+        type: float
+        editor_editable: true
+        expose_scripting: true
+        dirty_flag:
+          - dirty
+          - world_dirty
+      margin_top:
+        type: float
+        editor_editable: true
+        expose_scripting: true
+        dirty_flag:
+          - dirty
+          - world_dirty
+      margin_right:
+        type: float
+        editor_editable: true
+        expose_scripting: true
+        dirty_flag:
+          - dirty
+          - world_dirty
+      margin_bottom:
+        type: float
+        editor_editable: true
+        expose_scripting: true
+        dirty_flag:
+          - dirty
+          - world_dirty
+      size_mode:
+        type: LayoutSizeMode
+        no_ref: true
+        lens_enum: true
+        editor_editable: true
+        expose_scripting: true
+        dirty_flag:
+          - dirty
+          - world_dirty
+      fixed_size:
+        type: Low::Math::Vector2
+        editor_editable: true
+        expose_scripting: true
+        dirty_flag:
+          - dirty
+          - world_dirty
+      pivot:
+        type: Low::Math::Vector2
+        editor_editable: true
+        expose_scripting: true
+        dirty_flag:
+          - dirty
+          - world_dirty
+      aspect_ratio:
+        type: float
+        editor_editable: true
+        expose_scripting: true
+        dirty_flag:
+          - dirty
+          - world_dirty
+      world_updated:
+        type: bool
+        skip_serialization: true
+        skip_deserialization: true
+        skip_duplication: true
+    functions:
+      resolve:
+        return_type: void
+
   Image:
     ui_component: true
     header_imports:

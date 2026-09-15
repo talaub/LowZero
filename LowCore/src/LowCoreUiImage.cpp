@@ -95,6 +95,8 @@ namespace Low {
               Low::Renderer::get_default_material_ui());
 
           l_Handle.set_dirty(true);
+
+          p_Element.observe(N(canvas), l_Handle);
           // LOW_CODEGEN::END::CUSTOM:MAKE
 
           return l_Handle;
@@ -600,6 +602,11 @@ namespace Low {
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
 
+          if (p_Observable == N(canvas)) {
+            if (get_render_object().is_alive()) {
+              get_render_object().destroy();
+            }
+          }
           // LOW_CODEGEN::END::CUSTOM:NOTIFY
         }
 

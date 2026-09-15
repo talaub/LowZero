@@ -371,14 +371,20 @@ namespace Low {
 
     void AssetManager::initialize()
     {
+#ifdef LOW_EDITOR_BUILD
       LOW_ASSERT(g_DataWatcher.start(get_project().dataPath),
                  "Failed to start raw asset file watcher.");
+#endif
     }
 
     void AssetManager::cleanup()
     {
+#ifdef LOW_EDITOR_BUILD
       g_DataWatcher.stop();
+#endif
     }
+
+    static bool handle_bundle_file_removed(const String &p_Path);
 
     static void handle_file_event(FileSystem::Watcher::Event p_Event)
     {
@@ -387,6 +393,11 @@ namespace Low {
                                 p_Event.path.string().c_str());
 
       if (is_asset_cache_path(l_FullEventPath)) {
+        return;
+      }
+
+      if (p_Event.type == FileSystem::Watcher::EventType::Removed &&
+          handle_bundle_file_removed(l_FullEventPath)) {
         return;
       }
 
@@ -513,9 +524,11 @@ namespace Low {
     {
       tick_load_queue(p_Delta);
 
+#ifdef LOW_EDITOR_BUILD
       tick_scheduled_events(p_Delta);
 
       poll_watcher(p_Delta);
+#endif
     }
 
     Handle AssetManager::_find_by_path(const String p_Path)
@@ -895,6 +908,259 @@ namespace Low {
       }
 
       upsert_asset_record(l_Record);
+    }
+
+    Map<AssetManager::BundleId, AssetManager::Bundle> g_Bundles;
+    Map<u16, AssetManager::Regenerator> g_Regenerators;
+
+    static bool get_handle_unique_id(Handle p_Handle, u64 &p_OutId)
+    {
+      if (!Handle::is_registered_type(p_Handle.get_type())) {
+        return false;
+      }
+
+      RTTI::TypeInfo &l_TypeInfo =
+          Handle::get_type_info(p_Handle.get_type());
+      auto l_Pos = l_TypeInfo.properties.find(N(unique_id));
+      if (l_Pos == l_TypeInfo.properties.end()) {
+        return false;
+      }
+
+      l_Pos->second.get(p_Handle, &p_OutId);
+      return true;
+    }
+
+    static AssetManager::Bundle *find_bundle_by_handle(Handle p_Handle)
+    {
+      u64 l_Id = 0ull;
+      if (!get_handle_unique_id(p_Handle, l_Id)) {
+        return nullptr;
+      }
+
+      auto l_Pos = g_Bundles.find(l_Id);
+      if (l_Pos == g_Bundles.end()) {
+        return nullptr;
+      }
+
+      return &l_Pos->second;
+    }
+
+    AssetManager::BundleId
+    AssetManager::register_bundle(const Bundle &p_Bundle)
+    {
+      u64 l_Id = 0ull;
+      if (!get_handle_unique_id(p_Bundle.handle, l_Id)) {
+        AM_LOG_ERROR << "Tried to register a bundle for a handle "
+                        "without a unique_id property."
+                     << LOW_LOG_END;
+        return 0ull;
+      }
+
+      Bundle l_Bundle = p_Bundle;
+      l_Bundle.id = l_Id;
+
+      auto l_Existing = g_Bundles.find(l_Id);
+      if (l_Existing != g_Bundles.end()) {
+        l_Bundle.dependsOn = l_Existing->second.dependsOn;
+        l_Bundle.dependents = l_Existing->second.dependents;
+      }
+
+      g_Bundles[l_Id] = l_Bundle;
+
+      for (const BundleFileDesc &i_File : l_Bundle.files) {
+        AssetManager::_register_alias(p_Bundle.handle, i_File.path);
+      }
+
+      return l_Id;
+    }
+
+    static void add_dependency(Util::Handle p_Bundle,
+                               Util::Handle p_DependsOn,
+                               AssetManager::DependencyKind p_Kind,
+                               const AssetManager::DependencyCallback
+                                   &p_Callback)
+    {
+      AssetManager::Bundle *l_Bundle = find_bundle_by_handle(p_Bundle);
+      AssetManager::Bundle *l_DependsOn =
+          find_bundle_by_handle(p_DependsOn);
+      if (!l_Bundle || !l_DependsOn) {
+        AM_LOG_ERROR << "Tried to register a bundle dependency but "
+                        "one of the bundles is not registered."
+                     << LOW_LOG_END;
+        return;
+      }
+
+      AssetManager::BundleDependency l_Dependency;
+      l_Dependency.dependsOn = l_DependsOn->id;
+      l_Dependency.kind = p_Kind;
+      l_Dependency.callback = p_Callback;
+      l_Bundle->dependsOn.push_back(l_Dependency);
+
+      l_DependsOn->dependents.push_back(l_Bundle->id);
+    }
+
+    void AssetManager::_hard_dependency(Util::Handle p_Bundle,
+                                        Util::Handle p_DependsOn)
+    {
+      add_dependency(p_Bundle, p_DependsOn, DependencyKind::Hard,
+                     nullptr);
+    }
+
+    void AssetManager::_soft_dependency(
+        Util::Handle p_Bundle, Util::Handle p_DependsOn,
+        const DependencyCallback p_Callback)
+    {
+      add_dependency(p_Bundle, p_DependsOn, DependencyKind::Soft,
+                     p_Callback);
+    }
+
+    static void delete_bundle_internal(AssetManager::BundleId p_Id);
+
+    static void
+    react_to_dependency_removed(AssetManager::BundleId p_DependentId,
+                                AssetManager::BundleId p_RemovedId,
+                                Handle p_RemovedHandle)
+    {
+      auto l_Pos = g_Bundles.find(p_DependentId);
+      if (l_Pos == g_Bundles.end()) {
+        return;
+      }
+
+      bool l_CascadeDelete = false;
+      for (auto it = l_Pos->second.dependsOn.begin();
+           it != l_Pos->second.dependsOn.end();) {
+        if (it->dependsOn != p_RemovedId) {
+          ++it;
+          continue;
+        }
+
+        if (it->kind == AssetManager::DependencyKind::Hard) {
+          l_CascadeDelete = true;
+        } else if (it->callback) {
+          it->callback(l_Pos->second.handle, p_RemovedHandle);
+        }
+
+        it = l_Pos->second.dependsOn.erase(it);
+      }
+
+      if (l_CascadeDelete) {
+        delete_bundle_internal(p_DependentId);
+      }
+    }
+
+    static void delete_bundle_internal(AssetManager::BundleId p_Id)
+    {
+      auto l_Pos = g_Bundles.find(p_Id);
+      if (l_Pos == g_Bundles.end()) {
+        return;
+      }
+
+      const AssetManager::Bundle l_Bundle = l_Pos->second;
+
+      for (const AssetManager::BundleFileDesc &i_File :
+           l_Bundle.files) {
+        if (i_File.deleteWithBundle &&
+            Util::FileIO::file_exists_sync(i_File.path.c_str())) {
+          Util::FileIO::delete_sync(i_File.path.c_str());
+        }
+      }
+
+      g_Bundles.erase(p_Id);
+
+      for (const AssetManager::BundleDependency &i_Dependency :
+           l_Bundle.dependsOn) {
+        auto i_Pos = g_Bundles.find(i_Dependency.dependsOn);
+        if (i_Pos != g_Bundles.end()) {
+          i_Pos->second.dependents.erase_first(p_Id);
+        }
+      }
+
+      for (AssetManager::BundleId i_DependentId :
+           l_Bundle.dependents) {
+        react_to_dependency_removed(i_DependentId, p_Id,
+                                    l_Bundle.handle);
+      }
+
+      if (Handle::is_registered_type(l_Bundle.handle.get_type())) {
+        RTTI::TypeInfo &l_TypeInfo =
+            Handle::get_type_info(l_Bundle.handle.get_type());
+        if (l_TypeInfo.is_alive(l_Bundle.handle)) {
+          l_TypeInfo.destroy(l_Bundle.handle);
+        }
+      }
+    }
+
+    void AssetManager::_delete_bundle(Util::Handle p_Handle)
+    {
+      Bundle *l_Bundle = find_bundle_by_handle(p_Handle);
+      if (!l_Bundle) {
+        return;
+      }
+      delete_bundle_internal(l_Bundle->id);
+    }
+
+    void AssetManager::register_regenerator(u16 p_TypeId,
+                                            const Regenerator p_Fn)
+    {
+      g_Regenerators[p_TypeId] = p_Fn;
+    }
+
+    static void try_regenerate_file(AssetManager::BundleId p_BundleId,
+                                    const AssetManager::BundleFileDesc
+                                        &p_File)
+    {
+      auto l_BundlePos = g_Bundles.find(p_BundleId);
+      if (l_BundlePos == g_Bundles.end()) {
+        return;
+      }
+
+      auto l_RegenPos =
+          g_Regenerators.find(l_BundlePos->second.typeId);
+      if (l_RegenPos == g_Regenerators.end() || !l_RegenPos->second) {
+        AM_LOG_WARN << "Bundle file '" << p_File.path
+                    << "' is missing but no regenerator is "
+                       "registered for its type."
+                    << LOW_LOG_END;
+        return;
+      }
+
+      l_RegenPos->second(p_File, l_BundlePos->second.handle);
+    }
+
+    static bool handle_bundle_file_removed(const String &p_Path)
+    {
+      const String l_Path = normalize_asset_path(p_Path);
+
+      AssetRecord *l_Record = find_asset_record_by_path(l_Path);
+      if (!l_Record) {
+        return false;
+      }
+
+      AssetManager::Bundle *l_Bundle =
+          find_bundle_by_handle(l_Record->handle);
+      if (!l_Bundle) {
+        return false;
+      }
+
+      const AssetManager::BundleId l_BundleId = l_Bundle->id;
+
+      for (const AssetManager::BundleFileDesc &i_File :
+           l_Bundle->files) {
+        if (normalize_asset_path(i_File.path) != l_Path) {
+          continue;
+        }
+
+        if (i_File.onMissing ==
+            AssetManager::OnMissingPolicy::DeleteBundle) {
+          delete_bundle_internal(l_BundleId);
+        } else if (i_File.onMissing ==
+                   AssetManager::OnMissingPolicy::Regenerate) {
+          try_regenerate_file(l_BundleId, i_File);
+        }
+        break;
+      }
+
+      return true;
     }
 
   } // namespace Util

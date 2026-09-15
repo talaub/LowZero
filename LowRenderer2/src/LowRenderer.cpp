@@ -447,7 +447,7 @@ namespace Low {
 
         LOWR_ASSERT_RETURN(p_Node["asset_hash"],
                            "Could not find asset hash");
-        p_Config.assetHash = p_Config.fontId =
+        p_Config.assetHash =
             p_Node["asset_hash"].as<Util::U64Id>().val;
 
         LOWR_ASSERT_RETURN(p_Node["source_file"],
@@ -458,9 +458,9 @@ namespace Low {
         p_Config.sidecarPath =
             Util::get_project().assetCachePath + "/" +
             Util::hash_to_string(p_Config.fontId) + ".font.yaml";
-        p_Config.fontPath =
-            Util::get_project().assetCachePath + "/" +
-            Util::hash_to_string(p_Config.fontId) + ".msdf.ktx";
+        p_Config.fontPath = Util::get_project().assetCachePath + "/" +
+                            Util::hash_to_string(p_Config.fontId) +
+                            ".msdf.ktx";
 
         p_Config.path = Util::PathHelper::normalize(p_Path);
         return true;
@@ -525,8 +525,8 @@ namespace Low {
                 return;
               }
 
-              l_EditorImage.set_path(Util::PathHelper::normalize(
-                  p_Path));
+              l_EditorImage.set_path(
+                  Util::PathHelper::normalize(p_Path));
               l_EditorImage.set_state(TextureState::UNLOADED);
               ResourceManager::load_editor_image(l_EditorImage);
             })
@@ -584,9 +584,29 @@ namespace Low {
             if (!l_ExistingMesh.is_alive()) {
               l_ExistingMesh =
                   Mesh::make_from_resource_config(i_ResourceConfig);
-              ResourceManager::register_asset(
-                  i_ResourceConfig.meshId, l_ExistingMesh);
+              ResourceManager::register_asset(i_ResourceConfig.meshId,
+                                              l_ExistingMesh);
             }
+
+            MeshResource i_Resource = l_ExistingMesh.get_resource();
+            Util::AssetManager::register_bundle(
+                Util::AssetManager::BundleBuilder(
+                    l_ExistingMesh.get_id())
+                    .file(i_Resource.get_source_file(), N(source),
+                          Util::AssetManager::OnMissingPolicy::
+                              DeleteBundle,
+                          false)
+                    .file(i_Resource.get_path(), N(manifest),
+                          Util::AssetManager::OnMissingPolicy::
+                              Regenerate)
+                    .file(i_Resource.get_sidecar_path(), N(sidecar),
+                          Util::AssetManager::OnMissingPolicy::
+                              Regenerate)
+                    .file(i_Resource.get_mesh_path(), N(mesh),
+                          Util::AssetManager::OnMissingPolicy::
+                              Regenerate)
+                    .build());
+
             return l_ExistingMesh.get_id();
           })
           .saver([](Util::Handle p_Handle) {
@@ -638,29 +658,49 @@ namespace Low {
             Util::get_project().dataPath, true);
 
         l_Builder
-            .initializer(
-                [](const Util::String p_Path) -> Util::Handle {
-                  Util::Serial::Node i_ResourceNode =
-                      Util::Serial::load_yaml_file(p_Path.c_str());
-                  TextureResourceConfig i_ResourceConfig;
+            .initializer([](const Util::String p_Path)
+                             -> Util::Handle {
+              Util::Serial::Node i_ResourceNode =
+                  Util::Serial::load_yaml_file(p_Path.c_str());
+              TextureResourceConfig i_ResourceConfig;
 
-                  LOWR_ASSERT_RETURN(
-                      ResourceManager::parse_texture_resource_config(
-                          p_Path, i_ResourceNode, i_ResourceConfig),
-                      "Failed to parse texture resource config.");
-                  Texture l_ExistingTexture =
-                      ResourceManager::find_asset<Texture>(
-                          i_ResourceConfig.textureId);
-                  if (!l_ExistingTexture.is_alive()) {
-                    l_ExistingTexture =
-                        Texture::make_from_resource_config(
-                            i_ResourceConfig);
-                    ResourceManager::register_asset(
-                        i_ResourceConfig.textureId,
-                        l_ExistingTexture);
-                  }
-                  return l_ExistingTexture.get_id();
-                })
+              LOWR_ASSERT_RETURN(
+                  ResourceManager::parse_texture_resource_config(
+                      p_Path, i_ResourceNode, i_ResourceConfig),
+                  "Failed to parse texture resource config.");
+              Texture l_ExistingTexture =
+                  ResourceManager::find_asset<Texture>(
+                      i_ResourceConfig.textureId);
+              if (!l_ExistingTexture.is_alive()) {
+                l_ExistingTexture =
+                    Texture::make_from_resource_config(
+                        i_ResourceConfig);
+                ResourceManager::register_asset(
+                    i_ResourceConfig.textureId, l_ExistingTexture);
+              }
+
+              TextureResource i_Resource =
+                  l_ExistingTexture.get_resource();
+              Util::AssetManager::register_bundle(
+                  Util::AssetManager::BundleBuilder(
+                      l_ExistingTexture.get_id())
+                      .file(i_Resource.get_source_file(), N(source),
+                            Util::AssetManager::OnMissingPolicy::
+                                DeleteBundle,
+                            false)
+                      .file(i_Resource.get_path(), N(manifest),
+                            Util::AssetManager::OnMissingPolicy::
+                                Regenerate)
+                      .file(i_Resource.get_sidecar_path(), N(sidecar),
+                            Util::AssetManager::OnMissingPolicy::
+                                Regenerate)
+                      .file(i_Resource.get_texture_path(), N(texture),
+                            Util::AssetManager::OnMissingPolicy::
+                                Regenerate)
+                      .build());
+
+              return l_ExistingTexture.get_id();
+            })
             .no_saving();
 
         Util::AssetManager::register_asset_type(l_Builder.build());
@@ -1045,8 +1085,7 @@ namespace Low {
         return false;
       }
 
-      for (GpuSubmesh i_Submesh :
-           p_Mesh.get_gpu().get_submeshes()) {
+      for (GpuSubmesh i_Submesh : p_Mesh.get_gpu().get_submeshes()) {
         if (i_Submesh.get_bone_weight_count() > 0u) {
           return true;
         }
@@ -1121,9 +1160,8 @@ namespace Low {
             SkinningPose::make(N(ThumbnailBindPose));
         l_Pose.set_skeleton(l_Skeleton);
 
-        SkinningInstance l_SkinningInstance =
-            SkinningInstance::make(N(ThumbnailSkinningInstance),
-                                   p_Schedule.mesh);
+        SkinningInstance l_SkinningInstance = SkinningInstance::make(
+            N(ThumbnailSkinningInstance), p_Schedule.mesh);
         l_SkinningInstance.set_pose(l_Pose);
         l_SkinningInstance.set_render_object_id(
             l_RenderObject.get_id());
@@ -1153,9 +1191,8 @@ namespace Low {
         l_PoseMatrices.resize(l_Bones.size());
 
         for (u32 i = 0u; i < (u32)l_Bones.size(); ++i) {
-          l_PoseMatrices[i] =
-              l_Bones[i].global_bind_transform *
-              l_Bones[i].inverse_bind_matrix;
+          l_PoseMatrices[i] = l_Bones[i].global_bind_transform *
+                              l_Bones[i].inverse_bind_matrix;
         }
 
         p_Schedule.skinningPose.mark_dirty();
@@ -1169,9 +1206,10 @@ namespace Low {
               l_Bones[i].global_bind_transform;
         }
 
-        if (!SkinningSystem::evaluate_global_pose_for_skeletal_renderobject(
-                p_Schedule.skeletalObject, l_Skeleton,
-                g_ThumbnailBindGlobalPoseScratch)) {
+        if (!SkinningSystem::
+                evaluate_global_pose_for_skeletal_renderobject(
+                    p_Schedule.skeletalObject, l_Skeleton,
+                    g_ThumbnailBindGlobalPoseScratch)) {
           return false;
         }
 

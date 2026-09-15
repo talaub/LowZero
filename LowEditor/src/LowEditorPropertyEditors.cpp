@@ -789,18 +789,10 @@ namespace Low {
             });
       }
 
-      bool render_enum_selector(u16 p_EnumId, u8 *p_Value,
-                                Util::String p_Label,
-                                bool p_RenderLabel)
-      {
-        return render_enum_selector(p_EnumId, p_Value, p_Label,
-                                    p_RenderLabel, Util::List<u8>());
-      }
-
-      bool render_enum_selector(u16 p_EnumId, u8 *p_Value,
+      bool render_enum_selector(u16 p_EnumId, int *p_Value,
                                 Util::String p_Label,
                                 bool p_RenderLabel,
-                                Util::List<u8> p_FilterList)
+                                Util::List<int> p_FilterList)
       {
         return render_line(p_Label, [&p_Label, &p_EnumId, p_Value,
                                      &p_FilterList]() {
@@ -881,10 +873,18 @@ namespace Low {
         });
       }
 
+      bool render_enum_selector(u16 p_EnumId, int *p_Value,
+                                Util::String p_Label,
+                                bool p_RenderLabel)
+      {
+        return render_enum_selector(p_EnumId, p_Value, p_Label,
+                                    p_RenderLabel, Util::List<int>());
+      }
+
       bool render_enum_selector(PropertyMetadata &p_Metadata,
                                 Util::Handle p_Handle)
       {
-        u8 l_CurrentValue;
+        int l_CurrentValue;
         p_Metadata.propInfo.get(p_Handle, &l_CurrentValue);
 
         bool l_Result = render_enum_selector(
@@ -1735,7 +1735,7 @@ namespace Low {
         ImVec2 l_Pos = ImGui::GetCursorScreenPos();
         if (p_PropertyInfoBase.type ==
             Util::RTTI::PropertyType::ENUM) {
-          u8 l_EnumValue;
+          int l_EnumValue;
           p_PropertyInfoBase.get(p_Handle, &l_EnumValue);
 
           if (render_enum_selector(p_PropertyInfoBase.handleType,
@@ -2136,7 +2136,7 @@ namespace Low {
                 l_Label,
                 *reinterpret_cast<Util::List<int> *>(p_FieldPtr),
                 [l_EnumId](Util::String p_L, int &p_V) {
-                  u8 l_Value = (u8)p_V;
+                  int l_Value = (int)p_V;
                   if (render_enum_selector(l_EnumId, &l_Value, p_L,
                                            false)) {
                     p_V = (int)l_Value;
@@ -2226,8 +2226,8 @@ namespace Low {
               l_Label, Util::Handle::type_id(p_Field.referenced_type),
               reinterpret_cast<uint64_t *>(p_FieldPtr));
         case Util::RTTI::PropertyType::ENUM: {
-          u8 l_Value =
-              (u8) * reinterpret_cast<int *>(p_FieldPtr);
+          int l_Value =
+              (int) * reinterpret_cast<int *>(p_FieldPtr);
           if (render_enum_selector(
                   Util::get_enum_id(p_Field.referenced_type), &l_Value,
                   l_Label, true)) {

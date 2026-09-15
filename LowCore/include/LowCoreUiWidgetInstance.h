@@ -30,6 +30,7 @@ namespace Low {
           Low::Util::List<Low::Core::UI::Element> elements;
           Low::Util::List<Low::Core::UI::WidgetInstance> widgets;
           Low::Core::UI::ControllerInstance controller_instance;
+          uint64_t asset;
           Low::Util::Name name;
 
           static size_t get_size()
@@ -157,6 +158,9 @@ namespace Low {
         get_controller_instance() const;
         void set_controller_instance(
             Low::Core::UI::ControllerInstance p_Value);
+
+        uint64_t get_asset() const;
+        void set_asset(uint64_t p_Value);
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);

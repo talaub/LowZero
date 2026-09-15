@@ -1154,7 +1154,7 @@ namespace Low {
       FontResource l_Resource =
           FontResource::make_from_config(p_Config);
 
-      Font l_Font = Font::make(p_Config.name);
+      Font l_Font = Font::make(p_Config.name, p_Config.fontId);
       l_Font.set_resource(l_Resource);
 
       l_Font.set_texture(Texture::make(p_Config.name));

@@ -13,7 +13,7 @@
 #include "LowCoreScriptAsset.h"
 #include "LowCoreUiWidgetAsset.h"
 #include "LowCoreUiWidgetInstance.h"
-#include "LowCoreUiView.h"
+#include "LowCoreUiScreen.h"
 #include "LowCoreUiElement.h"
 #include "LowCoreUiDisplay.h"
 #include "LowCoreUiText.h"
@@ -1675,8 +1675,8 @@ static u16 LowCore_World_type_id()
 {
   return Low::Core::Physics::World::type_id();
 }
-// LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:WORLD:HELPERS
-// LOW_CODEGEN::END::CUSTOM:LOWCORE:WORLD:HELPERS
+// LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:PHYSICSWORLD:HELPERS
+// LOW_CODEGEN::END::CUSTOM:LOWCORE:PHYSICSWORLD:HELPERS
 
 static void register_LowCore_World(asIScriptEngine *p_Engine)
 {
@@ -1772,8 +1772,8 @@ static void expose_LowCore_World(asIScriptEngine *p_Engine)
                      "for Low::Core::Physics::World.");
   r = p_Engine->SetDefaultNamespace("");
   LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
-  // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:WORLD:EXPOSE
-  // LOW_CODEGEN::END::CUSTOM:LOWCORE:WORLD:EXPOSE
+  // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:PHYSICSWORLD:EXPOSE
+  // LOW_CODEGEN::END::CUSTOM:LOWCORE:PHYSICSWORLD:EXPOSE
 }
 
 // --------------------------
@@ -2394,231 +2394,177 @@ static void expose_LowCore_WidgetInstance(asIScriptEngine *p_Engine)
 
 // --------------------------
 static void
-LowCore_View_default_construct(Low::Core::UI::View *p_Memory)
+LowCore_Screen_default_construct(Low::Core::UI::Screen *p_Memory)
 {
-  new (p_Memory) Low::Core::UI::View;
-}
-static void LowCore_View_id_construct(u64 p_Id,
-                                      Low::Core::UI::View *p_Memory)
-{
-  new (p_Memory) Low::Core::UI::View(p_Id);
+  new (p_Memory) Low::Core::UI::Screen;
 }
 static void
-LowCore_View_copy_construct(const Low::Core::UI::View &p_Other,
-                            Low::Core::UI::View *p_Memory)
+LowCore_Screen_id_construct(u64 p_Id, Low::Core::UI::Screen *p_Memory)
 {
-  new (p_Memory) Low::Core::UI::View(p_Other);
+  new (p_Memory) Low::Core::UI::Screen(p_Id);
 }
-static Low::Core::UI::View &
-LowCore_View_assign(const Low::Core::UI::View &p_Other,
-                    Low::Core::UI::View *p_Self)
+static void
+LowCore_Screen_copy_construct(const Low::Core::UI::Screen &p_Other,
+                              Low::Core::UI::Screen *p_Memory)
+{
+  new (p_Memory) Low::Core::UI::Screen(p_Other);
+}
+static Low::Core::UI::Screen &
+LowCore_Screen_assign(const Low::Core::UI::Screen &p_Other,
+                      Low::Core::UI::Screen *p_Self)
 {
   *p_Self = p_Other;
   return *p_Self;
 }
-static void LowCore_View_destruct(Low::Core::UI::View *p_Memory)
+static void LowCore_Screen_destruct(Low::Core::UI::Screen *p_Memory)
 {
   using namespace Low::Core::UI;
-  p_Memory->~View();
+  p_Memory->~Screen();
 }
-static Low::Core::UI::View
-LowCore_View_genmake(Low::Util::Name p_Name)
+static Low::Core::UI::Screen
+LowCore_Screen_genmake(Low::Util::Name p_Name)
 {
-  return Low::Core::UI::View::make(p_Name);
+  return Low::Core::UI::Screen::make(p_Name);
 }
-static Low::Core::UI::View
-LowCore_View_genfindbyname(Low::Util::Name p_Name)
+static Low::Core::UI::Screen
+LowCore_Screen_genfindbyname(Low::Util::Name p_Name)
 {
-  return Low::Core::UI::View::find_by_name(p_Name);
+  return Low::Core::UI::Screen::find_by_name(p_Name);
 }
-static u32 LowCore_View_living_count()
+static u32 LowCore_Screen_living_count()
 {
-  return Low::Core::UI::View::living_count();
+  return Low::Core::UI::Screen::living_count();
 }
-static u16 LowCore_View_type_id()
+static u16 LowCore_Screen_type_id()
 {
-  return Low::Core::UI::View::type_id();
+  return Low::Core::UI::Screen::type_id();
 }
-static Low::Core::UI::View
-LowCore_View_func_spawn_instance(Low::Core::UI::View p_This,
-                                 Low::Util::Name p_Name)
-{
-  return p_This.spawn_instance(p_Name);
-}
-static Low::Core::UI::Element
-LowCore_View_func_find_element_by_name(Low::Core::UI::View p_This,
-                                       Low::Util::Name p_Name)
-{
-  return p_This.find_element_by_name(p_Name);
-}
-// LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:VIEW:HELPERS
+// LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:SCREEN:HELPERS
+// LOW_CODEGEN::END::CUSTOM:LOWCORE:SCREEN:HELPERS
 
-// LOW_CODEGEN::END::CUSTOM:LOWCORE:VIEW:HELPERS
-
-static void register_LowCore_View(asIScriptEngine *p_Engine)
+static void register_LowCore_Screen(asIScriptEngine *p_Engine)
 {
   int r = 0;
   r = p_Engine->RegisterObjectType(
-      "View", sizeof(Low::Core::UI::View),
+      "Screen", sizeof(Low::Core::UI::Screen),
       asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
-  LOW_ASSERT(r >= 0, "Failed to expose Low::Core::UI::View type.");
+  LOW_ASSERT(r >= 0, "Failed to expose Low::Core::UI::Screen type.");
 }
-static void expose_LowCore_View(asIScriptEngine *p_Engine)
+static void expose_LowCore_Screen(asIScriptEngine *p_Engine)
 {
   int r = 0;
   r = p_Engine->RegisterObjectBehaviour(
-      "View", asBEHAVE_CONSTRUCT, "void f()",
-      asFUNCTION(LowCore_View_default_construct),
+      "Screen", asBEHAVE_CONSTRUCT, "void f()",
+      asFUNCTION(LowCore_Screen_default_construct),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose default constructor of "
+                     "Low::Core::UI::Screen.");
+
+  r = p_Engine->RegisterObjectBehaviour(
+      "Screen", asBEHAVE_CONSTRUCT, "void f(u64 id)",
+      asFUNCTION(LowCore_Screen_id_construct), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose id constructor of Low::Core::UI::Screen.");
+
+  r = p_Engine->RegisterObjectBehaviour(
+      "Screen", asBEHAVE_CONSTRUCT, "void f(const Screen& in)",
+      asFUNCTION(LowCore_Screen_copy_construct),
       asCALL_CDECL_OBJLAST);
   LOW_ASSERT(
       r >= 0,
-      "Failed to expose default constructor of Low::Core::UI::View.");
-
-  r = p_Engine->RegisterObjectBehaviour(
-      "View", asBEHAVE_CONSTRUCT, "void f(u64 id)",
-      asFUNCTION(LowCore_View_id_construct), asCALL_CDECL_OBJLAST);
-  LOW_ASSERT(
-      r >= 0,
-      "Failed to expose id constructor of Low::Core::UI::View.");
-
-  r = p_Engine->RegisterObjectBehaviour(
-      "View", asBEHAVE_CONSTRUCT, "void f(const View& in)",
-      asFUNCTION(LowCore_View_copy_construct), asCALL_CDECL_OBJLAST);
-  LOW_ASSERT(
-      r >= 0,
-      "Failed to expose copy constructor of Low::Core::UI::View.");
+      "Failed to expose copy constructor of Low::Core::UI::Screen.");
 
   r = p_Engine->RegisterObjectMethod(
-      "View", "View& opAssign(const View& in)",
-      asFUNCTION(LowCore_View_assign), asCALL_CDECL_OBJLAST);
-  LOW_ASSERT(
-      r >= 0,
-      "Failed to expose assignment operator of Low::Core::UI::View.");
+      "Screen", "Screen& opAssign(const Screen& in)",
+      asFUNCTION(LowCore_Screen_assign), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose assignment operator of "
+                     "Low::Core::UI::Screen.");
 
   r = p_Engine->RegisterObjectBehaviour(
-      "View", asBEHAVE_DESTRUCT, "void f()",
-      asFUNCTION(LowCore_View_destruct), asCALL_CDECL_OBJLAST);
+      "Screen", asBEHAVE_DESTRUCT, "void f()",
+      asFUNCTION(LowCore_Screen_destruct), asCALL_CDECL_OBJLAST);
   LOW_ASSERT(r >= 0,
-             "Failed to expose destructor of Low::Core::UI::View.");
+             "Failed to expose destructor of Low::Core::UI::Screen.");
   r = p_Engine->RegisterObjectMethod(
-      "View", "bool get_is_alive() const property",
-      asMETHODPR(Low::Core::UI::View, is_alive, () const, bool),
+      "Screen", "bool get_is_alive() const property",
+      asMETHODPR(Low::Core::UI::Screen, is_alive, () const, bool),
       asCALL_THISCALL);
   LOW_ASSERT(
       r >= 0,
-      "Failed to expose is_alive getter for Low::Core::UI::View.");
+      "Failed to expose is_alive getter for Low::Core::UI::Screen.");
   r = p_Engine->RegisterObjectMethod(
-      "View", "void destroy()",
-      asMETHODPR(Low::Core::UI::View, destroy, (), void),
+      "Screen", "void destroy()",
+      asMETHODPR(Low::Core::UI::Screen, destroy, (), void),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0,
-             "Failed to expose destroy for Low::Core::UI::View.");
+             "Failed to expose destroy for Low::Core::UI::Screen.");
 
   r = p_Engine->RegisterObjectMethod(
-      "View", "Vector2 get_pixel_position() const property",
-      asMETHODPR(Low::Core::UI::View, pixel_position, () const,
+      "Screen", "Vector2 get_pixel_position() const property",
+      asMETHODPR(Low::Core::UI::Screen, pixel_position, () const,
                  Low::Math::Vector2),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property getter for "
-                     "pixel_position of Low::Core::UI::View.");
+                     "pixel_position of Low::Core::UI::Screen.");
   r = p_Engine->RegisterObjectMethod(
-      "View", "void set_pixel_position(Vector2) property",
-      asMETHODPR(Low::Core::UI::View, pixel_position,
+      "Screen", "void set_pixel_position(Vector2) property",
+      asMETHODPR(Low::Core::UI::Screen, pixel_position,
                  (Low::Math::Vector2), void),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for "
-                     "pixel_position of Low::Core::UI::View.");
+                     "pixel_position of Low::Core::UI::Screen.");
 
   r = p_Engine->RegisterObjectMethod(
-      "View", "float get_rotation() const property",
-      asMETHODPR(Low::Core::UI::View, rotation, () const, float),
-      asCALL_THISCALL);
-  LOW_ASSERT(r >= 0, "Failed to expose property getter for rotation "
-                     "of Low::Core::UI::View.");
-  r = p_Engine->RegisterObjectMethod(
-      "View", "void set_rotation(float) property",
-      asMETHODPR(Low::Core::UI::View, rotation, (float), void),
-      asCALL_THISCALL);
-  LOW_ASSERT(r >= 0, "Failed to expose property setter for rotation "
-                     "of Low::Core::UI::View.");
-
-  r = p_Engine->RegisterObjectMethod(
-      "View", "float get_scale_multiplier() const property",
-      asMETHODPR(Low::Core::UI::View, scale_multiplier, () const,
-                 float),
+      "Screen", "Vector2 get_pixel_size() const property",
+      asMETHODPR(Low::Core::UI::Screen, pixel_size, () const,
+                 Low::Math::Vector2),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property getter for "
-                     "scale_multiplier of Low::Core::UI::View.");
+                     "pixel_size of Low::Core::UI::Screen.");
   r = p_Engine->RegisterObjectMethod(
-      "View", "void set_scale_multiplier(float) property",
-      asMETHODPR(Low::Core::UI::View, scale_multiplier, (float),
-                 void),
+      "Screen", "void set_pixel_size(Vector2) property",
+      asMETHODPR(Low::Core::UI::Screen, pixel_size,
+                 (Low::Math::Vector2), void),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for "
-                     "scale_multiplier of Low::Core::UI::View.");
+                     "pixel_size of Low::Core::UI::Screen.");
 
   r = p_Engine->RegisterObjectMethod(
-      "View", "u32 get_layer_offset() const property",
-      asMETHODPR(Low::Core::UI::View, layer_offset, () const,
-                 uint32_t),
-      asCALL_THISCALL);
-  LOW_ASSERT(r >= 0, "Failed to expose property getter for "
-                     "layer_offset of Low::Core::UI::View.");
-  r = p_Engine->RegisterObjectMethod(
-      "View", "void set_layer_offset(u32) property",
-      asMETHODPR(Low::Core::UI::View, layer_offset, (uint32_t), void),
-      asCALL_THISCALL);
-  LOW_ASSERT(r >= 0, "Failed to expose property setter for "
-                     "layer_offset of Low::Core::UI::View.");
-
-  r = p_Engine->RegisterObjectMethod(
-      "View", "Name get_name() const property",
-      asMETHOD(Low::Core::UI::View, get_name), asCALL_THISCALL);
+      "Screen", "Name get_name() const property",
+      asMETHOD(Low::Core::UI::Screen, get_name), asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property getter for name of "
-                     "Low::Core::UI::View.");
+                     "Low::Core::UI::Screen.");
   r = p_Engine->RegisterObjectMethod(
-      "View", "void set_name(Name) property",
-      asMETHODPR(Low::Core::UI::View, set_name, (Low::Util::Name),
+      "Screen", "void set_name(Name) property",
+      asMETHODPR(Low::Core::UI::Screen, set_name, (Low::Util::Name),
                  void),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for name of "
-                     "Low::Core::UI::View.");
-  r = p_Engine->RegisterObjectMethod(
-      "View", "View spawn_instance(Name) ",
-      asFUNCTION(LowCore_View_func_spawn_instance),
-      asCALL_CDECL_OBJFIRST);
-  LOW_ASSERT(r >= 0, "Failed to expose function spawn_instance of "
-                     "Low::Core::UI::View.");
-  r = p_Engine->RegisterObjectMethod(
-      "View", "UI::Element find_element_by_name(Name) ",
-      asFUNCTION(LowCore_View_func_find_element_by_name),
-      asCALL_CDECL_OBJFIRST);
-  LOW_ASSERT(r >= 0, "Failed to expose function find_element_by_name "
-                     "of Low::Core::UI::View.");
+                     "Low::Core::UI::Screen.");
 
-  r = p_Engine->SetDefaultNamespace("View");
+  r = p_Engine->SetDefaultNamespace("Screen");
   LOW_ASSERT(r >= 0,
-             "Failed to set namespace for Low::Core::UI::View.");
+             "Failed to set namespace for Low::Core::UI::Screen.");
   r = p_Engine->RegisterGlobalFunction(
-      "u16 get_TYPE_ID() property", asFUNCTION(LowCore_View_type_id),
-      asCALL_CDECL);
+      "u16 get_TYPE_ID() property",
+      asFUNCTION(LowCore_Screen_type_id), asCALL_CDECL);
   LOW_ASSERT(r >= 0,
-             "Failed to expose TYPE_ID for Low::Core::UI::View.");
+             "Failed to expose TYPE_ID for Low::Core::UI::Screen.");
   r = p_Engine->RegisterGlobalFunction(
-      "View make(Name)", asFUNCTION(LowCore_View_genmake),
+      "Screen make(Name)", asFUNCTION(LowCore_Screen_genmake),
       asCALL_CDECL);
   LOW_ASSERT(r >= 0, "Failed to expose generic make function for "
-                     "Low::Core::UI::View.");
+                     "Low::Core::UI::Screen.");
   r = p_Engine->RegisterGlobalFunction(
-      "View find_by_name(Name)",
-      asFUNCTION(LowCore_View_genfindbyname), asCALL_CDECL);
+      "Screen find_by_name(Name)",
+      asFUNCTION(LowCore_Screen_genfindbyname), asCALL_CDECL);
   LOW_ASSERT(r >= 0, "Failed to expose generic find by name function "
-                     "for Low::Core::UI::View.");
+                     "for Low::Core::UI::Screen.");
   r = p_Engine->SetDefaultNamespace("");
   LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
-  // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:VIEW:EXPOSE
-
-  // LOW_CODEGEN::END::CUSTOM:LOWCORE:VIEW:EXPOSE
+  // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:SCREEN:EXPOSE
+  // LOW_CODEGEN::END::CUSTOM:LOWCORE:SCREEN:EXPOSE
 }
 
 // --------------------------
@@ -2767,17 +2713,6 @@ static void expose_LowCore_Element(asIScriptEngine *p_Engine)
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0,
              "Failed to expose destroy for Low::Core::UI::Element.");
-
-  r = p_Engine->RegisterObjectMethod(
-      "Element", "View get_view() const property",
-      asMETHOD(Low::Core::UI::Element, get_view), asCALL_THISCALL);
-  LOW_ASSERT(r >= 0, "Failed to expose property getter for view of "
-                     "Low::Core::UI::Element.");
-  r = p_Engine->RegisterObjectMethod(
-      "Element", "void set_view(View) property",
-      asMETHOD(Low::Core::UI::Element, set_view), asCALL_THISCALL);
-  LOW_ASSERT(r >= 0, "Failed to expose property setter for view of "
-                     "Low::Core::UI::Element.");
 
   r = p_Engine->RegisterObjectMethod(
       "Element", "bool get_click_passthrough() const property",
@@ -3464,7 +3399,7 @@ namespace Low::Core {
     register_LowCore_Asset(p_Engine);
     register_LowCore_WidgetAsset(p_Engine);
     register_LowCore_WidgetInstance(p_Engine);
-    register_LowCore_View(p_Engine);
+    register_LowCore_Screen(p_Engine);
     register_LowCore_Element(p_Engine);
     register_LowCore_Display(p_Engine);
     register_LowCore_Text(p_Engine);
@@ -3487,7 +3422,7 @@ namespace Low::Core {
     expose_LowCore_Asset(p_Engine);
     expose_LowCore_WidgetAsset(p_Engine);
     expose_LowCore_WidgetInstance(p_Engine);
-    expose_LowCore_View(p_Engine);
+    expose_LowCore_Screen(p_Engine);
     expose_LowCore_Element(p_Engine);
     expose_LowCore_Display(p_Engine);
     expose_LowCore_Text(p_Engine);

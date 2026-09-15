@@ -479,6 +479,113 @@ namespace Low {
         _register_alias(p_Handle.get_id(), p_Path);
       }
 
+      enum class OnMissingPolicy
+      {
+        Ignore,
+        DeleteBundle,
+        Regenerate
+      };
+
+      enum class DependencyKind
+      {
+        Hard,
+        Soft
+      };
+
+      struct BundleFileDesc
+      {
+        String path;
+        Name role;
+        OnMissingPolicy onMissing = OnMissingPolicy::Ignore;
+        bool deleteWithBundle = true;
+      };
+
+      typedef u64 BundleId;
+
+      typedef Function<void(Handle, Handle)> DependencyCallback;
+      typedef Function<bool(const BundleFileDesc &, Handle)>
+          Regenerator;
+
+      struct BundleDependency
+      {
+        BundleId dependsOn = 0ull;
+        DependencyKind kind = DependencyKind::Hard;
+        DependencyCallback callback;
+      };
+
+      struct Bundle
+      {
+        BundleId id = 0ull;
+        u16 typeId = 0u;
+        Handle handle;
+        List<BundleFileDesc> files;
+        List<BundleDependency> dependsOn;
+        List<BundleId> dependents;
+      };
+
+      struct BundleBuilder
+      {
+      private:
+        Bundle m_Bundle;
+
+      public:
+        BundleBuilder(const Util::Handle p_Handle)
+        {
+          m_Bundle.handle = p_Handle;
+          m_Bundle.typeId = p_Handle.get_type();
+        }
+
+        BundleBuilder &
+        file(const String p_Path, const Name p_Role,
+             const OnMissingPolicy p_OnMissing = OnMissingPolicy::Ignore,
+             const bool p_DeleteWithBundle = true)
+        {
+          BundleFileDesc l_File;
+          l_File.path = p_Path;
+          l_File.role = p_Role;
+          l_File.onMissing = p_OnMissing;
+          l_File.deleteWithBundle = p_DeleteWithBundle;
+          m_Bundle.files.push_back(l_File);
+          return *this;
+        }
+
+        const Bundle &build() const
+        {
+          return m_Bundle;
+        }
+      };
+
+      BundleId LOW_EXPORT register_bundle(const Bundle &p_Bundle);
+
+      void LOW_EXPORT _hard_dependency(Util::Handle p_Bundle,
+                                       Util::Handle p_DependsOn);
+      void LOW_EXPORT _soft_dependency(
+          Util::Handle p_Bundle, Util::Handle p_DependsOn,
+          const DependencyCallback p_Callback);
+      void LOW_EXPORT _delete_bundle(Util::Handle p_Handle);
+
+      template <typename T1, typename T2>
+      void hard_dependency(T1 p_Bundle, T2 p_DependsOn)
+      {
+        _hard_dependency(p_Bundle.get_id(), p_DependsOn.get_id());
+      }
+
+      template <typename T1, typename T2>
+      void soft_dependency(T1 p_Bundle, T2 p_DependsOn,
+                           const DependencyCallback p_Callback)
+      {
+        _soft_dependency(p_Bundle.get_id(), p_DependsOn.get_id(),
+                         p_Callback);
+      }
+
+      template <typename T> void delete_bundle(T p_Handle)
+      {
+        _delete_bundle(p_Handle.get_id());
+      }
+
+      void LOW_EXPORT register_regenerator(u16 p_TypeId,
+                                           const Regenerator p_Fn);
+
     } // namespace AssetManager
 
   } // namespace Util
