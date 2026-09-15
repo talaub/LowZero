@@ -12,6 +12,7 @@
 #include "LowCoreInput.h"
 #include "LowCorePhysics.h"
 #include "LowCorePhysicsWorld.h"
+#include "LowCoreCallable.h"
 
 #include "LowCore.h"
 
@@ -306,6 +307,80 @@ namespace Low {
       }
 
       // END REGISTER HANDLE
+      // ------------------------------------------------------
+      // BEGIN REGISTER SIGNAL
+      static void signal_default_construct(Low::Core::Signal *p_Memory)
+      {
+        new (p_Memory) Low::Core::Signal();
+      }
+
+      static void
+      signal_copy_construct(const Low::Core::Signal &p_Other,
+                            Low::Core::Signal *p_Memory)
+      {
+        new (p_Memory) Low::Core::Signal(p_Other);
+      }
+
+      static void signal_destruct(Low::Core::Signal *p_Memory)
+      {
+        p_Memory->~Signal();
+      }
+
+      static Low::Core::Signal &
+      signal_assign(const Low::Core::Signal &p_Other,
+                   Low::Core::Signal *p_Self)
+      {
+        *p_Self = p_Other;
+        return *p_Self;
+      }
+
+      static void signal_invoke(Low::Core::Signal *p_Self)
+      {
+        p_Self->invoke();
+      }
+
+      static void expose_signal(asIScriptEngine *p_Engine)
+      {
+        int r = 0;
+
+        r = p_Engine->RegisterObjectType(
+            "Signal", sizeof(Low::Core::Signal),
+            asOBJ_VALUE | asGetTypeTraits<Low::Core::Signal>() |
+                asOBJ_APP_CLASS_CDAK);
+        LOW_ASSERT(r >= 0, "Failed to register Signal type");
+
+        r = p_Engine->RegisterObjectBehaviour(
+            "Signal", asBEHAVE_CONSTRUCT, "void f()",
+            asFUNCTION(signal_default_construct),
+            asCALL_CDECL_OBJLAST);
+        LOW_ASSERT(r >= 0, "Failed to register Signal default ctor");
+
+        r = p_Engine->RegisterObjectBehaviour(
+            "Signal", asBEHAVE_CONSTRUCT, "void f(const Signal &in)",
+            asFUNCTION(signal_copy_construct), asCALL_CDECL_OBJLAST);
+        LOW_ASSERT(r >= 0, "Failed to register Signal copy ctor");
+
+        r = p_Engine->RegisterObjectBehaviour(
+            "Signal", asBEHAVE_DESTRUCT, "void f()",
+            asFUNCTION(signal_destruct), asCALL_CDECL_OBJLAST);
+        LOW_ASSERT(r >= 0, "Failed to register Signal dtor");
+
+        r = p_Engine->RegisterObjectMethod(
+            "Signal", "Signal &opAssign(const Signal &in)",
+            asFUNCTION(signal_assign), asCALL_CDECL_OBJLAST);
+        LOW_ASSERT(r >= 0, "Failed to register Signal assignment");
+
+        r = p_Engine->RegisterObjectMethod(
+            "Signal", "void invoke()", asFUNCTION(signal_invoke),
+            asCALL_CDECL_OBJLAST);
+        LOW_ASSERT(r >= 0, "Failed to register Signal::invoke");
+
+        r = p_Engine->RegisterObjectMethod(
+            "Signal", "void opCall()", asFUNCTION(signal_invoke),
+            asCALL_CDECL_OBJLAST);
+        LOW_ASSERT(r >= 0, "Failed to register Signal::opCall");
+      }
+      // END REGISTER SIGNAL
       // ------------------------------------------------------
       // BEGIN REGISTER PHYSICS
       static bool physics_world_raycast(
@@ -1336,6 +1411,7 @@ namespace Low {
         expose_name(p_Engine);
         expose_logger(p_Engine);
         expose_handle(p_Engine);
+        expose_signal(p_Engine);
         expose_physics(p_Engine);
         expose_runtime(p_Engine);
         expose_input(p_Engine);
