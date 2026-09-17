@@ -179,6 +179,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GpuTexture::Data, bindless_index);
+        l_PropertyInfo.size =
+            sizeof(GpuTexture::Data::bindless_index);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -208,6 +210,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GpuTexture::Data, format_category);
+        l_PropertyInfo.size =
+            sizeof(GpuTexture::Data::format_category);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -240,6 +244,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GpuTexture::Data, data_handle);
+        l_PropertyInfo.size = sizeof(GpuTexture::Data::data_handle);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -269,6 +274,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GpuTexture::Data, texture_handle);
+        l_PropertyInfo.size =
+            sizeof(GpuTexture::Data::texture_handle);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -298,6 +305,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GpuTexture::Data, imgui_texture_id);
+        l_PropertyInfo.size =
+            sizeof(GpuTexture::Data::imgui_texture_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -327,6 +336,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GpuTexture::Data, sampler_index);
+        l_PropertyInfo.size = sizeof(GpuTexture::Data::sampler_index);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -356,6 +366,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GpuTexture::Data, full_mip_count);
+        l_PropertyInfo.size =
+            sizeof(GpuTexture::Data::full_mip_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -385,6 +397,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GpuTexture::Data, loaded_mips);
+        l_PropertyInfo.size = sizeof(GpuTexture::Data::loaded_mips);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -412,6 +425,7 @@ namespace Low {
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(GpuTexture::Data, name);
+        l_PropertyInfo.size = sizeof(GpuTexture::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

@@ -191,6 +191,7 @@ namespace Low {
         l_PropertyInfo.name = N(gpu);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Texture::Data, gpu);
+        l_PropertyInfo.size = sizeof(Texture::Data::gpu);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = GpuTexture::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -219,6 +220,7 @@ namespace Low {
         l_PropertyInfo.name = N(resource);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Texture::Data, resource);
+        l_PropertyInfo.size = sizeof(Texture::Data::resource);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = TextureResource::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -247,6 +249,7 @@ namespace Low {
         l_PropertyInfo.name = N(staging);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Texture::Data, staging);
+        l_PropertyInfo.size = sizeof(Texture::Data::staging);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = TextureStaging::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -275,6 +278,7 @@ namespace Low {
         l_PropertyInfo.name = N(state);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Texture::Data, state);
+        l_PropertyInfo.size = sizeof(Texture::Data::state);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
         l_PropertyInfo.handleType =
             Low::Renderer::TextureStateEnumHelper::get_enum_id();
@@ -306,6 +310,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(Texture::Data, references);
+        l_PropertyInfo.size = sizeof(Texture::Data::references);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -326,6 +331,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(Texture::Data, unique_id);
+        l_PropertyInfo.size = sizeof(Texture::Data::unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -351,6 +357,7 @@ namespace Low {
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Texture::Data, name);
+        l_PropertyInfo.size = sizeof(Texture::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

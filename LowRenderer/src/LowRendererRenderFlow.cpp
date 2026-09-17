@@ -187,6 +187,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, context);
+        l_PropertyInfo.size = sizeof(RenderFlow::Data::context);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Interface::Context::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -207,6 +208,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, dimensions);
+        l_PropertyInfo.size = sizeof(RenderFlow::Data::dimensions);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -233,6 +235,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, output_image);
+        l_PropertyInfo.size = sizeof(RenderFlow::Data::output_image);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Resource::Image::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -261,6 +264,7 @@ namespace Low {
         l_PropertyInfo.name = N(steps);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RenderFlow::Data, steps);
+        l_PropertyInfo.size = sizeof(RenderFlow::Data::steps);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -291,6 +295,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, resources);
+        l_PropertyInfo.size = sizeof(RenderFlow::Data::resources);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -317,6 +322,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, frame_info_buffer);
+        l_PropertyInfo.size =
+            sizeof(RenderFlow::Data::frame_info_buffer);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Resource::Buffer::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -345,6 +352,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, resource_signature);
+        l_PropertyInfo.size =
+            sizeof(RenderFlow::Data::resource_signature);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Interface::PipelineResourceSignature::IDENTIFIER;
@@ -374,6 +383,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, camera_position);
+        l_PropertyInfo.size =
+            sizeof(RenderFlow::Data::camera_position);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -403,6 +414,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, camera_direction);
+        l_PropertyInfo.size =
+            sizeof(RenderFlow::Data::camera_direction);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -433,6 +446,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, camera_fov);
+        l_PropertyInfo.size = sizeof(RenderFlow::Data::camera_fov);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -462,6 +476,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, camera_near_plane);
+        l_PropertyInfo.size =
+            sizeof(RenderFlow::Data::camera_near_plane);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -491,6 +507,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, camera_far_plane);
+        l_PropertyInfo.size =
+            sizeof(RenderFlow::Data::camera_far_plane);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -520,6 +538,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, projection_matrix);
+        l_PropertyInfo.size =
+            sizeof(RenderFlow::Data::projection_matrix);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -548,6 +568,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, view_matrix);
+        l_PropertyInfo.size = sizeof(RenderFlow::Data::view_matrix);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -574,6 +595,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, directional_light);
+        l_PropertyInfo.size =
+            sizeof(RenderFlow::Data::directional_light);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -605,6 +628,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, point_lights);
+        l_PropertyInfo.size = sizeof(RenderFlow::Data::point_lights);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -632,6 +656,7 @@ namespace Low {
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RenderFlow::Data, name);
+        l_PropertyInfo.size = sizeof(RenderFlow::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

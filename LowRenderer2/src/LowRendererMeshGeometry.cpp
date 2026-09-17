@@ -168,6 +168,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(MeshGeometry::Data, submesh_count);
+        l_PropertyInfo.size =
+            sizeof(MeshGeometry::Data::submesh_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -197,6 +199,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(MeshGeometry::Data, submeshes);
+        l_PropertyInfo.size = sizeof(MeshGeometry::Data::submeshes);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -229,6 +232,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(MeshGeometry::Data, aabb);
+        l_PropertyInfo.size = sizeof(MeshGeometry::Data::aabb);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -258,6 +262,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(MeshGeometry::Data, bounding_sphere);
+        l_PropertyInfo.size =
+            sizeof(MeshGeometry::Data::bounding_sphere);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -289,6 +295,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(MeshGeometry::Data, nodes);
+        l_PropertyInfo.size = sizeof(MeshGeometry::Data::nodes);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -317,6 +324,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(MeshGeometry::Data, name);
+        l_PropertyInfo.size = sizeof(MeshGeometry::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

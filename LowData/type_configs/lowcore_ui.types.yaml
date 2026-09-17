@@ -53,6 +53,11 @@ types:
         const: true
       update_instances:
         return_type: void
+      fill_binding_options:
+        return_type: void
+        parameters:
+          - name: options
+            type: Low::Util::List<BindingOption>
   ControllerInstance:
     no_auto_serialize: true
     no_auto_deserialize: true
@@ -103,6 +108,8 @@ types:
         type: uint64_t
       custom_controller_id:
         type: uint64_t
+      bindings:
+        type: Low::Util::List<BindingDescription>
     functions:
       get_next_local_id:
         return_type: uint64_t
@@ -192,6 +199,23 @@ types:
             const: true
           - name: node
             type: Low::Util::Serial::Node
+      create_binding:
+        return_type: void
+        parameters:
+          - name: controllerBindingOption
+            type: Util::Name
+          - name: bindHandle
+            type: Util::Handle
+            no_ref: true
+          - name: bindPropertyName
+            type: Util::Name
+      clear_bindings:
+        return_type: void
+        parameters:
+          - name: bindLocalId
+            type: uint64_t
+          - name: bindPropertyName
+            type: Util::Name
 
   WidgetInstance:
     no_auto_serialize: true
@@ -205,6 +229,8 @@ types:
       elements:
         type: Low::Util::List<Low::Core::UI::Element>
         no_setter: true
+      element_map:
+        type: Low::Util::Map<uint64_t, Low::Core::UI::Element>
       widgets:
         type: Low::Util::List<Low::Core::UI::WidgetInstance>
         no_setter: true
@@ -213,6 +239,16 @@ types:
         handle: true
       asset:
         type: uint64_t
+    functions:
+      find_element_by_local_id:
+        return_type: Low::Core::UI::Element
+        return_handle: true
+        parameters:
+          - name: localId
+            type: uint64_t
+            const: true
+      evaluate_bindings:
+        return_type: void
 
   Screen:
     unique_id: true

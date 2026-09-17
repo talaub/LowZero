@@ -195,6 +195,8 @@ namespace Low {
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset =
                 offsetof(Display::Data, pixel_position);
+            l_PropertyInfo.size =
+                sizeof(Display::Data::pixel_position);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::VECTOR2;
             l_PropertyInfo.handleType = 0;
@@ -228,6 +230,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset =
                 offsetof(Display::Data, rotation);
+            l_PropertyInfo.size = sizeof(Display::Data::rotation);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::FLOAT;
             l_PropertyInfo.handleType = 0;
@@ -259,6 +262,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset =
                 offsetof(Display::Data, pixel_scale);
+            l_PropertyInfo.size = sizeof(Display::Data::pixel_scale);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::VECTOR2;
             l_PropertyInfo.handleType = 0;
@@ -291,6 +295,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset =
                 offsetof(Display::Data, layer);
+            l_PropertyInfo.size = sizeof(Display::Data::layer);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UINT32;
             l_PropertyInfo.handleType = 0;
@@ -322,6 +327,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
                 offsetof(Display::Data, parent);
+            l_PropertyInfo.size = sizeof(Display::Data::parent);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType = Display::IDENTIFIER;
@@ -353,6 +359,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
                 offsetof(Display::Data, children);
+            l_PropertyInfo.size = sizeof(Display::Data::children);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UNKNOWN;
             l_PropertyInfo.handleType = 0;
@@ -383,6 +390,8 @@ namespace Low {
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
                 offsetof(Display::Data, absolute_pixel_position);
+            l_PropertyInfo.size =
+                sizeof(Display::Data::absolute_pixel_position);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::VECTOR2;
             l_PropertyInfo.handleType = 0;
@@ -413,6 +422,8 @@ namespace Low {
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
                 offsetof(Display::Data, absolute_rotation);
+            l_PropertyInfo.size =
+                sizeof(Display::Data::absolute_rotation);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::FLOAT;
             l_PropertyInfo.handleType = 0;
@@ -441,6 +452,8 @@ namespace Low {
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
                 offsetof(Display::Data, absolute_pixel_scale);
+            l_PropertyInfo.size =
+                sizeof(Display::Data::absolute_pixel_scale);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::VECTOR2;
             l_PropertyInfo.handleType = 0;
@@ -471,6 +484,8 @@ namespace Low {
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
                 offsetof(Display::Data, absolute_layer);
+            l_PropertyInfo.size =
+                sizeof(Display::Data::absolute_layer);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UINT32;
             l_PropertyInfo.handleType = 0;
@@ -499,6 +514,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
                 offsetof(Display::Data, world_matrix);
+            l_PropertyInfo.size = sizeof(Display::Data::world_matrix);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UNKNOWN;
             l_PropertyInfo.handleType = 0;
@@ -529,6 +545,8 @@ namespace Low {
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
                 offsetof(Display::Data, world_updated);
+            l_PropertyInfo.size =
+                sizeof(Display::Data::world_updated);
             l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
@@ -559,6 +577,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
                 offsetof(Display::Data, element);
+            l_PropertyInfo.size = sizeof(Display::Data::element);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType =
@@ -592,6 +611,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
                 offsetof(Display::Data, unique_id);
+            l_PropertyInfo.size = sizeof(Display::Data::unique_id);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UINT64;
             l_PropertyInfo.handleType = 0;
@@ -621,6 +641,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
                 offsetof(Display::Data, dirty);
+            l_PropertyInfo.size = sizeof(Display::Data::dirty);
             l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
@@ -651,6 +672,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
                 offsetof(Display::Data, world_dirty);
+            l_PropertyInfo.size = sizeof(Display::Data::world_dirty);
             l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =

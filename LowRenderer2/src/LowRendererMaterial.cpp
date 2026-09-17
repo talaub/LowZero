@@ -203,6 +203,7 @@ namespace Low {
         l_PropertyInfo.name = N(state);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Material::Data, state);
+        l_PropertyInfo.size = sizeof(Material::Data::state);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
         l_PropertyInfo.handleType =
             MaterialStateEnumHelper::get_enum_id();
@@ -233,6 +234,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(Material::Data, material_type);
+        l_PropertyInfo.size = sizeof(Material::Data::material_type);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = MaterialType::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -262,6 +264,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(Material::Data, resource);
+        l_PropertyInfo.size = sizeof(Material::Data::resource);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::MaterialResource::IDENTIFIER;
@@ -294,6 +297,7 @@ namespace Low {
         l_PropertyInfo.name = N(gpu);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Material::Data, gpu);
+        l_PropertyInfo.size = sizeof(Material::Data::gpu);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::GpuMaterial::IDENTIFIER;
@@ -324,6 +328,7 @@ namespace Low {
         l_PropertyInfo.name = N(path);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Material::Data, path);
+        l_PropertyInfo.size = sizeof(Material::Data::path);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -353,6 +358,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(Material::Data, properties);
+        l_PropertyInfo.size = sizeof(Material::Data::properties);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -382,6 +388,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(Material::Data, references);
+        l_PropertyInfo.size = sizeof(Material::Data::references);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -402,6 +409,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(Material::Data, unique_id);
+        l_PropertyInfo.size = sizeof(Material::Data::unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -427,6 +435,7 @@ namespace Low {
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Material::Data, name);
+        l_PropertyInfo.size = sizeof(Material::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

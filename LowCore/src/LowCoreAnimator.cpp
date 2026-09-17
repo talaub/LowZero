@@ -186,6 +186,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Animator::Data, render_object);
+          l_PropertyInfo.size = sizeof(Animator::Data::render_object);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Low::Renderer::SkeletalRenderObject::IDENTIFIER;
@@ -218,6 +219,7 @@ namespace Low {
           l_PropertyInfo.name = N(pose);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Animator::Data, pose);
+          l_PropertyInfo.size = sizeof(Animator::Data::pose);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Low::Core::Animation::Pose::IDENTIFIER;
@@ -249,6 +251,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Animator::Data, skinning_instance);
+          l_PropertyInfo.size =
+              sizeof(Animator::Data::skinning_instance);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Low::Renderer::SkinningInstance::IDENTIFIER;
@@ -282,6 +286,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Animator::Data, active_clip);
+          l_PropertyInfo.size = sizeof(Animator::Data::active_clip);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Low::Core::Animation::Clip::IDENTIFIER;
@@ -315,6 +320,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Animator::Data, animation_progress);
+          l_PropertyInfo.size =
+              sizeof(Animator::Data::animation_progress);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -344,6 +351,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Animator::Data, skeleton);
+          l_PropertyInfo.size = sizeof(Animator::Data::skeleton);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Low::Renderer::Skeleton::IDENTIFIER;
@@ -376,6 +384,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Animator::Data, entity);
+          l_PropertyInfo.size = sizeof(Animator::Data::entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::IDENTIFIER;
           l_PropertyInfo.get_return =
@@ -405,6 +414,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Animator::Data, unique_id);
+          l_PropertyInfo.size = sizeof(Animator::Data::unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

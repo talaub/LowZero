@@ -180,6 +180,7 @@ namespace Low {
           l_PropertyInfo.name = N(active);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Camera::Data, active);
+          l_PropertyInfo.size = sizeof(Camera::Data::active);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -205,6 +206,7 @@ namespace Low {
           l_PropertyInfo.name = N(fov);
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(Camera::Data, fov);
+          l_PropertyInfo.size = sizeof(Camera::Data::fov);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -234,6 +236,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Camera::Data, render_view);
+          l_PropertyInfo.size = sizeof(Camera::Data::render_view);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Low::Renderer::RenderView::IDENTIFIER;
@@ -266,6 +269,7 @@ namespace Low {
           l_PropertyInfo.name = N(entity);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Camera::Data, entity);
+          l_PropertyInfo.size = sizeof(Camera::Data::entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::IDENTIFIER;
           l_PropertyInfo.get_return =
@@ -295,6 +299,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Camera::Data, unique_id);
+          l_PropertyInfo.size = sizeof(Camera::Data::unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

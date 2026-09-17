@@ -51,6 +51,13 @@ namespace Low {
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Class, module,
                                    Low::Core::Scripting::Module))
             Low::Core::Scripting::Module();
+        new (ACCESSOR_TYPE_SOA_PTR(
+            l_Handle, Class, members,
+            SINGLE_ARG(Low::Util::Map<
+                       Low::Util::Name,
+                       Low::Core::Scripting::ClassMemberField>)))
+            Low::Util::Map<Low::Util::Name,
+                           Low::Core::Scripting::ClassMemberField>();
         ACCESSOR_TYPE_SOA(l_Handle, Class, name, Low::Util::Name) =
             Low::Util::Name(0u);
 
@@ -151,6 +158,7 @@ namespace Low {
           l_PropertyInfo.name = N(module);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Class::Data, module);
+          l_PropertyInfo.size = sizeof(Class::Data::module);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Low::Core::Scripting::Module::IDENTIFIER;
@@ -183,6 +191,7 @@ namespace Low {
           l_PropertyInfo.name = N(as_class);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Class::Data, as_class);
+          l_PropertyInfo.size = sizeof(Class::Data::as_class);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -213,6 +222,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Class::Data, reload_index);
+          l_PropertyInfo.size = sizeof(Class::Data::reload_index);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -236,11 +246,50 @@ namespace Low {
           // End property: reload_index
         }
         {
+          // Property: members
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(members);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset = offsetof(Class::Data, members);
+          l_PropertyInfo.size = sizeof(Class::Data::members);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            Class l_Handle = p_Handle.get_id();
+            l_Handle.get_members();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Class, members,
+                SINGLE_ARG(Low::Util::Map<
+                           Low::Util::Name,
+                           Low::Core::Scripting::ClassMemberField>));
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            Class l_Handle = p_Handle.get_id();
+            l_Handle.set_members(*(
+                Low::Util::Map<Low::Util::Name,
+                               Low::Core::Scripting::ClassMemberField>
+                    *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Class l_Handle = p_Handle.get_id();
+            *((Low::Util::Map<Low::Util::Name,
+                              Low::Core::Scripting::ClassMemberField>
+                   *)p_Data) = l_Handle.get_members();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: members
+        }
+        {
           // Property: name
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(name);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Class::Data, name);
+          l_PropertyInfo.size = sizeof(Class::Data::name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -587,6 +636,45 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_reload_index
 
         broadcast_observable(N(reload_index));
+      }
+
+      Low::Util::Map<Low::Util::Name,
+                     Low::Core::Scripting::ClassMemberField> &
+      Class::get_members() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_members
+        // LOW_CODEGEN::END::CUSTOM:GETTER_members
+
+        return TYPE_SOA(
+            Class, members,
+            SINGLE_ARG(Low::Util::Map<
+                       Low::Util::Name,
+                       Low::Core::Scripting::ClassMemberField>));
+      }
+      void Class::set_members(
+          Low::Util::Map<Low::Util::Name,
+                         Low::Core::Scripting::ClassMemberField>
+              &p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_members
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_members
+
+        // Set new value
+        TYPE_SOA(
+            Class, members,
+            SINGLE_ARG(Low::Util::Map<
+                       Low::Util::Name,
+                       Low::Core::Scripting::ClassMemberField>)) =
+            p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_members
+        // LOW_CODEGEN::END::CUSTOM:SETTER_members
+
+        broadcast_observable(N(members));
       }
 
       Low::Util::Name Class::get_name() const

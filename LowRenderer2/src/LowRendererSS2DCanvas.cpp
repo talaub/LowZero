@@ -161,6 +161,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SS2DCanvas::Data, draw_commands);
+        l_PropertyInfo.size = sizeof(SS2DCanvas::Data::draw_commands);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -189,6 +190,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SS2DCanvas::Data, out_image);
+        l_PropertyInfo.size = sizeof(SS2DCanvas::Data::out_image);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::Texture::IDENTIFIER;
@@ -221,6 +223,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SS2DCanvas::Data, dimensions);
+        l_PropertyInfo.size = sizeof(SS2DCanvas::Data::dimensions);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -252,6 +255,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SS2DCanvas::Data, desired_dimensions);
+        l_PropertyInfo.size =
+            sizeof(SS2DCanvas::Data::desired_dimensions);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -283,6 +288,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SS2DCanvas::Data, drawcommand_index_buffer);
+        l_PropertyInfo.size =
+            sizeof(SS2DCanvas::Data::drawcommand_index_buffer);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Low::Renderer::Buffer::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -315,6 +322,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SS2DCanvas::Data, backend_handle);
+        l_PropertyInfo.size =
+            sizeof(SS2DCanvas::Data::backend_handle);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -344,6 +353,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SS2DCanvas::Data, z_dirty);
+        l_PropertyInfo.size = sizeof(SS2DCanvas::Data::z_dirty);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -373,6 +383,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SS2DCanvas::Data, dimensions_dirty);
+        l_PropertyInfo.size =
+            sizeof(SS2DCanvas::Data::dimensions_dirty);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -401,6 +413,7 @@ namespace Low {
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(SS2DCanvas::Data, name);
+        l_PropertyInfo.size = sizeof(SS2DCanvas::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

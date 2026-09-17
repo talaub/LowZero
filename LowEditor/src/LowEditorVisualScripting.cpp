@@ -605,7 +605,7 @@ namespace Low {
       }
 
       static void compile_user_functions(Document &p_Document,
-                                        CompileContext &p_Context)
+                                         CompileContext &p_Context)
       {
         for (FunctionGraph &i_Func : p_Document.functions) {
           if (i_Func.name.empty()) {
@@ -627,8 +627,7 @@ namespace Low {
             Util::List<Low::Editor::Pin *> l_Pins =
                 i_Func.graph.graph.get_node_pins(i_Node.id);
             for (const Low::Editor::Pin *i_Pin : l_Pins) {
-              const Pin *l_PinMeta =
-                  i_Func.graph.find_pin(i_Pin->id);
+              const Pin *l_PinMeta = i_Func.graph.find_pin(i_Pin->id);
               if (!l_PinMeta ||
                   l_PinMeta->type != PinType::Execution ||
                   i_Pin->direction != PinDirection::Output) {
@@ -682,15 +681,31 @@ namespace Low {
       void UiControllerCompileProfile::emit_prelude(
           Graph &p_Graph, CompileContext &p_Context) const
       {
-        (void)p_Graph;
-        (void)p_Context;
       }
 
       void UiControllerCompileProfile::emit_members(
           Graph &p_Graph, CompileContext &p_Context) const
       {
-        (void)p_Graph;
-        (void)p_Context;
+        for (const Variable &i_Variable : p_Graph.variables) {
+          if (!i_Variable.is_valid()) {
+            continue;
+          }
+
+          Util::String l_TypeStr = pin_type_to_script_type_string(
+              i_Variable.type, i_Variable.number_subtype,
+              i_Variable.string_subtype, i_Variable.handle_type);
+
+          if (l_TypeStr.empty()) {
+            continue;
+          }
+
+          if (i_Variable.container_type == PinContainerType::List) {
+            l_TypeStr = "array<" + l_TypeStr + ">";
+          }
+
+          p_Context.append_line(l_TypeStr + " " + i_Variable.name +
+                                ";");
+        }
       }
 
       void UiControllerCompileProfile::collect_entry_points(
@@ -1054,8 +1069,8 @@ namespace Low {
             const TypeMetadata &l_Meta = get_type_metadata(
                 Util::Handle::type_id(p_HandleType));
             return !l_Meta.fullScriptingTypeString.empty()
-                      ? l_Meta.fullScriptingTypeString
-                      : l_Meta.fullTypeString;
+                       ? l_Meta.fullScriptingTypeString
+                       : l_Meta.fullTypeString;
           }
           return "";
         case PinType::Struct: {
@@ -1113,8 +1128,8 @@ namespace Low {
             l_TypeStr = "array<" + l_TypeStr + ">";
           }
 
-          p_Context.append_line(l_TypeStr + " " +
-                                i_Variable.name + ";");
+          p_Context.append_line(l_TypeStr + " " + i_Variable.name +
+                                ";");
         }
       }
 
@@ -1122,10 +1137,8 @@ namespace Low {
           Graph &p_Graph,
           Util::List<CompileEntryPoint> &p_EntryPoints) const
       {
-        for (const Low::Editor::Node &i_Node :
-             p_Graph.graph.nodes) {
-          const Node *l_NodeMetadata =
-              p_Graph.find_node(i_Node.id);
+        for (const Low::Editor::Node &i_Node : p_Graph.graph.nodes) {
+          const Node *l_NodeMetadata = p_Graph.find_node(i_Node.id);
           if (!l_NodeMetadata) {
             continue;
           }
@@ -1149,8 +1162,7 @@ namespace Low {
               p_Graph.graph.get_node_pins(i_Node.id);
           PinId l_ExecutionOutputPin;
           for (const Low::Editor::Pin *i_Pin : l_NodePins) {
-            const Pin *l_PinMetadata =
-                p_Graph.find_pin(i_Pin->id);
+            const Pin *l_PinMetadata = p_Graph.find_pin(i_Pin->id);
             if (!l_PinMetadata ||
                 l_PinMetadata->type != PinType::Execution ||
                 i_Pin->direction != PinDirection::Output) {
@@ -1179,10 +1191,8 @@ namespace Low {
         Graph &p_Graph = p_Document.graph;
 
         const Util::String l_ClassName = make_script_identifier(
-            get_class_name(p_Document),
-            "VisualScriptGameplaySystem");
-        p_Context.begin_block(Util::String("class ") +
-                              l_ClassName +
+            get_class_name(p_Document), "VisualScriptGameplaySystem");
+        p_Context.begin_block(Util::String("class ") + l_ClassName +
                               Util::String(": GameplaySystem"));
         emit_members(p_Graph, p_Context);
 
@@ -1205,13 +1215,13 @@ namespace Low {
 
           Util::String l_Signature = i_Entry.function_signature;
           if (l_Signature.empty()) {
-            l_Signature = Util::String("void ") +
-                          i_Entry.function_name + "()";
+            l_Signature =
+                Util::String("void ") + i_Entry.function_name + "()";
           }
 
           p_Context.begin_block(l_Signature);
-          p_Graph.continue_compilation(
-              i_Entry.execution_output_pin, p_Context);
+          p_Graph.continue_compilation(i_Entry.execution_output_pin,
+                                       p_Context);
           p_Context.end_block();
           p_Context.main_code.append("\n");
         }
@@ -1355,7 +1365,8 @@ namespace Low {
         if (l_NodeMeta) {
           const NodeClass *l_NodeClass =
               find_node_class(l_NodeMeta->node_class);
-          if (l_NodeClass && !l_NodeClass->is_deletable(*this, p_NodeId)) {
+          if (l_NodeClass &&
+              !l_NodeClass->is_deletable(*this, p_NodeId)) {
             return false;
           }
         }
@@ -2421,7 +2432,8 @@ namespace Low {
                 : nullptr;
         const float l_ExtraContentHeight =
             l_NodeClass
-                ? l_NodeClass->get_above_pins_height(*graph, p_Node.id) +
+                ? l_NodeClass->get_above_pins_height(*graph,
+                                                     p_Node.id) +
                       l_NodeClass->get_below_pins_height(*graph,
                                                          p_Node.id)
                 : 0.0f;
@@ -2431,11 +2443,10 @@ namespace Low {
               196.0f, LOW_MATH_MAX(60.0f, 10.0f + l_MaxPins * 34.0f) +
                           l_ExtraContentHeight);
         }
-        return Math::Vector2(
-            default_node_size.x,
-            LOW_MATH_MAX(default_node_size.y,
-                        82.0f + l_MaxPins * 32.0f) +
-                l_ExtraContentHeight);
+        return Math::Vector2(default_node_size.x,
+                             LOW_MATH_MAX(default_node_size.y,
+                                          82.0f + l_MaxPins * 32.0f) +
+                                 l_ExtraContentHeight);
       }
 
       void
@@ -2641,9 +2652,8 @@ namespace Low {
             l_NodeClass->render_above_pins(
                 *graph, p_Node.id, p_Context,
                 ImVec2(p_ScreenMin.x, p_ScreenMin.y + l_HeaderHeight),
-                ImVec2(p_ScreenMax.x,
-                      p_ScreenMin.y + l_HeaderHeight +
-                          l_AbovePinsHeight));
+                ImVec2(p_ScreenMax.x, p_ScreenMin.y + l_HeaderHeight +
+                                          l_AbovePinsHeight));
           }
         }
 
@@ -2670,7 +2680,7 @@ namespace Low {
             // Not rendered as a connector at all - this pin only
             // exists to carry an inline value editor on the node.
           } else if (l_PinMetadata &&
-                    l_PinMetadata->type == PinType::Execution) {
+                     l_PinMetadata->type == PinType::Execution) {
             draw_execution_pin(p_Context.draw_list, l_PinAnchor,
                                i_Pin->is_input(), l_Radius * 1.45f,
                                l_PinColor, l_PinHovered);
@@ -2804,13 +2814,14 @@ namespace Low {
               ImGui::PushItemWidth(l_ValueMax.x - l_ValueMin.x);
               if (ImGui::BeginCombo(
                       "##defaultvalue",
-                      l_EnumInfo.entry_name(l_CurrentValue).c_str())) {
+                      l_EnumInfo.entry_name(l_CurrentValue)
+                          .c_str())) {
                 for (u32 i = 0; i < l_EnumInfo.entries.size(); ++i) {
                   const Util::RTTI::EnumEntryInfo &i_Entry =
                       l_EnumInfo.entries[i];
-                  if (ImGui::Selectable(
-                          i_Entry.name.c_str(),
-                          l_CurrentValue == i_Entry.value)) {
+                  if (ImGui::Selectable(i_Entry.name.c_str(),
+                                        l_CurrentValue ==
+                                            i_Entry.value)) {
                     l_PinMetadata->default_value =
                         Util::Variant((u32)i_Entry.value);
                   }
@@ -2857,7 +2868,7 @@ namespace Low {
             l_NodeClass->render_below_pins(
                 *graph, p_Node.id, p_Context,
                 ImVec2(p_ScreenMin.x,
-                      l_ContentBottom - l_BelowPinsHeight),
+                       l_ContentBottom - l_BelowPinsHeight),
                 ImVec2(p_ScreenMax.x, l_ContentBottom));
           }
         }
@@ -2914,13 +2925,13 @@ namespace Low {
                       : title_height * p_Context.canvas.m_Zoom +
                             12.0f * p_Context.canvas.m_Zoom;
         const float l_AbovePinsHeight =
-            l_NodeClass
-                ? l_NodeClass->get_above_pins_height(*graph, p_Node.id)
-                : 0.0f;
+            l_NodeClass ? l_NodeClass->get_above_pins_height(
+                              *graph, p_Node.id)
+                        : 0.0f;
         const float l_BelowPinsHeight =
-            l_NodeClass
-                ? l_NodeClass->get_below_pins_height(*graph, p_Node.id)
-                : 0.0f;
+            l_NodeClass ? l_NodeClass->get_below_pins_height(
+                              *graph, p_Node.id)
+                        : 0.0f;
         const float l_ContentTop = p_ScreenMin.y + l_HeaderHeight +
                                    (l_Compact ? 14.0f : 4.0f) +
                                    l_AbovePinsHeight;

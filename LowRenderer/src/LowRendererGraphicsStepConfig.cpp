@@ -190,6 +190,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfig::Data, callbacks);
+        l_PropertyInfo.size =
+            sizeof(GraphicsStepConfig::Data::callbacks);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -221,6 +223,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfig::Data, resources);
+        l_PropertyInfo.size =
+            sizeof(GraphicsStepConfig::Data::resources);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -249,6 +253,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfig::Data, dimensions_config);
+        l_PropertyInfo.size =
+            sizeof(GraphicsStepConfig::Data::dimensions_config);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -277,6 +283,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfig::Data, pipelines);
+        l_PropertyInfo.size =
+            sizeof(GraphicsStepConfig::Data::pipelines);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -305,6 +313,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfig::Data, rendertargets);
+        l_PropertyInfo.size =
+            sizeof(GraphicsStepConfig::Data::rendertargets);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -333,6 +343,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(
             GraphicsStepConfig::Data, rendertargets_clearcolor);
+        l_PropertyInfo.size = sizeof(
+            GraphicsStepConfig::Data::rendertargets_clearcolor);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::COLOR;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -365,6 +377,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfig::Data, depth_rendertarget);
+        l_PropertyInfo.size =
+            sizeof(GraphicsStepConfig::Data::depth_rendertarget);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -397,6 +411,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfig::Data, use_depth);
+        l_PropertyInfo.size =
+            sizeof(GraphicsStepConfig::Data::use_depth);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -426,6 +442,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfig::Data, depth_clear);
+        l_PropertyInfo.size =
+            sizeof(GraphicsStepConfig::Data::depth_clear);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -455,6 +473,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfig::Data, depth_test);
+        l_PropertyInfo.size =
+            sizeof(GraphicsStepConfig::Data::depth_test);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -484,6 +504,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfig::Data, depth_write);
+        l_PropertyInfo.size =
+            sizeof(GraphicsStepConfig::Data::depth_write);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -513,6 +535,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepConfig::Data,
                                              depth_compare_operation);
+        l_PropertyInfo.size =
+            sizeof(GraphicsStepConfig::Data::depth_compare_operation);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -544,6 +568,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfig::Data, output_image);
+        l_PropertyInfo.size =
+            sizeof(GraphicsStepConfig::Data::output_image);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -576,6 +602,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfig::Data, name);
+        l_PropertyInfo.size = sizeof(GraphicsStepConfig::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

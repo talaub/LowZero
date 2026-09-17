@@ -108,6 +108,7 @@ namespace Low {
       Core::UI::Element l_Element =
           Core::UI::Element::make(p_Name, p_Canvas);
       l_Element.set_local_id(l_Asset.get_next_local_id());
+      l_Element.set_widget_instance(m_Viewport->m_Instance);
       Core::UI::Component::Display l_Display =
           Core::UI::Component::Display::make(l_Element);
 
@@ -399,6 +400,8 @@ namespace Low {
 
     void UiWidgetEditor::render(const float p_Delta)
     {
+      render_binding_popup(p_Delta);
+
       Core::UI::WidgetAsset l_Asset = m_Handle.get_id();
 
       if (m_CreatedLocalController &&
@@ -770,6 +773,213 @@ namespace Low {
       for (auto it = p_Element.get_components().begin();
            it != p_Element.get_components().end(); ++it) {
         add_section(it->second);
+      }
+    }
+
+    UiWidgetEditor::BindingContext
+        UiWidgetEditor::ms_CurrentBindingContext;
+
+    void UiWidgetEditor::open_binding_popup(Util::Handle p_Handle,
+                                            Util::Name p_PropertyName)
+    {
+      if (ms_CurrentBindingContext.active) {
+        LOW_LOG_WARN << "Cannot open binding popup with binding "
+                        "already in process."
+                     << LOW_LOG_END;
+        return;
+      }
+      if (!Util::Handle::is_registered_type(p_Handle.get_type())) {
+        LOW_LOG_WARN << "Cannot bind dead handle." << LOW_LOG_END;
+        return;
+      }
+
+      ms_CurrentBindingContext.property_name = p_PropertyName;
+      ms_CurrentBindingContext.handle = p_Handle;
+
+      Util::RTTI::TypeInfo &l_TypeInfo =
+          Util::Handle::get_type_info(p_Handle.get_type());
+
+      auto l_PropPos = l_TypeInfo.properties.find(p_PropertyName);
+
+      if (l_PropPos == l_TypeInfo.properties.end()) {
+        LOW_LOG_WARN
+            << "Cannot bind handle with property that does not exist."
+            << LOW_LOG_END;
+        return;
+      }
+
+      auto l_ElemPropPos = l_TypeInfo.properties.find(N(element));
+
+      if (l_ElemPropPos == l_TypeInfo.properties.end()) {
+        LOW_LOG_WARN
+            << "Cannot bind handle that is not a ui component."
+            << LOW_LOG_END;
+        return;
+      }
+
+      Core::UI::Element l_Element =
+          *(Core::UI::Element *)l_ElemPropPos->second.get_return(
+              p_Handle);
+
+      if (!l_Element.is_alive()) {
+        LOW_LOG_WARN << "Cannot bind with dead element."
+                     << LOW_LOG_END;
+        return;
+      }
+
+      Core::UI::WidgetInstance l_WidgetInstance =
+          l_Element.get_widget_instance();
+      LOW_ASSERT_ERROR_RETURN(
+          l_WidgetInstance.is_alive(),
+          "Cannot bind based on dead widget instance.");
+      Core::UI::WidgetAsset l_WidgetAsset =
+          l_WidgetInstance.get_asset();
+      LOW_ASSERT_ERROR_RETURN(
+          l_WidgetAsset.is_alive(),
+          "Cannot bind based on dead widget asset.");
+
+      Core::UI::Controller l_Controller =
+          l_WidgetAsset.get_controller();
+      LOW_ASSERT_ERROR_RETURN(
+          l_Controller.is_alive(),
+          "Cannot bind based on dead UI controller.");
+
+      ms_CurrentBindingContext.controller = l_Controller;
+      ms_CurrentBindingContext.asset = l_WidgetAsset;
+      ms_CurrentBindingContext.property_info = l_PropPos->second;
+
+      ms_CurrentBindingContext.active = true;
+      ms_CurrentBindingContext.pending = true;
+
+      l_Controller.fill_binding_options(
+          ms_CurrentBindingContext.binding_options);
+    }
+
+    void UiWidgetEditor::render_binding_popup(const float p_Delta)
+    {
+      if (!ms_CurrentBindingContext.active ||
+          ms_CurrentBindingContext.asset != m_Handle) {
+        return;
+      }
+
+      static const char *l_PopupId = "Bind to Controller Variable";
+      static char l_SearchBuffer[128];
+
+      if (ms_CurrentBindingContext.pending) {
+        ImGui::OpenPopup(l_PopupId);
+        ms_CurrentBindingContext.pending = false;
+        l_SearchBuffer[0] = '\0';
+      }
+
+      const Theme &l_Theme = theme_get_current();
+
+      ImGui::SetNextWindowSize(ImVec2(520.0f, 480.0f),
+                               ImGuiCond_FirstUseEver);
+      if (ImGui::BeginPopupModal(l_PopupId)) {
+        Gui::Heading2(LOW_EDITOR_ICON_CONTROLLER
+                      " Bind to Controller Variable");
+
+        ImGui::Dummy({0.0f, 2.0f});
+
+        ImGui::TextColored(color_to_imvec4(l_Theme.subtext),
+                           "Property");
+        ImGui::SameLine();
+        ImGui::TextUnformatted(
+            ms_CurrentBindingContext.property_name.c_str());
+
+        ImGui::TextColored(color_to_imvec4(l_Theme.subtext),
+                           "Controller");
+        ImGui::SameLine();
+        if (ms_CurrentBindingContext.controller
+                .is_script_controller() &&
+            ms_CurrentBindingContext.asset.has_custom_controller()) {
+          ImGui::Text(
+              "Custom for %s",
+              ms_CurrentBindingContext.asset.get_name().c_str());
+        } else {
+          ImGui::TextUnformatted(
+              ms_CurrentBindingContext.controller.get_name().c_str());
+        }
+
+        ImGui::Dummy({0.0f, LOW_EDITOR_SPACING});
+        ImGui::Separator();
+        ImGui::Dummy({0.0f, LOW_EDITOR_SPACING});
+
+        Gui::SearchField("##binding_search", l_SearchBuffer, 128);
+
+        ImGui::Dummy({0.0f, 4.0f});
+
+        ImGui::BeginChild(
+            "##binding_options",
+            ImVec2(0.0f, ImGui::GetContentRegionAvail().y - 34.0f),
+            true);
+
+        const Util::String l_Search = l_SearchBuffer;
+        bool l_AnyVisible = false;
+        if (ImGui::BeginTable(
+                "##binding_options_table", 2,
+                ImGuiTableFlags_RowBg |
+                    ImGuiTableFlags_SizingStretchProp)) {
+          ImGui::TableSetupColumn("Name",
+                                  ImGuiTableColumnFlags_WidthStretch);
+          ImGui::TableSetupColumn(
+              "##bind", ImGuiTableColumnFlags_WidthFixed, 70.0f);
+
+          for (const Core::UI::BindingOption &i_Option :
+               ms_CurrentBindingContext.binding_options) {
+            if (i_Option.property_type !=
+                ms_CurrentBindingContext.property_info.type) {
+              continue;
+            }
+            const Util::String l_Name = i_Option.name.c_str();
+            if (!l_Search.empty() &&
+                l_Name.find(l_Search) == Util::String::npos) {
+              continue;
+            }
+            l_AnyVisible = true;
+
+            ImGui::PushID(i_Option.name.c_str());
+            ImGui::TableNextRow();
+
+            ImGui::TableSetColumnIndex(0);
+            ImGui::AlignTextToFramePadding();
+            ImGui::Text(ICON_LC_LINK " %s", l_Name.c_str());
+
+            ImGui::TableSetColumnIndex(1);
+            if (Gui::Button("Bind", false, nullptr,
+                            l_Theme.controller)) {
+              ms_CurrentBindingContext.asset.create_binding(
+                  i_Option.name, ms_CurrentBindingContext.handle,
+                  ms_CurrentBindingContext.property_name);
+              ms_CurrentBindingContext.active = false;
+              ImGui::CloseCurrentPopup();
+            }
+
+            ImGui::PopID();
+          }
+
+          ImGui::EndTable();
+        }
+
+        if (!l_AnyVisible) {
+          const char *l_EmptyMessage =
+              ms_CurrentBindingContext.binding_options.empty()
+                  ? "No bindable controller variables found."
+                  : "No results match your search.";
+          ImGui::TextColored(color_to_imvec4(l_Theme.textDisabled),
+                             "%s", l_EmptyMessage);
+        }
+
+        ImGui::EndChild();
+
+        ImGui::Dummy({0.0f, 4.0f});
+
+        if (Gui::Button("Cancel")) {
+          ms_CurrentBindingContext.active = false;
+          ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
       }
     }
   } // namespace Editor

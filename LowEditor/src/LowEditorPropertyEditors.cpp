@@ -5,6 +5,7 @@
 #include "LowEditorThemes.h"
 #include "LowEditorBase.h"
 #include "LowEditorFonts.h"
+#include "LowEditorTypeEditor.h"
 
 #include "LowCore.h"
 #include "LowCoreScriptAsset.h"
@@ -1733,13 +1734,35 @@ namespace Low {
                     bool p_RenderLabel)
       {
         ImVec2 l_Pos = ImGui::GetCursorScreenPos();
+
+        Util::String l_Label = p_Label;
+
+        if (p_RenderLabel) {
+          Util::List<PropertyAction *> l_RowActions;
+          TypeEditor::collect_property_actions(
+              p_Handle, p_PropertyInfoBase.name,
+              PropertyActionSurface::DetailsPanel, l_RowActions);
+
+          for (PropertyAction *i_Action : l_RowActions) {
+            if (static_cast<u32>(i_Action->flags &
+                                 PropertyActionFlags::RowIndicator) ==
+                    0 ||
+                i_Action->icon.empty()) {
+              continue;
+            }
+            l_Label = i_Action->icon + " " + l_Label;
+          }
+        }
+
+        ImGui::BeginGroup();
+
         if (p_PropertyInfoBase.type ==
             Util::RTTI::PropertyType::ENUM) {
           int l_EnumValue;
           p_PropertyInfoBase.get(p_Handle, &l_EnumValue);
 
           if (render_enum_selector(p_PropertyInfoBase.handleType,
-                                   &l_EnumValue, p_Label,
+                                   &l_EnumValue, l_Label,
                                    p_RenderLabel)) {
             p_PropertyInfoBase.set(p_Handle, &l_EnumValue);
           }
@@ -1747,7 +1770,7 @@ namespace Low {
                    Util::RTTI::PropertyType::NAME) {
           Util::Name l_NameValue;
           p_PropertyInfoBase.get(p_Handle, &l_NameValue);
-          if (render_name_editor(p_Label, l_NameValue,
+          if (render_name_editor(l_Label, l_NameValue,
                                  p_RenderLabel)) {
             p_PropertyInfoBase.set(p_Handle, &l_NameValue);
           }
@@ -1756,7 +1779,7 @@ namespace Low {
           Util::String l_StringValue;
           p_PropertyInfoBase.get(p_Handle, &l_StringValue);
 
-          if (render_string_editor(p_Label, l_StringValue, false,
+          if (render_string_editor(l_Label, l_StringValue, false,
                                    p_RenderLabel)) {
             p_PropertyInfoBase.set(p_Handle, &l_StringValue);
           }
@@ -1764,7 +1787,7 @@ namespace Low {
                    Util::RTTI::PropertyType::VECTOR2) {
           Math::Vector2 l_Vec;
           p_PropertyInfoBase.get(p_Handle, &l_Vec);
-          if (render_vector2_editor(p_Label, l_Vec, p_RenderLabel)) {
+          if (render_vector2_editor(l_Label, l_Vec, p_RenderLabel)) {
             p_PropertyInfoBase.set(p_Handle, &l_Vec);
           }
         } else if (p_PropertyInfoBase.type ==
@@ -1772,14 +1795,14 @@ namespace Low {
           Math::Vector3 l_Vec;
           p_PropertyInfoBase.get(p_Handle, &l_Vec);
 
-          if (render_vector3_editor(p_Label, l_Vec, p_RenderLabel)) {
+          if (render_vector3_editor(l_Label, l_Vec, p_RenderLabel)) {
             p_PropertyInfoBase.set(p_Handle, &l_Vec);
           }
         } else if (p_PropertyInfoBase.type ==
                    Util::RTTI::PropertyType::QUATERNION) {
           Math::Quaternion l_Quat;
           p_PropertyInfoBase.get(p_Handle, &l_Quat);
-          if (render_quaternion_editor(p_Label, l_Quat,
+          if (render_quaternion_editor(l_Label, l_Quat,
                                        p_RenderLabel)) {
             p_PropertyInfoBase.set(p_Handle, &l_Quat);
           }
@@ -1788,7 +1811,7 @@ namespace Low {
           Math::ColorRGB l_ColorValue;
           p_PropertyInfoBase.get(p_Handle, &l_ColorValue);
 
-          if (render_colorrgb_editor(p_Label, l_ColorValue,
+          if (render_colorrgb_editor(l_Label, l_ColorValue,
                                      p_RenderLabel)) {
             p_PropertyInfoBase.set(p_Handle, &l_ColorValue);
           }
@@ -1797,14 +1820,14 @@ namespace Low {
           Math::Color l_ColorValue;
           p_PropertyInfoBase.get(p_Handle, &l_ColorValue);
 
-          if (render_color_selector(p_Label, &l_ColorValue)) {
+          if (render_color_selector(l_Label, &l_ColorValue)) {
             p_PropertyInfoBase.set(p_Handle, &l_ColorValue);
           }
         } else if (p_PropertyInfoBase.type ==
                    Util::RTTI::PropertyType::BOOL) {
           bool l_BoolValue;
           p_PropertyInfoBase.get(p_Handle, &l_BoolValue);
-          if (render_checkbox_bool_editor(p_Label, l_BoolValue,
+          if (render_checkbox_bool_editor(l_Label, l_BoolValue,
                                           p_RenderLabel)) {
             p_PropertyInfoBase.set(p_Handle, &l_BoolValue);
           }
@@ -1812,7 +1835,7 @@ namespace Low {
                    Util::RTTI::PropertyType::FLOAT) {
           float l_Float;
           p_PropertyInfoBase.get(p_Handle, &l_Float);
-          if (render_float_editor(p_Label, l_Float, p_RenderLabel)) {
+          if (render_float_editor(l_Label, l_Float, p_RenderLabel)) {
             p_PropertyInfoBase.set(p_Handle, &l_Float);
           }
         } else if (p_PropertyInfoBase.type ==
@@ -1820,7 +1843,7 @@ namespace Low {
           u32 l_IntValue;
           p_PropertyInfoBase.get(p_Handle, &l_IntValue);
 
-          if (render_uint32_editor(p_Label, l_IntValue,
+          if (render_uint32_editor(l_Label, l_IntValue,
                                    p_RenderLabel)) {
             p_PropertyInfoBase.set(p_Handle, &l_IntValue);
           }
@@ -1829,7 +1852,7 @@ namespace Low {
           u32 l_IntValue;
           p_PropertyInfoBase.get(p_Handle, &l_IntValue);
 
-          if (render_uint32_editor(p_Label, l_IntValue,
+          if (render_uint32_editor(l_Label, l_IntValue,
                                    p_RenderLabel)) {
             p_PropertyInfoBase.set(p_Handle, &l_IntValue);
           }
@@ -1837,7 +1860,7 @@ namespace Low {
                    Util::RTTI::PropertyType::SHAPE) {
           Math::Shape l_ShapeValue;
           p_PropertyInfoBase.get(p_Handle, &l_ShapeValue);
-          if (render_shape_editor(p_Label, &l_ShapeValue,
+          if (render_shape_editor(l_Label, &l_ShapeValue,
                                   p_RenderLabel)) {
             p_PropertyInfoBase.set(p_Handle, &l_ShapeValue);
           }
@@ -1845,6 +1868,24 @@ namespace Low {
                    Util::RTTI::PropertyType::HANDLE) {
           PropertyEditors::render_handle_selector(p_PropertyInfoBase,
                                                   p_Handle);
+        }
+
+        ImGui::EndGroup();
+
+        if (p_RenderLabel) {
+          Util::String l_PopupId =
+              Util::String("PropertyRowContextMenu##") +
+              LOW_TO_STRING(p_Handle.get_id()) + "_" +
+              p_PropertyInfoBase.name.c_str();
+
+          if (ImGui::IsItemHovered() &&
+              ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+            ImGui::OpenPopup(l_PopupId.c_str());
+          }
+
+          TypeEditor::render_property_context_menu(
+              l_PopupId.c_str(), p_Handle, p_PropertyInfoBase.name,
+              PropertyActionSurface::DetailsPanel);
         }
 
         /*
@@ -1995,7 +2036,8 @@ namespace Low {
       }
 
       static bool render_struct_field_editor(
-          const Util::RTTI::StructFieldInfo &p_Field, void *p_FieldPtr)
+          const Util::RTTI::StructFieldInfo &p_Field,
+          void *p_FieldPtr)
       {
         Util::String l_Label = prettify_name(p_Field.name);
 
@@ -2003,7 +2045,8 @@ namespace Low {
           switch (p_Field.type) {
           case Util::RTTI::PropertyType::BOOL:
             return render_list_editor<bool>(
-                l_Label, *reinterpret_cast<Util::List<bool> *>(p_FieldPtr),
+                l_Label,
+                *reinterpret_cast<Util::List<bool> *>(p_FieldPtr),
                 [](Util::String p_L, bool &p_V) {
                   return render_checkbox_bool_editor(p_L, p_V, false);
                 });
@@ -2123,7 +2166,8 @@ namespace Low {
                 l_Label,
                 *reinterpret_cast<Util::List<Util::Handle> *>(
                     p_FieldPtr),
-                [l_HandleTypeId](Util::String p_L, Util::Handle &p_V) {
+                [l_HandleTypeId](Util::String p_L,
+                                 Util::Handle &p_V) {
                   return render_handle_selector(
                       p_L, l_HandleTypeId,
                       reinterpret_cast<uint64_t *>(&p_V));
@@ -2171,7 +2215,8 @@ namespace Low {
         case Util::RTTI::PropertyType::UINT8: {
           u32 l_Value = *reinterpret_cast<uint8_t *>(p_FieldPtr);
           if (render_uint32_editor(l_Label, l_Value, true)) {
-            *reinterpret_cast<uint8_t *>(p_FieldPtr) = (uint8_t)l_Value;
+            *reinterpret_cast<uint8_t *>(p_FieldPtr) =
+                (uint8_t)l_Value;
             return true;
           }
           return false;
@@ -2220,25 +2265,25 @@ namespace Low {
         case Util::RTTI::PropertyType::QUATERNION:
           return render_quaternion_editor(
               l_Label,
-              *reinterpret_cast<Math::Quaternion *>(p_FieldPtr), true);
+              *reinterpret_cast<Math::Quaternion *>(p_FieldPtr),
+              true);
         case Util::RTTI::PropertyType::HANDLE:
           return render_handle_selector(
               l_Label, Util::Handle::type_id(p_Field.referenced_type),
               reinterpret_cast<uint64_t *>(p_FieldPtr));
         case Util::RTTI::PropertyType::ENUM: {
-          int l_Value =
-              (int) * reinterpret_cast<int *>(p_FieldPtr);
+          int l_Value = (int)*reinterpret_cast<int *>(p_FieldPtr);
           if (render_enum_selector(
-                  Util::get_enum_id(p_Field.referenced_type), &l_Value,
-                  l_Label, true)) {
+                  Util::get_enum_id(p_Field.referenced_type),
+                  &l_Value, l_Label, true)) {
             *reinterpret_cast<int *>(p_FieldPtr) = (int)l_Value;
             return true;
           }
           return false;
         }
         case Util::RTTI::PropertyType::STRUCT:
-          return render_struct_editor(l_Label, p_Field.referenced_type,
-                                      p_FieldPtr);
+          return render_struct_editor(
+              l_Label, p_Field.referenced_type, p_FieldPtr);
         default:
           ImGui::TextDisabled("%s: unsupported field type",
                               l_Label.c_str());

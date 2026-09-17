@@ -43,6 +43,9 @@ namespace Low {
 
     Util::Map<u16, Util::List<TypeAction>> g_Actions;
 
+    Util::Map<u16, Util::Map<Util::Name, Util::List<PropertyAction>>>
+        g_PropertyActions;
+
     TYPE_MANAGER_HANDLER(after_add)
     TYPE_MANAGER_HANDLER(before_delete)
     TYPE_MANAGER_HANDLER(before_save)
@@ -67,10 +70,82 @@ namespace Low {
       return false;
     }
 
+    static inline bool has_flag(PropertyActionFlags value,
+                                PropertyActionFlags flag)
+    {
+      return static_cast<u32>(value & flag) != 0;
+    }
+
+    static bool is_surface_compatible(
+        const PropertyActionSurface p_Surface,
+        const PropertyActionFlags p_PropertyActionFlags)
+    {
+      if (p_Surface == PropertyActionSurface::DetailsPanel) {
+        return has_flag(p_PropertyActionFlags,
+                        PropertyActionFlags::ContextMenu) ||
+               has_flag(p_PropertyActionFlags,
+                        PropertyActionFlags::RowIndicator);
+      }
+
+      return false;
+    }
+
     void TypeEditor::register_action(const u16 p_TypeId,
                                      const TypeAction &p_TypeAction)
     {
       g_Actions[p_TypeId].push_back(p_TypeAction);
+    }
+
+    void TypeEditor::register_property_action(
+        const u16 p_TypeId, const Util::Name p_PropertyName,
+        const PropertyAction &p_Action)
+    {
+      g_PropertyActions[p_TypeId][p_PropertyName].push_back(p_Action);
+    }
+
+    void TypeEditor::collect_property_actions(
+        Util::Handle p_Handle, const Util::Name p_PropertyName,
+        const PropertyActionSurface p_Surface,
+        Util::List<PropertyAction *> &p_Actions)
+    {
+      if (!p_Handle.is_registered_type()) {
+        return;
+      }
+
+      Util::RTTI::TypeInfo &l_TypeInfo =
+          Util::Handle::get_type_info(p_Handle.get_type());
+      if (!l_TypeInfo.is_alive(p_Handle)) {
+        return;
+      }
+
+      auto l_TypePos = g_PropertyActions.find(p_Handle.get_type());
+
+      if (l_TypePos == g_PropertyActions.end()) {
+        return;
+      }
+
+      auto l_PropertyPos = l_TypePos->second.find(p_PropertyName);
+
+      if (l_PropertyPos == l_TypePos->second.end()) {
+        return;
+      }
+
+      PropertyActionContext i_Context;
+      i_Context.handle = p_Handle;
+      i_Context.propertyName = p_PropertyName;
+      i_Context.surface = p_Surface;
+
+      for (PropertyAction &i_Action : l_PropertyPos->second) {
+        bool i_Display = is_surface_compatible(p_Surface, i_Action.flags);
+
+        if (i_Display && i_Action.is_visible) {
+          i_Display = i_Action.is_visible(i_Context);
+        }
+
+        if (i_Display) {
+          p_Actions.push_back(&i_Action);
+        }
+      }
     }
 
     void
@@ -157,6 +232,68 @@ namespace Low {
             i_Action->execute(l_Context);
           }
         }
+      }
+
+      ImGui::EndPopup();
+      return true;
+    }
+
+    bool TypeEditor::render_property_context_menu(
+        const char *p_PopupId, Util::Handle p_Handle,
+        const Util::Name p_PropertyName,
+        const PropertyActionSurface p_Surface)
+    {
+      if (!ImGui::BeginPopup(p_PopupId)) {
+        return false;
+      }
+
+      PropertyActionContext l_Context;
+      l_Context.handle = p_Handle;
+      l_Context.propertyName = p_PropertyName;
+      l_Context.surface = p_Surface;
+
+      Util::List<PropertyAction *> l_Actions;
+      collect_property_actions(p_Handle, p_PropertyName, p_Surface,
+                               l_Actions);
+
+      std::sort(l_Actions.begin(), l_Actions.end(),
+               [](const PropertyAction *p_Left,
+                  const PropertyAction *p_Right) {
+                 return p_Left->priority < p_Right->priority;
+               });
+
+      bool i_AnyMenuItem = false;
+
+      for (PropertyAction *i_Action : l_Actions) {
+        if (!has_flag(i_Action->flags,
+                      PropertyActionFlags::ContextMenu)) {
+          continue;
+        }
+
+        i_AnyMenuItem = true;
+
+        bool i_Enabled = true;
+        if (i_Action->is_enabled) {
+          i_Enabled = i_Action->is_enabled(l_Context);
+        }
+
+        Util::String i_Label;
+        if (!i_Action->icon.empty()) {
+          i_Label += i_Action->icon;
+          i_Label += " ";
+        }
+        i_Label += i_Action->label;
+
+        if (ImGui::MenuItem(i_Label.c_str(), nullptr, false,
+                            i_Enabled)) {
+          if (i_Action->execute) {
+            i_Action->execute(l_Context);
+          }
+        }
+      }
+
+      if (!i_AnyMenuItem) {
+        ImGui::MenuItem("No actions", nullptr, false, false);
       }
 
       ImGui::EndPopup();

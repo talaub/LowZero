@@ -159,6 +159,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SkeletalAnimation::Data, duration);
+        l_PropertyInfo.size =
+            sizeof(SkeletalAnimation::Data::duration);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -188,6 +190,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SkeletalAnimation::Data, ticks_per_second);
+        l_PropertyInfo.size =
+            sizeof(SkeletalAnimation::Data::ticks_per_second);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -217,6 +221,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SkeletalAnimation::Data, channels);
+        l_PropertyInfo.size =
+            sizeof(SkeletalAnimation::Data::channels);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -245,6 +251,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SkeletalAnimation::Data, name);
+        l_PropertyInfo.size = sizeof(SkeletalAnimation::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

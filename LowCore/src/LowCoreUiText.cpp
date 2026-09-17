@@ -192,6 +192,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
                 offsetof(Text::Data, draw_commands);
+            l_PropertyInfo.size = sizeof(Text::Data::draw_commands);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UNKNOWN;
             l_PropertyInfo.handleType = 0;
@@ -226,6 +227,7 @@ namespace Low {
             l_PropertyInfo.name = N(text);
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset = offsetof(Text::Data, text);
+            l_PropertyInfo.size = sizeof(Text::Data::text);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::STRING;
             l_PropertyInfo.handleType = 0;
@@ -256,6 +258,7 @@ namespace Low {
             l_PropertyInfo.name = N(font);
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset = offsetof(Text::Data, font);
+            l_PropertyInfo.size = sizeof(Text::Data::font);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType =
@@ -287,6 +290,7 @@ namespace Low {
             l_PropertyInfo.name = N(color);
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset = offsetof(Text::Data, color);
+            l_PropertyInfo.size = sizeof(Text::Data::color);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::COLOR;
             l_PropertyInfo.handleType = 0;
@@ -317,6 +321,7 @@ namespace Low {
             l_PropertyInfo.name = N(size);
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset = offsetof(Text::Data, size);
+            l_PropertyInfo.size = sizeof(Text::Data::size);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::FLOAT;
             l_PropertyInfo.handleType = 0;
@@ -348,6 +353,8 @@ namespace Low {
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
                 offsetof(Text::Data, content_fit_approach);
+            l_PropertyInfo.size =
+                sizeof(Text::Data::content_fit_approach);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UNKNOWN;
             l_PropertyInfo.handleType = 0;
@@ -381,6 +388,7 @@ namespace Low {
             l_PropertyInfo.name = N(element);
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset = offsetof(Text::Data, element);
+            l_PropertyInfo.size = sizeof(Text::Data::element);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType =
@@ -414,6 +422,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
                 offsetof(Text::Data, unique_id);
+            l_PropertyInfo.size = sizeof(Text::Data::unique_id);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UINT64;
             l_PropertyInfo.handleType = 0;
@@ -443,6 +452,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
                 offsetof(Text::Data, full_dirty);
+            l_PropertyInfo.size = sizeof(Text::Data::full_dirty);
             l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
@@ -472,6 +482,7 @@ namespace Low {
             l_PropertyInfo.name = N(dirty);
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset = offsetof(Text::Data, dirty);
+            l_PropertyInfo.size = sizeof(Text::Data::dirty);
             l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =

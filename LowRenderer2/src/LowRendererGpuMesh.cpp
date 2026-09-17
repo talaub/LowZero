@@ -156,6 +156,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GpuMesh::Data, uploaded_submesh_count);
+        l_PropertyInfo.size =
+            sizeof(GpuMesh::Data::uploaded_submesh_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -186,6 +188,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GpuMesh::Data, submesh_count);
+        l_PropertyInfo.size = sizeof(GpuMesh::Data::submesh_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -215,6 +218,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GpuMesh::Data, submeshes);
+        l_PropertyInfo.size = sizeof(GpuMesh::Data::submeshes);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -246,6 +250,7 @@ namespace Low {
         l_PropertyInfo.name = N(aabb);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(GpuMesh::Data, aabb);
+        l_PropertyInfo.size = sizeof(GpuMesh::Data::aabb);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -275,6 +280,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GpuMesh::Data, bounding_sphere);
+        l_PropertyInfo.size = sizeof(GpuMesh::Data::bounding_sphere);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -304,6 +310,7 @@ namespace Low {
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(GpuMesh::Data, name);
+        l_PropertyInfo.size = sizeof(GpuMesh::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

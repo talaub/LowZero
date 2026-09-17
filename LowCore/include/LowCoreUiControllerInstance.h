@@ -18,6 +18,7 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
 
       struct Element;
+      struct WidgetInstance;
       struct ControllerInstanceValue
       {
         ControllerInstanceValue()

@@ -16,6 +16,7 @@
 #include "LowCoreScriptClass.h"
 #include "LowCoreScripting.h"
 #include <angelscript.h>
+#include <string>
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -158,6 +159,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(ClassInstance::Data, script_class);
+          l_PropertyInfo.size =
+              sizeof(ClassInstance::Data::script_class);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -187,6 +190,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(ClassInstance::Data, reload_index);
+          l_PropertyInfo.size =
+              sizeof(ClassInstance::Data::reload_index);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -216,6 +221,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(ClassInstance::Data, ptr);
+          l_PropertyInfo.size = sizeof(ClassInstance::Data::ptr);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -240,6 +246,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(ClassInstance::Data, name);
+          l_PropertyInfo.size = sizeof(ClassInstance::Data::name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -290,6 +297,72 @@ namespace Low {
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
           // End function: spawn
+        }
+        {
+          // Function: set_member
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(set_member);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_MemberName);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::NAME;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Value);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Size);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: set_member
+        }
+        {
+          // Function: get_member
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(get_member);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_MemberName);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::NAME;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Value);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Size);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: get_member
         }
         {
           // Function: make
@@ -696,6 +769,71 @@ namespace Low {
 
         return (char *)l_Object;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_spawn
+      }
+
+      void ClassInstance::set_member(Low::Util::Name p_MemberName,
+                                     const void *p_Value,
+                                     size_t p_Size)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_member
+        ScriptClass l_Class = get_script_class();
+
+        asIScriptObject *l_Object = (asIScriptObject *)get_ptr();
+
+        const int l_PropertyIndex =
+            l_Class.get_members()[p_MemberName].index;
+
+        void *l_DataAdr =
+            l_Object->GetAddressOfProperty(l_PropertyIndex);
+
+        int l_TypeId = 0;
+        l_Object->GetObjectType()->GetProperty(l_PropertyIndex,
+                                               nullptr, &l_TypeId);
+
+        static const int l_StringTypeId =
+            get_engine()->GetTypeIdByDecl("string");
+
+        if (l_TypeId == l_StringTypeId) {
+          const Low::Util::String &l_Value =
+              *((const Low::Util::String *)p_Value);
+          *((std::string *)l_DataAdr) = std::string(l_Value.c_str());
+        } else {
+          memcpy(l_DataAdr, p_Value, p_Size);
+        }
+
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_member
+      }
+
+      void ClassInstance::get_member(Low::Util::Name p_MemberName,
+                                     void *p_Value, size_t p_Size)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_member
+        ScriptClass l_Class = get_script_class();
+
+        asIScriptObject *l_Object = (asIScriptObject *)get_ptr();
+
+        const int l_PropertyIndex =
+            l_Class.get_members()[p_MemberName].index;
+
+        void *l_DataAdr =
+            l_Object->GetAddressOfProperty(l_PropertyIndex);
+
+        int l_TypeId = 0;
+        l_Object->GetObjectType()->GetProperty(l_PropertyIndex,
+                                               nullptr, &l_TypeId);
+
+        static const int l_StringTypeId =
+            get_engine()->GetTypeIdByDecl("string");
+
+        if (l_TypeId == l_StringTypeId) {
+          const std::string &l_Value =
+              *((const std::string *)l_DataAdr);
+          *((Low::Util::String *)p_Value) =
+              Low::Util::String(l_Value.c_str());
+        } else {
+          memcpy(p_Value, l_DataAdr, p_Size);
+        }
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_member
       }
 
       Low::Core::Scripting::ClassInstance

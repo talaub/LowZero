@@ -160,6 +160,7 @@ namespace Low {
           l_PropertyInfo.name = N(scripts);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Module::Data, scripts);
+          l_PropertyInfo.size = sizeof(Module::Data::scripts);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -188,6 +189,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Module::Data, as_module);
+          l_PropertyInfo.size = sizeof(Module::Data::as_module);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -217,6 +219,7 @@ namespace Low {
           l_PropertyInfo.name = N(classes);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Module::Data, classes);
+          l_PropertyInfo.size = sizeof(Module::Data::classes);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -245,6 +248,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Module::Data, reload_index);
+          l_PropertyInfo.size = sizeof(Module::Data::reload_index);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -274,6 +278,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Module::Data, ticking_functions);
+          l_PropertyInfo.size =
+              sizeof(Module::Data::ticking_functions);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -302,6 +308,7 @@ namespace Low {
           l_PropertyInfo.name = N(name);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Module::Data, name);
+          l_PropertyInfo.size = sizeof(Module::Data::name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

@@ -182,6 +182,7 @@ namespace Low {
         l_PropertyInfo.name = N(regions);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Scene::Data, regions);
+        l_PropertyInfo.size = sizeof(Scene::Data::regions);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -209,6 +210,7 @@ namespace Low {
         l_PropertyInfo.name = N(loaded);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Scene::Data, loaded);
+        l_PropertyInfo.size = sizeof(Scene::Data::loaded);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -235,6 +237,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(Scene::Data, physics_world);
+        l_PropertyInfo.size = sizeof(Scene::Data::physics_world);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Core::Physics::World::IDENTIFIER;
@@ -264,6 +267,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(Scene::Data, navigation_world);
+        l_PropertyInfo.size = sizeof(Scene::Data::navigation_world);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Core::Navigation::World::IDENTIFIER;
@@ -292,6 +296,7 @@ namespace Low {
         l_PropertyInfo.name = N(unique_id);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Scene::Data, unique_id);
+        l_PropertyInfo.size = sizeof(Scene::Data::unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -317,6 +322,7 @@ namespace Low {
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Scene::Data, name);
+        l_PropertyInfo.size = sizeof(Scene::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

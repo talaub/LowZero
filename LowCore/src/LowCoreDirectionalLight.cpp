@@ -180,6 +180,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
               offsetof(DirectionalLight::Data, color);
+          l_PropertyInfo.size = sizeof(DirectionalLight::Data::color);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::COLORRGB;
           l_PropertyInfo.handleType = 0;
@@ -211,6 +212,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
               offsetof(DirectionalLight::Data, intensity);
+          l_PropertyInfo.size =
+              sizeof(DirectionalLight::Data::intensity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -240,6 +243,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(DirectionalLight::Data, entity);
+          l_PropertyInfo.size =
+              sizeof(DirectionalLight::Data::entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::IDENTIFIER;
           l_PropertyInfo.get_return =
@@ -270,6 +275,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(DirectionalLight::Data, unique_id);
+          l_PropertyInfo.size =
+              sizeof(DirectionalLight::Data::unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

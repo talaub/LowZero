@@ -31,6 +31,20 @@ namespace Low {
         Loaded,
         Loading
       };
+
+      enum class BindingType
+      {
+        Field,
+        // Method// TODO: Implement
+      };
+      struct BindingDescription
+      {
+        Util::Name memberName;
+        BindingType type;
+        u64 local_id;
+        Util::TypeIdentifier componentType;
+        Util::Name propertyName;
+      };
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       struct LOW_CORE_API WidgetAsset : public Low::Util::Handle
@@ -47,6 +61,7 @@ namespace Low {
           bool has_custom_controller;
           uint64_t local_element_id_counter;
           uint64_t custom_controller_id;
+          Low::Util::List<BindingDescription> bindings;
           Low::Util::UniqueId unique_id;
           Low::Util::Name name;
 
@@ -187,6 +202,10 @@ namespace Low {
         uint64_t get_custom_controller_id() const;
         void set_custom_controller_id(uint64_t p_Value);
 
+        Low::Util::List<BindingDescription> &get_bindings() const;
+        void
+        set_bindings(Low::Util::List<BindingDescription> &p_Value);
+
         Low::Util::UniqueId get_unique_id() const;
 
         Low::Util::Name get_name() const;
@@ -202,6 +221,11 @@ namespace Low {
                       Low::Core::UI::Element p_Parent);
         void fill_content_from_instance(
             Low::Core::UI::WidgetInstance p_Instance);
+        void create_binding(Util::Name p_ControllerBindingOption,
+                            Util::Handle p_BindHandle,
+                            Util::Name p_BindPropertyName);
+        void clear_bindings(uint64_t p_BindLocalId,
+                            Util::Name p_BindPropertyName);
         static bool get_page_for_index(const u32 p_Index,
                                        u32 &p_PageIndex,
                                        u32 &p_SlotIndex);

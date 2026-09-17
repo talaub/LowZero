@@ -155,6 +155,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Controller::Data, value);
+          l_PropertyInfo.size = sizeof(Controller::Data::value);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -185,6 +186,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Controller::Data, type);
+          l_PropertyInfo.size = sizeof(Controller::Data::type);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -212,6 +214,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Controller::Data, name);
+          l_PropertyInfo.size = sizeof(Controller::Data::name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -325,6 +328,23 @@ namespace Low {
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
           // End function: update_instances
+        }
+        {
+          // Function: fill_binding_options
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(fill_binding_options);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Options);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: fill_binding_options
         }
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
@@ -700,6 +720,25 @@ namespace Low {
 
         LOW_NOT_IMPLEMENTED_WARN;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_update_instances
+      }
+
+      void Controller::fill_binding_options(
+          Low::Util::List<BindingOption> &p_Options)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_fill_binding_options
+        p_Options.clear();
+
+        if (is_script_controller()) {
+          ScriptClass l_Class = get_value().script.sclass;
+          for (auto it = l_Class.get_members().begin();
+               it != l_Class.get_members().end(); ++it) {
+            BindingOption i_Option;
+            i_Option.name = it->second.name;
+            i_Option.property_type = it->second.property_type;
+            p_Options.push_back(i_Option);
+          }
+        }
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_fill_binding_options
       }
 
       uint32_t Controller::create_instance(u32 &p_PageIndex,

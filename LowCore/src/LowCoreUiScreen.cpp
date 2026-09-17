@@ -186,6 +186,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Screen::Data, elements);
+          l_PropertyInfo.size = sizeof(Screen::Data::elements);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -215,6 +216,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
               offsetof(Screen::Data, pixel_position);
+          l_PropertyInfo.size = sizeof(Screen::Data::pixel_position);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR2;
           l_PropertyInfo.handleType = 0;
@@ -246,6 +248,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
               offsetof(Screen::Data, pixel_size);
+          l_PropertyInfo.size = sizeof(Screen::Data::pixel_size);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR2;
           l_PropertyInfo.handleType = 0;
@@ -275,6 +278,7 @@ namespace Low {
           l_PropertyInfo.name = N(zoom);
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(Screen::Data, zoom);
+          l_PropertyInfo.size = sizeof(Screen::Data::zoom);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -303,6 +307,7 @@ namespace Low {
           l_PropertyInfo.name = N(canvas);
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(Screen::Data, canvas);
+          l_PropertyInfo.size = sizeof(Screen::Data::canvas);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Low::Renderer::UiCanvas::IDENTIFIER;
@@ -334,6 +339,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Screen::Data, unique_id);
+          l_PropertyInfo.size = sizeof(Screen::Data::unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -360,6 +366,7 @@ namespace Low {
           l_PropertyInfo.name = N(dirty);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Screen::Data, dirty);
+          l_PropertyInfo.size = sizeof(Screen::Data::dirty);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -388,6 +395,7 @@ namespace Low {
           l_PropertyInfo.name = N(name);
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(Screen::Data, name);
+          l_PropertyInfo.size = sizeof(Screen::Data::name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

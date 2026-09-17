@@ -151,6 +151,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SS2DDrawCommand::Data, type);
+        l_PropertyInfo.size = sizeof(SS2DDrawCommand::Data::type);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -177,6 +178,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SS2DDrawCommand::Data, position);
+        l_PropertyInfo.size = sizeof(SS2DDrawCommand::Data::position);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR2;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -207,6 +209,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SS2DDrawCommand::Data, half_extents);
+        l_PropertyInfo.size =
+            sizeof(SS2DDrawCommand::Data::half_extents);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR2;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -238,6 +242,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SS2DDrawCommand::Data, rotation);
+        l_PropertyInfo.size = sizeof(SS2DDrawCommand::Data::rotation);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -267,6 +272,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SS2DDrawCommand::Data, color);
+        l_PropertyInfo.size = sizeof(SS2DDrawCommand::Data::color);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::COLOR;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -296,6 +302,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SS2DDrawCommand::Data, corner_radius);
+        l_PropertyInfo.size =
+            sizeof(SS2DDrawCommand::Data::corner_radius);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -327,6 +335,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SS2DDrawCommand::Data, uv_rect);
+        l_PropertyInfo.size = sizeof(SS2DDrawCommand::Data::uv_rect);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -356,6 +365,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SS2DDrawCommand::Data, z_sorting);
+        l_PropertyInfo.size =
+            sizeof(SS2DDrawCommand::Data::z_sorting);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -385,6 +396,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SS2DDrawCommand::Data, uploaded);
+        l_PropertyInfo.size = sizeof(SS2DDrawCommand::Data::uploaded);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -414,6 +426,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SS2DDrawCommand::Data, canvas_handle);
+        l_PropertyInfo.size =
+            sizeof(SS2DDrawCommand::Data::canvas_handle);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -440,6 +454,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SS2DDrawCommand::Data, name);
+        l_PropertyInfo.size = sizeof(SS2DDrawCommand::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

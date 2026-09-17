@@ -162,6 +162,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SkinningPose::Data, matrices);
+        l_PropertyInfo.size = sizeof(SkinningPose::Data::matrices);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -190,6 +191,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SkinningPose::Data, skeleton);
+        l_PropertyInfo.size = sizeof(SkinningPose::Data::skeleton);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Skeleton::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -219,6 +221,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SkinningPose::Data, pose_palette_offset);
+        l_PropertyInfo.size =
+            sizeof(SkinningPose::Data::pose_palette_offset);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -248,6 +252,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SkinningPose::Data, uploaded);
+        l_PropertyInfo.size = sizeof(SkinningPose::Data::uploaded);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -277,6 +282,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SkinningPose::Data, references);
+        l_PropertyInfo.size = sizeof(SkinningPose::Data::references);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -297,6 +303,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SkinningPose::Data, dirty);
+        l_PropertyInfo.size = sizeof(SkinningPose::Data::dirty);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -326,6 +333,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SkinningPose::Data, name);
+        l_PropertyInfo.size = sizeof(SkinningPose::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

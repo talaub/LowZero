@@ -28,6 +28,8 @@ namespace Low {
         public:
           Low::Core::UI::Element root;
           Low::Util::List<Low::Core::UI::Element> elements;
+          Low::Util::Map<uint64_t, Low::Core::UI::Element>
+              element_map;
           Low::Util::List<Low::Core::UI::WidgetInstance> widgets;
           Low::Core::UI::ControllerInstance controller_instance;
           uint64_t asset;
@@ -151,6 +153,12 @@ namespace Low {
 
         Low::Util::List<Low::Core::UI::Element> &get_elements() const;
 
+        Low::Util::Map<uint64_t, Low::Core::UI::Element> &
+        get_element_map() const;
+        void set_element_map(
+            Low::Util::Map<uint64_t, Low::Core::UI::Element>
+                &p_Value);
+
         Low::Util::List<Low::Core::UI::WidgetInstance> &
         get_widgets() const;
 
@@ -165,6 +173,9 @@ namespace Low {
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
 
+        Low::Core::UI::Element
+        find_element_by_local_id(const uint64_t p_LocalId);
+        void evaluate_bindings();
         static bool get_page_for_index(const u32 p_Index,
                                        u32 &p_PageIndex,
                                        u32 &p_SlotIndex);

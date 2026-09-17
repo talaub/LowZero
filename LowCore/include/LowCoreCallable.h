@@ -34,8 +34,9 @@ namespace Low {
       template <typename... TArgs>
       void invoke(TArgs &&...p_Args) const
       {
-        invoke(Util::List<Util::Variant>{
-            Util::Variant(std::forward<TArgs>(p_Args))...});
+        const Util::List<Util::Variant> l_Args{
+            Util::Variant(std::forward<TArgs>(p_Args))...};
+        invoke(l_Args);
       }
 
       template <typename T>

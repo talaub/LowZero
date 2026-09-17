@@ -182,6 +182,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiRenderObject::Data, canvas_handle);
+        l_PropertyInfo.size =
+            sizeof(UiRenderObject::Data::canvas_handle);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -208,6 +210,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiRenderObject::Data, texture);
+        l_PropertyInfo.size = sizeof(UiRenderObject::Data::texture);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Texture::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -237,6 +240,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiRenderObject::Data, position);
+        l_PropertyInfo.size = sizeof(UiRenderObject::Data::position);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -266,6 +270,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiRenderObject::Data, size);
+        l_PropertyInfo.size = sizeof(UiRenderObject::Data::size);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR2;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -295,6 +300,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiRenderObject::Data, rotation2D);
+        l_PropertyInfo.size =
+            sizeof(UiRenderObject::Data::rotation2D);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -324,6 +331,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiRenderObject::Data, color);
+        l_PropertyInfo.size = sizeof(UiRenderObject::Data::color);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::COLOR;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -353,6 +361,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiRenderObject::Data, uv_rect);
+        l_PropertyInfo.size = sizeof(UiRenderObject::Data::uv_rect);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -382,6 +391,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiRenderObject::Data, material);
+        l_PropertyInfo.size = sizeof(UiRenderObject::Data::material);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Material::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -411,6 +421,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiRenderObject::Data, z_sorting);
+        l_PropertyInfo.size = sizeof(UiRenderObject::Data::z_sorting);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -440,6 +451,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiRenderObject::Data, mesh);
+        l_PropertyInfo.size = sizeof(UiRenderObject::Data::mesh);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Low::Renderer::Mesh::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -466,6 +478,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiRenderObject::Data, draw_commands);
+        l_PropertyInfo.size =
+            sizeof(UiRenderObject::Data::draw_commands);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -494,6 +508,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiRenderObject::Data, uploaded);
+        l_PropertyInfo.size = sizeof(UiRenderObject::Data::uploaded);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -523,6 +538,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiRenderObject::Data, slot);
+        l_PropertyInfo.size = sizeof(UiRenderObject::Data::slot);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -552,6 +568,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiRenderObject::Data, dirty);
+        l_PropertyInfo.size = sizeof(UiRenderObject::Data::dirty);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -581,6 +598,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiRenderObject::Data, z_dirty);
+        l_PropertyInfo.size = sizeof(UiRenderObject::Data::z_dirty);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -610,6 +628,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiRenderObject::Data, name);
+        l_PropertyInfo.size = sizeof(UiRenderObject::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

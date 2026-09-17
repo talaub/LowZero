@@ -33,6 +33,7 @@
 #include "LowCoreSphereCollider.h"
 #include "LowCoreTransform.h"
 #include "LowCoreUiWidgetAsset.h"
+#include "LowCoreUiText.h"
 #include "LowCoreCamera.h"
 #include "LowCoreConvexHullCollider.h"
 
@@ -512,10 +513,9 @@ namespace Low {
       return l_Output + ".meshresource.yaml";
     }
 
-    static bool
-    regenerate_mesh_file(const Util::AssetManager::BundleFileDesc
-                             &p_File,
-                         Util::Handle p_Handle)
+    static bool regenerate_mesh_file(
+        const Util::AssetManager::BundleFileDesc &p_File,
+        Util::Handle p_Handle)
     {
       Renderer::Mesh l_Mesh = p_Handle.get_id();
       if (!l_Mesh.is_alive()) {
@@ -557,10 +557,9 @@ namespace Low {
       return l_Output + ".texresource.yaml";
     }
 
-    static bool
-    regenerate_texture_file(const Util::AssetManager::BundleFileDesc
-                                &p_File,
-                            Util::Handle p_Handle)
+    static bool regenerate_texture_file(
+        const Util::AssetManager::BundleFileDesc &p_File,
+        Util::Handle p_Handle)
     {
       Renderer::Texture l_Texture = p_Handle.get_id();
       if (!l_Texture.is_alive()) {
@@ -639,8 +638,9 @@ namespace Low {
       return Util::PathHelper::normalize(l_Path.string().c_str());
     }
 
-    static void register_script_bundle(Core::ScriptAsset p_Asset,
-                                       const Util::String p_SourcePath)
+    static void
+    register_script_bundle(Core::ScriptAsset p_Asset,
+                           const Util::String p_SourcePath)
     {
       Util::AssetManager::register_bundle(
           Util::AssetManager::BundleBuilder(p_Asset.get_id())
@@ -707,10 +707,9 @@ namespace Low {
       return l_SidecarPath;
     }
 
-    static bool
-    regenerate_script_sidecar(const Util::AssetManager::BundleFileDesc
-                                   &p_File,
-                              Util::Handle p_Handle)
+    static bool regenerate_script_sidecar(
+        const Util::AssetManager::BundleFileDesc &p_File,
+        Util::Handle p_Handle)
     {
       Core::ScriptAsset l_Asset = p_Handle.get_id();
       if (!l_Asset.is_alive() ||
@@ -1801,6 +1800,40 @@ namespace Low {
                   Renderer::Skeleton l_Skeleton = p_Context.handle;
                 }});
                 */
+      }
+      {
+        TypeEditor::register_property_action(
+            Core::UI::Component::Text::type_id(), N(text),
+            PropertyAction{
+                N(bind_to_controller_variable),
+                "Bind to Controller Variable", ICON_LC_LINK,
+                PropertyActionFlags::ContextMenu, 100, nullptr,
+                nullptr, [](const PropertyActionContext &p_Context) {
+                  UiWidgetEditor::open_binding_popup(
+                      p_Context.handle, p_Context.propertyName);
+                }});
+      }
+      {
+        TypeEditor::register_property_action(
+            Core::UI::Component::Text::type_id(), N(text),
+            PropertyAction{
+                N(break_controller_variable_binding), "Break Binding",
+                ICON_LC_LINK_2_OFF, PropertyActionFlags::ContextMenu,
+                110,
+                [](const PropertyActionContext &p_Context) -> bool {
+                  // TODO: return whether p_Context.handle's element
+                  // has a binding for p_Context.propertyName once
+                  // that getter exists
+                  return false;
+                },
+                nullptr,
+                [](const PropertyActionContext &p_Context) {
+                  LOW_LOG_DEBUG << "Break Binding clicked for "
+                                << p_Context.propertyName.c_str()
+                                << " on handle "
+                                << p_Context.handle.get_id()
+                                << LOW_LOG_END;
+                }});
       }
     }
 

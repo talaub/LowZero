@@ -147,6 +147,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(Tween::Data, current_duration);
+        l_PropertyInfo.size = sizeof(Tween::Data::current_duration);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -175,6 +176,7 @@ namespace Low {
         l_PropertyInfo.name = N(ease);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Tween::Data, ease);
+        l_PropertyInfo.size = sizeof(Tween::Data::ease);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
         l_PropertyInfo.handleType =
             TweenEaseEnumHelper::get_enum_id();
@@ -202,6 +204,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(Tween::Data, full_duration);
+        l_PropertyInfo.size = sizeof(Tween::Data::full_duration);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -227,6 +230,7 @@ namespace Low {
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Tween::Data, name);
+        l_PropertyInfo.size = sizeof(Tween::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

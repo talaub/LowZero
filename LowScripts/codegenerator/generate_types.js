@@ -1267,6 +1267,9 @@ function generate_source(p_Type) {
     t += line(
       `l_PropertyInfo.dataOffset = offsetof(${p_Type.name}::Data, ${i_PropName});`,
     );
+    t += line(
+      `l_PropertyInfo.size = sizeof(${p_Type.name}::Data::${i_PropName});`,
+    );
     if (i_Prop.handle) {
       t += line(`l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;`);
       t += line(

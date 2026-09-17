@@ -187,6 +187,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, position);
+          l_PropertyInfo.size = sizeof(Transform::Data::position);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.handleType = 0;
@@ -217,6 +218,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, rotation);
+          l_PropertyInfo.size = sizeof(Transform::Data::rotation);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::QUATERNION;
           l_PropertyInfo.handleType = 0;
@@ -247,6 +249,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, scale);
+          l_PropertyInfo.size = sizeof(Transform::Data::scale);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.handleType = 0;
@@ -277,6 +280,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, parent);
+          l_PropertyInfo.size = sizeof(Transform::Data::parent);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -306,6 +310,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, parent_uid);
+          l_PropertyInfo.size = sizeof(Transform::Data::parent_uid);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -332,6 +337,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, children);
+          l_PropertyInfo.size = sizeof(Transform::Data::children);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -361,6 +367,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, world_position);
+          l_PropertyInfo.size =
+              sizeof(Transform::Data::world_position);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.handleType = 0;
@@ -390,6 +398,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, world_rotation);
+          l_PropertyInfo.size =
+              sizeof(Transform::Data::world_rotation);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::QUATERNION;
           l_PropertyInfo.handleType = 0;
@@ -419,6 +429,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, world_scale);
+          l_PropertyInfo.size = sizeof(Transform::Data::world_scale);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.handleType = 0;
@@ -447,6 +458,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, world_matrix);
+          l_PropertyInfo.size = sizeof(Transform::Data::world_matrix);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -476,6 +488,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, world_updated);
+          l_PropertyInfo.size =
+              sizeof(Transform::Data::world_updated);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -505,6 +519,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, entity);
+          l_PropertyInfo.size = sizeof(Transform::Data::entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::IDENTIFIER;
           l_PropertyInfo.get_return =
@@ -534,6 +549,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, unique_id);
+          l_PropertyInfo.size = sizeof(Transform::Data::unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -561,6 +577,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, dirty);
+          l_PropertyInfo.size = sizeof(Transform::Data::dirty);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -590,6 +607,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, world_dirty);
+          l_PropertyInfo.size = sizeof(Transform::Data::world_dirty);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

@@ -179,6 +179,7 @@ namespace Low {
         l_PropertyInfo.name = N(state);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Skeleton::Data, state);
+        l_PropertyInfo.size = sizeof(Skeleton::Data::state);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
         l_PropertyInfo.handleType =
             Low::Renderer::SkeletonStateEnumHelper::get_enum_id();
@@ -211,6 +212,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(Skeleton::Data, resource);
+        l_PropertyInfo.size = sizeof(Skeleton::Data::resource);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::SkeletonResource::IDENTIFIER;
@@ -243,6 +245,7 @@ namespace Low {
         l_PropertyInfo.name = N(bones);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Skeleton::Data, bones);
+        l_PropertyInfo.size = sizeof(Skeleton::Data::bones);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -270,6 +273,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(Skeleton::Data, bone_map);
+        l_PropertyInfo.size = sizeof(Skeleton::Data::bone_map);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -298,6 +302,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(Skeleton::Data, bone_count);
+        l_PropertyInfo.size = sizeof(Skeleton::Data::bone_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -324,6 +329,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(Skeleton::Data, references);
+        l_PropertyInfo.size = sizeof(Skeleton::Data::references);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -344,6 +350,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(Skeleton::Data, unique_id);
+        l_PropertyInfo.size = sizeof(Skeleton::Data::unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -369,6 +376,7 @@ namespace Low {
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Skeleton::Data, name);
+        l_PropertyInfo.size = sizeof(Skeleton::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

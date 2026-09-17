@@ -172,6 +172,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiDrawCommand::Data, render_object);
+        l_PropertyInfo.size =
+            sizeof(UiDrawCommand::Data::render_object);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::UiRenderObject::IDENTIFIER;
@@ -201,6 +203,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiDrawCommand::Data, canvas_handle);
+        l_PropertyInfo.size =
+            sizeof(UiDrawCommand::Data::canvas_handle);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -230,6 +234,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiDrawCommand::Data, slot);
+        l_PropertyInfo.size = sizeof(UiDrawCommand::Data::slot);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -259,6 +264,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiDrawCommand::Data, texture);
+        l_PropertyInfo.size = sizeof(UiDrawCommand::Data::texture);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Texture::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -288,6 +294,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiDrawCommand::Data, position);
+        l_PropertyInfo.size = sizeof(UiDrawCommand::Data::position);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -317,6 +324,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiDrawCommand::Data, size);
+        l_PropertyInfo.size = sizeof(UiDrawCommand::Data::size);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR2;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -346,6 +354,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiDrawCommand::Data, rotation2D);
+        l_PropertyInfo.size = sizeof(UiDrawCommand::Data::rotation2D);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -375,6 +384,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiDrawCommand::Data, color);
+        l_PropertyInfo.size = sizeof(UiDrawCommand::Data::color);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::COLOR;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -404,6 +414,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiDrawCommand::Data, uv_rect);
+        l_PropertyInfo.size = sizeof(UiDrawCommand::Data::uv_rect);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -433,6 +444,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiDrawCommand::Data, material);
+        l_PropertyInfo.size = sizeof(UiDrawCommand::Data::material);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Material::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -462,6 +474,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiDrawCommand::Data, z_sorting);
+        l_PropertyInfo.size = sizeof(UiDrawCommand::Data::z_sorting);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -491,6 +504,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiDrawCommand::Data, submesh);
+        l_PropertyInfo.size = sizeof(UiDrawCommand::Data::submesh);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::GpuSubmesh::IDENTIFIER;
@@ -520,6 +534,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiDrawCommand::Data, uploaded);
+        l_PropertyInfo.size = sizeof(UiDrawCommand::Data::uploaded);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -549,6 +564,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiDrawCommand::Data, name);
+        l_PropertyInfo.size = sizeof(UiDrawCommand::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

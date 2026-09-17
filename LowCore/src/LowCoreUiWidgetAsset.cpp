@@ -70,6 +70,10 @@ namespace Low {
             Low::Core::UI::Controller();
         ACCESSOR_TYPE_SOA(l_Handle, WidgetAsset,
                           has_custom_controller, bool) = false;
+        new (ACCESSOR_TYPE_SOA_PTR(
+            l_Handle, WidgetAsset, bindings,
+            Low::Util::List<BindingDescription>))
+            Low::Util::List<BindingDescription>();
         ACCESSOR_TYPE_SOA(l_Handle, WidgetAsset, name,
                           Low::Util::Name) = Low::Util::Name(0u);
 
@@ -184,6 +188,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(WidgetAsset::Data, state);
+          l_PropertyInfo.size = sizeof(WidgetAsset::Data::state);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -216,6 +221,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(WidgetAsset::Data, content);
+          l_PropertyInfo.size = sizeof(WidgetAsset::Data::content);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -250,6 +256,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(WidgetAsset::Data, path);
+          l_PropertyInfo.size = sizeof(WidgetAsset::Data::path);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -276,6 +283,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(WidgetAsset::Data, data_path);
+          l_PropertyInfo.size = sizeof(WidgetAsset::Data::data_path);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -302,6 +310,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
               offsetof(WidgetAsset::Data, controller);
+          l_PropertyInfo.size = sizeof(WidgetAsset::Data::controller);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Low::Core::UI::Controller::IDENTIFIER;
@@ -335,6 +344,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(WidgetAsset::Data, has_custom_controller);
+          l_PropertyInfo.size =
+              sizeof(WidgetAsset::Data::has_custom_controller);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -364,6 +375,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(WidgetAsset::Data, local_element_id_counter);
+          l_PropertyInfo.size =
+              sizeof(WidgetAsset::Data::local_element_id_counter);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -384,6 +397,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(WidgetAsset::Data, custom_controller_id);
+          l_PropertyInfo.size =
+              sizeof(WidgetAsset::Data::custom_controller_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -409,12 +424,47 @@ namespace Low {
           // End property: custom_controller_id
         }
         {
+          // Property: bindings
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(bindings);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(WidgetAsset::Data, bindings);
+          l_PropertyInfo.size = sizeof(WidgetAsset::Data::bindings);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            l_Handle.get_bindings();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, WidgetAsset, bindings,
+                Low::Util::List<BindingDescription>);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            l_Handle.set_bindings(
+                *(Low::Util::List<BindingDescription> *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            *((Low::Util::List<BindingDescription> *)p_Data) =
+                l_Handle.get_bindings();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: bindings
+        }
+        {
           // Property: unique_id
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(unique_id);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(WidgetAsset::Data, unique_id);
+          l_PropertyInfo.size = sizeof(WidgetAsset::Data::unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -443,6 +493,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
               offsetof(WidgetAsset::Data, name);
+          l_PropertyInfo.size = sizeof(WidgetAsset::Data::name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -718,6 +769,64 @@ namespace Low {
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
           // End function: serialize_element_descriptor
+        }
+        {
+          // Function: create_binding
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(create_binding);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_ControllerBindingOption);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::NAME;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_BindHandle);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::HANDLE;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_BindPropertyName);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::NAME;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: create_binding
+        }
+        {
+          // Function: clear_bindings
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(clear_bindings);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_BindLocalId);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UINT64;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_BindPropertyName);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::NAME;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: clear_bindings
         }
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
@@ -1344,6 +1453,35 @@ namespace Low {
         broadcast_observable(N(custom_controller_id));
       }
 
+      Low::Util::List<BindingDescription> &
+      WidgetAsset::get_bindings() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_bindings
+        // LOW_CODEGEN::END::CUSTOM:GETTER_bindings
+
+        return TYPE_SOA(WidgetAsset, bindings,
+                        Low::Util::List<BindingDescription>);
+      }
+      void WidgetAsset::set_bindings(
+          Low::Util::List<BindingDescription> &p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_bindings
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_bindings
+
+        // Set new value
+        TYPE_SOA(WidgetAsset, bindings,
+                 Low::Util::List<BindingDescription>) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_bindings
+        // LOW_CODEGEN::END::CUSTOM:SETTER_bindings
+
+        broadcast_observable(N(bindings));
+      }
+
       Low::Util::UniqueId WidgetAsset::get_unique_id() const
       {
         _LOW_ASSERT(is_alive());
@@ -1604,6 +1742,8 @@ namespace Low {
           }
 
           p_Instance.get_elements().push_back(l_Element);
+          p_Instance.get_element_map()[p_Descriptor.local_id] =
+              l_Element;
 
           return l_Element;
         }
@@ -1741,6 +1881,108 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_serialize_element_descriptor
       }
 
+      void WidgetAsset::create_binding(
+          Util::Name p_ControllerBindingOption,
+          Util::Handle p_BindHandle, Util::Name p_BindPropertyName)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_create_binding
+        Controller l_Controller = get_controller();
+        if (!l_Controller.is_alive()) {
+          LOW_LOG_WARN << "Cannot create binding: widget asset '"
+                       << get_name().c_str()
+                       << "' has no alive controller." << LOW_LOG_END;
+          return;
+        }
+
+        Util::List<BindingOption> l_Options;
+        l_Controller.fill_binding_options(l_Options);
+
+        bool l_OptionFound = false;
+        for (const BindingOption &i_Option : l_Options) {
+          if (i_Option.name == p_ControllerBindingOption) {
+            l_OptionFound = true;
+            break;
+          }
+        }
+        if (!l_OptionFound) {
+          LOW_LOG_WARN
+              << "Cannot create binding: '"
+              << p_ControllerBindingOption.c_str()
+              << "' is not a bindable variable on this widget's "
+                 "controller."
+              << LOW_LOG_END;
+          return;
+        }
+
+        if (!Util::Handle::is_registered_type(
+                p_BindHandle.get_type())) {
+          LOW_LOG_WARN << "Cannot create binding: target handle is "
+                          "not a registered type."
+                       << LOW_LOG_END;
+          return;
+        }
+
+        const Util::RTTI::TypeInfo &l_TypeInfo =
+            Util::Handle::get_type_info(p_BindHandle.get_type());
+
+        auto l_PropPos =
+            l_TypeInfo.properties.find(p_BindPropertyName);
+        if (l_PropPos == l_TypeInfo.properties.end()) {
+          LOW_LOG_WARN << "Cannot create binding: property '"
+                       << p_BindPropertyName.c_str()
+                       << "' does not exist on the target handle."
+                       << LOW_LOG_END;
+          return;
+        }
+
+        auto l_ElemPropPos = l_TypeInfo.properties.find(N(element));
+        if (l_ElemPropPos == l_TypeInfo.properties.end()) {
+          LOW_LOG_WARN << "Cannot create binding: target handle is "
+                          "not a ui component."
+                       << LOW_LOG_END;
+          return;
+        }
+
+        Element l_Element =
+            *(Element *)l_ElemPropPos->second.get_return(
+                p_BindHandle);
+        if (!l_Element.is_alive()) {
+          LOW_LOG_WARN << "Cannot create binding: target handle's "
+                          "element is dead."
+                       << LOW_LOG_END;
+          return;
+        }
+
+        clear_bindings(l_Element.get_local_id(), p_BindPropertyName);
+
+        BindingDescription l_Binding;
+        l_Binding.memberName = p_ControllerBindingOption;
+        l_Binding.type = BindingType::Field;
+        l_Binding.local_id = l_Element.get_local_id();
+        l_Binding.componentType =
+            Util::Handle::identifier(p_BindHandle.get_type());
+        l_Binding.propertyName = p_BindPropertyName;
+
+        get_bindings().push_back(l_Binding);
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_create_binding
+      }
+
+      void WidgetAsset::clear_bindings(uint64_t p_BindLocalId,
+                                       Util::Name p_BindPropertyName)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_clear_bindings
+        for (auto it = get_bindings().begin();
+             it != get_bindings().end();) {
+          if (it->local_id == p_BindLocalId &&
+              p_BindPropertyName == it->propertyName) {
+            it = get_bindings().erase(it);
+          } else {
+            it++;
+          }
+        }
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_clear_bindings
+      }
+
       uint32_t WidgetAsset::create_instance(u32 &p_PageIndex,
                                             u32 &p_SlotIndex)
       {
@@ -1814,5 +2056,5 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace UI
-  }   // namespace Core
+  } // namespace Core
 } // namespace Low

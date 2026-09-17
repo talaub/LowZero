@@ -183,6 +183,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SubmeshGeometry::Data, state);
+        l_PropertyInfo.size = sizeof(SubmeshGeometry::Data::state);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
         l_PropertyInfo.handleType =
             MeshStateEnumHelper::get_enum_id();
@@ -213,6 +214,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SubmeshGeometry::Data, vertex_count);
+        l_PropertyInfo.size =
+            sizeof(SubmeshGeometry::Data::vertex_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -242,6 +245,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SubmeshGeometry::Data, index_count);
+        l_PropertyInfo.size =
+            sizeof(SubmeshGeometry::Data::index_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -271,6 +276,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SubmeshGeometry::Data, vertices);
+        l_PropertyInfo.size = sizeof(SubmeshGeometry::Data::vertices);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -303,6 +309,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SubmeshGeometry::Data, indices);
+        l_PropertyInfo.size = sizeof(SubmeshGeometry::Data::indices);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -334,6 +341,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SubmeshGeometry::Data, transform);
+        l_PropertyInfo.size =
+            sizeof(SubmeshGeometry::Data::transform);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -365,6 +374,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SubmeshGeometry::Data, parent_transform);
+        l_PropertyInfo.size =
+            sizeof(SubmeshGeometry::Data::parent_transform);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -397,6 +408,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SubmeshGeometry::Data, local_transform);
+        l_PropertyInfo.size =
+            sizeof(SubmeshGeometry::Data::local_transform);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -429,6 +442,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SubmeshGeometry::Data, aabb);
+        l_PropertyInfo.size = sizeof(SubmeshGeometry::Data::aabb);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -458,6 +472,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SubmeshGeometry::Data, bounding_sphere);
+        l_PropertyInfo.size =
+            sizeof(SubmeshGeometry::Data::bounding_sphere);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -489,6 +505,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SubmeshGeometry::Data, bone_weights);
+        l_PropertyInfo.size =
+            sizeof(SubmeshGeometry::Data::bone_weights);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -522,6 +540,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SubmeshGeometry::Data, node_index);
+        l_PropertyInfo.size =
+            sizeof(SubmeshGeometry::Data::node_index);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -551,6 +571,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SubmeshGeometry::Data, name);
+        l_PropertyInfo.size = sizeof(SubmeshGeometry::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

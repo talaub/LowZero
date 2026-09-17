@@ -203,6 +203,7 @@ namespace Low {
         l_PropertyInfo.name = N(resource);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Mesh::Data, resource);
+        l_PropertyInfo.size = sizeof(Mesh::Data::resource);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::MeshResource::IDENTIFIER;
@@ -234,6 +235,7 @@ namespace Low {
         l_PropertyInfo.name = N(state);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Mesh::Data, state);
+        l_PropertyInfo.size = sizeof(Mesh::Data::state);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
         l_PropertyInfo.handleType =
             MeshStateEnumHelper::get_enum_id();
@@ -263,6 +265,7 @@ namespace Low {
         l_PropertyInfo.name = N(geometry);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Mesh::Data, geometry);
+        l_PropertyInfo.size = sizeof(Mesh::Data::geometry);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::MeshGeometry::IDENTIFIER;
@@ -294,6 +297,7 @@ namespace Low {
         l_PropertyInfo.name = N(gpu);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Mesh::Data, gpu);
+        l_PropertyInfo.size = sizeof(Mesh::Data::gpu);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::GpuMesh::IDENTIFIER;
@@ -323,6 +327,7 @@ namespace Low {
         l_PropertyInfo.name = N(unloadable);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Mesh::Data, unloadable);
+        l_PropertyInfo.size = sizeof(Mesh::Data::unloadable);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -352,6 +357,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(Mesh::Data, submesh_count);
+        l_PropertyInfo.size = sizeof(Mesh::Data::submesh_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -380,6 +386,7 @@ namespace Low {
         l_PropertyInfo.name = N(type);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Mesh::Data, type);
+        l_PropertyInfo.size = sizeof(Mesh::Data::type);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
         l_PropertyInfo.handleType =
             Low::Renderer::MeshTypeEnumHelper::get_enum_id();
@@ -409,6 +416,7 @@ namespace Low {
         l_PropertyInfo.name = N(skeleton);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Mesh::Data, skeleton);
+        l_PropertyInfo.size = sizeof(Mesh::Data::skeleton);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::Skeleton::IDENTIFIER;
@@ -439,6 +447,7 @@ namespace Low {
         l_PropertyInfo.name = N(references);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Mesh::Data, references);
+        l_PropertyInfo.size = sizeof(Mesh::Data::references);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -458,6 +467,7 @@ namespace Low {
         l_PropertyInfo.name = N(unique_id);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Mesh::Data, unique_id);
+        l_PropertyInfo.size = sizeof(Mesh::Data::unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -483,6 +493,7 @@ namespace Low {
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Mesh::Data, name);
+        l_PropertyInfo.size = sizeof(Mesh::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

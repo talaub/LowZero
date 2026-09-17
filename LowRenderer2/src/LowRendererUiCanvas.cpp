@@ -152,6 +152,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiCanvas::Data, z_sorting);
+        l_PropertyInfo.size = sizeof(UiCanvas::Data::z_sorting);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -181,6 +182,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(UiCanvas::Data, draw_commands);
+        l_PropertyInfo.size = sizeof(UiCanvas::Data::draw_commands);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -208,6 +210,7 @@ namespace Low {
         l_PropertyInfo.name = N(z_dirty);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(UiCanvas::Data, z_dirty);
+        l_PropertyInfo.size = sizeof(UiCanvas::Data::z_dirty);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -236,6 +239,7 @@ namespace Low {
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(UiCanvas::Data, name);
+        l_PropertyInfo.size = sizeof(UiCanvas::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

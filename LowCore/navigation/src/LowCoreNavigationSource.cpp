@@ -227,6 +227,7 @@ namespace Low {
           l_PropertyInfo.name = N(mode);
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(Source::Data, mode);
+          l_PropertyInfo.size = sizeof(Source::Data::mode);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
           l_PropertyInfo.handleType =
               SourceModeEnumHelper::get_enum_id();
@@ -257,6 +258,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
               offsetof(Source::Data, geometry_type);
+          l_PropertyInfo.size = sizeof(Source::Data::geometry_type);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
           l_PropertyInfo.handleType =
               SourceGeometryTypeEnumHelper::get_enum_id();
@@ -288,6 +290,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
               offsetof(Source::Data, area_type);
+          l_PropertyInfo.size = sizeof(Source::Data::area_type);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
           l_PropertyInfo.handleType =
               AreaTypeEnumHelper::get_enum_id();
@@ -318,6 +321,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
               offsetof(Source::Data, agent_mask);
+          l_PropertyInfo.size = sizeof(Source::Data::agent_mask);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -347,6 +351,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
               offsetof(Source::Data, include_children);
+          l_PropertyInfo.size =
+              sizeof(Source::Data::include_children);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -376,6 +382,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Source::Data, tile_dirty);
+          l_PropertyInfo.size = sizeof(Source::Data::tile_dirty);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -404,6 +411,7 @@ namespace Low {
           l_PropertyInfo.name = N(bounds);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Source::Data, bounds);
+          l_PropertyInfo.size = sizeof(Source::Data::bounds);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -434,6 +442,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Source::Data, bounds_valid);
+          l_PropertyInfo.size = sizeof(Source::Data::bounds_valid);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -462,6 +471,7 @@ namespace Low {
           l_PropertyInfo.name = N(entity);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Source::Data, entity);
+          l_PropertyInfo.size = sizeof(Source::Data::entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::IDENTIFIER;
           l_PropertyInfo.get_return =
@@ -491,6 +501,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Source::Data, unique_id);
+          l_PropertyInfo.size = sizeof(Source::Data::unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

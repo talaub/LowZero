@@ -158,6 +158,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(SS2DCanvasBackend::Data, canvas_data);
+          l_PropertyInfo.size =
+              sizeof(SS2DCanvasBackend::Data::canvas_data);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -189,6 +191,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(SS2DCanvasBackend::Data, name);
+          l_PropertyInfo.size = sizeof(SS2DCanvasBackend::Data::name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

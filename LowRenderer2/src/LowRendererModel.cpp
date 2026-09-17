@@ -181,6 +181,7 @@ namespace Low {
         l_PropertyInfo.name = N(resource);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Model::Data, resource);
+        l_PropertyInfo.size = sizeof(Model::Data::resource);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::ModelResource::IDENTIFIER;
@@ -213,6 +214,7 @@ namespace Low {
         l_PropertyInfo.name = N(lod0);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Model::Data, lod0);
+        l_PropertyInfo.size = sizeof(Model::Data::lod0);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Low::Renderer::Mesh::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -241,6 +243,7 @@ namespace Low {
         l_PropertyInfo.name = N(lod1);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Model::Data, lod1);
+        l_PropertyInfo.size = sizeof(Model::Data::lod1);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Low::Renderer::Mesh::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -269,6 +272,7 @@ namespace Low {
         l_PropertyInfo.name = N(lod2);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Model::Data, lod2);
+        l_PropertyInfo.size = sizeof(Model::Data::lod2);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Low::Renderer::Mesh::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -297,6 +301,7 @@ namespace Low {
         l_PropertyInfo.name = N(lod3);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Model::Data, lod3);
+        l_PropertyInfo.size = sizeof(Model::Data::lod3);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Low::Renderer::Mesh::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -325,6 +330,7 @@ namespace Low {
         l_PropertyInfo.name = N(unique_id);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Model::Data, unique_id);
+        l_PropertyInfo.size = sizeof(Model::Data::unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -350,6 +356,7 @@ namespace Low {
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Model::Data, name);
+        l_PropertyInfo.size = sizeof(Model::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

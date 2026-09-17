@@ -1869,6 +1869,7 @@ namespace Low {
       static Util::Handle g_RenamingHandle = Util::Handle::DEAD;
       static Util::RTTI::TypeInfo g_RenameType;
       static bool g_RenameActive = false;
+      static bool g_RenamePending = false;
 
       void Rename(const char *p_Id, Util::Handle p_Handle)
       {
@@ -1885,19 +1886,30 @@ namespace Low {
         g_RenamingHandle = p_Handle;
         g_RenamingId = p_Id;
         g_RenameActive = true;
-
-        ImGui::OpenPopup(p_Id);
+        g_RenamePending = true;
       }
 
       bool RenamePopup(const char *p_Id)
       {
+        static char l_NameBuffer[255];
+
+        if (g_RenamePending && g_RenamingId == p_Id) {
+          Util::Name l_CurrentName;
+          g_RenameType.properties["name"].get(g_RenamingHandle,
+                                              &l_CurrentName);
+          strncpy(l_NameBuffer, l_CurrentName.c_str(), 255);
+          l_NameBuffer[254] = '\0';
+
+          ImGui::OpenPopup(p_Id);
+          g_RenamePending = false;
+        }
+
         bool l_Accepted = false;
         if (ImGui::BeginPopupModal(p_Id)) {
           if (!g_RenameActive) {
             ImGui::EndPopup();
             return false;
           }
-          static char l_NameBuffer[255];
           Gui::InputText("##name", l_NameBuffer, 255);
           ImGui::Dummy({0.0f, 3.0f});
 
@@ -1924,6 +1936,7 @@ namespace Low {
                                                   &l_Name);
               l_Accepted = true;
             }
+            g_RenameActive = false;
             ImGui::CloseCurrentPopup();
           }
           ImGui::EndPopup();

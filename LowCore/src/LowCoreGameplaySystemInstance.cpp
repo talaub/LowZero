@@ -164,6 +164,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GameplaySystemInstance::Data, value);
+        l_PropertyInfo.size =
+            sizeof(GameplaySystemInstance::Data::value);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -195,6 +197,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GameplaySystemInstance::Data, gameplay_system);
+        l_PropertyInfo.size =
+            sizeof(GameplaySystemInstance::Data::gameplay_system);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -225,6 +229,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GameplaySystemInstance::Data, name);
+        l_PropertyInfo.size =
+            sizeof(GameplaySystemInstance::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

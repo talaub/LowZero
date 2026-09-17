@@ -76,6 +76,58 @@ namespace Low {
       Util::Function<void(const TypeActionContext &)> execute;
     };
 
+    enum class PropertyActionFlags : u32
+    {
+      None = 0,
+      ContextMenu = 1 << 0,
+      RowIndicator = 1 << 1,
+    };
+
+    inline PropertyActionFlags operator|(PropertyActionFlags a,
+                                         PropertyActionFlags b)
+    {
+      return static_cast<PropertyActionFlags>(static_cast<u32>(a) |
+                                              static_cast<u32>(b));
+    }
+
+    inline PropertyActionFlags operator&(PropertyActionFlags a,
+                                         PropertyActionFlags b)
+    {
+      return static_cast<PropertyActionFlags>(static_cast<u32>(a) &
+                                              static_cast<u32>(b));
+    }
+
+    inline PropertyActionFlags &operator|=(PropertyActionFlags &a,
+                                           PropertyActionFlags b)
+    {
+      a = a | b;
+      return a;
+    }
+
+    enum class PropertyActionSurface
+    {
+      DetailsPanel,
+    };
+
+    struct PropertyActionContext
+    {
+      Util::Handle handle;
+      Util::Name propertyName;
+      PropertyActionSurface surface;
+    };
+
+    struct PropertyAction
+    {
+      Util::Name id;
+      Util::String label;
+      Util::String icon;
+      PropertyActionFlags flags;
+      i32 priority;
+      Util::Function<bool(const PropertyActionContext &)> is_visible;
+      Util::Function<bool(const PropertyActionContext &)> is_enabled;
+      Util::Function<void(const PropertyActionContext &)> execute;
+    };
+
     struct TypeEventHandler
     {
       TYPE_MANAGER_EVENT(after_add)
@@ -154,13 +206,27 @@ namespace Low {
       static void register_action(const u16 p_TypeId,
                                   const TypeAction &p_TypeAction);
       static void
+      register_property_action(const u16 p_TypeId,
+                               const Util::Name p_PropertyName,
+                               const PropertyAction &p_Action);
+      static void
       collect_actions(Util::Handle p_Handle,
                       const TypeActionSurface p_Surface,
                       Util::List<TypeAction *> &p_Actions);
+      static void
+      collect_property_actions(Util::Handle p_Handle,
+                               const Util::Name p_PropertyName,
+                               const PropertyActionSurface p_Surface,
+                               Util::List<PropertyAction *> &p_Actions);
       static bool
       render_context_menu(const char *p_PopupId,
                           Util::Handle p_Handle,
                           const TypeActionSurface p_Surface);
+      static bool
+      render_property_context_menu(const char *p_PopupId,
+                                   Util::Handle p_Handle,
+                                   const Util::Name p_PropertyName,
+                                   const PropertyActionSurface p_Surface);
 
     protected:
       Util::Handle m_Handle;

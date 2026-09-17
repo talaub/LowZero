@@ -1,5 +1,6 @@
 #include "LowEditorMainWindow.h"
 #include "LowEditorThemeWidget.h"
+#include "LowEditorUiWidgetEditor.h"
 #include "LowUtilVersion.h"
 
 #include <iostream>

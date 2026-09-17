@@ -169,6 +169,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SkinningInstance::Data, pose);
+        l_PropertyInfo.size = sizeof(SkinningInstance::Data::pose);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = SkinningPose::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -198,6 +199,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SkinningInstance::Data, mesh);
+        l_PropertyInfo.size = sizeof(SkinningInstance::Data::mesh);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Mesh::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -224,6 +226,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SkinningInstance::Data, skinning_commands);
+        l_PropertyInfo.size =
+            sizeof(SkinningInstance::Data::skinning_commands);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -252,6 +256,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SkinningInstance::Data, render_object_id);
+        l_PropertyInfo.size =
+            sizeof(SkinningInstance::Data::render_object_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -281,6 +287,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(SkinningInstance::Data, name);
+        l_PropertyInfo.size = sizeof(SkinningInstance::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

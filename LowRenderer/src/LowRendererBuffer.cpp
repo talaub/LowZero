@@ -152,6 +152,7 @@ namespace Low {
           l_PropertyInfo.name = N(buffer);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Buffer::Data, buffer);
+          l_PropertyInfo.size = sizeof(Buffer::Data::buffer);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -181,6 +182,7 @@ namespace Low {
           l_PropertyInfo.name = N(name);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Buffer::Data, name);
+          l_PropertyInfo.size = sizeof(Buffer::Data::name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

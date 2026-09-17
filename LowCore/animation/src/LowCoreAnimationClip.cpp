@@ -150,6 +150,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Clip::Data, renderer_clip);
+          l_PropertyInfo.size = sizeof(Clip::Data::renderer_clip);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Renderer::AnimationClip::IDENTIFIER;
@@ -179,6 +180,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Clip::Data, references);
+          l_PropertyInfo.size = sizeof(Clip::Data::references);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -199,6 +201,7 @@ namespace Low {
           l_PropertyInfo.name = N(name);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Clip::Data, name);
+          l_PropertyInfo.size = sizeof(Clip::Data::name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

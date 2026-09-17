@@ -151,6 +151,7 @@ namespace Low {
           l_PropertyInfo.name = N(image);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Image::Data, image);
+          l_PropertyInfo.size = sizeof(Image::Data::image);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -181,6 +182,7 @@ namespace Low {
           l_PropertyInfo.name = N(name);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Image::Data, name);
+          l_PropertyInfo.size = sizeof(Image::Data::name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

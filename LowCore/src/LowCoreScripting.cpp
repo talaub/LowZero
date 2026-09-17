@@ -513,6 +513,82 @@ namespace Low {
         }
       }
 
+      static Util::RTTI::PropertyType::Enum
+      property_type_from_declaration(
+          const Util::String &p_Declaration)
+      {
+        Util::String l_Decl = p_Declaration;
+
+        static const Util::String l_ConstPrefix = "const ";
+        if (l_Decl.compare(0, l_ConstPrefix.size(), l_ConstPrefix) ==
+            0) {
+          l_Decl = l_Decl.substr(l_ConstPrefix.size());
+        }
+
+        const size_t l_SpacePos = l_Decl.find(' ');
+        Util::String l_Type = (l_SpacePos == Util::String::npos)
+                                  ? l_Decl
+                                  : l_Decl.substr(0, l_SpacePos);
+
+        if (!l_Type.empty() && l_Type.back() == '&') {
+          l_Type.pop_back();
+        }
+
+        if (l_Type == "int" || l_Type == "i32") {
+          return Util::RTTI::PropertyType::INT;
+        }
+        if (l_Type == "uint" || l_Type == "u32") {
+          return Util::RTTI::PropertyType::UINT32;
+        }
+        if (l_Type == "uint8" || l_Type == "u8") {
+          return Util::RTTI::PropertyType::UINT8;
+        }
+        if (l_Type == "uint16" || l_Type == "u16") {
+          return Util::RTTI::PropertyType::UINT16;
+        }
+        if (l_Type == "uint64" || l_Type == "u64") {
+          return Util::RTTI::PropertyType::UINT64;
+        }
+        if (l_Type == "float") {
+          return Util::RTTI::PropertyType::FLOAT;
+        }
+        if (l_Type == "bool") {
+          return Util::RTTI::PropertyType::BOOL;
+        }
+        if (l_Type == "string") {
+          return Util::RTTI::PropertyType::STRING;
+        }
+        if (l_Type == "Name") {
+          return Util::RTTI::PropertyType::NAME;
+        }
+        if (l_Type == "Handle") {
+          return Util::RTTI::PropertyType::HANDLE;
+        }
+        if (l_Type == "Vector2") {
+          return Util::RTTI::PropertyType::VECTOR2;
+        }
+        if (l_Type == "Vector3") {
+          return Util::RTTI::PropertyType::VECTOR3;
+        }
+        if (l_Type == "Vector4") {
+          return Util::RTTI::PropertyType::VECTOR4;
+        }
+        if (l_Type == "Quaternion") {
+          return Util::RTTI::PropertyType::QUATERNION;
+        }
+        if (l_Type == "Color") {
+          return Util::RTTI::PropertyType::COLOR;
+        }
+        if (l_Type == "ColorRGB") {
+          return Util::RTTI::PropertyType::COLORRGB;
+        }
+        if (l_Type == "Shape") {
+          return Util::RTTI::PropertyType::SHAPE;
+        }
+
+        return Util::RTTI::PropertyType::UNKNOWN;
+      }
+
       static void fill_classes(Module p_Module,
                                CScriptBuilder &p_Builder)
       {
@@ -546,6 +622,20 @@ namespace Low {
           i_Class.set_as_class((char *)i_Type);
           i_Class.set_reload_index(p_Module.get_reload_index());
 
+          for (int j = 0; j < i_Type->GetPropertyCount(); ++j) {
+            const char *i_PropNameString = nullptr;
+
+            i_Type->GetProperty(j, &i_PropNameString);
+
+            const u32 i_PropertyType =
+                (u32)property_type_from_declaration(
+                    i_Type->GetPropertyDeclaration(j));
+
+            i_Class.get_members()[LOW_NAME(i_PropNameString)] =
+                ClassMemberField{j, LOW_NAME(i_PropNameString),
+                                 i_PropertyType};
+          }
+
           collect_member_field_metadata(i_Class, i_Type, p_Builder);
           handle_class(i_Class);
         }
@@ -560,7 +650,7 @@ namespace Low {
             it++;
           }
         }
-      }
+      } // namespace Scripting
 
       static void fill_ticking_functions(Module p_Module,
                                          CScriptBuilder &p_Builder)
@@ -823,7 +913,8 @@ namespace Low {
       }
 
       static asIScriptContext *
-      prepare_function_call(Module p_Module, const char *p_Declaration,
+      prepare_function_call(Module p_Module,
+                            const char *p_Declaration,
                             asIScriptFunction *&p_OutFunction,
                             asIScriptEngine *&p_OutEngine)
       {
@@ -857,9 +948,9 @@ namespace Low {
       {
         if (strcmp(p_TypeKey, "bool") == 0) {
           return p_Context->SetArgByte(
-                     p_Index, static_cast<asBYTE>(
-                                  (*(const bool *)p_Value) ? 1 : 0)) >=
-                 0;
+                     p_Index,
+                     static_cast<asBYTE>(
+                         (*(const bool *)p_Value) ? 1 : 0)) >= 0;
         } else if (strcmp(p_TypeKey, "int8") == 0) {
           return p_Context->SetArgByte(
                      p_Index, static_cast<asBYTE>(
@@ -896,8 +987,8 @@ namespace Low {
                      p_Index, static_cast<asQWORD>(
                                   *(const uint64_t *)p_Value)) >= 0;
         } else if (strcmp(p_TypeKey, "float") == 0) {
-          return p_Context->SetArgFloat(
-                     p_Index, *(const float *)p_Value) >= 0;
+          return p_Context->SetArgFloat(p_Index,
+                                        *(const float *)p_Value) >= 0;
         } else if (strcmp(p_TypeKey, "double") == 0) {
           return p_Context->SetArgDouble(
                      p_Index, *(const double *)p_Value) >= 0;
@@ -960,8 +1051,8 @@ namespace Low {
                      p_Index,
                      static_cast<asQWORD>(p_Variant.as_u64())) >= 0;
         case Util::VariantType::Float:
-          return p_Context->SetArgFloat(
-                     p_Index, p_Variant.as_float()) >= 0;
+          return p_Context->SetArgFloat(p_Index,
+                                        p_Variant.as_float()) >= 0;
         case Util::VariantType::UVector2: {
           Math::UVector2 l_Value = (Math::UVector2)p_Variant;
           return p_Context->SetArgObject(p_Index, &l_Value) >= 0;
@@ -991,7 +1082,7 @@ namespace Low {
           return p_Context->SetArgObject(p_Index, &l_Value) >= 0;
         }
         case Util::VariantType::String: {
-          Util::String l_Value = p_Variant.as_string();
+          std::string l_Value = p_Variant.as_string().c_str();
           return p_Context->SetArgObject(p_Index, &l_Value) >= 0;
         }
         default:
@@ -999,9 +1090,10 @@ namespace Low {
         }
       }
 
-      bool call_function_dynamic(
-          Module p_Module, const Util::String &p_Declaration,
-          const Util::List<Util::Variant> &p_Args)
+      bool
+      call_function_dynamic(Module p_Module,
+                            const Util::String &p_Declaration,
+                            const Util::List<Util::Variant> &p_Args)
       {
         asIScriptFunction *l_Function = nullptr;
         asIScriptEngine *l_Engine = nullptr;
@@ -1053,9 +1145,9 @@ namespace Low {
                                       p_FunctionInfo);
 
         LOW_LOG_DEBUG << "Registering AS function '"
-                      << p_FunctionInfo.bind_namespace << "::"
-                      << l_SignatureBuilder.get().c_str() << "'"
-                      << LOW_LOG_END;
+                      << p_FunctionInfo.bind_namespace
+                      << "::" << l_SignatureBuilder.get().c_str()
+                      << "'" << LOW_LOG_END;
 
         r = g_Engine->RegisterGlobalFunction(
             l_SignatureBuilder.get().c_str(), asFUNCTION(l_AsFuncPtr),
@@ -1250,8 +1342,8 @@ namespace Low {
         return g_RegisteredEnums;
       }
 
-      const EnumInfo &find_registered_enum_checked(
-          Util::TypeIdentifier p_Identifier)
+      const EnumInfo &
+      find_registered_enum_checked(Util::TypeIdentifier p_Identifier)
       {
         for (const EnumInfo &i_Enum : g_RegisteredEnums) {
           if ((u64)i_Enum.identifier == (u64)p_Identifier) {

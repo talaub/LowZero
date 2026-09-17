@@ -167,6 +167,7 @@ namespace Low {
         l_PropertyInfo.name = N(path);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(EditorImage::Data, path);
+        l_PropertyInfo.size = sizeof(EditorImage::Data::path);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -195,6 +196,7 @@ namespace Low {
         l_PropertyInfo.name = N(gpu);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(EditorImage::Data, gpu);
+        l_PropertyInfo.size = sizeof(EditorImage::Data::gpu);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::EditorImageGpu::IDENTIFIER;
@@ -227,6 +229,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(EditorImage::Data, staging);
+        l_PropertyInfo.size = sizeof(EditorImage::Data::staging);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::EditorImageStaging::IDENTIFIER;
@@ -260,6 +263,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(EditorImage::Data, state);
+        l_PropertyInfo.size = sizeof(EditorImage::Data::state);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
         l_PropertyInfo.handleType =
             Low::Renderer::TextureStateEnumHelper::get_enum_id();
@@ -291,6 +295,7 @@ namespace Low {
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(EditorImage::Data, name);
+        l_PropertyInfo.size = sizeof(EditorImage::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

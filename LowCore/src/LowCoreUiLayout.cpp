@@ -188,6 +188,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, anchor_min);
+            l_PropertyInfo.size = sizeof(Layout::Data::anchor_min);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::VECTOR2;
             l_PropertyInfo.handleType = 0;
@@ -220,6 +221,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, anchor_max);
+            l_PropertyInfo.size = sizeof(Layout::Data::anchor_max);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::VECTOR2;
             l_PropertyInfo.handleType = 0;
@@ -252,6 +254,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, margin_left);
+            l_PropertyInfo.size = sizeof(Layout::Data::margin_left);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::FLOAT;
             l_PropertyInfo.handleType = 0;
@@ -283,6 +286,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, margin_top);
+            l_PropertyInfo.size = sizeof(Layout::Data::margin_top);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::FLOAT;
             l_PropertyInfo.handleType = 0;
@@ -314,6 +318,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, margin_right);
+            l_PropertyInfo.size = sizeof(Layout::Data::margin_right);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::FLOAT;
             l_PropertyInfo.handleType = 0;
@@ -345,6 +350,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, margin_bottom);
+            l_PropertyInfo.size = sizeof(Layout::Data::margin_bottom);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::FLOAT;
             l_PropertyInfo.handleType = 0;
@@ -376,6 +382,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, size_mode);
+            l_PropertyInfo.size = sizeof(Layout::Data::size_mode);
             l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
             l_PropertyInfo.handleType =
                 LayoutSizeModeEnum::get_enum_id();
@@ -407,6 +414,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, fixed_size);
+            l_PropertyInfo.size = sizeof(Layout::Data::fixed_size);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::VECTOR2;
             l_PropertyInfo.handleType = 0;
@@ -438,6 +446,7 @@ namespace Low {
             l_PropertyInfo.name = N(pivot);
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset = offsetof(Layout::Data, pivot);
+            l_PropertyInfo.size = sizeof(Layout::Data::pivot);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::VECTOR2;
             l_PropertyInfo.handleType = 0;
@@ -469,6 +478,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, aspect_ratio);
+            l_PropertyInfo.size = sizeof(Layout::Data::aspect_ratio);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::FLOAT;
             l_PropertyInfo.handleType = 0;
@@ -500,6 +510,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, world_updated);
+            l_PropertyInfo.size = sizeof(Layout::Data::world_updated);
             l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
@@ -530,6 +541,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, element);
+            l_PropertyInfo.size = sizeof(Layout::Data::element);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType =
@@ -563,6 +575,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, unique_id);
+            l_PropertyInfo.size = sizeof(Layout::Data::unique_id);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UINT64;
             l_PropertyInfo.handleType = 0;
@@ -591,6 +604,7 @@ namespace Low {
             l_PropertyInfo.name = N(dirty);
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset = offsetof(Layout::Data, dirty);
+            l_PropertyInfo.size = sizeof(Layout::Data::dirty);
             l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
@@ -621,6 +635,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, world_dirty);
+            l_PropertyInfo.size = sizeof(Layout::Data::world_dirty);
             l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =

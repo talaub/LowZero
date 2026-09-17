@@ -159,6 +159,10 @@ namespace Low {
 
         bool needs_refresh();
         char *get_ptr();
+        void set_member(Low::Util::Name p_MemberName,
+                        const void *p_Value, size_t p_Size);
+        void get_member(Low::Util::Name p_MemberName, void *p_Value,
+                        size_t p_Size);
         static Low::Core::Scripting::ClassInstance
         make(Low::Util::Name p_Name,
              Low::Core::Scripting::Class p_ScriptClass);

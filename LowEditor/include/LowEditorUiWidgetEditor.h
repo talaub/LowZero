@@ -1,5 +1,6 @@
 #pragma once
 
+#include "LowCoreUiController.h"
 #include "LowCoreUiElement.h"
 #include "LowCoreUiWidgetInstance.h"
 #include "LowCoreUiDisplay.h"
@@ -56,6 +57,11 @@ namespace Low {
         return Math::UVector2{1200, 800};
       }
 
+      static void open_binding_popup(Util::Handle p_Handle,
+                                     Util::Name p_PropertyName);
+
+      void render_binding_popup(const float p_Delta);
+
     private:
       void render_viewport();
 
@@ -94,6 +100,20 @@ namespace Low {
       Util::List<HandlePropertiesSection> m_DetailsSections;
 
       void set_selected_element(Core::UI::Element p_Element);
+
+      struct BindingContext
+      {
+        Util::Name property_name;
+        Util::Handle handle;
+        Core::UI::WidgetAsset asset;
+        Core::UI::Controller controller;
+        Util::List<Core::UI::BindingOption> binding_options;
+        Util::RTTI::PropertyInfo property_info;
+        bool active = false;
+        bool pending = false;
+      };
+
+      static BindingContext ms_CurrentBindingContext;
     };
   } // namespace Editor
 } // namespace Low

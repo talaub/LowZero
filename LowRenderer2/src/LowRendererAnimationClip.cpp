@@ -185,6 +185,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(AnimationClip::Data, state);
+        l_PropertyInfo.size = sizeof(AnimationClip::Data::state);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
         l_PropertyInfo.handleType = Low::Renderer::
             AnimationClipStateEnumHelper::get_enum_id();
@@ -218,6 +219,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(AnimationClip::Data, resource);
+        l_PropertyInfo.size = sizeof(AnimationClip::Data::resource);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::AnimationClipResource::IDENTIFIER;
@@ -251,6 +253,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(AnimationClip::Data, skeleton);
+        l_PropertyInfo.size = sizeof(AnimationClip::Data::skeleton);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::Skeleton::IDENTIFIER;
@@ -283,6 +286,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(AnimationClip::Data, channels);
+        l_PropertyInfo.size = sizeof(AnimationClip::Data::channels);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -311,6 +315,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(AnimationClip::Data, duration);
+        l_PropertyInfo.size = sizeof(AnimationClip::Data::duration);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -340,6 +345,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(AnimationClip::Data, ticks_per_second);
+        l_PropertyInfo.size =
+            sizeof(AnimationClip::Data::ticks_per_second);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -369,6 +376,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(AnimationClip::Data, references);
+        l_PropertyInfo.size = sizeof(AnimationClip::Data::references);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -389,6 +397,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(AnimationClip::Data, unique_id);
+        l_PropertyInfo.size = sizeof(AnimationClip::Data::unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -416,6 +425,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(AnimationClip::Data, name);
+        l_PropertyInfo.size = sizeof(AnimationClip::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

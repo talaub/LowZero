@@ -190,6 +190,7 @@ namespace Low {
       struct PropertyInfo : public PropertyInfoBase
       {
         u32 dataOffset;
+        size_t size;
         void const *(*get_return)(Handle);
 
         Variant get_variant(Handle);

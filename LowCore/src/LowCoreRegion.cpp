@@ -177,6 +177,7 @@ namespace Low {
         l_PropertyInfo.name = N(loaded);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Region::Data, loaded);
+        l_PropertyInfo.size = sizeof(Region::Data::loaded);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -206,6 +207,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = true;
         l_PropertyInfo.dataOffset =
             offsetof(Region::Data, streaming_enabled);
+        l_PropertyInfo.size = sizeof(Region::Data::streaming_enabled);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -235,6 +237,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = true;
         l_PropertyInfo.dataOffset =
             offsetof(Region::Data, streaming_position);
+        l_PropertyInfo.size =
+            sizeof(Region::Data::streaming_position);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -265,6 +269,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = true;
         l_PropertyInfo.dataOffset =
             offsetof(Region::Data, streaming_radius);
+        l_PropertyInfo.size = sizeof(Region::Data::streaming_radius);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -293,6 +298,7 @@ namespace Low {
         l_PropertyInfo.name = N(entities);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Region::Data, entities);
+        l_PropertyInfo.size = sizeof(Region::Data::entities);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -312,6 +318,7 @@ namespace Low {
         l_PropertyInfo.name = N(scene);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Region::Data, scene);
+        l_PropertyInfo.size = sizeof(Region::Data::scene);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Scene::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -340,6 +347,7 @@ namespace Low {
         l_PropertyInfo.name = N(unique_id);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Region::Data, unique_id);
+        l_PropertyInfo.size = sizeof(Region::Data::unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -365,6 +373,7 @@ namespace Low {
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = true;
         l_PropertyInfo.dataOffset = offsetof(Region::Data, name);
+        l_PropertyInfo.size = sizeof(Region::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

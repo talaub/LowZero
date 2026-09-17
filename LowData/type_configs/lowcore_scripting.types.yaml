@@ -64,6 +64,8 @@ types:
         getter_name: as_class
       reload_index:
         type: uint32_t
+      members:
+        type: Low::Util::Map<Low::Util::Name, Low::Core::Scripting::ClassMemberField>
     functions:
       needs_refresh:
         return_type: bool
@@ -97,6 +99,26 @@ types:
       spawn:
         private: true
         return_type: char*
+      set_member:
+        return_type: void
+        parameters:
+          - name: memberName
+            type: Low::Util::Name
+          - name: value
+            type: void*
+            const: true
+            constant: true
+          - name: size
+            type: size_t
+      get_member:
+        return_type: void
+        parameters:
+          - name: memberName
+            type: Low::Util::Name
+          - name: value
+            type: void*
+          - name: size
+            type: size_t
       make:
         static: true
         return_type: Low::Core::Scripting::ClassInstance

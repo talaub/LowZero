@@ -17,7 +17,12 @@ namespace Low {
   namespace Core {
     namespace Scripting {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-
+      struct ClassMemberField
+      {
+        int index;
+        Util::Name name;
+        u32 property_type;
+      };
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       struct LOW_CORE_API Class : public Low::Util::Handle
@@ -29,6 +34,9 @@ namespace Low {
           Low::Core::Scripting::Module module;
           char *as_class;
           uint32_t reload_index;
+          Low::Util::Map<Low::Util::Name,
+                         Low::Core::Scripting::ClassMemberField>
+              members;
           Low::Util::Name name;
 
           static size_t get_size()
@@ -151,6 +159,14 @@ namespace Low {
 
         uint32_t get_reload_index() const;
         void set_reload_index(uint32_t p_Value);
+
+        Low::Util::Map<Low::Util::Name,
+                       Low::Core::Scripting::ClassMemberField> &
+        get_members() const;
+        void set_members(
+            Low::Util::Map<Low::Util::Name,
+                           Low::Core::Scripting::ClassMemberField>
+                &p_Value);
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);

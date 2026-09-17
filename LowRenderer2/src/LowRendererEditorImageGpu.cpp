@@ -162,6 +162,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(EditorImageGpu::Data, imgui_texture_initialized);
+        l_PropertyInfo.size =
+            sizeof(EditorImageGpu::Data::imgui_texture_initialized);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -192,6 +194,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(EditorImageGpu::Data, data_handle);
+        l_PropertyInfo.size =
+            sizeof(EditorImageGpu::Data::data_handle);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -221,6 +225,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(EditorImageGpu::Data, editor_image_handle);
+        l_PropertyInfo.size =
+            sizeof(EditorImageGpu::Data::editor_image_handle);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -251,6 +257,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(EditorImageGpu::Data, imgui_texture_id);
+        l_PropertyInfo.size =
+            sizeof(EditorImageGpu::Data::imgui_texture_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -281,6 +289,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(EditorImageGpu::Data, name);
+        l_PropertyInfo.size = sizeof(EditorImageGpu::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

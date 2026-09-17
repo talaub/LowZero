@@ -228,6 +228,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
               offsetof(ConvexHullCollider::Data, points);
+          l_PropertyInfo.size =
+              sizeof(ConvexHullCollider::Data::points);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -261,6 +263,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
               offsetof(ConvexHullCollider::Data, trigger);
+          l_PropertyInfo.size =
+              sizeof(ConvexHullCollider::Data::trigger);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -290,6 +294,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(ConvexHullCollider::Data, shape);
+          l_PropertyInfo.size =
+              sizeof(ConvexHullCollider::Data::shape);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Low::Core::Physics::Shape::IDENTIFIER;
@@ -319,6 +325,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(ConvexHullCollider::Data, static_body);
+          l_PropertyInfo.size =
+              sizeof(ConvexHullCollider::Data::static_body);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Low::Core::Physics::Body::IDENTIFIER;
@@ -348,6 +356,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(ConvexHullCollider::Data, initialized);
+          l_PropertyInfo.size =
+              sizeof(ConvexHullCollider::Data::initialized);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -374,6 +384,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(ConvexHullCollider::Data, entity);
+          l_PropertyInfo.size =
+              sizeof(ConvexHullCollider::Data::entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::IDENTIFIER;
           l_PropertyInfo.get_return =
@@ -404,6 +416,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(ConvexHullCollider::Data, unique_id);
+          l_PropertyInfo.size =
+              sizeof(ConvexHullCollider::Data::unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -432,6 +446,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(ConvexHullCollider::Data, dirty);
+          l_PropertyInfo.size =
+              sizeof(ConvexHullCollider::Data::dirty);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

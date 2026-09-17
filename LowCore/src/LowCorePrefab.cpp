@@ -214,6 +214,7 @@ namespace Low {
         l_PropertyInfo.name = N(parent);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Prefab::Data, parent);
+        l_PropertyInfo.size = sizeof(Prefab::Data::parent);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -242,6 +243,7 @@ namespace Low {
         l_PropertyInfo.name = N(children);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Prefab::Data, children);
+        l_PropertyInfo.size = sizeof(Prefab::Data::children);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -272,6 +274,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(Prefab::Data, components);
+        l_PropertyInfo.size = sizeof(Prefab::Data::components);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -307,6 +310,7 @@ namespace Low {
         l_PropertyInfo.name = N(unique_id);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Prefab::Data, unique_id);
+        l_PropertyInfo.size = sizeof(Prefab::Data::unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -332,6 +336,7 @@ namespace Low {
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = true;
         l_PropertyInfo.dataOffset = offsetof(Prefab::Data, name);
+        l_PropertyInfo.size = sizeof(Prefab::Data::name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

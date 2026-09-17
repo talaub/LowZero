@@ -175,6 +175,7 @@ namespace Low {
           l_PropertyInfo.name = N(module);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Asset::Data, module);
+          l_PropertyInfo.size = sizeof(Asset::Data::module);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Low::Core::Scripting::Module::IDENTIFIER;
@@ -208,6 +209,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Asset::Data, source_path);
+          l_PropertyInfo.size = sizeof(Asset::Data::source_path);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -238,6 +240,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Asset::Data, generator);
+          l_PropertyInfo.size = sizeof(Asset::Data::generator);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
           l_PropertyInfo.handleType = Low::Core::Scripting::
               AssetGeneratorEnumHelper::get_enum_id();
@@ -271,6 +274,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Asset::Data, unique_id);
+          l_PropertyInfo.size = sizeof(Asset::Data::unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -297,6 +301,7 @@ namespace Low {
           l_PropertyInfo.name = N(name);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Asset::Data, name);
+          l_PropertyInfo.size = sizeof(Asset::Data::name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

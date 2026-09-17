@@ -161,6 +161,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Body::Data, backend_id);
+          l_PropertyInfo.size = sizeof(Body::Data::backend_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -186,6 +187,7 @@ namespace Low {
           l_PropertyInfo.name = N(world);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Body::Data, world);
+          l_PropertyInfo.size = sizeof(Body::Data::world);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = World::IDENTIFIER;
           l_PropertyInfo.get_return =
@@ -211,6 +213,7 @@ namespace Low {
           l_PropertyInfo.name = N(shape);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Body::Data, shape);
+          l_PropertyInfo.size = sizeof(Body::Data::shape);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Shape::IDENTIFIER;
           l_PropertyInfo.get_return =
@@ -236,6 +239,7 @@ namespace Low {
           l_PropertyInfo.name = N(owner);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Body::Data, owner);
+          l_PropertyInfo.size = sizeof(Body::Data::owner);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -264,6 +268,7 @@ namespace Low {
           l_PropertyInfo.name = N(name);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Body::Data, name);
+          l_PropertyInfo.size = sizeof(Body::Data::name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

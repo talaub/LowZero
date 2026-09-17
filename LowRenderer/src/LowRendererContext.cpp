@@ -171,6 +171,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Context::Data, context);
+          l_PropertyInfo.size = sizeof(Context::Data::context);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -198,6 +199,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Context::Data, renderpasses);
+          l_PropertyInfo.size = sizeof(Context::Data::renderpasses);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -227,6 +229,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Context::Data, global_signature);
+          l_PropertyInfo.size =
+              sizeof(Context::Data::global_signature);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               PipelineResourceSignature::IDENTIFIER;
@@ -256,6 +260,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Context::Data, frame_info_buffer);
+          l_PropertyInfo.size =
+              sizeof(Context::Data::frame_info_buffer);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Resource::Buffer::IDENTIFIER;
           l_PropertyInfo.get_return =
@@ -284,6 +290,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Context::Data, material_data_buffer);
+          l_PropertyInfo.size =
+              sizeof(Context::Data::material_data_buffer);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Resource::Buffer::IDENTIFIER;
           l_PropertyInfo.get_return =
@@ -311,6 +319,7 @@ namespace Low {
           l_PropertyInfo.name = N(name);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Context::Data, name);
+          l_PropertyInfo.size = sizeof(Context::Data::name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
