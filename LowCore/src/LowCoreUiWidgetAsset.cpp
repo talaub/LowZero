@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "LowCoreUiController.h"
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
@@ -22,6 +23,33 @@ namespace Low {
   namespace Core {
     namespace UI {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
+      static bool
+      resolve_binding_identity(Util::Handle p_Handle, u64 &p_LocalId,
+                               uint16_t &p_ComponentTypeId)
+      {
+        if (!Util::Handle::is_registered_type(p_Handle.get_type())) {
+          return false;
+        }
+
+        const Util::RTTI::TypeInfo &l_TypeInfo =
+            Util::Handle::get_type_info(p_Handle.get_type());
+
+        auto l_ElemPropPos = l_TypeInfo.properties.find(N(element));
+        if (l_ElemPropPos == l_TypeInfo.properties.end()) {
+          return false;
+        }
+
+        Element l_Element =
+            *(Element *)l_ElemPropPos->second.get_return(p_Handle);
+        if (!l_Element.is_alive()) {
+          return false;
+        }
+
+        p_LocalId = l_Element.get_local_id();
+        p_ComponentTypeId = p_Handle.get_type();
+        return true;
+      }
 
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
@@ -943,6 +971,26 @@ namespace Low {
                         l_ControllerName);
                   }
                 }
+
+                if (l_DataNode["bindings"]) {
+                  for (auto it = l_DataNode["bindings"].begin();
+                       it != l_DataNode["bindings"].end(); ++it) {
+                    Util::Serial::Node &i_Node = (*it).value;
+
+                    BindingDescription l_Binding;
+                    l_Binding.local_id =
+                        i_Node["local_id"].as<Util::U64Id>();
+                    l_Binding.propertyName =
+                        i_Node["property_name"].as<Util::Name>();
+                    l_Binding.memberName =
+                        i_Node["member_name"].as<Util::Name>();
+                    l_Binding.componentType =
+                        i_Node["component_type"]
+                            .as<Util::TypeIdentifier>();
+
+                    l_Asset.get_bindings().push_back(l_Binding);
+                  }
+                }
               });
           l_Builder
               .initializer([](const Util::String p_Path)
@@ -1594,7 +1642,6 @@ namespace Low {
         u64 l_Id = 0;
         do {
           l_Id = get_local_element_id_counter();
-          LOW_LOG_DEBUG << "ID UPDATE: " << l_Id << LOW_LOG_END;
           set_local_element_id_counter(
               get_local_element_id_counter() + 1);
         } while (l_Id == 0);
@@ -1614,6 +1661,16 @@ namespace Low {
           serialize_element_descriptor(i_Element, i_ElementNode);
 
           l_ContentNode.push_back(i_ElementNode);
+        }
+
+        for (const BindingDescription &i_Binding : get_bindings()) {
+          Util::Serial::Node i_BindingNode;
+          i_BindingNode["local_id"] = (Util::U64Id)i_Binding.local_id;
+          i_BindingNode["property_name"] = i_Binding.propertyName;
+          i_BindingNode["member_name"] = i_Binding.memberName;
+          i_BindingNode["component_type"] = i_Binding.componentType;
+
+          p_Node["bindings"].push_back(i_BindingNode);
         }
 
         if (get_controller().is_alive()) {
@@ -1948,10 +2005,13 @@ namespace Low {
         Util::List<BindingOption> l_Options;
         l_Controller.fill_binding_options(l_Options);
 
+        BindingOption l_Option;
+
         bool l_OptionFound = false;
         for (const BindingOption &i_Option : l_Options) {
           if (i_Option.name == p_ControllerBindingOption) {
             l_OptionFound = true;
+            l_Option = i_Option;
             break;
           }
         }
@@ -2004,15 +2064,14 @@ namespace Low {
           return;
         }
 
-        clear_bindings(l_Element.get_local_id(), p_BindPropertyName);
+        clear_bindings(p_BindHandle, p_BindPropertyName);
 
         BindingDescription l_Binding;
         l_Binding.memberName = p_ControllerBindingOption;
-        l_Binding.type = BindingType::Field;
+        l_Binding.type = l_Option.type;
         l_Binding.local_id = l_Element.get_local_id();
         l_Binding.componentType =
             Util::Handle::identifier(p_BindHandle.get_type());
-        l_Binding.componentHandle = p_BindHandle;
         l_Binding.propertyName = p_BindPropertyName;
 
         get_bindings().push_back(l_Binding);
@@ -2023,8 +2082,17 @@ namespace Low {
                                     Util::Name p_BindPropertyName)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_has_binding
+        u64 l_LocalId;
+        uint16_t l_ComponentTypeId;
+        if (!resolve_binding_identity(p_Handle, l_LocalId,
+                                      l_ComponentTypeId)) {
+          return false;
+        }
+
         for (const BindingDescription &i_Binding : get_bindings()) {
-          if (i_Binding.componentHandle == p_Handle &&
+          if (i_Binding.local_id == l_LocalId &&
+              Util::Handle::type_id(i_Binding.componentType) ==
+                  l_ComponentTypeId &&
               i_Binding.propertyName == p_BindPropertyName) {
             return true;
           }
@@ -2038,8 +2106,15 @@ namespace Low {
                                Util::Name p_BindPropertyName)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_binding
+        u64 l_LocalId;
+        uint16_t l_ComponentTypeId;
+        _LOW_ASSERT(resolve_binding_identity(p_Handle, l_LocalId,
+                                             l_ComponentTypeId));
+
         for (BindingDescription &i_Binding : get_bindings()) {
-          if (i_Binding.componentHandle == p_Handle &&
+          if (i_Binding.local_id == l_LocalId &&
+              Util::Handle::type_id(i_Binding.componentType) ==
+                  l_ComponentTypeId &&
               i_Binding.propertyName == p_BindPropertyName) {
             return i_Binding;
           }
@@ -2052,9 +2127,18 @@ namespace Low {
                                        Util::Name p_BindPropertyName)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_clear_bindings
+        u64 l_LocalId;
+        uint16_t l_ComponentTypeId;
+        if (!resolve_binding_identity(p_Handle, l_LocalId,
+                                      l_ComponentTypeId)) {
+          return;
+        }
+
         for (auto it = get_bindings().begin();
              it != get_bindings().end();) {
-          if (it->componentHandle == p_Handle &&
+          if (it->local_id == l_LocalId &&
+              Util::Handle::type_id(it->componentType) ==
+                  l_ComponentTypeId &&
               p_BindPropertyName == it->propertyName) {
             it = get_bindings().erase(it);
           } else {
@@ -2137,5 +2221,5 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace UI
-  }   // namespace Core
+  } // namespace Core
 } // namespace Low

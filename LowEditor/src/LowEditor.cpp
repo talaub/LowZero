@@ -1833,7 +1833,7 @@ namespace Low {
                     return;
                   }
                   l_Asset.clear_bindings(p_Context.handle,
-                                        p_Context.propertyName);
+                                         p_Context.propertyName);
                 }});
       }
       {

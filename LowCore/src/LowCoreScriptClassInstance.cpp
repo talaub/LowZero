@@ -1037,6 +1037,69 @@ namespace Low {
 
         return l_Result == asEXECUTION_FINISHED;
       }
+
+      bool ClassInstance::call_method_get_return(
+          Low::Util::Name p_MethodName, void *p_ReturnValue,
+          size_t p_ReturnSize)
+      {
+        ScriptClass l_Class = get_script_class();
+
+        asITypeInfo *l_Type = (asITypeInfo *)l_Class.as_class();
+        if (!l_Type) {
+          return false;
+        }
+
+        asIScriptObject *l_ScriptObject =
+            (asIScriptObject *)get_ptr();
+        if (!l_ScriptObject) {
+          return false;
+        }
+
+        asIScriptFunction *l_Function =
+            l_Type->GetMethodByName(p_MethodName.c_str());
+        if (!l_Function) {
+          return false;
+        }
+
+        asIScriptEngine *l_Engine = l_Type->GetEngine();
+        asIScriptContext *l_Context = l_Engine->RequestContext();
+        if (!l_Context) {
+          return false;
+        }
+
+        if (l_Context->Prepare(l_Function) < 0 ||
+            l_Context->SetObject(l_ScriptObject) < 0) {
+          l_Engine->ReturnContext(l_Context);
+          return false;
+        }
+
+        const int l_Result = l_Context->Execute();
+        if (l_Result != asEXECUTION_FINISHED) {
+          l_Engine->ReturnContext(l_Context);
+          return false;
+        }
+
+        void *l_ReturnAddress = l_Context->GetAddressOfReturnValue();
+        if (!l_ReturnAddress) {
+          l_Engine->ReturnContext(l_Context);
+          return false;
+        }
+
+        static const int l_StringTypeId =
+            get_engine()->GetTypeIdByDecl("string");
+
+        if (l_Function->GetReturnTypeId() == l_StringTypeId) {
+          const std::string &l_Value =
+              *((const std::string *)l_ReturnAddress);
+          *((Low::Util::String *)p_ReturnValue) =
+              Low::Util::String(l_Value.c_str());
+        } else {
+          memcpy(p_ReturnValue, l_ReturnAddress, p_ReturnSize);
+        }
+
+        l_Engine->ReturnContext(l_Context);
+        return true;
+      }
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Scripting

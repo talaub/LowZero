@@ -32,11 +32,6 @@ namespace Low {
         Loading
       };
 
-      enum class BindingType
-      {
-        Field,
-        // Method// TODO: Implement
-      };
       struct BindingDescription
       {
         Util::Name memberName;
@@ -44,7 +39,6 @@ namespace Low {
         u64 local_id;
         Util::TypeIdentifier componentType;
         Util::Name propertyName;
-        Util::Handle componentHandle;
       };
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
@@ -290,7 +284,7 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
     } // namespace UI
-  }   // namespace Core
+  } // namespace Core
 } // namespace Low
 
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE

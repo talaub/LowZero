@@ -23,6 +23,18 @@ namespace Low {
         Util::Name name;
         u32 property_type;
       };
+      struct InputParameter
+      {
+        // Util::Name name;
+        u32 type;
+      };
+      struct ClassMemberMethod
+      {
+        // int index;
+        Util::Name name;
+        u32 return_type;
+        Util::List<InputParameter> parameters;
+      };
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       struct LOW_CORE_API Class : public Low::Util::Handle
@@ -37,6 +49,9 @@ namespace Low {
           Low::Util::Map<Low::Util::Name,
                          Low::Core::Scripting::ClassMemberField>
               members;
+          Low::Util::Map<Low::Util::Name,
+                         Low::Core::Scripting::ClassMemberMethod>
+              methods;
           Low::Util::Name name;
 
           static size_t get_size()
@@ -168,6 +183,14 @@ namespace Low {
                            Low::Core::Scripting::ClassMemberField>
                 &p_Value);
 
+        Low::Util::Map<Low::Util::Name,
+                       Low::Core::Scripting::ClassMemberMethod> &
+        get_methods() const;
+        void set_methods(
+            Low::Util::Map<Low::Util::Name,
+                           Low::Core::Scripting::ClassMemberMethod>
+                &p_Value);
+
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
 
@@ -198,7 +221,7 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
     } // namespace Scripting
-  }   // namespace Core
+  } // namespace Core
 } // namespace Low
 
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE

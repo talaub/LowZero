@@ -186,6 +186,10 @@ namespace Low {
         bool call_method(const char *p_Declaration,
                          TArgs &&...p_Args);
 
+        bool call_method_get_return(Low::Util::Name p_MethodName,
+                                    void *p_ReturnValue,
+                                    size_t p_ReturnSize);
+
       private:
         bool call_method_internal(const char *p_Declaration,
                                   const void *const *p_Args,

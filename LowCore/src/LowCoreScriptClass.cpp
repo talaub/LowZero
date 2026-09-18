@@ -58,6 +58,13 @@ namespace Low {
                        Low::Core::Scripting::ClassMemberField>)))
             Low::Util::Map<Low::Util::Name,
                            Low::Core::Scripting::ClassMemberField>();
+        new (ACCESSOR_TYPE_SOA_PTR(
+            l_Handle, Class, methods,
+            SINGLE_ARG(Low::Util::Map<
+                       Low::Util::Name,
+                       Low::Core::Scripting::ClassMemberMethod>)))
+            Low::Util::Map<Low::Util::Name,
+                           Low::Core::Scripting::ClassMemberMethod>();
         ACCESSOR_TYPE_SOA(l_Handle, Class, name, Low::Util::Name) =
             Low::Util::Name(0u);
 
@@ -282,6 +289,45 @@ namespace Low {
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: members
+        }
+        {
+          // Property: methods
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(methods);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset = offsetof(Class::Data, methods);
+          l_PropertyInfo.size = sizeof(Class::Data::methods);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            Class l_Handle = p_Handle.get_id();
+            l_Handle.get_methods();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Class, methods,
+                SINGLE_ARG(Low::Util::Map<
+                           Low::Util::Name,
+                           Low::Core::Scripting::ClassMemberMethod>));
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            Class l_Handle = p_Handle.get_id();
+            l_Handle.set_methods(
+                *(Low::Util::Map<
+                    Low::Util::Name,
+                    Low::Core::Scripting::ClassMemberMethod> *)
+                    p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Class l_Handle = p_Handle.get_id();
+            *((Low::Util::Map<Low::Util::Name,
+                              Low::Core::Scripting::ClassMemberMethod>
+                   *)p_Data) = l_Handle.get_methods();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: methods
         }
         {
           // Property: name
@@ -675,6 +721,45 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_members
 
         broadcast_observable(N(members));
+      }
+
+      Low::Util::Map<Low::Util::Name,
+                     Low::Core::Scripting::ClassMemberMethod> &
+      Class::get_methods() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_methods
+        // LOW_CODEGEN::END::CUSTOM:GETTER_methods
+
+        return TYPE_SOA(
+            Class, methods,
+            SINGLE_ARG(Low::Util::Map<
+                       Low::Util::Name,
+                       Low::Core::Scripting::ClassMemberMethod>));
+      }
+      void Class::set_methods(
+          Low::Util::Map<Low::Util::Name,
+                         Low::Core::Scripting::ClassMemberMethod>
+              &p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_methods
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_methods
+
+        // Set new value
+        TYPE_SOA(
+            Class, methods,
+            SINGLE_ARG(Low::Util::Map<
+                       Low::Util::Name,
+                       Low::Core::Scripting::ClassMemberMethod>)) =
+            p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_methods
+        // LOW_CODEGEN::END::CUSTOM:SETTER_methods
+
+        broadcast_observable(N(methods));
       }
 
       Low::Util::Name Class::get_name() const

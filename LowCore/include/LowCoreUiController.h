@@ -17,10 +17,17 @@ namespace Low {
   namespace Core {
     namespace UI {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
+      enum class BindingType
+      {
+        Field,
+        Method
+      };
       struct BindingOption
       {
         Util::Name name;
         u32 property_type;
+        BindingType type;
       };
 
       struct CodeController
@@ -218,7 +225,7 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
     } // namespace UI
-  }   // namespace Core
+  } // namespace Core
 } // namespace Low
 
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE

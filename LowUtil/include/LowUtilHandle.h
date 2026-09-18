@@ -432,7 +432,7 @@ namespace Low {
           TypeIdentifier l_Ident =
               TypeIdentifier::from_string(n.as<String>());
           memcpy(&out, &l_Ident, sizeof(TypeIdentifier));
-          return false;
+          return true;
         }
       };
     } // namespace Serial

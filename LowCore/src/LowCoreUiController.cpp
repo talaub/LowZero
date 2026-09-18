@@ -4,6 +4,7 @@
 
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
+#include "LowUtilHandle.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
@@ -735,6 +736,19 @@ namespace Low {
             BindingOption i_Option;
             i_Option.name = it->second.name;
             i_Option.property_type = it->second.property_type;
+            i_Option.type = BindingType::Field;
+            p_Options.push_back(i_Option);
+          }
+          for (const auto i_Method : l_Class.get_methods()) {
+            if (!i_Method.second.parameters.empty() ||
+                i_Method.second.return_type ==
+                    Util::RTTI::PropertyType::UNKNOWN) {
+              continue;
+            }
+            BindingOption i_Option;
+            i_Option.name = i_Method.second.name;
+            i_Option.property_type = i_Method.second.return_type;
+            i_Option.type = BindingType::Method;
             p_Options.push_back(i_Option);
           }
         }
@@ -814,5 +828,5 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace UI
-  }   // namespace Core
+  } // namespace Core
 } // namespace Low

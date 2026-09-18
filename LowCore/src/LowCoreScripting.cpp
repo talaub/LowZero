@@ -636,6 +636,38 @@ namespace Low {
                                  i_PropertyType};
           }
 
+          for (asUINT j = 0; j < i_Type->GetMethodCount(); ++j) {
+            asIScriptFunction *i_Method =
+                i_Type->GetMethodByIndex(j);
+            if (!i_Method) {
+              continue;
+            }
+
+            const int i_ReturnTypeId = i_Method->GetReturnTypeId();
+            const u32 i_ReturnType =
+                (u32)property_type_from_declaration(
+                    i_Type->GetEngine()->GetTypeDeclaration(
+                        i_ReturnTypeId));
+
+            ClassMemberMethod i_MethodInfo;
+            i_MethodInfo.name = LOW_NAME(i_Method->GetName());
+            i_MethodInfo.return_type = i_ReturnType;
+
+            for (asUINT k = 0; k < i_Method->GetParamCount(); ++k) {
+              int i_ParamTypeId = 0;
+              i_Method->GetParam(k, &i_ParamTypeId);
+
+              InputParameter i_Parameter;
+              i_Parameter.type =
+                  (u32)property_type_from_declaration(
+                      i_Type->GetEngine()->GetTypeDeclaration(
+                          i_ParamTypeId));
+              i_MethodInfo.parameters.push_back(i_Parameter);
+            }
+
+            i_Class.get_methods()[i_MethodInfo.name] = i_MethodInfo;
+          }
+
           collect_member_field_metadata(i_Class, i_Type, p_Builder);
           handle_class(i_Class);
         }

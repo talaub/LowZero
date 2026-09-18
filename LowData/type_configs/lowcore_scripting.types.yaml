@@ -66,6 +66,8 @@ types:
         type: uint32_t
       members:
         type: Low::Util::Map<Low::Util::Name, Low::Core::Scripting::ClassMemberField>
+      methods:
+        type: Low::Util::Map<Low::Util::Name, Low::Core::Scripting::ClassMemberMethod>
     functions:
       needs_refresh:
         return_type: bool

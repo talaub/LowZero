@@ -14,6 +14,8 @@
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 
 #include "LowCoreUiWidgetAsset.h"
+
+#define LOW_UI_BINDING_VALUE_BUFFER_SIZE 64
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -851,9 +853,6 @@ namespace Low {
 
         for (const BindingDescription &i_Binding :
              l_Asset.get_bindings()) {
-          if (i_Binding.type != BindingType::Field) {
-            continue;
-          }
 
           Element i_Element =
               find_element_by_local_id(i_Binding.local_id);
@@ -877,18 +876,36 @@ namespace Low {
           const Util::RTTI::PropertyInfo &i_PropertyInfo =
               i_PropPos->second;
 
-          if (i_PropertyInfo.type ==
-              Util::RTTI::PropertyType::STRING) {
-            Util::String i_Value;
-            l_ClassInstance.get_member(i_Binding.memberName, &i_Value,
-                                       sizeof(i_Value));
-            i_PropertyInfo.set(i_ComponentHandle, &i_Value);
+          if (i_Binding.type == BindingType::Field) {
+            if (i_PropertyInfo.type ==
+                Util::RTTI::PropertyType::STRING) {
+              Util::String i_Value;
+              l_ClassInstance.get_member(i_Binding.memberName,
+                                         &i_Value, sizeof(i_Value));
+              i_PropertyInfo.set(i_ComponentHandle, &i_Value);
+            } else {
+              u8 l_Buffer[LOW_UI_BINDING_VALUE_BUFFER_SIZE];
+              _LOW_ASSERT(i_PropertyInfo.size <= sizeof(l_Buffer));
+              l_ClassInstance.get_member(i_Binding.memberName,
+                                         l_Buffer,
+                                         i_PropertyInfo.size);
+              i_PropertyInfo.set(i_ComponentHandle, l_Buffer);
+            }
           } else {
-            u8 l_Buffer[64];
-            _LOW_ASSERT(i_PropertyInfo.size <= sizeof(l_Buffer));
-            l_ClassInstance.get_member(i_Binding.memberName, l_Buffer,
-                                       i_PropertyInfo.size);
-            i_PropertyInfo.set(i_ComponentHandle, l_Buffer);
+            if (i_PropertyInfo.type ==
+                Util::RTTI::PropertyType::STRING) {
+              Util::String i_Value;
+              l_ClassInstance.call_method_get_return(
+                  i_Binding.memberName, &i_Value, sizeof(i_Value));
+              i_PropertyInfo.set(i_ComponentHandle, &i_Value);
+            } else {
+              u8 l_Buffer[LOW_UI_BINDING_VALUE_BUFFER_SIZE];
+              _LOW_ASSERT(i_PropertyInfo.size <= sizeof(l_Buffer));
+              l_ClassInstance.call_method_get_return(
+                  i_Binding.memberName, l_Buffer,
+                  i_PropertyInfo.size);
+              i_PropertyInfo.set(i_ComponentHandle, l_Buffer);
+            }
           }
         }
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_evaluate_bindings
@@ -967,5 +984,5 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace UI
-  }   // namespace Core
+  } // namespace Core
 } // namespace Low
