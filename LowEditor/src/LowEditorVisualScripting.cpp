@@ -341,6 +341,52 @@ namespace Low {
             }
             p_CompileContext.main_code.append("0");
             return;
+          case PinType::Vector2: {
+            const Math::Vector2 l_Value = p_PinMetadata.default_value;
+            p_CompileContext.main_code.append("Vector2(");
+            p_CompileContext.main_code.append(l_Value.x);
+            p_CompileContext.main_code.append(", ");
+            p_CompileContext.main_code.append(l_Value.y);
+            p_CompileContext.main_code.append(")");
+            return;
+          }
+          case PinType::Vector3: {
+            const Math::Vector3 l_Value = p_PinMetadata.default_value;
+            p_CompileContext.main_code.append("Vector3(");
+            p_CompileContext.main_code.append(l_Value.x);
+            p_CompileContext.main_code.append(", ");
+            p_CompileContext.main_code.append(l_Value.y);
+            p_CompileContext.main_code.append(", ");
+            p_CompileContext.main_code.append(l_Value.z);
+            p_CompileContext.main_code.append(")");
+            return;
+          }
+          case PinType::Vector4: {
+            const Math::Vector4 l_Value = p_PinMetadata.default_value;
+            p_CompileContext.main_code.append("Vector4(");
+            p_CompileContext.main_code.append(l_Value.x);
+            p_CompileContext.main_code.append(", ");
+            p_CompileContext.main_code.append(l_Value.y);
+            p_CompileContext.main_code.append(", ");
+            p_CompileContext.main_code.append(l_Value.z);
+            p_CompileContext.main_code.append(", ");
+            p_CompileContext.main_code.append(l_Value.w);
+            p_CompileContext.main_code.append(")");
+            return;
+          }
+          case PinType::Quaternion: {
+            const Math::Quaternion l_Value = p_PinMetadata.default_value;
+            p_CompileContext.main_code.append("Quaternion(");
+            p_CompileContext.main_code.append(l_Value.x);
+            p_CompileContext.main_code.append(", ");
+            p_CompileContext.main_code.append(l_Value.y);
+            p_CompileContext.main_code.append(", ");
+            p_CompileContext.main_code.append(l_Value.z);
+            p_CompileContext.main_code.append(", ");
+            p_CompileContext.main_code.append(l_Value.w);
+            p_CompileContext.main_code.append(")");
+            return;
+          }
           default:
             p_CompileContext.main_code.append("0");
             return;
@@ -350,6 +396,25 @@ namespace Low {
         static bool variable_is_supported(const Variable &p_Variable)
         {
           return p_Variable.is_valid();
+        }
+
+        static bool
+        variable_has_default_expression(const Variable &p_Variable)
+        {
+          switch (p_Variable.type) {
+          case PinType::Bool:
+          case PinType::Number:
+          case PinType::String:
+          case PinType::Vector2:
+          case PinType::Vector3:
+          case PinType::Vector4:
+          case PinType::Quaternion:
+            return true;
+          case PinType::Enum:
+            return (u64)p_Variable.handle_type != 0;
+          default:
+            return false;
+          }
         }
 
         static const char *g_GetVariableSpawnPrefix =
@@ -699,12 +764,28 @@ namespace Low {
             continue;
           }
 
-          if (i_Variable.container_type == PinContainerType::List) {
+          const bool l_IsList =
+              i_Variable.container_type == PinContainerType::List;
+          if (l_IsList) {
             l_TypeStr = "array<" + l_TypeStr + ">";
           }
 
-          p_Context.append_line(l_TypeStr + " " + i_Variable.name +
-                                ";");
+          p_Context.append_indent();
+          p_Context.main_code.append(l_TypeStr + " " +
+                                     i_Variable.name);
+
+          if (!l_IsList && variable_has_default_expression(i_Variable)) {
+            p_Context.main_code.append(" = ");
+            Pin l_DefaultPin;
+            l_DefaultPin.type = i_Variable.type;
+            l_DefaultPin.string_subtype = i_Variable.string_subtype;
+            l_DefaultPin.number_subtype = i_Variable.number_subtype;
+            l_DefaultPin.handle_type = i_Variable.handle_type;
+            l_DefaultPin.default_value = i_Variable.default_value;
+            append_default_value_expression(l_DefaultPin, p_Context);
+          }
+
+          p_Context.main_code.append(";\n");
         }
       }
 
@@ -1124,12 +1205,28 @@ namespace Low {
             continue;
           }
 
-          if (i_Variable.container_type == PinContainerType::List) {
+          const bool l_IsList =
+              i_Variable.container_type == PinContainerType::List;
+          if (l_IsList) {
             l_TypeStr = "array<" + l_TypeStr + ">";
           }
 
-          p_Context.append_line(l_TypeStr + " " + i_Variable.name +
-                                ";");
+          p_Context.append_indent();
+          p_Context.main_code.append(l_TypeStr + " " +
+                                     i_Variable.name);
+
+          if (!l_IsList && variable_has_default_expression(i_Variable)) {
+            p_Context.main_code.append(" = ");
+            Pin l_DefaultPin;
+            l_DefaultPin.type = i_Variable.type;
+            l_DefaultPin.string_subtype = i_Variable.string_subtype;
+            l_DefaultPin.number_subtype = i_Variable.number_subtype;
+            l_DefaultPin.handle_type = i_Variable.handle_type;
+            l_DefaultPin.default_value = i_Variable.default_value;
+            append_default_value_expression(l_DefaultPin, p_Context);
+          }
+
+          p_Context.main_code.append(";\n");
         }
       }
 

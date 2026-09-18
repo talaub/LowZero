@@ -209,11 +209,28 @@ types:
             no_ref: true
           - name: bindPropertyName
             type: Util::Name
+      has_binding:
+        return_type: bool
+        parameters:
+          - name: handle
+            type: Util::Handle
+            no_ref: true
+          - name: bindPropertyName
+            type: Util::Name
+      get_binding:
+        return_type: BindingDescription
+        parameters:
+          - name: handle
+            type: Util::Handle
+            no_ref: true
+          - name: bindPropertyName
+            type: Util::Name
       clear_bindings:
         return_type: void
         parameters:
-          - name: bindLocalId
-            type: uint64_t
+          - name: handle
+            type: Util::Handle
+            no_ref: true
           - name: bindPropertyName
             type: Util::Name
 

@@ -1821,19 +1821,32 @@ namespace Low {
                 ICON_LC_LINK_2_OFF, PropertyActionFlags::ContextMenu,
                 110,
                 [](const PropertyActionContext &p_Context) -> bool {
-                  // TODO: return whether p_Context.handle's element
-                  // has a binding for p_Context.propertyName once
-                  // that getter exists
-                  return false;
+                  return UiWidgetEditor::has_active_binding(
+                      p_Context.handle, p_Context.propertyName);
                 },
                 nullptr,
                 [](const PropertyActionContext &p_Context) {
-                  LOW_LOG_DEBUG << "Break Binding clicked for "
-                                << p_Context.propertyName.c_str()
-                                << " on handle "
-                                << p_Context.handle.get_id()
-                                << LOW_LOG_END;
+                  Core::UI::WidgetAsset l_Asset =
+                      UiWidgetEditor::resolve_widget_asset(
+                          p_Context.handle);
+                  if (!l_Asset.is_alive()) {
+                    return;
+                  }
+                  l_Asset.clear_bindings(p_Context.handle,
+                                        p_Context.propertyName);
                 }});
+      }
+      {
+        TypeEditor::register_property_action(
+            Core::UI::Component::Text::type_id(), N(text),
+            PropertyAction{
+                N(controller_variable_bound_indicator), "",
+                ICON_LC_LINK, PropertyActionFlags::RowIndicator, 90,
+                [](const PropertyActionContext &p_Context) -> bool {
+                  return UiWidgetEditor::has_active_binding(
+                      p_Context.handle, p_Context.propertyName);
+                },
+                nullptr, nullptr});
       }
     }
 

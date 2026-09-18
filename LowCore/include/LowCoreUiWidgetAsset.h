@@ -44,6 +44,7 @@ namespace Low {
         u64 local_id;
         Util::TypeIdentifier componentType;
         Util::Name propertyName;
+        Util::Handle componentHandle;
       };
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
@@ -224,7 +225,12 @@ namespace Low {
         void create_binding(Util::Name p_ControllerBindingOption,
                             Util::Handle p_BindHandle,
                             Util::Name p_BindPropertyName);
-        void clear_bindings(uint64_t p_BindLocalId,
+        bool has_binding(Util::Handle p_Handle,
+                         Util::Name p_BindPropertyName);
+        BindingDescription &
+        get_binding(Util::Handle p_Handle,
+                    Util::Name p_BindPropertyName);
+        void clear_bindings(Util::Handle p_Handle,
                             Util::Name p_BindPropertyName);
         static bool get_page_for_index(const u32 p_Index,
                                        u32 &p_PageIndex,

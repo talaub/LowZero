@@ -804,6 +804,57 @@ namespace Low {
           // End function: create_binding
         }
         {
+          // Function: has_binding
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(has_binding);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Handle);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::HANDLE;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_BindPropertyName);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::NAME;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: has_binding
+        }
+        {
+          // Function: get_binding
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(get_binding);
+          l_FunctionInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Handle);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::HANDLE;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_BindPropertyName);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::NAME;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: get_binding
+        }
+        {
           // Function: clear_bindings
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(clear_bindings);
@@ -811,9 +862,9 @@ namespace Low {
           l_FunctionInfo.handleType = 0;
           {
             Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_BindLocalId);
+            l_ParameterInfo.name = N(p_Handle);
             l_ParameterInfo.type =
-                Low::Util::RTTI::PropertyType::UINT64;
+                Low::Util::RTTI::PropertyType::HANDLE;
             l_ParameterInfo.handleType = 0;
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
@@ -1961,19 +2012,49 @@ namespace Low {
         l_Binding.local_id = l_Element.get_local_id();
         l_Binding.componentType =
             Util::Handle::identifier(p_BindHandle.get_type());
+        l_Binding.componentHandle = p_BindHandle;
         l_Binding.propertyName = p_BindPropertyName;
 
         get_bindings().push_back(l_Binding);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_create_binding
       }
 
-      void WidgetAsset::clear_bindings(uint64_t p_BindLocalId,
+      bool WidgetAsset::has_binding(Util::Handle p_Handle,
+                                    Util::Name p_BindPropertyName)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_has_binding
+        for (const BindingDescription &i_Binding : get_bindings()) {
+          if (i_Binding.componentHandle == p_Handle &&
+              i_Binding.propertyName == p_BindPropertyName) {
+            return true;
+          }
+        }
+        return false;
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_has_binding
+      }
+
+      BindingDescription &
+      WidgetAsset::get_binding(Util::Handle p_Handle,
+                               Util::Name p_BindPropertyName)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_binding
+        for (BindingDescription &i_Binding : get_bindings()) {
+          if (i_Binding.componentHandle == p_Handle &&
+              i_Binding.propertyName == p_BindPropertyName) {
+            return i_Binding;
+          }
+        }
+        _LOW_ASSERT(false);
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_binding
+      }
+
+      void WidgetAsset::clear_bindings(Util::Handle p_Handle,
                                        Util::Name p_BindPropertyName)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_clear_bindings
         for (auto it = get_bindings().begin();
              it != get_bindings().end();) {
-          if (it->local_id == p_BindLocalId &&
+          if (it->componentHandle == p_Handle &&
               p_BindPropertyName == it->propertyName) {
             it = get_bindings().erase(it);
           } else {
@@ -2056,5 +2137,5 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace UI
-  } // namespace Core
+  }   // namespace Core
 } // namespace Low

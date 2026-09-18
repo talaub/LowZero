@@ -779,6 +779,47 @@ namespace Low {
     UiWidgetEditor::BindingContext
         UiWidgetEditor::ms_CurrentBindingContext;
 
+    Core::UI::WidgetAsset
+    UiWidgetEditor::resolve_widget_asset(Util::Handle p_Handle)
+    {
+      if (!Util::Handle::is_registered_type(p_Handle.get_type())) {
+        return Util::Handle::DEAD;
+      }
+
+      Util::RTTI::TypeInfo &l_TypeInfo =
+          Util::Handle::get_type_info(p_Handle.get_type());
+
+      auto l_ElemPropPos = l_TypeInfo.properties.find(N(element));
+      if (l_ElemPropPos == l_TypeInfo.properties.end()) {
+        return Util::Handle::DEAD;
+      }
+
+      Core::UI::Element l_Element =
+          *(Core::UI::Element *)l_ElemPropPos->second.get_return(
+              p_Handle);
+      if (!l_Element.is_alive()) {
+        return Util::Handle::DEAD;
+      }
+
+      Core::UI::WidgetInstance l_WidgetInstance =
+          l_Element.get_widget_instance();
+      if (!l_WidgetInstance.is_alive()) {
+        return Util::Handle::DEAD;
+      }
+
+      return l_WidgetInstance.get_asset();
+    }
+
+    bool UiWidgetEditor::has_active_binding(Util::Handle p_Handle,
+                                            Util::Name p_PropertyName)
+    {
+      Core::UI::WidgetAsset l_Asset = resolve_widget_asset(p_Handle);
+      if (!l_Asset.is_alive()) {
+        return false;
+      }
+      return l_Asset.has_binding(p_Handle, p_PropertyName);
+    }
+
     void UiWidgetEditor::open_binding_popup(Util::Handle p_Handle,
                                             Util::Name p_PropertyName)
     {
@@ -844,6 +885,7 @@ namespace Low {
           l_Controller.is_alive(),
           "Cannot bind based on dead UI controller.");
 
+      ms_CurrentBindingContext.local_id = l_Element.get_local_id();
       ms_CurrentBindingContext.controller = l_Controller;
       ms_CurrentBindingContext.asset = l_WidgetAsset;
       ms_CurrentBindingContext.property_info = l_PropPos->second;
@@ -946,13 +988,26 @@ namespace Low {
             ImGui::Text(ICON_LC_LINK " %s", l_Name.c_str());
 
             ImGui::TableSetColumnIndex(1);
-            if (Gui::Button("Bind", false, nullptr,
-                            l_Theme.controller)) {
-              ms_CurrentBindingContext.asset.create_binding(
-                  i_Option.name, ms_CurrentBindingContext.handle,
-                  ms_CurrentBindingContext.property_name);
-              ms_CurrentBindingContext.active = false;
-              ImGui::CloseCurrentPopup();
+            if (ms_CurrentBindingContext.asset.has_binding(
+                    ms_CurrentBindingContext.handle,
+                    ms_CurrentBindingContext.property_name)) {
+              if (Gui::Button("Unbind", false, LOW_EDITOR_ICON_DELETE,
+                              l_Theme.error)) {
+                ms_CurrentBindingContext.asset.clear_bindings(
+                    ms_CurrentBindingContext.handle,
+                    ms_CurrentBindingContext.property_name);
+                ms_CurrentBindingContext.active = false;
+                ImGui::CloseCurrentPopup();
+              }
+            } else {
+              if (Gui::Button("Bind", false, nullptr,
+                              l_Theme.controller)) {
+                ms_CurrentBindingContext.asset.create_binding(
+                    i_Option.name, ms_CurrentBindingContext.handle,
+                    ms_CurrentBindingContext.property_name);
+                ms_CurrentBindingContext.active = false;
+                ImGui::CloseCurrentPopup();
+              }
             }
 
             ImGui::PopID();

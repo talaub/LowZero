@@ -60,6 +60,11 @@ namespace Low {
       static void open_binding_popup(Util::Handle p_Handle,
                                      Util::Name p_PropertyName);
 
+      static Core::UI::WidgetAsset
+      resolve_widget_asset(Util::Handle p_Handle);
+      static bool has_active_binding(Util::Handle p_Handle,
+                                     Util::Name p_PropertyName);
+
       void render_binding_popup(const float p_Delta);
 
     private:
@@ -109,6 +114,7 @@ namespace Low {
         Core::UI::Controller controller;
         Util::List<Core::UI::BindingOption> binding_options;
         Util::RTTI::PropertyInfo property_info;
+        u64 local_id;
         bool active = false;
         bool pending = false;
       };
