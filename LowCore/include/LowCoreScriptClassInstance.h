@@ -190,6 +190,8 @@ namespace Low {
                                     void *p_ReturnValue,
                                     size_t p_ReturnSize);
 
+        bool call_method_by_name(Low::Util::Name p_MethodName);
+
       private:
         bool call_method_internal(const char *p_Declaration,
                                   const void *const *p_Args,
@@ -319,10 +321,13 @@ namespace Low {
         return call_method_internal(p_Declaration, l_Args, l_TypeKeys,
                                     sizeof...(TArgs));
       }
+
+      LOW_CORE_API ClassInstance
+      find_instance_by_script_object(void *p_ScriptObject);
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
     } // namespace Scripting
-  }   // namespace Core
+  } // namespace Core
 } // namespace Low
 
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE

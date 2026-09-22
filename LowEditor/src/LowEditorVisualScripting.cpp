@@ -110,6 +110,8 @@ namespace Low {
           case PinType::Vector4:
           case PinType::Quaternion:
             return IM_COL32(76, 200, 196, 255);
+          case PinType::Signal:
+            return IM_COL32(240, 180, 40, 255);
           case PinType::Dynamic:
             return IM_COL32(120, 120, 120, 255);
           }
@@ -387,6 +389,9 @@ namespace Low {
             p_CompileContext.main_code.append(")");
             return;
           }
+          case PinType::Signal:
+            p_CompileContext.main_code.append("Signal()");
+            return;
           default:
             p_CompileContext.main_code.append("0");
             return;
@@ -1144,6 +1149,8 @@ namespace Low {
           return "Vector4";
         case PinType::Quaternion:
           return "Quaternion";
+        case PinType::Signal:
+          return "Signal";
         case PinType::Handle:
           if ((u64)p_HandleType != 0 &&
               Util::Handle::is_registered_type(p_HandleType)) {
@@ -1401,6 +1408,7 @@ namespace Low {
 
           if (pin_metadata[p_Pin.id].type != PinType::Execution &&
               pin_metadata[p_Pin.id].type != PinType::Dynamic &&
+              pin_metadata[p_Pin.id].type != PinType::Signal &&
               pin_metadata[p_Pin.id].default_value.m_Type !=
                   pin_to_variant_type(pin_metadata[p_Pin.id])) {
             pin_metadata[p_Pin.id].default_value =
@@ -3308,6 +3316,8 @@ namespace Low {
           return "Struct";
         case PinType::Enum:
           return "Enum";
+        case PinType::Signal:
+          return "Signal";
         case PinType::Dynamic:
           return "Dynamic";
         }
@@ -3349,6 +3359,9 @@ namespace Low {
         }
         if (p_Type == "Enum") {
           return PinType::Enum;
+        }
+        if (p_Type == "Signal") {
+          return PinType::Signal;
         }
         if (p_Type == "Dynamic") {
           return PinType::Dynamic;

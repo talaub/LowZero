@@ -78,8 +78,7 @@ namespace Low {
         return Low::Core::Input::keyboard_button_down(p_Button);
       }
 
-      static bool
-      input_is_mouse_down(Low::Util::MouseButton p_Button)
+      static bool input_is_mouse_down(Low::Util::MouseButton p_Button)
       {
         return Low::Core::Input::mouse_button_down(p_Button);
       }
@@ -152,8 +151,7 @@ namespace Low {
         r = p_Engine->RegisterGlobalFunction(
             "bool is_mouse_down(MouseButton)",
             asFUNCTION(input_is_mouse_down), asCALL_CDECL);
-        LOW_ASSERT(r >= 0,
-                   "Failed to register Input::is_mouse_down");
+        LOW_ASSERT(r >= 0, "Failed to register Input::is_mouse_down");
 
         r = p_Engine->SetDefaultNamespace("");
         LOW_ASSERT(r >= 0, "Failed to reset namespace");
@@ -309,7 +307,8 @@ namespace Low {
       // END REGISTER HANDLE
       // ------------------------------------------------------
       // BEGIN REGISTER SIGNAL
-      static void signal_default_construct(Low::Core::Signal *p_Memory)
+      static void
+      signal_default_construct(Low::Core::Signal *p_Memory)
       {
         new (p_Memory) Low::Core::Signal();
       }
@@ -328,7 +327,7 @@ namespace Low {
 
       static Low::Core::Signal &
       signal_assign(const Low::Core::Signal &p_Other,
-                   Low::Core::Signal *p_Self)
+                    Low::Core::Signal *p_Self)
       {
         *p_Self = p_Other;
         return *p_Self;
@@ -337,6 +336,23 @@ namespace Low {
       static void signal_invoke(Low::Core::Signal *p_Self)
       {
         p_Self->invoke();
+      }
+
+      static Low::Core::Signal
+      make_signal(void *p_TargetRef, int,
+                  const std::string &p_MethodName)
+      {
+        Low::Core::Scripting::ClassInstance l_Instance =
+            Low::Core::Scripting::find_instance_by_script_object(
+                p_TargetRef);
+
+        if (!l_Instance.is_alive()) {
+          return Low::Core::Signal();
+        }
+
+        return Low::Core::Signal(
+            Low::Core::InstanceScriptCallable::bind(
+                l_Instance, Low::Util::Name(p_MethodName.c_str())));
       }
 
       static void expose_signal(asIScriptEngine *p_Engine)
@@ -370,24 +386,28 @@ namespace Low {
             asFUNCTION(signal_assign), asCALL_CDECL_OBJLAST);
         LOW_ASSERT(r >= 0, "Failed to register Signal assignment");
 
-        r = p_Engine->RegisterObjectMethod(
-            "Signal", "void invoke()", asFUNCTION(signal_invoke),
-            asCALL_CDECL_OBJLAST);
+        r = p_Engine->RegisterObjectMethod("Signal", "void invoke()",
+                                           asFUNCTION(signal_invoke),
+                                           asCALL_CDECL_OBJLAST);
         LOW_ASSERT(r >= 0, "Failed to register Signal::invoke");
 
-        r = p_Engine->RegisterObjectMethod(
-            "Signal", "void opCall()", asFUNCTION(signal_invoke),
-            asCALL_CDECL_OBJLAST);
+        r = p_Engine->RegisterObjectMethod("Signal", "void opCall()",
+                                           asFUNCTION(signal_invoke),
+                                           asCALL_CDECL_OBJLAST);
         LOW_ASSERT(r >= 0, "Failed to register Signal::opCall");
+
+        r = p_Engine->RegisterGlobalFunction(
+            "Signal make_signal(?&in, const string &in)",
+            asFUNCTION(make_signal), asCALL_CDECL);
+        LOW_ASSERT(r >= 0, "Failed to register make_signal");
       }
       // END REGISTER SIGNAL
       // ------------------------------------------------------
       // BEGIN REGISTER PHYSICS
       static bool physics_world_raycast(
           Low::Core::Physics::World p_World,
-          Low::Math::Vector3 p_Origin,
-          Low::Math::Vector3 p_Direction, float p_MaxDistance,
-          Low::Core::Physics::QueryHit &p_Hit)
+          Low::Math::Vector3 p_Origin, Low::Math::Vector3 p_Direction,
+          float p_MaxDistance, Low::Core::Physics::QueryHit &p_Hit)
       {
         return p_World.raycast(p_Origin, p_Direction, p_MaxDistance,
                                &p_Hit);
@@ -403,13 +423,14 @@ namespace Low {
                                    p_MaxDistance, &p_Hit);
       }
 
-      static bool physics_world_box_cast(
-          Low::Core::Physics::World p_World,
-          Low::Math::Vector3 p_Origin,
-          Low::Math::Vector3 p_HalfExtents,
-          Low::Math::Quaternion p_Rotation,
-          Low::Math::Vector3 p_Direction, float p_MaxDistance,
-          Low::Core::Physics::QueryHit &p_Hit)
+      static bool
+      physics_world_box_cast(Low::Core::Physics::World p_World,
+                             Low::Math::Vector3 p_Origin,
+                             Low::Math::Vector3 p_HalfExtents,
+                             Low::Math::Quaternion p_Rotation,
+                             Low::Math::Vector3 p_Direction,
+                             float p_MaxDistance,
+                             Low::Core::Physics::QueryHit &p_Hit)
       {
         return p_World.box_cast(p_Origin, p_HalfExtents, p_Rotation,
                                 p_Direction, p_MaxDistance, &p_Hit);
@@ -423,12 +444,12 @@ namespace Low {
         return p_World.overlap_sphere(p_Position, p_Radius, &p_Hit);
       }
 
-      static bool physics_world_overlap_box(
-          Low::Core::Physics::World p_World,
-          Low::Math::Vector3 p_Position,
-          Low::Math::Vector3 p_HalfExtents,
-          Low::Math::Quaternion p_Rotation,
-          Low::Core::Physics::QueryHit &p_Hit)
+      static bool
+      physics_world_overlap_box(Low::Core::Physics::World p_World,
+                                Low::Math::Vector3 p_Position,
+                                Low::Math::Vector3 p_HalfExtents,
+                                Low::Math::Quaternion p_Rotation,
+                                Low::Core::Physics::QueryHit &p_Hit)
       {
         return p_World.overlap_box(p_Position, p_HalfExtents,
                                    p_Rotation, &p_Hit);

@@ -62,6 +62,7 @@ namespace Low {
           EnumNodes::register_nodes(p_Graph);
           StructNodes::register_nodes(p_Graph);
           ArrayNodes::register_nodes(p_Graph);
+          SignalNodes::register_nodes(p_Graph);
         }
 
         static ContextRegistry *g_ContextRegistry = nullptr;
@@ -532,6 +533,8 @@ namespace Low {
             return "Struct";
           case PinType::Enum:
             return "Enum";
+          case PinType::Signal:
+            return "Signal";
           default:
             return "Unsupported";
           }
@@ -682,7 +685,7 @@ namespace Low {
               PinType::Bool,   PinType::Number,     PinType::String,
               PinType::Handle, PinType::Vector2,    PinType::Vector3,
               PinType::Vector4, PinType::Quaternion, PinType::Struct,
-              PinType::Enum};
+              PinType::Enum,   PinType::Signal};
 
           Gui::InputText("##new_variable_name",
                          p_Editor.new_variable_name, 128,
@@ -863,6 +866,8 @@ namespace Low {
             return IM_COL32(189, 128, 53, 255);
           case PinType::Enum:
             return IM_COL32(150, 100, 200, 255);
+          case PinType::Signal:
+            return IM_COL32(240, 180, 40, 255);
           default:
             return IM_COL32(120, 120, 120, 255);
           }
@@ -889,6 +894,8 @@ namespace Low {
             return ICON_LC_LIST_TREE;
           case PinType::Enum:
             return ICON_LC_LIST;
+          case PinType::Signal:
+            return ICON_LC_ZAP;
           default:
             return ICON_LC_HASH;
           }
@@ -1212,6 +1219,33 @@ namespace Low {
             }
           };
           p_Actions.push_back(l_Action);
+
+          if (l_ActiveGraph.find_node_class(N(vs_signal_make))) {
+            CanvasDropAction l_SignalAction;
+            l_SignalAction.label =
+                Util::String("Make Signal from ") + l_FuncNameStr;
+            l_SignalAction.execute = [&p_Editor, &l_ActiveGraph,
+                                      l_FuncNameStr,
+                                      p_CanvasPosition]() {
+              NodeGraphMutationResult<Low::Editor::Node> l_Result =
+                  l_ActiveGraph.create_node(
+                      N(vs_signal_make), p_CanvasPosition,
+                      &p_Editor.document->schema);
+              if (!l_Result.succeeded() || !l_Result.value) {
+                return;
+              }
+              SignalNodes::MakeSignalNodeData *l_Data =
+                  l_ActiveGraph.get_node_user_data<
+                      SignalNodes::MakeSignalNodeData>(
+                      l_Result.value->id);
+              if (l_Data) {
+                l_Data->function_name = l_FuncNameStr;
+                l_ActiveGraph.refresh_node_display_metadata(
+                    l_Result.value->id);
+              }
+            };
+            p_Actions.push_back(l_SignalAction);
+          }
         }
 
         static void append_canvas_drop_actions(

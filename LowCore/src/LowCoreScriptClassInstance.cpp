@@ -24,6 +24,29 @@ namespace Low {
     namespace Scripting {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
 
+      namespace {
+        Util::Map<void *, ClassInstance> g_InstanceByScriptObject;
+
+        void register_script_object_instance(void *p_ScriptObject,
+                                             ClassInstance p_Instance)
+        {
+          g_InstanceByScriptObject[p_ScriptObject] = p_Instance;
+        }
+
+        void unregister_script_object_instance(void *p_ScriptObject)
+        {
+          g_InstanceByScriptObject.erase(p_ScriptObject);
+        }
+      } // namespace
+
+      ClassInstance find_instance_by_script_object(void *p_ScriptObject)
+      {
+        auto l_Pos = g_InstanceByScriptObject.find(p_ScriptObject);
+        if (l_Pos == g_InstanceByScriptObject.end()) {
+          return Low::Util::Handle::DEAD;
+        }
+        return l_Pos->second;
+      }
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       u16 ClassInstance::ms_TypeId = 0;
@@ -77,6 +100,7 @@ namespace Low {
 
           asIScriptObject *l_Object = (asIScriptObject *)_ptr();
           if (l_Object) {
+            unregister_script_object_instance(l_Object);
             l_Object->Release();
           }
           // LOW_CODEGEN::END::CUSTOM:DESTROY
@@ -767,6 +791,8 @@ namespace Low {
         asIScriptObject *l_Object =
             reinterpret_cast<asIScriptObject *>(l_ObjRaw);
 
+        register_script_object_instance(l_Object, *this);
+
         return (char *)l_Object;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_spawn
       }
@@ -1099,6 +1125,46 @@ namespace Low {
 
         l_Engine->ReturnContext(l_Context);
         return true;
+      }
+
+      bool ClassInstance::call_method_by_name(
+          Low::Util::Name p_MethodName)
+      {
+        ScriptClass l_Class = get_script_class();
+
+        asITypeInfo *l_Type = (asITypeInfo *)l_Class.as_class();
+        if (!l_Type) {
+          return false;
+        }
+
+        asIScriptObject *l_ScriptObject =
+            (asIScriptObject *)get_ptr();
+        if (!l_ScriptObject) {
+          return false;
+        }
+
+        asIScriptFunction *l_Function =
+            l_Type->GetMethodByName(p_MethodName.c_str());
+        if (!l_Function) {
+          return false;
+        }
+
+        asIScriptEngine *l_Engine = l_Type->GetEngine();
+        asIScriptContext *l_Context = l_Engine->RequestContext();
+        if (!l_Context) {
+          return false;
+        }
+
+        if (l_Context->Prepare(l_Function) < 0 ||
+            l_Context->SetObject(l_ScriptObject) < 0) {
+          l_Engine->ReturnContext(l_Context);
+          return false;
+        }
+
+        const int l_Result = l_Context->Execute();
+        l_Engine->ReturnContext(l_Context);
+
+        return l_Result == asEXECUTION_FINISHED;
       }
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 

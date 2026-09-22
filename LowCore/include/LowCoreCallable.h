@@ -128,7 +128,7 @@ namespace Low {
       }
 
       template <typename... TArgs>
-      requires(sizeof...(TArgs) > 0)
+        requires(sizeof...(TArgs) > 0)
       void invoke(TArgs &&...p_Args) const
       {
         Scripting::call_function(m_Function,
@@ -180,15 +180,61 @@ namespace Low {
       }
     };
 
+    struct LOW_CORE_API InstanceScriptCallable
+    {
+      Scripting::ClassInstance m_Instance;
+      Util::Name m_MethodName;
+
+      bool is_bound() const
+      {
+        return m_Instance.is_alive();
+      }
+
+      void invoke() const
+      {
+        Scripting::ClassInstance l_Instance = m_Instance;
+        l_Instance.call_method_by_name(m_MethodName);
+      }
+
+      void invoke(const Util::List<Util::Variant> &p_Args) const
+      {
+        _LOW_ASSERT(p_Args.empty());
+        invoke();
+      }
+
+      template <typename... TArgs>
+        requires(sizeof...(TArgs) > 0)
+      void invoke(TArgs &&...) const
+      {
+        _LOW_ASSERT(false);
+      }
+
+      static InstanceScriptCallable
+      bind(Scripting::ClassInstance p_Instance,
+           Util::Name p_MethodName)
+      {
+        InstanceScriptCallable l_Callable;
+        l_Callable.m_Instance = p_Instance;
+        l_Callable.m_MethodName = p_MethodName;
+        return l_Callable;
+      }
+    };
+
     struct LOW_CORE_API Signal
     {
-      std::variant<NativeCallable, ScriptCallable> m_Internal;
+      std::variant<NativeCallable, ScriptCallable,
+                   InstanceScriptCallable>
+          m_Internal;
 
       Signal() = default;
       Signal(NativeCallable p_Native) : m_Internal(p_Native)
       {
       }
       Signal(ScriptCallable p_Script) : m_Internal(p_Script)
+      {
+      }
+      Signal(InstanceScriptCallable p_InstanceScript)
+          : m_Internal(p_InstanceScript)
       {
       }
 

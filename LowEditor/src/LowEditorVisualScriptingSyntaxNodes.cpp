@@ -82,6 +82,8 @@ namespace Low {
               return PinType::Vector4;
             if (p_Type.as_type == "Quaternion")
               return PinType::Quaternion;
+            if (p_Type.as_type == "Signal")
+              return PinType::Signal;
 
             switch (p_Type.kind) {
             case TypeKind::Bool:

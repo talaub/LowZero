@@ -83,6 +83,15 @@ namespace Low {
 
         LOW_EDITOR_API void register_nodes(Graph &p_Graph);
       } // namespace FunctionNodes
+
+      namespace SignalNodes {
+        struct LOW_EDITOR_API MakeSignalNodeData : public NodeUserData
+        {
+          Util::String function_name;
+        };
+
+        LOW_EDITOR_API void register_nodes(Graph &p_Graph);
+      } // namespace SignalNodes
     } // namespace VisualScript
   } // namespace Editor
 } // namespace Low

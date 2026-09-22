@@ -34,6 +34,7 @@ namespace Low {
         Handle,
         Struct,
         Enum,
+        Signal,
         Dynamic
       };
 
