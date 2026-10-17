@@ -184,9 +184,11 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(SubmeshGeometry::Data, state);
         l_PropertyInfo.size = sizeof(SubmeshGeometry::Data::state);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
         l_PropertyInfo.handleType =
-            MeshStateEnumHelper::get_enum_id();
+            MeshStateEnumHelper::get_enum_identifier();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           SubmeshGeometry l_Handle = p_Handle.get_id();
@@ -216,6 +218,8 @@ namespace Low {
             offsetof(SubmeshGeometry::Data, vertex_count);
         l_PropertyInfo.size =
             sizeof(SubmeshGeometry::Data::vertex_count);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -247,6 +251,8 @@ namespace Low {
             offsetof(SubmeshGeometry::Data, index_count);
         l_PropertyInfo.size =
             sizeof(SubmeshGeometry::Data::index_count);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -277,6 +283,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(SubmeshGeometry::Data, vertices);
         l_PropertyInfo.size = sizeof(SubmeshGeometry::Data::vertices);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -296,8 +304,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SubmeshGeometry l_Handle = p_Handle.get_id();
-          *((Low::Util::List<Low::Util::Resource::Vertex> *)p_Data) =
-              l_Handle.get_vertices();
+          *((void **)p_Data) = &l_Handle.get_vertices();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: vertices
@@ -310,7 +317,9 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(SubmeshGeometry::Data, indices);
         l_PropertyInfo.size = sizeof(SubmeshGeometry::Data::indices);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
@@ -328,8 +337,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SubmeshGeometry l_Handle = p_Handle.get_id();
-          *((Low::Util::List<uint32_t> *)p_Data) =
-              l_Handle.get_indices();
+          *((void **)p_Data) = &l_Handle.get_indices();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: indices
@@ -343,6 +351,8 @@ namespace Low {
             offsetof(SubmeshGeometry::Data, transform);
         l_PropertyInfo.size =
             sizeof(SubmeshGeometry::Data::transform);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -376,6 +386,8 @@ namespace Low {
             offsetof(SubmeshGeometry::Data, parent_transform);
         l_PropertyInfo.size =
             sizeof(SubmeshGeometry::Data::parent_transform);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -410,6 +422,8 @@ namespace Low {
             offsetof(SubmeshGeometry::Data, local_transform);
         l_PropertyInfo.size =
             sizeof(SubmeshGeometry::Data::local_transform);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -443,6 +457,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(SubmeshGeometry::Data, aabb);
         l_PropertyInfo.size = sizeof(SubmeshGeometry::Data::aabb);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -474,6 +490,8 @@ namespace Low {
             offsetof(SubmeshGeometry::Data, bounding_sphere);
         l_PropertyInfo.size =
             sizeof(SubmeshGeometry::Data::bounding_sphere);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -507,6 +525,8 @@ namespace Low {
             offsetof(SubmeshGeometry::Data, bone_weights);
         l_PropertyInfo.size =
             sizeof(SubmeshGeometry::Data::bone_weights);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -527,8 +547,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SubmeshGeometry l_Handle = p_Handle.get_id();
-          *((Low::Util::List<Low::Util::Resource::BoneVertexWeight> *)
-                p_Data) = l_Handle.get_bone_weights();
+          *((void **)p_Data) = &l_Handle.get_bone_weights();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: bone_weights
@@ -542,6 +561,8 @@ namespace Low {
             offsetof(SubmeshGeometry::Data, node_index);
         l_PropertyInfo.size =
             sizeof(SubmeshGeometry::Data::node_index);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -572,6 +593,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(SubmeshGeometry::Data, name);
         l_PropertyInfo.size = sizeof(SubmeshGeometry::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

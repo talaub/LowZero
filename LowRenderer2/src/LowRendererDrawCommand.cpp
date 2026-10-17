@@ -172,6 +172,8 @@ namespace Low {
             offsetof(DrawCommand::Data, world_transform);
         l_PropertyInfo.size =
             sizeof(DrawCommand::Data::world_transform);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -205,6 +207,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(DrawCommand::Data, submesh);
         l_PropertyInfo.size = sizeof(DrawCommand::Data::submesh);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::GpuSubmesh::IDENTIFIER;
@@ -234,6 +238,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(DrawCommand::Data, slot);
         l_PropertyInfo.size = sizeof(DrawCommand::Data::slot);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -265,6 +271,8 @@ namespace Low {
             offsetof(DrawCommand::Data, render_object_handle);
         l_PropertyInfo.size =
             sizeof(DrawCommand::Data::render_object_handle);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -294,6 +302,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(DrawCommand::Data, material);
         l_PropertyInfo.size = sizeof(DrawCommand::Data::material);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::Material::IDENTIFIER;
@@ -327,6 +337,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(DrawCommand::Data, uploaded);
         l_PropertyInfo.size = sizeof(DrawCommand::Data::uploaded);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -358,6 +370,8 @@ namespace Low {
             offsetof(DrawCommand::Data, render_scene_handle);
         l_PropertyInfo.size =
             sizeof(DrawCommand::Data::render_scene_handle);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -388,6 +402,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(DrawCommand::Data, object_id);
         l_PropertyInfo.size = sizeof(DrawCommand::Data::object_id);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -419,6 +435,8 @@ namespace Low {
             offsetof(DrawCommand::Data, skinning_command);
         l_PropertyInfo.size =
             sizeof(DrawCommand::Data::skinning_command);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = SkinningCommand::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -450,6 +468,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(DrawCommand::Data, name);
         l_PropertyInfo.size = sizeof(DrawCommand::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

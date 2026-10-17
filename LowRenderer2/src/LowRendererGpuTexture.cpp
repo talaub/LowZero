@@ -181,6 +181,8 @@ namespace Low {
             offsetof(GpuTexture::Data, bindless_index);
         l_PropertyInfo.size =
             sizeof(GpuTexture::Data::bindless_index);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -212,6 +214,8 @@ namespace Low {
             offsetof(GpuTexture::Data, format_category);
         l_PropertyInfo.size =
             sizeof(GpuTexture::Data::format_category);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -245,6 +249,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GpuTexture::Data, data_handle);
         l_PropertyInfo.size = sizeof(GpuTexture::Data::data_handle);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -276,6 +282,8 @@ namespace Low {
             offsetof(GpuTexture::Data, texture_handle);
         l_PropertyInfo.size =
             sizeof(GpuTexture::Data::texture_handle);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -307,6 +315,8 @@ namespace Low {
             offsetof(GpuTexture::Data, imgui_texture_id);
         l_PropertyInfo.size =
             sizeof(GpuTexture::Data::imgui_texture_id);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -337,6 +347,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GpuTexture::Data, sampler_index);
         l_PropertyInfo.size = sizeof(GpuTexture::Data::sampler_index);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -368,6 +380,8 @@ namespace Low {
             offsetof(GpuTexture::Data, full_mip_count);
         l_PropertyInfo.size =
             sizeof(GpuTexture::Data::full_mip_count);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -398,6 +412,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GpuTexture::Data, loaded_mips);
         l_PropertyInfo.size = sizeof(GpuTexture::Data::loaded_mips);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -413,8 +429,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GpuTexture l_Handle = p_Handle.get_id();
-          *((Low::Util::List<uint8_t> *)p_Data) =
-              l_Handle.loaded_mips();
+          *((void **)p_Data) = &l_Handle.loaded_mips();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: loaded_mips
@@ -426,6 +441,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(GpuTexture::Data, name);
         l_PropertyInfo.size = sizeof(GpuTexture::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -667,8 +684,6 @@ namespace Low {
       if (p_Node["full_mip_count"]) {
         l_Handle.set_full_mip_count(
             p_Node["full_mip_count"].as<uint8_t>());
-      }
-      if (p_Node["loaded_mips"]) {
       }
       if (p_Node["name"]) {
         l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());

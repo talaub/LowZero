@@ -254,6 +254,8 @@ namespace Low {
               offsetof(CharacterController::Data, center);
           l_PropertyInfo.size =
               sizeof(CharacterController::Data::center);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.handleType = 0;
@@ -287,6 +289,8 @@ namespace Low {
               offsetof(CharacterController::Data, height);
           l_PropertyInfo.size =
               sizeof(CharacterController::Data::height);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -318,6 +322,8 @@ namespace Low {
               offsetof(CharacterController::Data, radius);
           l_PropertyInfo.size =
               sizeof(CharacterController::Data::radius);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -349,6 +355,8 @@ namespace Low {
               offsetof(CharacterController::Data, skin_width);
           l_PropertyInfo.size =
               sizeof(CharacterController::Data::skin_width);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -380,6 +388,8 @@ namespace Low {
               offsetof(CharacterController::Data, slope_limit);
           l_PropertyInfo.size =
               sizeof(CharacterController::Data::slope_limit);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -411,6 +421,8 @@ namespace Low {
               offsetof(CharacterController::Data, step_offset);
           l_PropertyInfo.size =
               sizeof(CharacterController::Data::step_offset);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -442,6 +454,8 @@ namespace Low {
               offsetof(CharacterController::Data, velocity);
           l_PropertyInfo.size =
               sizeof(CharacterController::Data::velocity);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.handleType = 0;
@@ -475,6 +489,8 @@ namespace Low {
               offsetof(CharacterController::Data, capsule_controller);
           l_PropertyInfo.size =
               sizeof(CharacterController::Data::capsule_controller);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Low::Core::Physics::CapsuleController::IDENTIFIER;
@@ -506,6 +522,8 @@ namespace Low {
               offsetof(CharacterController::Data, initialized);
           l_PropertyInfo.size =
               sizeof(CharacterController::Data::initialized);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -534,6 +552,8 @@ namespace Low {
               offsetof(CharacterController::Data, entity);
           l_PropertyInfo.size =
               sizeof(CharacterController::Data::entity);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::IDENTIFIER;
           l_PropertyInfo.get_return =
@@ -566,6 +586,8 @@ namespace Low {
               offsetof(CharacterController::Data, unique_id);
           l_PropertyInfo.size =
               sizeof(CharacterController::Data::unique_id);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -596,6 +618,8 @@ namespace Low {
               offsetof(CharacterController::Data, dirty);
           l_PropertyInfo.size =
               sizeof(CharacterController::Data::dirty);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -623,6 +647,8 @@ namespace Low {
           Low::Util::RTTI::VirtualPropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(grounded);
           l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,

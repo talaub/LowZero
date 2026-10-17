@@ -255,4 +255,6 @@ mark_includes_as_system(LowCore physx)
 
 low_lens_generate(LowCore LowCore ${CMAKE_CURRENT_SOURCE_DIR}/include
   YAML_CONFIGS "${LOW_SOURCE_PATH}/"
+  API_MACRO LOW_CORE_API
+  API_HEADER LowCoreApi.h
 )

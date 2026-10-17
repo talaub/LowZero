@@ -169,6 +169,8 @@ namespace Low {
             offsetof(AdaptiveRenderObject::Data, model);
         l_PropertyInfo.size =
             sizeof(AdaptiveRenderObject::Data::model);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Low::Renderer::Model::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -198,6 +200,8 @@ namespace Low {
             offsetof(AdaptiveRenderObject::Data, world_transform);
         l_PropertyInfo.size =
             sizeof(AdaptiveRenderObject::Data::world_transform);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -232,6 +236,8 @@ namespace Low {
             offsetof(AdaptiveRenderObject::Data, render_scene_handle);
         l_PropertyInfo.size =
             sizeof(AdaptiveRenderObject::Data::render_scene_handle);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -261,6 +267,8 @@ namespace Low {
             offsetof(AdaptiveRenderObject::Data, material);
         l_PropertyInfo.size =
             sizeof(AdaptiveRenderObject::Data::material);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::Material::IDENTIFIER;
@@ -295,6 +303,8 @@ namespace Low {
             offsetof(AdaptiveRenderObject::Data, object_id);
         l_PropertyInfo.size =
             sizeof(AdaptiveRenderObject::Data::object_id);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -326,6 +336,8 @@ namespace Low {
             offsetof(AdaptiveRenderObject::Data, dirty);
         l_PropertyInfo.size =
             sizeof(AdaptiveRenderObject::Data::dirty);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -357,6 +369,8 @@ namespace Low {
             offsetof(AdaptiveRenderObject::Data, name);
         l_PropertyInfo.size =
             sizeof(AdaptiveRenderObject::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

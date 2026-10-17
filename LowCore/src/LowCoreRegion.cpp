@@ -178,6 +178,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Region::Data, loaded);
         l_PropertyInfo.size = sizeof(Region::Data::loaded);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -208,6 +210,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(Region::Data, streaming_enabled);
         l_PropertyInfo.size = sizeof(Region::Data::streaming_enabled);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -239,6 +243,8 @@ namespace Low {
             offsetof(Region::Data, streaming_position);
         l_PropertyInfo.size =
             sizeof(Region::Data::streaming_position);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -270,6 +276,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(Region::Data, streaming_radius);
         l_PropertyInfo.size = sizeof(Region::Data::streaming_radius);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -299,7 +307,9 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Region::Data, entities);
         l_PropertyInfo.size = sizeof(Region::Data::entities);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::SET;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
@@ -319,6 +329,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Region::Data, scene);
         l_PropertyInfo.size = sizeof(Region::Data::scene);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Scene::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -348,6 +360,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Region::Data, unique_id);
         l_PropertyInfo.size = sizeof(Region::Data::unique_id);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -374,6 +388,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = true;
         l_PropertyInfo.dataOffset = offsetof(Region::Data, name);
         l_PropertyInfo.size = sizeof(Region::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

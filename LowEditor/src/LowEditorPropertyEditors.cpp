@@ -2,6 +2,7 @@
 
 #include "LowEditor.h"
 #include "LowEditorGui.h"
+#include "LowEditorIcons.h"
 #include "LowEditorThemes.h"
 #include "LowEditorBase.h"
 #include "LowEditorFonts.h"
@@ -11,7 +12,13 @@
 #include "LowCoreScriptAsset.h"
 #include "LowCoreUiWidgetAsset.h"
 
+#include "LowMath.h"
+#include "LowUtilAssert.h"
+#include "LowUtilContainers.h"
+#include "LowUtilEnum.h"
+#include "LowUtilHandle.h"
 #include "LowUtilLogger.h"
+#include "LowUtilEnum.h"
 #include "LowUtil.h"
 #include "imgui.h"
 #include "imgui_internal.h"
@@ -43,6 +50,8 @@
 #define ASSET_SELECTOR_DIRECTORY_WIDTH 155.0f
 #define ASSET_SELECTOR_CONTENT_WIDTH 360.0f
 
+#define VALUE_SCRATCH_BUFFER_SIZE 1024
+
 namespace Low {
   namespace Editor {
     namespace PropertyEditors {
@@ -50,6 +59,12 @@ namespace Low {
       Util::Map<uint16_t, Util::FileSystem::WatchHandle>
           g_SelectedDirectoryPerType;
       Util::Map<AssetType, Util::String> g_SelectedAssetDirectory;
+
+      Util::Array<char, VALUE_SCRATCH_BUFFER_SIZE>
+          g_ValueScratchBuffer;
+
+      bool render_single_editor(const u32 p_SingleType, void *p_Value,
+                                const Util::TypeIdentifier p_Type);
 
       static bool asset_type_from_handle_type(const uint16_t p_TypeId,
                                               AssetType &p_AssetType)
@@ -566,228 +581,209 @@ namespace Low {
           Util::String p_Label, Util::RTTI::TypeInfo &p_TypeInfo,
           uint64_t *p_HandleId, const AssetType p_AssetType)
       {
-        return render_asset_selector_line(
-            p_Label, [&p_Label, &p_TypeInfo, p_HandleId,
-                      p_AssetType](float p_EditorWidth) {
-              ImVec2 l_Pos = ImGui::GetCursorScreenPos();
-              float l_ButtonWidth = 34.0f;
-              float l_FieldWidth = p_EditorWidth;
+        ImVec2 l_Pos = ImGui::GetCursorScreenPos();
+        float l_ButtonWidth = 34.0f;
+        float l_FieldWidth = ImGui::GetContentRegionAvail().x;
 
-              bool l_Changed = false;
-              Util::Handle l_CurrentHandle = *p_HandleId;
-              Util::String l_PopupName =
-                  Util::String("_choose_asset_element_") + p_Label;
+        bool l_Changed = false;
+        Util::Handle l_CurrentHandle = *p_HandleId;
+        Util::String l_PopupName =
+            Util::String("_choose_asset_element_") + p_Label;
 
-              const char *l_DisplayName = "None";
-              Util::RTTI::PropertyInfo l_NameProperty;
-              bool l_HasNameProperty = false;
+        const char *l_DisplayName = "None";
+        Util::RTTI::PropertyInfo l_NameProperty;
+        bool l_HasNameProperty = false;
 
-              if (p_TypeInfo.properties.find(N(name)) !=
-                  p_TypeInfo.properties.end()) {
-                l_NameProperty = p_TypeInfo.properties[N(name)];
+        if (p_TypeInfo.properties.find(N(name)) !=
+            p_TypeInfo.properties.end()) {
+          l_NameProperty = p_TypeInfo.properties[N(name)];
 
-                if (p_TypeInfo.is_alive(l_CurrentHandle)) {
-                  Util::Name l_Name;
-                  l_NameProperty.get(l_CurrentHandle, &l_Name);
-                  l_DisplayName = l_Name.c_str();
-                }
-                l_HasNameProperty = true;
-              }
+          if (p_TypeInfo.is_alive(l_CurrentHandle)) {
+            Util::Name l_Name;
+            l_NameProperty.get(l_CurrentHandle, &l_Name);
+            l_DisplayName = l_Name.c_str();
+          }
+          l_HasNameProperty = true;
+        }
 
-              const int l_NameLength = strlen(l_DisplayName);
-              ImVec2 l_CursorPos = ImGui::GetCursorScreenPos();
-              const float l_FieldHeight =
-                  ASSET_SELECTOR_INLINE_HEIGHT;
-              ImVec2 l_WidgetSize =
-                  ImVec2(l_FieldWidth, l_FieldHeight);
+        const int l_NameLength = strlen(l_DisplayName);
+        ImVec2 l_CursorPos = ImGui::GetCursorScreenPos();
+        const float l_FieldHeight = ASSET_SELECTOR_INLINE_HEIGHT;
+        ImVec2 l_WidgetSize = ImVec2(l_FieldWidth, l_FieldHeight);
 
-              ImDrawList *l_DrawList = ImGui::GetWindowDrawList();
-              const Theme &l_Theme = theme_get_current();
-              const float l_Rounding = 3.0f;
-              const ImVec2 l_FieldMax = l_CursorPos + l_WidgetSize;
-              const ImVec2 l_ButtonMin(l_FieldMax.x - l_ButtonWidth,
-                                       l_CursorPos.y);
+        ImDrawList *l_DrawList = ImGui::GetWindowDrawList();
+        const Theme &l_Theme = theme_get_current();
+        const float l_Rounding = 3.0f;
+        const ImVec2 l_FieldMax = l_CursorPos + l_WidgetSize;
+        const ImVec2 l_ButtonMin(l_FieldMax.x - l_ButtonWidth,
+                                 l_CursorPos.y);
 
-              l_DrawList->AddRectFilled(
-                  l_CursorPos, l_FieldMax,
-                  color_to_imcolor(l_Theme.input), l_Rounding);
-              l_DrawList->AddRect(l_CursorPos, l_FieldMax,
-                                  color_to_imcolor(l_Theme.border),
+        l_DrawList->AddRectFilled(l_CursorPos, l_FieldMax,
+                                  color_to_imcolor(l_Theme.input),
                                   l_Rounding);
-              l_DrawList->AddRectFilled(
-                  l_CursorPos,
-                  ImVec2(l_CursorPos.x + 3.0f, l_FieldMax.y),
-                  color_to_imcolor(
-                      get_color_for_asset_type(p_AssetType)),
-                  l_Rounding, ImDrawFlags_RoundCornersLeft);
-              l_DrawList->AddLine(
-                  ImVec2(l_ButtonMin.x, l_CursorPos.y + 6.0f),
-                  ImVec2(l_ButtonMin.x, l_FieldMax.y - 6.0f),
-                  color_to_imcolor(l_Theme.button));
+        l_DrawList->AddRect(l_CursorPos, l_FieldMax,
+                            color_to_imcolor(l_Theme.border),
+                            l_Rounding);
+        l_DrawList->AddRectFilled(
+            l_CursorPos, ImVec2(l_CursorPos.x + 3.0f, l_FieldMax.y),
+            color_to_imcolor(get_color_for_asset_type(p_AssetType)),
+            l_Rounding, ImDrawFlags_RoundCornersLeft);
+        l_DrawList->AddLine(
+            ImVec2(l_ButtonMin.x, l_CursorPos.y + 6.0f),
+            ImVec2(l_ButtonMin.x, l_FieldMax.y - 6.0f),
+            color_to_imcolor(l_Theme.button));
 
-              ImGui::InvisibleButton(
-                  "##asset_handle_value",
-                  ImVec2(l_FieldWidth, l_FieldHeight));
-              if (ImGui::IsItemClicked()) {
-                ImGui::OpenPopup(l_PopupName.c_str());
-              }
+        ImGui::InvisibleButton("##asset_handle_value",
+                               ImVec2(l_FieldWidth, l_FieldHeight));
+        if (ImGui::IsItemClicked()) {
+          ImGui::OpenPopup(l_PopupName.c_str());
+        }
 
-              if (ImGui::BeginDragDropTarget()) {
-                if (const ImGuiPayload *l_Payload =
-                        ImGui::AcceptDragDropPayload("DG_HANDLE")) {
-                  Util::Handle l_PayloadHandle =
-                      *(uint64_t *)l_Payload->Data;
+        if (ImGui::BeginDragDropTarget()) {
+          if (const ImGuiPayload *l_Payload =
+                  ImGui::AcceptDragDropPayload("DG_HANDLE")) {
+            Util::Handle l_PayloadHandle =
+                *(uint64_t *)l_Payload->Data;
 
-                  if (p_TypeInfo.is_alive(l_PayloadHandle)) {
-                    l_Changed = true;
-                    *p_HandleId = l_PayloadHandle.get_id();
-                  }
-                }
-                ImGui::EndDragDropTarget();
-              }
+            if (p_TypeInfo.is_alive(l_PayloadHandle)) {
+              l_Changed = true;
+              *p_HandleId = l_PayloadHandle.get_id();
+            }
+          }
+          ImGui::EndDragDropTarget();
+        }
 
-              const ImVec2 l_ThumbnailMin =
-                  l_Pos +
-                  ImVec2(5.0f, (l_FieldHeight -
-                                ASSET_SELECTOR_INLINE_PREVIEW_SIZE) *
-                                       0.5f +
-                                   1.0f);
-              const ImVec2 l_ThumbnailMax =
-                  l_ThumbnailMin +
-                  ImVec2(ASSET_SELECTOR_INLINE_PREVIEW_SIZE,
-                         ASSET_SELECTOR_INLINE_PREVIEW_SIZE);
-              draw_asset_handle_thumbnail(l_DrawList, l_ThumbnailMin,
-                                          l_ThumbnailMax, p_AssetType,
-                                          l_CurrentHandle, 4.0f);
+        const ImVec2 l_ThumbnailMin =
+            l_Pos +
+            ImVec2(5.0f, (l_FieldHeight -
+                          ASSET_SELECTOR_INLINE_PREVIEW_SIZE) *
+                                 0.5f +
+                             1.0f);
+        const ImVec2 l_ThumbnailMax =
+            l_ThumbnailMin +
+            ImVec2(ASSET_SELECTOR_INLINE_PREVIEW_SIZE,
+                   ASSET_SELECTOR_INLINE_PREVIEW_SIZE);
+        draw_asset_handle_thumbnail(l_DrawList, l_ThumbnailMin,
+                                    l_ThumbnailMax, p_AssetType,
+                                    l_CurrentHandle, 4.0f);
 
-              const float l_TextY =
-                  l_Pos.y +
-                  (l_FieldHeight - ImGui::GetTextLineHeight()) *
-                      0.5f +
-                  1.0f;
-              const float l_TextX =
-                  l_Pos.x + ASSET_SELECTOR_INLINE_PREVIEW_SIZE +
-                  14.0f;
-              ImGui::RenderTextEllipsis(
-                  l_DrawList, ImVec2(l_TextX, l_TextY),
-                  ImVec2(l_ButtonMin.x - 8.0f,
-                         l_Pos.y + l_FieldHeight),
-                  l_ButtonMin.x - 10.0f, l_DisplayName,
-                  l_DisplayName + l_NameLength, nullptr);
+        const float l_TextY =
+            l_Pos.y +
+            (l_FieldHeight - ImGui::GetTextLineHeight()) * 0.5f +
+            1.0f;
+        const float l_TextX =
+            l_Pos.x + ASSET_SELECTOR_INLINE_PREVIEW_SIZE + 14.0f;
+        ImGui::RenderTextEllipsis(
+            l_DrawList, ImVec2(l_TextX, l_TextY),
+            ImVec2(l_ButtonMin.x - 8.0f, l_Pos.y + l_FieldHeight),
+            l_ButtonMin.x - 10.0f, l_DisplayName,
+            l_DisplayName + l_NameLength, nullptr);
 
-              const ImVec2 l_IconSize =
-                  ImGui::CalcTextSize(ICON_LC_CIRCLE_DOT);
-              l_DrawList->AddText(
-                  ImVec2(l_ButtonMin.x +
-                             (l_ButtonWidth - l_IconSize.x) * 0.5f,
-                         l_Pos.y +
-                             (l_FieldHeight - l_IconSize.y) * 0.5f +
-                             1.0f),
-                  color_to_imcolor(l_Theme.subtext),
-                  ICON_LC_CIRCLE_DOT);
+        const ImVec2 l_IconSize =
+            ImGui::CalcTextSize(ICON_LC_CIRCLE_DOT);
+        l_DrawList->AddText(
+            ImVec2(l_ButtonMin.x +
+                       (l_ButtonWidth - l_IconSize.x) * 0.5f,
+                   l_Pos.y + (l_FieldHeight - l_IconSize.y) * 0.5f +
+                       1.0f),
+            color_to_imcolor(l_Theme.subtext), ICON_LC_CIRCLE_DOT);
 
-              if (ImGui::BeginPopup(l_PopupName.c_str())) {
+        if (ImGui::BeginPopup(l_PopupName.c_str())) {
 #define SEARCH_BUFFER_SIZE 255
-                static char l_SearchBuffer[SEARCH_BUFFER_SIZE] = {
-                    '\0'};
-                Gui::SearchField("##asset_search", l_SearchBuffer,
-                                 SEARCH_BUFFER_SIZE, {0.0f, 4.0f});
+          static char l_SearchBuffer[SEARCH_BUFFER_SIZE] = {'\0'};
+          Gui::SearchField("##asset_search", l_SearchBuffer,
+                           SEARCH_BUFFER_SIZE, {0.0f, 4.0f});
 #undef SEARCH_BUFFER_SIZE
-                ImGui::Spacing();
+          ImGui::Spacing();
 
-                Util::Handle *l_Handles =
-                    p_TypeInfo.get_living_instances();
+          Util::Handle *l_Handles = p_TypeInfo.get_living_instances();
 
-                Util::List<Util::String> l_Directories;
-                for (uint32_t i = 0u;
-                     i < p_TypeInfo.get_living_count(); ++i) {
-                  add_asset_directory_with_parents(
-                      l_Directories, get_asset_directory_for_handle(
-                                         p_AssetType, l_Handles[i]));
-                }
+          Util::List<Util::String> l_Directories;
+          for (uint32_t i = 0u; i < p_TypeInfo.get_living_count();
+               ++i) {
+            add_asset_directory_with_parents(
+                l_Directories, get_asset_directory_for_handle(
+                                   p_AssetType, l_Handles[i]));
+          }
 
-                Util::String &l_SelectedDirectory =
-                    g_SelectedAssetDirectory[p_AssetType];
-                if (!l_SelectedDirectory.empty() &&
-                    !list_contains_string(l_Directories,
-                                          l_SelectedDirectory)) {
-                  l_SelectedDirectory = "";
-                }
+          Util::String &l_SelectedDirectory =
+              g_SelectedAssetDirectory[p_AssetType];
+          if (!l_SelectedDirectory.empty() &&
+              !list_contains_string(l_Directories,
+                                    l_SelectedDirectory)) {
+            l_SelectedDirectory = "";
+          }
 
-                const bool l_ShowDirectories = !l_Directories.empty();
-                if (l_ShowDirectories) {
-                  ImGui::BeginChild(
-                      "Directories",
-                      ImVec2(ASSET_SELECTOR_DIRECTORY_WIDTH,
-                             ASSET_SELECTOR_POPUP_HEIGHT),
-                      true);
+          const bool l_ShowDirectories = !l_Directories.empty();
+          if (l_ShowDirectories) {
+            ImGui::BeginChild("Directories",
+                              ImVec2(ASSET_SELECTOR_DIRECTORY_WIDTH,
+                                     ASSET_SELECTOR_POPUP_HEIGHT),
+                              true);
 
-                  if (ImGui::Selectable(
-                          "All", l_SelectedDirectory.empty())) {
-                    l_SelectedDirectory = "";
-                  }
+            if (ImGui::Selectable("All",
+                                  l_SelectedDirectory.empty())) {
+              l_SelectedDirectory = "";
+            }
 
-                  for (u32 i = 0; i < l_Directories.size(); ++i) {
-                    const Util::String &i_Directory =
-                        l_Directories[i];
-                    Util::String i_Display =
-                        get_asset_directory_display_name(i_Directory);
+            for (u32 i = 0; i < l_Directories.size(); ++i) {
+              const Util::String &i_Directory = l_Directories[i];
+              Util::String i_Display =
+                  get_asset_directory_display_name(i_Directory);
 
-                    if (ImGui::Selectable(i_Display.c_str(),
-                                          l_SelectedDirectory ==
-                                              i_Directory)) {
-                      l_SelectedDirectory = i_Directory;
-                    }
-                  }
-
-                  ImGui::EndChild();
-                  ImGui::SameLine();
-                }
-
-                ImGui::BeginChild("Assets",
-                                  ImVec2(ASSET_SELECTOR_CONTENT_WIDTH,
-                                         ASSET_SELECTOR_POPUP_HEIGHT),
-                                  true);
-
-                for (uint32_t i = 0u;
-                     i < p_TypeInfo.get_living_count(); ++i) {
-                  Util::String i_DisplayName = "Object";
-                  if (l_HasNameProperty) {
-                    Util::Name i_Name;
-                    l_NameProperty.get(l_Handles[i], &i_Name);
-                    i_DisplayName = i_Name.c_str();
-                  }
-
-                  if (strlen(l_SearchBuffer) > 0 &&
-                      !strstr(i_DisplayName.c_str(),
-                              l_SearchBuffer)) {
-                    continue;
-                  }
-
-                  if (l_ShowDirectories &&
-                      !asset_directory_matches_filter(
-                          get_asset_directory_for_handle(
-                              p_AssetType, l_Handles[i]),
-                          l_SelectedDirectory)) {
-                    continue;
-                  }
-
-                  if (render_asset_selector_row(
-                          l_Handles[i], i_DisplayName, p_AssetType,
-                          l_Handles[i].get_id() == *p_HandleId)) {
-                    l_SearchBuffer[0] = '\0';
-                    *p_HandleId = l_Handles[i].get_id();
-                    l_Changed = true;
-                    ImGui::CloseCurrentPopup();
-                  }
-                }
-
-                ImGui::EndChild();
-                ImGui::EndPopup();
+              if (ImGui::Selectable(i_Display.c_str(),
+                                    l_SelectedDirectory ==
+                                        i_Directory)) {
+                l_SelectedDirectory = i_Directory;
               }
+            }
 
-              return l_Changed;
-            });
+            ImGui::EndChild();
+            ImGui::SameLine();
+          }
+
+          ImGui::BeginChild("Assets",
+                            ImVec2(ASSET_SELECTOR_CONTENT_WIDTH,
+                                   ASSET_SELECTOR_POPUP_HEIGHT),
+                            true);
+
+          for (uint32_t i = 0u; i < p_TypeInfo.get_living_count();
+               ++i) {
+            Util::String i_DisplayName = "Object";
+            if (l_HasNameProperty) {
+              Util::Name i_Name;
+              l_NameProperty.get(l_Handles[i], &i_Name);
+              i_DisplayName = i_Name.c_str();
+            }
+
+            if (strlen(l_SearchBuffer) > 0 &&
+                !strstr(i_DisplayName.c_str(), l_SearchBuffer)) {
+              continue;
+            }
+
+            if (l_ShowDirectories &&
+                !asset_directory_matches_filter(
+                    get_asset_directory_for_handle(p_AssetType,
+                                                   l_Handles[i]),
+                    l_SelectedDirectory)) {
+              continue;
+            }
+
+            if (render_asset_selector_row(
+                    l_Handles[i], i_DisplayName, p_AssetType,
+                    l_Handles[i].get_id() == *p_HandleId)) {
+              l_SearchBuffer[0] = '\0';
+              *p_HandleId = l_Handles[i].get_id();
+              l_Changed = true;
+              ImGui::CloseCurrentPopup();
+            }
+          }
+
+          ImGui::EndChild();
+          ImGui::EndPopup();
+        }
+
+        return l_Changed;
       }
 
       bool render_enum_selector(u16 p_EnumId, int *p_Value,
@@ -795,83 +791,79 @@ namespace Low {
                                 bool p_RenderLabel,
                                 Util::List<int> p_FilterList)
       {
-        return render_line(p_Label, [&p_Label, &p_EnumId, p_Value,
-                                     &p_FilterList]() {
-          Util::String l_Label = "##";
-          l_Label += p_Label.c_str();
+        Util::String l_Label = "##";
+        l_Label += p_Label.c_str();
 
-          Util::RTTI::EnumInfo &l_EnumInfo =
-              Util::get_enum_info(p_EnumId);
+        Util::RTTI::EnumInfo &l_EnumInfo =
+            Util::get_enum_info(p_EnumId);
 
-          Util::List<Util::RTTI::EnumEntryInfo> l_FilteredEntries;
+        Util::List<Util::RTTI::EnumEntryInfo> l_FilteredEntries;
 
-          for (u32 i = 0; i < l_EnumInfo.entries.size(); ++i) {
-            bool i_Filtered = false;
+        for (u32 i = 0; i < l_EnumInfo.entries.size(); ++i) {
+          bool i_Filtered = false;
+          for (u32 j = 0; j < p_FilterList.size(); ++j) {
+            if (l_EnumInfo.entries[i].value == p_FilterList[j]) {
+              i_Filtered = true;
+              break;
+            }
+          }
+
+          if (!i_Filtered) {
+            l_FilteredEntries.push_back(l_EnumInfo.entries[i]);
+          }
+        }
+
+        u8 l_CurrentValue = *p_Value;
+
+        bool l_Result = false;
+
+        if (ImGui::BeginCombo(
+                l_Label.c_str(),
+                l_EnumInfo.entry_name(l_CurrentValue).c_str())) {
+          for (int i = 0; i < l_EnumInfo.entries.size(); i++) {
+            bool i_Disabled = false;
             for (u32 j = 0; j < p_FilterList.size(); ++j) {
               if (l_EnumInfo.entries[i].value == p_FilterList[j]) {
-                i_Filtered = true;
+                i_Disabled = true;
                 break;
               }
             }
 
-            if (!i_Filtered) {
-              l_FilteredEntries.push_back(l_EnumInfo.entries[i]);
+            if (i_Disabled) {
+              ImGui::PushStyleVar(ImGuiStyleVar_Alpha,
+                                  ImGui::GetStyle().Alpha * 0.5f);
+              ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
             }
-          }
 
-          u8 l_CurrentValue = *p_Value;
-
-          bool l_Result = false;
-
-          if (ImGui::BeginCombo(
-                  l_Label.c_str(),
-                  l_EnumInfo.entry_name(l_CurrentValue).c_str())) {
-            for (int i = 0; i < l_EnumInfo.entries.size(); i++) {
-              bool i_Disabled = false;
-              for (u32 j = 0; j < p_FilterList.size(); ++j) {
-                if (l_EnumInfo.entries[i].value == p_FilterList[j]) {
-                  i_Disabled = true;
-                  break;
-                }
-              }
-
-              if (i_Disabled) {
-                ImGui::PushStyleVar(ImGuiStyleVar_Alpha,
-                                    ImGui::GetStyle().Alpha * 0.5f);
-                ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-              }
-
-              if (ImGui::Selectable(
-                      l_EnumInfo.entries[i].name.c_str(),
-                      l_CurrentValue ==
-                          l_EnumInfo.entries[i].value)) {
-                if (!i_Disabled) // Only allow selection if the item
-                                 // is not disabled
-                {
-                  l_CurrentValue = l_EnumInfo.entries[i].value;
-                  l_Result = true;
-                }
-              }
-
-              if (i_Disabled) {
-                ImGui::PopItemFlag();
-                ImGui::PopStyleVar();
-              }
-
-              // Set the initial focus when opening the combo
-              // (scrolling
-              // + keyboard navigation focus)
-              if (l_CurrentValue == l_EnumInfo.entries[i].value) {
-                ImGui::SetItemDefaultFocus();
+            if (ImGui::Selectable(l_EnumInfo.entries[i].name.c_str(),
+                                  l_CurrentValue ==
+                                      l_EnumInfo.entries[i].value)) {
+              if (!i_Disabled) // Only allow selection if the item
+                               // is not disabled
+              {
+                l_CurrentValue = l_EnumInfo.entries[i].value;
+                l_Result = true;
               }
             }
-            ImGui::EndCombo();
+
+            if (i_Disabled) {
+              ImGui::PopItemFlag();
+              ImGui::PopStyleVar();
+            }
+
+            // Set the initial focus when opening the combo
+            // (scrolling
+            // + keyboard navigation focus)
+            if (l_CurrentValue == l_EnumInfo.entries[i].value) {
+              ImGui::SetItemDefaultFocus();
+            }
           }
+          ImGui::EndCombo();
+        }
 
-          *p_Value = l_CurrentValue;
+        *p_Value = l_CurrentValue;
 
-          return l_Result;
-        });
+        return l_Result;
       }
 
       bool render_enum_selector(u16 p_EnumId, int *p_Value,
@@ -880,6 +872,15 @@ namespace Low {
       {
         return render_enum_selector(p_EnumId, p_Value, p_Label,
                                     p_RenderLabel, Util::List<int>());
+      }
+
+      bool render_enum_selector(Util::TypeIdentifier p_EnumIdentifier,
+                                int *p_Value, Util::String p_Label,
+                                bool p_RenderLabel)
+      {
+        return render_enum_selector(
+            Util::get_enum_id(p_EnumIdentifier), p_Value, p_Label,
+            p_RenderLabel, Util::List<int>());
       }
 
       bool render_enum_selector(PropertyMetadata &p_Metadata,
@@ -900,22 +901,20 @@ namespace Low {
       bool render_name_editor(Util::String &p_Label,
                               Util::Name &p_Name, bool p_RenderLabel)
       {
-        return render_line(p_Label, [&p_Name, &p_Label]() {
-          char l_Buffer[255];
-          uint32_t l_NameLength = strlen(p_Name.c_str());
-          memcpy(l_Buffer, p_Name.c_str(), l_NameLength);
-          l_Buffer[l_NameLength] = '\0';
+        char l_Buffer[255];
+        uint32_t l_NameLength = strlen(p_Name.c_str());
+        memcpy(l_Buffer, p_Name.c_str(), l_NameLength);
+        l_Buffer[l_NameLength] = '\0';
 
-          Util::String l_Label = "##";
-          l_Label += p_Label.c_str();
+        Util::String l_Label = "##";
+        l_Label += p_Label.c_str();
 
-          if (Gui::InputText(l_Label.c_str(), l_Buffer, 255,
-                             ImGuiInputTextFlags_EnterReturnsTrue)) {
-            p_Name.m_Index = LOW_NAME(l_Buffer).m_Index;
-            return true;
-          }
-          return false;
-        });
+        if (Gui::InputText(l_Label.c_str(), l_Buffer, 255,
+                           ImGuiInputTextFlags_EnterReturnsTrue)) {
+          p_Name.m_Index = LOW_NAME(l_Buffer).m_Index;
+          return true;
+        }
+        return false;
       }
 
       bool render_string_editor(Util::String &p_Label,
@@ -923,35 +922,31 @@ namespace Low {
                                 bool p_Multiline, bool p_RenderLabel)
       {
 
-        return render_line(p_Label, [&p_String, &p_Label,
-                                     p_Multiline]() {
-          char l_Buffer[1024];
-          uint32_t l_NameLength = strlen(p_String.c_str());
-          memcpy(l_Buffer, p_String.c_str(), l_NameLength);
-          l_Buffer[l_NameLength] = '\0';
+        char l_Buffer[1024];
+        uint32_t l_NameLength = strlen(p_String.c_str());
+        memcpy(l_Buffer, p_String.c_str(), l_NameLength);
+        l_Buffer[l_NameLength] = '\0';
 
-          Util::String l_Label = "##";
-          l_Label += p_Label.c_str();
+        Util::String l_Label = "##";
+        l_Label += p_Label.c_str();
 
-          if (p_Multiline) {
-            if (ImGui::InputTextMultiline(
-                    l_Label.c_str(), l_Buffer, 1024,
-                    ImVec2(-FLT_MIN, 90),
-                    ImGuiInputTextFlags_EnterReturnsTrue |
-                        ImGuiInputTextFlags_CtrlEnterForNewLine)) {
-              p_String = l_Buffer;
-              return true;
-            }
-          } else {
-            if (Gui::InputText(
-                    l_Label.c_str(), l_Buffer, 1024,
-                    ImGuiInputTextFlags_EnterReturnsTrue)) {
-              p_String = l_Buffer;
-              return true;
-            }
+        if (p_Multiline) {
+          if (ImGui::InputTextMultiline(
+                  l_Label.c_str(), l_Buffer, 1024,
+                  ImVec2(-FLT_MIN, 90),
+                  ImGuiInputTextFlags_EnterReturnsTrue |
+                      ImGuiInputTextFlags_CtrlEnterForNewLine)) {
+            p_String = l_Buffer;
+            return true;
           }
-          return false;
-        });
+        } else {
+          if (Gui::InputText(l_Label.c_str(), l_Buffer, 1024,
+                             ImGuiInputTextFlags_EnterReturnsTrue)) {
+            p_String = l_Buffer;
+            return true;
+          }
+        }
+        return false;
       }
 
       void render_string_editor(PropertyMetadata &p_PropertyMetadata,
@@ -968,88 +963,75 @@ namespace Low {
                                     Math::Quaternion &p_Quaternion,
                                     bool p_RenderLabel)
       {
-        return render_line(p_Label, [&p_Quaternion]() {
-          Math::Vector3 l_Vector =
-              Math::VectorUtil::to_euler(p_Quaternion);
+        Math::Vector3 l_Vector =
+            Math::VectorUtil::to_euler(p_Quaternion);
 
-          if (Gui::Vector3Edit(l_Vector)) {
-            p_Quaternion = Math::VectorUtil::from_euler(l_Vector);
-            return true;
-          }
+        if (Gui::Vector3Edit(l_Vector)) {
+          p_Quaternion = Math::VectorUtil::from_euler(l_Vector);
+          return true;
+        }
 
-          return false;
-        });
+        return false;
       }
 
       bool render_vector3_editor(Util::String p_Label,
                                  Math::Vector3 &p_Vector,
                                  bool p_RenderLabel)
       {
-        return render_line(p_Label, [&p_Vector]() {
-          Math::Vector3 l_Vector = p_Vector;
+        Math::Vector3 l_Vector = p_Vector;
 
-          if (Gui::Vector3Edit(l_Vector)) {
-            p_Vector = l_Vector;
-            return true;
-          }
+        if (Gui::Vector3Edit(l_Vector)) {
+          p_Vector = l_Vector;
+          return true;
+        }
 
-          return false;
-        });
+        return false;
       }
 
       bool render_vector2_editor(Util::String &p_Label,
                                  Math::Vector2 &p_Vector,
                                  bool p_RenderLabel)
       {
-        return render_line(p_Label, [&p_Label, &p_Vector]() {
-          Util::String l_Label = "##";
-          l_Label += p_Label.c_str();
+        Util::String l_Label = "##";
+        l_Label += p_Label.c_str();
 
-          return ImGui::DragFloat2(l_Label.c_str(),
-                                   (float *)&p_Vector);
-        });
+        return ImGui::DragFloat2(l_Label.c_str(), (float *)&p_Vector);
       }
 
       bool render_checkbox_bool_editor(Util::String &p_Label,
                                        bool &p_Bool,
                                        bool p_RenderLabel)
       {
-        return render_line(p_Label, [&p_Label, &p_Bool]() {
-          Util::String l_Label = "##";
-          l_Label += p_Label.c_str();
+        Util::String l_Label = "##";
+        l_Label += p_Label.c_str();
 
-          return Base::BoolEdit(l_Label.c_str(), &p_Bool);
-        });
+        return Base::BoolEdit(l_Label.c_str(), &p_Bool);
       }
 
       bool render_float_editor(Util::String &p_Label, float &p_Float,
                                bool p_RenderLabel)
       {
-        return render_line(p_Label, [&p_Label, &p_Float]() {
-          Util::String l_Label = "##";
-          l_Label += p_Label.c_str();
+        Util::String l_Label = "##";
+        l_Label += p_Label.c_str();
 
-          // ImGui::DragFloat(l_Label.c_str(), &p_Float);
-          return Gui::DragFloatWithButtons(l_Label.c_str(), &p_Float);
-        });
+        // ImGui::DragFloat(l_Label.c_str(), &p_Float);
+        return Gui::DragFloatWithButtons(l_Label.c_str(), &p_Float);
       }
 
       bool render_uint32_editor(Util::String &p_Label, u32 &p_Value,
                                 bool p_RenderLabel)
       {
-        return render_line(p_Label, [&p_Label, &p_Value]() {
-          int l_LocalValue = p_Value;
+        int l_LocalValue = p_Value;
 
-          Util::String l_Label = "##";
-          l_Label += p_Label.c_str();
+        Util::String l_Label = "##";
+        l_Label += p_Label.c_str();
 
-          if (Gui::DragIntWithButtons(l_Label.c_str(), &l_LocalValue,
-                                      1, 0, 50000)) {
-            p_Value = l_LocalValue;
-            return true;
-          }
-          return false;
-        });
+        if (Gui::DragIntWithButtons(l_Label.c_str(), &l_LocalValue, 1,
+                                    0, 50000)) {
+          p_Value = l_LocalValue;
+          return true;
+        }
+        return false;
       }
 
       // bool render_enum_selector(Util::String p_Label, )
@@ -1073,140 +1055,135 @@ namespace Low {
               p_Label, p_TypeInfo, p_HandleId, l_AssetType);
         }
 
-        return render_line(p_Label, [&p_Label, &p_TypeInfo,
-                                     p_HandleId]() {
-          ImGui::BeginGroup();
+        ImGui::BeginGroup();
 
-          ImVec2 l_Pos = ImGui::GetCursorScreenPos();
-          float l_FullWidth = ImGui::GetContentRegionAvail().x;
-          const float l_ButtonWidth = 34.0f;
-          const float l_FieldHeight = ImGui::GetFrameHeight() + 4.0f;
+        ImVec2 l_Pos = ImGui::GetCursorScreenPos();
+        float l_FullWidth = ImGui::GetContentRegionAvail().x;
+        const float l_ButtonWidth = 34.0f;
+        const float l_FieldHeight = ImGui::GetFrameHeight() + 4.0f;
 
-          bool l_Changed = false;
+        bool l_Changed = false;
 
-          Util::Handle l_CurrentHandle = *p_HandleId;
+        Util::Handle l_CurrentHandle = *p_HandleId;
 
-          Util::String l_PopupName =
-              Util::String("_choose_element_") + p_Label;
+        Util::String l_PopupName =
+            Util::String("_choose_element_") + p_Label;
 
-          const char *l_DisplayName = "None";
+        const char *l_DisplayName = "None";
 
-          Util::RTTI::PropertyInfo l_NameProperty;
-          bool l_HasNameProperty = false;
+        Util::RTTI::PropertyInfo l_NameProperty;
+        bool l_HasNameProperty = false;
 
-          if (p_TypeInfo.properties.find(N(name)) !=
-              p_TypeInfo.properties.end()) {
+        if (p_TypeInfo.properties.find(N(name)) !=
+            p_TypeInfo.properties.end()) {
 
-            l_NameProperty = p_TypeInfo.properties[N(name)];
+          l_NameProperty = p_TypeInfo.properties[N(name)];
 
-            if (p_TypeInfo.is_alive(l_CurrentHandle)) {
-              Util::Name l_Name;
-              p_TypeInfo.properties[N(name)].get(l_CurrentHandle,
-                                                 &l_Name);
-              l_DisplayName = l_Name.c_str();
+          if (p_TypeInfo.is_alive(l_CurrentHandle)) {
+            Util::Name l_Name;
+            p_TypeInfo.properties[N(name)].get(l_CurrentHandle,
+                                               &l_Name);
+            l_DisplayName = l_Name.c_str();
+          }
+          l_HasNameProperty = true;
+        }
+        const int l_NameLength = strlen(l_DisplayName);
+
+        ImVec2 l_FieldMin = ImGui::GetCursorScreenPos();
+        ImVec2 l_FieldSize(l_FullWidth, l_FieldHeight);
+        ImVec2 l_FieldMax = l_FieldMin + l_FieldSize;
+        ImVec2 l_ButtonMin(l_FieldMax.x - l_ButtonWidth,
+                           l_FieldMin.y);
+
+        ImDrawList *l_DrawList = ImGui::GetWindowDrawList();
+        const Theme &l_Theme = theme_get_current();
+        const float l_Rounding = 3.0f;
+
+        ImGui::InvisibleButton("##handle_selector_value",
+                               l_FieldSize);
+        const bool l_Hovered = ImGui::IsItemHovered();
+        if (ImGui::IsItemClicked()) {
+          ImGui::OpenPopup(l_PopupName.c_str());
+        }
+
+        const ImU32 l_BackgroundColor =
+            l_Hovered ? color_to_imcolor(l_Theme.headerHover)
+                      : color_to_imcolor(l_Theme.input);
+        l_DrawList->AddRectFilled(l_FieldMin, l_FieldMax,
+                                  l_BackgroundColor, l_Rounding);
+        l_DrawList->AddRect(l_FieldMin, l_FieldMax,
+                            color_to_imcolor(l_Theme.border),
+                            l_Rounding);
+        l_DrawList->AddLine(
+            ImVec2(l_ButtonMin.x, l_FieldMin.y + 4.0f),
+            ImVec2(l_ButtonMin.x, l_FieldMax.y - 4.0f),
+            color_to_imcolor(l_Theme.button));
+
+        const float l_TextY =
+            l_FieldMin.y +
+            (l_FieldHeight - ImGui::GetTextLineHeight()) * 0.5f;
+        ImGui::RenderTextEllipsis(
+            l_DrawList, ImVec2(l_FieldMin.x + 6.0f, l_TextY),
+            ImVec2(l_ButtonMin.x - 8.0f, l_FieldMax.y),
+            l_ButtonMin.x - 10.0f, l_DisplayName,
+            l_DisplayName + l_NameLength, nullptr);
+
+        const ImVec2 l_IconSize =
+            ImGui::CalcTextSize(ICON_LC_CIRCLE_DOT);
+        l_DrawList->AddText(
+            ImVec2(
+                l_ButtonMin.x + (l_ButtonWidth - l_IconSize.x) * 0.5f,
+                l_FieldMin.y + (l_FieldHeight - l_IconSize.y) * 0.5f),
+            color_to_imcolor(l_Theme.subtext), ICON_LC_CIRCLE_DOT);
+
+        if (ImGui::BeginDragDropTarget()) {
+          if (const ImGuiPayload *l_Payload =
+                  ImGui::AcceptDragDropPayload("DG_HANDLE")) {
+            Util::Handle l_PayloadHandle =
+                *(uint64_t *)l_Payload->Data;
+
+            if (p_TypeInfo.is_alive(l_PayloadHandle)) {
+              l_Changed = true;
+              *p_HandleId = l_PayloadHandle.get_id();
             }
-            l_HasNameProperty = true;
           }
-          const int l_NameLength = strlen(l_DisplayName);
+          ImGui::EndDragDropTarget();
+        }
 
-          ImVec2 l_FieldMin = ImGui::GetCursorScreenPos();
-          ImVec2 l_FieldSize(l_FullWidth, l_FieldHeight);
-          ImVec2 l_FieldMax = l_FieldMin + l_FieldSize;
-          ImVec2 l_ButtonMin(l_FieldMax.x - l_ButtonWidth,
-                             l_FieldMin.y);
-
-          ImDrawList *l_DrawList = ImGui::GetWindowDrawList();
-          const Theme &l_Theme = theme_get_current();
-          const float l_Rounding = 3.0f;
-
-          ImGui::InvisibleButton("##handle_selector_value",
-                                 l_FieldSize);
-          const bool l_Hovered = ImGui::IsItemHovered();
-          if (ImGui::IsItemClicked()) {
-            ImGui::OpenPopup(l_PopupName.c_str());
-          }
-
-          const ImU32 l_BackgroundColor =
-              l_Hovered ? color_to_imcolor(l_Theme.headerHover)
-                        : color_to_imcolor(l_Theme.input);
-          l_DrawList->AddRectFilled(l_FieldMin, l_FieldMax,
-                                    l_BackgroundColor, l_Rounding);
-          l_DrawList->AddRect(l_FieldMin, l_FieldMax,
-                              color_to_imcolor(l_Theme.border),
-                              l_Rounding);
-          l_DrawList->AddLine(
-              ImVec2(l_ButtonMin.x, l_FieldMin.y + 4.0f),
-              ImVec2(l_ButtonMin.x, l_FieldMax.y - 4.0f),
-              color_to_imcolor(l_Theme.button));
-
-          const float l_TextY =
-              l_FieldMin.y +
-              (l_FieldHeight - ImGui::GetTextLineHeight()) * 0.5f;
-          ImGui::RenderTextEllipsis(
-              l_DrawList, ImVec2(l_FieldMin.x + 6.0f, l_TextY),
-              ImVec2(l_ButtonMin.x - 8.0f, l_FieldMax.y),
-              l_ButtonMin.x - 10.0f, l_DisplayName,
-              l_DisplayName + l_NameLength, nullptr);
-
-          const ImVec2 l_IconSize =
-              ImGui::CalcTextSize(ICON_LC_CIRCLE_DOT);
-          l_DrawList->AddText(
-              ImVec2(l_ButtonMin.x +
-                         (l_ButtonWidth - l_IconSize.x) * 0.5f,
-                     l_FieldMin.y +
-                         (l_FieldHeight - l_IconSize.y) * 0.5f),
-              color_to_imcolor(l_Theme.subtext), ICON_LC_CIRCLE_DOT);
-
-          if (ImGui::BeginDragDropTarget()) {
-            if (const ImGuiPayload *l_Payload =
-                    ImGui::AcceptDragDropPayload("DG_HANDLE")) {
-              Util::Handle l_PayloadHandle =
-                  *(uint64_t *)l_Payload->Data;
-
-              if (p_TypeInfo.is_alive(l_PayloadHandle)) {
-                l_Changed = true;
-                *p_HandleId = l_PayloadHandle.get_id();
-              }
-            }
-            ImGui::EndDragDropTarget();
-          }
-
-          if (ImGui::BeginPopup(l_PopupName.c_str())) {
+        if (ImGui::BeginPopup(l_PopupName.c_str())) {
 #define SEARCH_BUFFER_SIZE 255
-            static char l_SearchBuffer[SEARCH_BUFFER_SIZE] = {'\0'};
-            Gui::SearchField("##search", l_SearchBuffer,
-                             SEARCH_BUFFER_SIZE, {0.0f, 3.0f});
+          static char l_SearchBuffer[SEARCH_BUFFER_SIZE] = {'\0'};
+          Gui::SearchField("##search", l_SearchBuffer,
+                           SEARCH_BUFFER_SIZE, {0.0f, 3.0f});
 
 #undef SEARCH_BUFFER_SIZE
 
-            Util::Handle *l_Handles =
-                p_TypeInfo.get_living_instances();
+          Util::Handle *l_Handles = p_TypeInfo.get_living_instances();
 
-            for (uint32_t i = 0u; i < p_TypeInfo.get_living_count();
-                 ++i) {
-              Util::String i_DisplayName = "Object";
-              if (l_HasNameProperty) {
-                Util::Name i_Name;
-                l_NameProperty.get(l_Handles[i], &i_Name);
-                i_DisplayName = i_Name.c_str();
-              }
-
-              if (strlen(l_SearchBuffer) > 0 &&
-                  !strstr(i_DisplayName.c_str(), l_SearchBuffer)) {
-                continue;
-              }
-              if (ImGui::Selectable(i_DisplayName.c_str())) {
-                l_SearchBuffer[0] = '\0';
-                *p_HandleId = l_Handles[i].get_id();
-                l_Changed = true;
-              }
+          for (uint32_t i = 0u; i < p_TypeInfo.get_living_count();
+               ++i) {
+            Util::String i_DisplayName = "Object";
+            if (l_HasNameProperty) {
+              Util::Name i_Name;
+              l_NameProperty.get(l_Handles[i], &i_Name);
+              i_DisplayName = i_Name.c_str();
             }
-            ImGui::EndPopup();
-          }
 
-          ImGui::EndGroup();
-          return l_Changed;
-        });
+            if (strlen(l_SearchBuffer) > 0 &&
+                !strstr(i_DisplayName.c_str(), l_SearchBuffer)) {
+              continue;
+            }
+            if (ImGui::Selectable(i_DisplayName.c_str())) {
+              l_SearchBuffer[0] = '\0';
+              *p_HandleId = l_Handles[i].get_id();
+              l_Changed = true;
+            }
+          }
+          ImGui::EndPopup();
+        }
+
+        ImGui::EndGroup();
+        return l_Changed;
       }
 
       bool render_fs_handle_selector_directory_entry(
@@ -1562,10 +1539,8 @@ namespace Low {
       bool render_color_selector(Util::String p_Label,
                                  Math::Color *p_Color)
       {
-        return render_line(p_Label, [&p_Label, p_Color]() {
-          return Gui::ColorRGBAInput(
-              (Util::String("##") + p_Label).c_str(), p_Color);
-        });
+        return Gui::ColorRGBAInput(
+            (Util::String("##") + p_Label).c_str(), p_Color);
       }
 
       bool render_colorrgb_editor(Util::String &p_Label,
@@ -1573,87 +1548,318 @@ namespace Low {
                                   bool p_RenderLabel)
       {
 
-        return render_line(p_Label, [&p_Label, &p_Color]() {
-          Math::ColorRGB l_Color = p_Color;
+        Math::ColorRGB l_Color = p_Color;
 
-          if (Gui::ColorRGBInput(
-                  (Util::String("##") + p_Label).c_str(), &l_Color)) {
-            p_Color = l_Color;
-            return true;
-          }
-          return false;
-        });
+        if (Gui::ColorRGBInput((Util::String("##") + p_Label).c_str(),
+                               &l_Color)) {
+          p_Color = l_Color;
+          return true;
+        }
+        return false;
       }
 
       bool render_shape_editor(Util::String &p_Label,
                                Math::Shape *p_DataPtr,
                                bool p_RenderLabel)
       {
-        return render_line(p_Label, [&p_Label, p_DataPtr]() {
-          Util::String l_Label = "##";
-          l_Label += p_Label.c_str();
+        Util::String l_Label = "##";
+        l_Label += p_Label.c_str();
 
-          int l_TypeCount = 4;
-          int l_CurrentType = 0;
+        int l_TypeCount = 4;
+        int l_CurrentType = 0;
 
-          bool l_Changed = false;
+        bool l_Changed = false;
 
-          Util::String l_Names[] = {"Box", "Sphere", "Cone",
-                                    "Cylinder"};
-          Math::ShapeType l_Types[] = {
-              Math::ShapeType::BOX, Math::ShapeType::SPHERE,
-              Math::ShapeType::CONE, Math::ShapeType::CYLINDER};
+        Util::String l_Names[] = {"Box", "Sphere", "Cone",
+                                  "Cylinder"};
+        Math::ShapeType l_Types[] = {
+            Math::ShapeType::BOX, Math::ShapeType::SPHERE,
+            Math::ShapeType::CONE, Math::ShapeType::CYLINDER};
 
-          Math::Shape l_Shape = *p_DataPtr;
+        Math::Shape l_Shape = *p_DataPtr;
 
-          for (; l_CurrentType < l_TypeCount; ++l_CurrentType) {
-            if (l_Shape.type == l_Types[l_CurrentType]) {
-              break;
+        for (; l_CurrentType < l_TypeCount; ++l_CurrentType) {
+          if (l_Shape.type == l_Types[l_CurrentType]) {
+            break;
+          }
+        }
+
+        if (ImGui::BeginCombo("##shapetypeselector",
+                              l_Names[l_CurrentType].c_str(), 0)) {
+          for (int i = 0; i < l_TypeCount; ++i) {
+            if (ImGui::Selectable(l_Names[i].c_str(),
+                                  i == l_CurrentType)) {
+              memset(&l_Shape, 0, sizeof(l_Shape));
+              l_Shape.type = l_Types[i];
+              l_Changed = true;
             }
           }
+          ImGui::EndCombo();
+        }
 
-          if (ImGui::BeginCombo("##shapetypeselector",
-                                l_Names[l_CurrentType].c_str(), 0)) {
-            for (int i = 0; i < l_TypeCount; ++i) {
-              if (ImGui::Selectable(l_Names[i].c_str(),
-                                    i == l_CurrentType)) {
-                memset(&l_Shape, 0, sizeof(l_Shape));
-                l_Shape.type = l_Types[i];
-                l_Changed = true;
+        if (l_Shape.type == Math::ShapeType::BOX) {
+          ImGui::PushID("BOXPOS");
+          if (render_vector3_editor("BoxPosition",
+                                    l_Shape.box.position, true)) {
+            l_Changed = true;
+          }
+          ImGui::PopID();
+          ImGui::PushID("BOXROT");
+          if (render_quaternion_editor("BoxRotation",
+                                       l_Shape.box.rotation, true)) {
+            l_Changed = true;
+          }
+          ImGui::PopID();
+          ImGui::PushID("BOXSCL");
+          if (render_vector3_editor("BoxHalfExtents",
+                                    l_Shape.box.halfExtents, true)) {
+            l_Changed = true;
+          }
+          ImGui::PopID();
+        } else {
+          ImGui::Text("Shape type not editable");
+        }
+
+        if (l_Changed) {
+          *p_DataPtr = l_Shape;
+        }
+        return l_Changed;
+      }
+
+      template <typename T>
+      ListEditorResult render_list_editor(
+          Util::List<T> &p_Value, const u32 p_ElementType,
+          const Util::TypeIdentifier p_ElementHandleType)
+      {
+        CollectionListResult l_CollResult = Gui::collection_list(
+            [&p_Value, p_ElementType, p_ElementHandleType]() {
+              const float l_AvailableWidth =
+                  ImGui::GetContentRegionAvail().x;
+
+              int l_DeleteAt = -1;
+
+              const float l_ButtonWidth = 50.0f;
+              for (int i = 0; i < p_Value.size(); ++i) {
+                void *i_Value = &p_Value[i];
+
+                int i_ButtonCount = 1;
+
+                ImGui::PushID(i);
+
+                const float i_ReservedWidth =
+                    static_cast<float>(i_ButtonCount) * l_ButtonWidth;
+
+                const float i_EditorWidth =
+                    l_AvailableWidth - i_ReservedWidth;
+
+                ImGui::BeginChild(
+                    "##editor",
+                    ImVec2(i_EditorWidth, ImGui::GetFrameHeight()),
+                    ImGuiChildFlags_None,
+                    ImGuiWindowFlags_NoScrollbar |
+                        ImGuiWindowFlags_NoScrollWithMouse);
+
+                const bool i_Edited = render_single_editor(
+                    p_ElementType, i_Value, p_ElementHandleType);
+
+                ImGui::EndChild();
+
+                ImGui::SameLine();
+
+                if (Gui::Button(LOW_EDITOR_ICON_DELETE)) {
+                  l_DeleteAt = i;
+                }
+
+                ImGui::PopID();
               }
-            }
-            ImGui::EndCombo();
+
+              if (l_DeleteAt >= 0) {
+                p_Value.erase(p_Value.begin() + l_DeleteAt);
+              }
+            },
+            true, "Add", true, p_Value.size());
+
+        if (l_CollResult.added) {
+          p_Value.emplace_back();
+        }
+
+        ListEditorResult l_Result;
+        l_Result.added = l_CollResult.added;
+
+        return l_Result;
+      }
+
+      template <typename T>
+      ListEditorResult _render_list_editor(
+          void *p_List, const u32 p_ElementType,
+          const Util::TypeIdentifier p_ElementHandleType)
+      {
+        return render_list_editor<T>(*(Util::List<T> *)p_List,
+                                     p_ElementType,
+                                     p_ElementHandleType);
+      }
+
+      ListEditorResult render_list_editor(
+          void *p_Value, const u32 p_ElementType,
+          const Util::TypeIdentifier p_ElementHandleType)
+      {
+        if (p_ElementType == Util::RTTI::PropertyType::BOOL) {
+          return _render_list_editor<bool>(p_Value, p_ElementType,
+                                           p_ElementHandleType);
+        } else if (p_ElementType == Util::RTTI::PropertyType::FLOAT) {
+          return _render_list_editor<float>(p_Value, p_ElementType,
+                                            p_ElementHandleType);
+        } else if (p_ElementType == Util::RTTI::PropertyType::INT) {
+          return _render_list_editor<int>(p_Value, p_ElementType,
+                                          p_ElementHandleType);
+        } else if (p_ElementType ==
+                   Util::RTTI::PropertyType::UINT32) {
+          return _render_list_editor<u32>(p_Value, p_ElementType,
+                                          p_ElementHandleType);
+        } else if (p_ElementType == Util::RTTI::PropertyType::NAME) {
+          return _render_list_editor<Util::Name>(
+              p_Value, p_ElementType, p_ElementHandleType);
+        } else if (p_ElementType ==
+                   Util::RTTI::PropertyType::STRING) {
+          return _render_list_editor<Util::String>(
+              p_Value, p_ElementType, p_ElementHandleType);
+        } else if (p_ElementType ==
+                   Util::RTTI::PropertyType::VECTOR2) {
+          return _render_list_editor<Math::Vector2>(
+              p_Value, p_ElementType, p_ElementHandleType);
+        } else if (p_ElementType ==
+                   Util::RTTI::PropertyType::VECTOR3) {
+          return _render_list_editor<Math::Vector3>(
+              p_Value, p_ElementType, p_ElementHandleType);
+        } else if (p_ElementType ==
+                   Util::RTTI::PropertyType::QUATERNION) {
+          return _render_list_editor<Math::Quaternion>(
+              p_Value, p_ElementType, p_ElementHandleType);
+        } else if (p_ElementType == Util::RTTI::PropertyType::COLOR) {
+          return _render_list_editor<Math::Color>(
+              p_Value, p_ElementType, p_ElementHandleType);
+        } else if (p_ElementType ==
+                   Util::RTTI::PropertyType::COLORRGB) {
+          return _render_list_editor<Math::ColorRGB>(
+              p_Value, p_ElementType, p_ElementHandleType);
+        }
+        // TODO: Add handle, enum and structs
+
+        return ListEditorResult();
+      }
+
+      bool
+      render_enum_mask_editor(void *p_Value,
+                              const Util::TypeIdentifier p_EnumType)
+      {
+        Util::RTTI::EnumInfo &l_EnumInfo =
+            Util::get_enum_info(p_EnumType);
+
+        Util::EnumMaskBase *l_Mask = (Util::EnumMaskBase *)p_Value;
+
+        // Preview: "None", "All" or the active entries joined
+        u32 l_ActiveCount = 0;
+        Util::StringBuilder l_Preview;
+        for (const Util::RTTI::EnumEntryInfo &i_Entry :
+             l_EnumInfo.entries) {
+          if (!l_Mask->has_raw(i_Entry.value)) {
+            continue;
+          }
+          if (l_ActiveCount > 0) {
+            l_Preview.append(", ");
+          }
+          l_Preview.append(i_Entry.name);
+          ++l_ActiveCount;
+        }
+
+        Util::String l_PreviewText = l_Preview.get();
+        if (l_ActiveCount == 0) {
+          l_PreviewText = "None";
+        } else if (l_ActiveCount == l_EnumInfo.entries.size() &&
+                   l_ActiveCount > 1) {
+          l_PreviewText = "All";
+        }
+
+        bool l_Changed = false;
+
+        ImGui::PushID("enum_mask");
+
+        // The popup would otherwise inherit the compact row style of
+        // render_line and only be as wide as the combo
+        const float l_PopupMinWidth = 180.0f;
+        ImGui::SetNextWindowSizeConstraints(
+            ImVec2(l_PopupMinWidth, 0.0f), ImVec2(FLT_MAX, 400.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
+                            ImVec2(10.0f, 10.0f));
+        const bool l_Open =
+            ImGui::BeginCombo("##enummask", l_PreviewText.c_str());
+        ImGui::PopStyleVar();
+
+        if (l_Open) {
+          ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
+                              ImVec2(8.0f, 6.0f));
+          ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,
+                              ImVec2(6.0f, 4.0f));
+
+          // Header: selection count + quick actions
+          Util::StringBuilder l_CountText;
+          l_CountText.append(l_ActiveCount)
+              .append(" / ")
+              .append((u32)l_EnumInfo.entries.size());
+          ImGui::PushStyleColor(
+              ImGuiCol_Text,
+              ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+          ImGui::AlignTextToFramePadding();
+          ImGui::TextUnformatted(l_CountText.get().c_str());
+          ImGui::PopStyleColor();
+
+          const float l_ButtonsWidth =
+              ImGui::CalcTextSize("All").x +
+              ImGui::CalcTextSize("None").x + 20.0f * 2.0f +
+              ImGui::GetStyle().ItemSpacing.x;
+          ImGui::SameLine(ImGui::GetContentRegionMax().x -
+                          l_ButtonsWidth);
+          if (Gui::Button("All")) {
+            l_Mask->set_all(Util::get_enum_id(p_EnumType));
+            l_Changed = true;
+          }
+          ImGui::SameLine();
+          if (Gui::Button("None")) {
+            l_Mask->clear();
+            l_Changed = true;
           }
 
-          if (l_Shape.type == Math::ShapeType::BOX) {
-            ImGui::PushID("BOXPOS");
-            if (render_vector3_editor("BoxPosition",
-                                      l_Shape.box.position, true)) {
+          ImGui::Spacing();
+          ImGui::Separator();
+          ImGui::Spacing();
+
+          for (const Util::RTTI::EnumEntryInfo &i_Entry :
+               l_EnumInfo.entries) {
+            bool i_Active = l_Mask->has_raw(i_Entry.value);
+
+            if (Gui::Checkbox(i_Entry.name.c_str(), &i_Active)) {
+              l_Mask->set_raw(i_Entry.value, i_Active);
               l_Changed = true;
             }
-            ImGui::PopID();
-            ImGui::PushID("BOXROT");
-            if (render_quaternion_editor(
-                    "BoxRotation", l_Shape.box.rotation, true)) {
-              l_Changed = true;
-            }
-            ImGui::PopID();
-            ImGui::PushID("BOXSCL");
-            if (render_vector3_editor("BoxHalfExtents",
-                                      l_Shape.box.halfExtents,
-                                      true)) {
-              l_Changed = true;
-            }
-            ImGui::PopID();
-          } else {
-            ImGui::Text("Shape type not editable");
           }
 
-          if (l_Changed) {
-            *p_DataPtr = l_Shape;
+          ImGui::PopStyleVar(2);
+          ImGui::EndCombo();
+        } else if (l_ActiveCount > 1 && ImGui::IsItemHovered()) {
+          // Full list as tooltip in case the preview gets clipped
+          ImGui::BeginTooltip();
+          for (const Util::RTTI::EnumEntryInfo &i_Entry :
+               l_EnumInfo.entries) {
+            if (l_Mask->has_raw(i_Entry.value)) {
+              ImGui::TextUnformatted(i_Entry.name.c_str());
+            }
           }
-          return l_Changed;
-        });
+          ImGui::EndTooltip();
+        }
+
+        ImGui::PopID();
+
+        return l_Changed;
       }
 
       void render_editor(Util::Handle p_Handle,
@@ -1728,6 +1934,121 @@ namespace Low {
         p_Function();
       }
 
+      bool render_single_editor(const u32 p_SingleType, void *p_Value,
+                                const Util::TypeIdentifier p_Type);
+
+      bool render_single_editor(const u32 p_SingleType, void *p_Value)
+      {
+        return render_single_editor(p_SingleType, p_Value,
+                                    Util::TypeIdentifier());
+      }
+
+      bool render_single_editor(const u32 p_SingleType, void *p_Value,
+                                const Util::TypeIdentifier p_Type)
+      {
+        Util::String l_Label = "input";
+        const bool l_RenderLabel = false;
+        ImGui::BeginGroup();
+
+        bool l_Result = false;
+
+        if (p_SingleType == Util::RTTI::PropertyType::ENUM) {
+          l_Result =
+              render_enum_selector(p_Type, (int *)p_Value, "", true);
+        } else if (p_SingleType == Util::RTTI::PropertyType::NAME) {
+          Util::Name &l_Name = *(Util::Name *)p_Value;
+          l_Result =
+              render_name_editor(l_Label, l_Name, l_RenderLabel);
+        } else if (p_SingleType == Util::RTTI::PropertyType::STRING) {
+          Util::String &l_StringValue = *(Util::String *)p_Value;
+
+          l_Result = render_string_editor(l_Label, l_StringValue,
+                                          false, l_RenderLabel);
+        } else if (p_SingleType ==
+                   Util::RTTI::PropertyType::VECTOR2) {
+          Math::Vector2 &l_Vec = *(Math::Vector2 *)p_Value;
+          l_Result =
+              render_vector2_editor(l_Label, l_Vec, l_RenderLabel);
+        } else if (p_SingleType ==
+                   Util::RTTI::PropertyType::VECTOR3) {
+          Math::Vector3 &l_Vec = *(Math::Vector3 *)p_Value;
+          l_Result =
+              render_vector3_editor(l_Label, l_Vec, l_RenderLabel);
+        } else if (p_SingleType ==
+                   Util::RTTI::PropertyType::QUATERNION) {
+          Math::Quaternion &l_Quat = *(Math::Quaternion *)p_Value;
+          l_Result = render_quaternion_editor(l_Label, l_Quat,
+                                              l_RenderLabel);
+        } else if (p_SingleType ==
+                   Util::RTTI::PropertyType::COLORRGB) {
+          Math::ColorRGB &l_Val = *(Math::ColorRGB *)p_Value;
+          l_Result =
+              render_colorrgb_editor(l_Label, l_Val, l_RenderLabel);
+        } else if (p_SingleType == Util::RTTI::PropertyType::COLOR) {
+          Math::Color &l_Val = *(Math::Color *)p_Value;
+          l_Result = render_color_selector(l_Label, &l_Val);
+        } else if (p_SingleType == Util::RTTI::PropertyType::BOOL) {
+          bool &l_Val = *(bool *)p_Value;
+          l_Result = render_checkbox_bool_editor(l_Label, l_Val,
+                                                 l_RenderLabel);
+        } else if (p_SingleType == Util::RTTI::PropertyType::FLOAT) {
+          float &l_Val = *(float *)p_Value;
+          l_Result =
+              render_float_editor(l_Label, l_Val, l_RenderLabel);
+        } else if (p_SingleType == Util::RTTI::PropertyType::UINT32) {
+          u32 &l_Val = *(u32 *)p_Value;
+          l_Result =
+              render_uint32_editor(l_Label, l_Val, l_RenderLabel);
+        } else if (p_SingleType == Util::RTTI::PropertyType::INT) {
+          u32 &l_Val = *(u32 *)p_Value;
+          l_Result =
+              render_uint32_editor(l_Label, l_Val, l_RenderLabel);
+        } else if (p_SingleType == Util::RTTI::PropertyType::SHAPE) {
+          l_Result = render_shape_editor(
+              l_Label, (Math::Shape *)p_Value, l_RenderLabel);
+        } else if (p_SingleType == Util::RTTI::PropertyType::HANDLE) {
+          l_Result = render_handle_selector(
+              l_Label, Util::Handle::type_id(p_Type), (u64 *)p_Value);
+        }
+        ImGui::EndGroup();
+
+        return l_Result;
+      }
+
+      bool render_detail_editor(
+          const u32 p_Type, const u32 p_ContainerType,
+          const Util::TypeIdentifier p_HandleType, void *p_Value)
+      {
+        if (p_Type == Util::RTTI::PropertyType::UNKNOWN) {
+          return false;
+        }
+        if (p_ContainerType == Util::RTTI::ContainerType::LIST) {
+          render_list_editor(p_Value, p_Type, p_HandleType);
+
+          return false;
+        } else if (p_ContainerType ==
+                   Util::RTTI::ContainerType::ENUM_MASK) {
+
+          render_enum_mask_editor(p_Value, p_HandleType);
+          return false;
+
+        } else if (p_ContainerType ==
+                   Util::RTTI::ContainerType::NONE) {
+
+          return render_single_editor(p_Type, p_Value, p_HandleType);
+        }
+        return false;
+      }
+
+      bool render_detail_editor(
+          const Util::RTTI::PropertyInfoBase &p_PropertyInfoBase,
+          void *p_Value)
+      {
+        return render_detail_editor(
+            p_PropertyInfoBase.type, p_PropertyInfoBase.containerType,
+            p_PropertyInfoBase.handleType, p_Value);
+      }
+
       void
       render_editor(Util::String p_Label, Util::Handle p_Handle,
                     Util::RTTI::PropertyInfoBase p_PropertyInfoBase,
@@ -1753,6 +2074,54 @@ namespace Low {
             l_Label = i_Action->icon + " " + l_Label;
           }
         }
+
+        render_line(
+            p_Label, [p_Handle, p_PropertyInfoBase]() -> bool {
+              if (p_PropertyInfoBase.containerType ==
+                  Util::RTTI::ContainerType::LIST) {
+                void *i_Value = nullptr;
+                p_PropertyInfoBase.get(p_Handle, &i_Value);
+
+                return render_detail_editor(p_PropertyInfoBase,
+                                            i_Value);
+              } else if (p_PropertyInfoBase.containerType ==
+                         Util::RTTI::ContainerType::ENUM_MASK) {
+                void *i_Value = nullptr;
+                p_PropertyInfoBase.get(p_Handle, &i_Value);
+
+                return render_detail_editor(p_PropertyInfoBase,
+                                            i_Value);
+              } else {
+                p_PropertyInfoBase.get(p_Handle,
+                                       g_ValueScratchBuffer.data());
+                if (render_detail_editor(
+                        p_PropertyInfoBase,
+                        g_ValueScratchBuffer.data())) {
+                  p_PropertyInfoBase.set(p_Handle,
+                                         g_ValueScratchBuffer.data());
+                  return true;
+                }
+                return false;
+              }
+            });
+        return;
+
+        /*
+          Util::List<bool> test;
+          test.push_back(false);
+          test.push_back(true);
+          test.push_back(true);
+          test.push_back(false);
+          test.push_back(true);
+
+          render_list_editor<bool>(
+              "Test", *reinterpret_cast<Util::List<bool> *>(&test),
+              [](Util::String p_L, bool &p_V) {
+                return render_checkbox_bool_editor(p_L, p_V, false);
+              });
+
+          return;
+          */
 
         ImGui::BeginGroup();
 
@@ -1931,8 +2300,8 @@ namespace Low {
         // Infer continuity from previous item bottom (stateless)
         const float l_PrevBottomY = ImGui::GetItemRectMax().y;
 
-        // Top pad (0 here but keep the call—makes the math stable if
-        // you tweak later)
+        // Top pad (0 here but keep the call—makes the math stable
+        // if you tweak later)
         ImGui::Dummy(ImVec2(0.0f, l_PadY));
         const ImVec2 l_RowTop = ImGui::GetCursorScreenPos();
 
@@ -1957,8 +2326,8 @@ namespace Low {
         ImGui::Dummy(ImVec2(0.0f, l_BaselineNudge));
         ImGui::SetNextItemWidth(l_EditorW);
 
-        // Slightly denser framed controls (optional). Comment out if
-        // you don't want this.
+        // Slightly denser framed controls (optional). Comment out
+        // if you don't want this.
         ImGui::PushStyleVar(
             ImGuiStyleVar_FramePadding,
             ImVec2(l_Style.FramePadding.x,
@@ -1991,16 +2360,28 @@ namespace Low {
 
         ImGui::EndGroup();
 
-        // If editor is taller than text baseline, add the missing
-        // height so we still get a bottom separator flush
-        if (l_EditorH > l_TextH)
-          ImGui::Dummy(ImVec2(0.0f, l_EditorH - l_TextH));
+        // Bottom padding below the editor. The group above already
+        // covers the full editor height, so cap this at the
+        // single-line amount - otherwise tall editors (lists etc.)
+        // get their height added a second time
+        const float l_DenseFrameH =
+            l_FrameH -
+            2.0f * (l_Style.FramePadding.y -
+                    ImMax(0.0f, l_Style.FramePadding.y - 1.0f));
+        const float l_SingleLineEditorH =
+            l_DenseFrameH + l_BaselineNudge / 2.0f;
+        const float l_BottomPadH =
+            ImMin(l_EditorH, l_SingleLineEditorH) - l_TextH;
+        if (l_BottomPadH > 0.0f) {
+          ImGui::Dummy(ImVec2(0.0f, l_BottomPadH));
+        }
 
         // Bottom pad (0 here)
         ImGui::Dummy(ImVec2(0.0f, l_PadY));
         const ImVec2 l_RowBottom = ImGui::GetCursorScreenPos();
 
-        // Label text (ellipsis) vertically centered in final row rect
+        // Label text (ellipsis) vertically centered in final row
+        // rect
         {
           const float l_RowH = l_RowBottom.y - l_RowTop.y;
           const float l_TextY =
@@ -2024,7 +2405,8 @@ namespace Low {
             ImVec2(l_RowTop.x + l_AvailW, yBottomSep),
             ImGui::GetColorU32(ImGuiCol_TableBorderLight));
 
-        // Vertical split from previous (or our top) to current bottom
+        // Vertical split from previous (or our top) to current
+        // bottom
         const float l_SplitX = snap(l_RowTop.x + l_LabelW);
         ImGui::GetWindowDrawList()->AddLine(
             ImVec2(l_SplitX, yTopSep), ImVec2(l_SplitX, yBottomSep),
@@ -2322,6 +2704,28 @@ namespace Low {
 
         return l_Changed;
       }
+
+      void render_struct_editor_standalone(
+          Util::TypeIdentifier p_StructType, void *p_StructPtr)
+      {
+        const Util::RTTI::StructInfo &l_StructInfo =
+            Util::get_struct_info(p_StructType);
+        for (const Util::RTTI::StructFieldInfo &i_Field :
+             l_StructInfo.fields) {
+          const Util::String i_Label =
+              Low::Editor::prettify_name(i_Field.name);
+          render_line(
+              i_Label,
+              [&i_Field, &l_StructInfo, p_StructPtr]() -> bool {
+                return render_detail_editor(
+                    i_Field.type, i_Field.container,
+                    i_Field.referenced_type,
+                    reinterpret_cast<std::byte *>(p_StructPtr) +
+                        i_Field.offset);
+              });
+        }
+      }
+
     } // namespace PropertyEditors
   } // namespace Editor
 } // namespace Low

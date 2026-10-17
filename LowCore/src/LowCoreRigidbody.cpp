@@ -213,9 +213,11 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Rigidbody::Data, motion_type);
           l_PropertyInfo.size = sizeof(Rigidbody::Data::motion_type);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
           l_PropertyInfo.handleType = Low::Core::Physics::
-              BodyMotionTypeEnumHelper::get_enum_id();
+              BodyMotionTypeEnumHelper::get_enum_identifier();
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
@@ -247,6 +249,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Rigidbody::Data, gravity);
           l_PropertyInfo.size = sizeof(Rigidbody::Data::gravity);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -276,6 +280,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(Rigidbody::Data, mass);
           l_PropertyInfo.size = sizeof(Rigidbody::Data::mass);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -305,6 +311,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Rigidbody::Data, body);
           l_PropertyInfo.size = sizeof(Rigidbody::Data::body);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Low::Core::Physics::Body::IDENTIFIER;
@@ -334,6 +342,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Rigidbody::Data, initialized);
           l_PropertyInfo.size = sizeof(Rigidbody::Data::initialized);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -361,6 +371,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Rigidbody::Data, entity);
           l_PropertyInfo.size = sizeof(Rigidbody::Data::entity);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::IDENTIFIER;
           l_PropertyInfo.get_return =
@@ -391,6 +403,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Rigidbody::Data, unique_id);
           l_PropertyInfo.size = sizeof(Rigidbody::Data::unique_id);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -419,6 +433,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Rigidbody::Data, dirty);
           l_PropertyInfo.size = sizeof(Rigidbody::Data::dirty);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

@@ -1,16 +1,23 @@
 find_program(LOW_NODE_EXECUTABLE node REQUIRED)
-set(LOW_LENSGEN_SCRIPT "${LOW_SOURCE_PATH}/LowLens/index.js")
+# Cached so projects that pull the engine in via add_subdirectory() can still
+# call low_lens_generate() from their own directory scope
+set(LOW_LENSGEN_SCRIPT "${LOW_SOURCE_PATH}/LowLens/index.js" CACHE INTERNAL "")
 
 # low_lens_generate(<target> <module_name> <include_dir>
 #   [UPSTREAM_DB <path>...]
 #   [YAML_CONFIGS <path> [PROJECT]...]
+#   [API_MACRO <macro>]
+#   [API_HEADER <header>]
 # )
 #
 # UPSTREAM_DB:   lensdb.yaml files from modules this target depends on
 # YAML_CONFIGS:  engine/project root paths to read YAML type configs from.
 #                Append PROJECT after a path to treat it as a game project root.
+# API_MACRO:     DLL export macro put on the generated declarations, so other
+#                modules can call the generated helpers directly.
+# API_HEADER:    header that defines API_MACRO, included by the .gen.h files.
 function(low_lens_generate p_Target p_ModuleName p_IncludeDir)
-  cmake_parse_arguments(LENS "" "" "UPSTREAM_DB;YAML_CONFIGS" ${ARGN})
+  cmake_parse_arguments(LENS "" "API_MACRO;API_HEADER" "UPSTREAM_DB;YAML_CONFIGS" ${ARGN})
 
   set(l_Output "${CMAKE_CURRENT_BINARY_DIR}/${p_ModuleName}.gen.cpp")
   set(l_DbOutput "${CMAKE_CURRENT_BINARY_DIR}/${p_ModuleName}.lensdb.yaml")
@@ -36,6 +43,13 @@ function(low_lens_generate p_Target p_ModuleName p_IncludeDir)
       list(APPEND l_ExtraArgs "--yaml-configs" "${i_Cfg}")
     endif()
   endforeach()
+
+  if(LENS_API_MACRO)
+    list(APPEND l_ExtraArgs "--api-macro" "${LENS_API_MACRO}")
+  endif()
+  if(LENS_API_HEADER)
+    list(APPEND l_ExtraArgs "--api-header" "${LENS_API_HEADER}")
+  endif()
 
   # Run at configure time so .gen.h files exist before compilation
   file(MAKE_DIRECTORY "${l_GenDir}")

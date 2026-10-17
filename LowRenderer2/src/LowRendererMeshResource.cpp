@@ -151,6 +151,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(MeshResource::Data, path);
         l_PropertyInfo.size = sizeof(MeshResource::Data::path);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -178,6 +180,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(MeshResource::Data, mesh_path);
         l_PropertyInfo.size = sizeof(MeshResource::Data::mesh_path);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -206,6 +210,8 @@ namespace Low {
             offsetof(MeshResource::Data, sidecar_path);
         l_PropertyInfo.size =
             sizeof(MeshResource::Data::sidecar_path);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -233,6 +239,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(MeshResource::Data, source_file);
         l_PropertyInfo.size = sizeof(MeshResource::Data::source_file);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -260,6 +268,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(MeshResource::Data, mesh_id);
         l_PropertyInfo.size = sizeof(MeshResource::Data::mesh_id);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -287,6 +297,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(MeshResource::Data, asset_hash);
         l_PropertyInfo.size = sizeof(MeshResource::Data::asset_hash);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -317,6 +329,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(MeshResource::Data, name);
         l_PropertyInfo.size = sizeof(MeshResource::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

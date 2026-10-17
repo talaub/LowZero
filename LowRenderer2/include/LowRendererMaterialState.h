@@ -4,6 +4,7 @@
 
 #include "LowMath.h"
 #include "LowUtilName.h"
+#include "LowUtilHandle.h"
 
 namespace Low {
   namespace Renderer {
@@ -31,6 +32,9 @@ namespace Low {
       uint8_t LOW_RENDERER2_API _entry_value(Low::Util::Name p_Name);
 
       u16 LOW_RENDERER2_API get_enum_id();
+
+      Low::Util::TypeIdentifier LOW_RENDERER2_API
+      get_enum_identifier();
 
       u8 LOW_RENDERER2_API get_entry_count();
     } // namespace MaterialStateEnumHelper

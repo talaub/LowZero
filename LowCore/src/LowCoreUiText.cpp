@@ -193,6 +193,8 @@ namespace Low {
             l_PropertyInfo.dataOffset =
                 offsetof(Text::Data, draw_commands);
             l_PropertyInfo.size = sizeof(Text::Data::draw_commands);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::LIST;
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UNKNOWN;
             l_PropertyInfo.handleType = 0;
@@ -214,8 +216,7 @@ namespace Low {
             l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                     void *p_Data) {
               Text l_Handle = p_Handle.get_id();
-              *((Low::Util::List<Low::Renderer::UiDrawCommand> *)
-                    p_Data) = l_Handle.get_draw_commands();
+              *((void **)p_Data) = &l_Handle.get_draw_commands();
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
@@ -228,6 +229,8 @@ namespace Low {
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset = offsetof(Text::Data, text);
             l_PropertyInfo.size = sizeof(Text::Data::text);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::STRING;
             l_PropertyInfo.handleType = 0;
@@ -259,6 +262,8 @@ namespace Low {
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset = offsetof(Text::Data, font);
             l_PropertyInfo.size = sizeof(Text::Data::font);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType =
@@ -291,6 +296,8 @@ namespace Low {
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset = offsetof(Text::Data, color);
             l_PropertyInfo.size = sizeof(Text::Data::color);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::COLOR;
             l_PropertyInfo.handleType = 0;
@@ -322,6 +329,8 @@ namespace Low {
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset = offsetof(Text::Data, size);
             l_PropertyInfo.size = sizeof(Text::Data::size);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::FLOAT;
             l_PropertyInfo.handleType = 0;
@@ -355,6 +364,8 @@ namespace Low {
                 offsetof(Text::Data, content_fit_approach);
             l_PropertyInfo.size =
                 sizeof(Text::Data::content_fit_approach);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UNKNOWN;
             l_PropertyInfo.handleType = 0;
@@ -389,6 +400,8 @@ namespace Low {
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset = offsetof(Text::Data, element);
             l_PropertyInfo.size = sizeof(Text::Data::element);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType =
@@ -423,6 +436,8 @@ namespace Low {
             l_PropertyInfo.dataOffset =
                 offsetof(Text::Data, unique_id);
             l_PropertyInfo.size = sizeof(Text::Data::unique_id);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UINT64;
             l_PropertyInfo.handleType = 0;
@@ -453,6 +468,8 @@ namespace Low {
             l_PropertyInfo.dataOffset =
                 offsetof(Text::Data, full_dirty);
             l_PropertyInfo.size = sizeof(Text::Data::full_dirty);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
@@ -483,6 +500,8 @@ namespace Low {
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset = offsetof(Text::Data, dirty);
             l_PropertyInfo.size = sizeof(Text::Data::dirty);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
@@ -671,8 +690,6 @@ namespace Low {
           Text l_Handle =
               Text::make(p_Creator.get_id(), l_HandleUniqueId);
 
-          if (p_Node["draw_commands"]) {
-          }
           if (p_Node["text"]) {
             l_Handle.set_text(p_Node["text"].as<Low::Util::String>());
           }

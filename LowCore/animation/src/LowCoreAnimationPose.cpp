@@ -477,6 +477,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Pose::Data, skinning_pose);
           l_PropertyInfo.size = sizeof(Pose::Data::skinning_pose);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Renderer::SkinningPose::IDENTIFIER;
@@ -510,6 +512,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Pose::Data, name);
           l_PropertyInfo.size = sizeof(Pose::Data::name);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

@@ -162,6 +162,8 @@ namespace Low {
             offsetof(MaterialType::Data, gbuffer_pipeline);
         l_PropertyInfo.size =
             sizeof(MaterialType::Data::gbuffer_pipeline);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -196,6 +198,8 @@ namespace Low {
             offsetof(MaterialType::Data, depth_pipeline);
         l_PropertyInfo.size =
             sizeof(MaterialType::Data::depth_pipeline);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -229,6 +233,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(MaterialType::Data, internal);
         l_PropertyInfo.size = sizeof(MaterialType::Data::internal);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -259,6 +265,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(MaterialType::Data, properties);
         l_PropertyInfo.size = sizeof(MaterialType::Data::properties);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -278,8 +286,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           MaterialType l_Handle = p_Handle.get_id();
-          *((Util::List<MaterialTypeProperty> *)p_Data) =
-              l_Handle.get_properties();
+          *((void **)p_Data) = &l_Handle.get_properties();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: properties
@@ -292,6 +299,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(MaterialType::Data, name);
         l_PropertyInfo.size = sizeof(MaterialType::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

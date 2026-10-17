@@ -167,6 +167,8 @@ namespace Low {
               offsetof(PipelineResourceSignature::Data, signature);
           l_PropertyInfo.size =
               sizeof(PipelineResourceSignature::Data::signature);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -198,6 +200,8 @@ namespace Low {
               offsetof(PipelineResourceSignature::Data, name);
           l_PropertyInfo.size =
               sizeof(PipelineResourceSignature::Data::name);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

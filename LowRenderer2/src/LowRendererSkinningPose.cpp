@@ -163,6 +163,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(SkinningPose::Data, matrices);
         l_PropertyInfo.size = sizeof(SkinningPose::Data::matrices);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -178,8 +180,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SkinningPose l_Handle = p_Handle.get_id();
-          *((Util::List<Math::Matrix4x4> *)p_Data) =
-              l_Handle.get_matrices();
+          *((void **)p_Data) = &l_Handle.get_matrices();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: matrices
@@ -192,6 +193,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(SkinningPose::Data, skeleton);
         l_PropertyInfo.size = sizeof(SkinningPose::Data::skeleton);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Skeleton::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -223,6 +226,8 @@ namespace Low {
             offsetof(SkinningPose::Data, pose_palette_offset);
         l_PropertyInfo.size =
             sizeof(SkinningPose::Data::pose_palette_offset);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -253,6 +258,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(SkinningPose::Data, uploaded);
         l_PropertyInfo.size = sizeof(SkinningPose::Data::uploaded);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -283,7 +290,9 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(SkinningPose::Data, references);
         l_PropertyInfo.size = sizeof(SkinningPose::Data::references);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::SET;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
@@ -304,6 +313,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(SkinningPose::Data, dirty);
         l_PropertyInfo.size = sizeof(SkinningPose::Data::dirty);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -334,6 +345,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(SkinningPose::Data, name);
         l_PropertyInfo.size = sizeof(SkinningPose::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

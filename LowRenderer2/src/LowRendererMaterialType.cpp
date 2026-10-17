@@ -198,6 +198,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(MaterialType::Data, transparent);
         l_PropertyInfo.size = sizeof(MaterialType::Data::transparent);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -229,6 +231,8 @@ namespace Low {
             offsetof(MaterialType::Data, pick_pipeline_handle);
         l_PropertyInfo.size =
             sizeof(MaterialType::Data::pick_pipeline_handle);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -260,6 +264,8 @@ namespace Low {
             offsetof(MaterialType::Data, highlight_pipeline_handle);
         l_PropertyInfo.size =
             sizeof(MaterialType::Data::highlight_pipeline_handle);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -293,6 +299,8 @@ namespace Low {
             offsetof(MaterialType::Data, shadow_pipeline_handle);
         l_PropertyInfo.size =
             sizeof(MaterialType::Data::shadow_pipeline_handle);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -326,6 +334,8 @@ namespace Low {
             offsetof(MaterialType::Data, casts_shadows);
         l_PropertyInfo.size =
             sizeof(MaterialType::Data::casts_shadows);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -357,6 +367,8 @@ namespace Low {
             offsetof(MaterialType::Data, allows_picking);
         l_PropertyInfo.size =
             sizeof(MaterialType::Data::allows_picking);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -388,6 +400,8 @@ namespace Low {
             offsetof(MaterialType::Data, allows_highlighting);
         l_PropertyInfo.size =
             sizeof(MaterialType::Data::allows_highlighting);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -419,6 +433,8 @@ namespace Low {
             offsetof(MaterialType::Data, draw_pipeline_handle);
         l_PropertyInfo.size =
             sizeof(MaterialType::Data::draw_pipeline_handle);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -450,6 +466,8 @@ namespace Low {
             offsetof(MaterialType::Data, depth_pipeline_handle);
         l_PropertyInfo.size =
             sizeof(MaterialType::Data::depth_pipeline_handle);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -482,6 +500,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(MaterialType::Data, inputs);
         l_PropertyInfo.size = sizeof(MaterialType::Data::inputs);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -503,6 +523,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(MaterialType::Data, initialized);
         l_PropertyInfo.size = sizeof(MaterialType::Data::initialized);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -534,6 +556,8 @@ namespace Low {
             offsetof(MaterialType::Data, highlight_pipeline_config);
         l_PropertyInfo.size =
             sizeof(MaterialType::Data::highlight_pipeline_config);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -564,6 +588,8 @@ namespace Low {
             offsetof(MaterialType::Data, pick_pipeline_config);
         l_PropertyInfo.size =
             sizeof(MaterialType::Data::pick_pipeline_config);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -594,6 +620,8 @@ namespace Low {
             offsetof(MaterialType::Data, draw_pipeline_config);
         l_PropertyInfo.size =
             sizeof(MaterialType::Data::draw_pipeline_config);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -624,6 +652,8 @@ namespace Low {
             offsetof(MaterialType::Data, depth_pipeline_config);
         l_PropertyInfo.size =
             sizeof(MaterialType::Data::depth_pipeline_config);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -654,6 +684,8 @@ namespace Low {
             offsetof(MaterialType::Data, shadow_pipeline_config);
         l_PropertyInfo.size =
             sizeof(MaterialType::Data::shadow_pipeline_config);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -683,9 +715,11 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(MaterialType::Data, family);
         l_PropertyInfo.size = sizeof(MaterialType::Data::family);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
         l_PropertyInfo.handleType = Low::Renderer::
-            MaterialTypeFamilyEnumHelper::get_enum_id();
+            MaterialTypeFamilyEnumHelper::get_enum_identifier();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MaterialType l_Handle = p_Handle.get_id();
@@ -713,6 +747,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(MaterialType::Data, name);
         l_PropertyInfo.size = sizeof(MaterialType::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -1179,8 +1215,6 @@ namespace Low {
       if (p_Node["depth_pipeline_handle"]) {
         l_Handle.set_depth_pipeline_handle(
             p_Node["depth_pipeline_handle"].as<uint64_t>());
-      }
-      if (p_Node["inputs"]) {
       }
       if (p_Node["initialized"]) {
         l_Handle.set_initialized(p_Node["initialized"].as<bool>());

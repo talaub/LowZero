@@ -21,11 +21,18 @@ namespace Low {
       }
 
     private:
+      void render_title_bar_buttons();
+
       Util::Handle m_Handle;
       TypeMetadata m_Metadata;
       Util::String m_Title;
 
       TypeEditor *m_Editor;
+
+      bool m_Maximized = false;
+      bool m_RestorePending = false;
+      Math::Vector2 m_RestorePosition;
+      Math::Vector2 m_RestoreSize;
     };
   } // namespace Editor
 } // namespace Low

@@ -203,6 +203,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStep::Data, resources);
         l_PropertyInfo.size = sizeof(GraphicsStep::Data::resources);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -232,6 +234,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStep::Data, config);
         l_PropertyInfo.size = sizeof(GraphicsStep::Data::config);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = GraphicsStepConfig::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -259,6 +263,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStep::Data, pipelines);
         l_PropertyInfo.size = sizeof(GraphicsStep::Data::pipelines);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -292,6 +298,8 @@ namespace Low {
             offsetof(GraphicsStep::Data, renderobjects);
         l_PropertyInfo.size =
             sizeof(GraphicsStep::Data::renderobjects);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -325,6 +333,8 @@ namespace Low {
             offsetof(GraphicsStep::Data, skinned_renderobjects);
         l_PropertyInfo.size =
             sizeof(GraphicsStep::Data::skinned_renderobjects);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -356,6 +366,8 @@ namespace Low {
             offsetof(GraphicsStep::Data, renderpasses);
         l_PropertyInfo.size =
             sizeof(GraphicsStep::Data::renderpasses);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -386,6 +398,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStep::Data, context);
         l_PropertyInfo.size = sizeof(GraphicsStep::Data::context);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Interface::Context::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -414,6 +428,8 @@ namespace Low {
             offsetof(GraphicsStep::Data, pipeline_signatures);
         l_PropertyInfo.size =
             sizeof(GraphicsStep::Data::pipeline_signatures);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -455,6 +471,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStep::Data, signatures);
         l_PropertyInfo.size = sizeof(GraphicsStep::Data::signatures);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -488,6 +506,8 @@ namespace Low {
             offsetof(GraphicsStep::Data, output_image);
         l_PropertyInfo.size =
             sizeof(GraphicsStep::Data::output_image);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Resource::Image::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -518,6 +538,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStep::Data, name);
         l_PropertyInfo.size = sizeof(GraphicsStep::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

@@ -311,6 +311,8 @@ namespace Low {
             offsetof(RenderView::Data, scheduled_for_deletion);
         l_PropertyInfo.size =
             sizeof(RenderView::Data::scheduled_for_deletion);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -342,6 +344,8 @@ namespace Low {
             offsetof(RenderView::Data, camera_position);
         l_PropertyInfo.size =
             sizeof(RenderView::Data::camera_position);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -375,6 +379,8 @@ namespace Low {
             offsetof(RenderView::Data, camera_direction);
         l_PropertyInfo.size =
             sizeof(RenderView::Data::camera_direction);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -408,6 +414,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, camera_fov);
         l_PropertyInfo.size = sizeof(RenderView::Data::camera_fov);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -439,6 +447,8 @@ namespace Low {
             offsetof(RenderView::Data, ui_camera_position);
         l_PropertyInfo.size =
             sizeof(RenderView::Data::ui_camera_position);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR2;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -473,6 +483,8 @@ namespace Low {
             offsetof(RenderView::Data, ui_camera_zoom);
         l_PropertyInfo.size =
             sizeof(RenderView::Data::ui_camera_zoom);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -504,6 +516,8 @@ namespace Low {
             offsetof(RenderView::Data, ui_projection_matrix);
         l_PropertyInfo.size =
             sizeof(RenderView::Data::ui_projection_matrix);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -538,6 +552,8 @@ namespace Low {
             offsetof(RenderView::Data, ui_view_matrix);
         l_PropertyInfo.size =
             sizeof(RenderView::Data::ui_view_matrix);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -572,6 +588,8 @@ namespace Low {
             offsetof(RenderView::Data, render_target_handle);
         l_PropertyInfo.size =
             sizeof(RenderView::Data::render_target_handle);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -603,6 +621,8 @@ namespace Low {
             offsetof(RenderView::Data, view_info_handle);
         l_PropertyInfo.size =
             sizeof(RenderView::Data::view_info_handle);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -633,6 +653,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, dimensions);
         l_PropertyInfo.size = sizeof(RenderView::Data::dimensions);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -666,6 +688,8 @@ namespace Low {
             offsetof(RenderView::Data, desired_dimensions);
         l_PropertyInfo.size =
             sizeof(RenderView::Data::desired_dimensions);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -698,6 +722,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, render_scene);
         l_PropertyInfo.size = sizeof(RenderView::Data::render_scene);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::RenderScene::IDENTIFIER;
@@ -733,6 +759,8 @@ namespace Low {
             offsetof(RenderView::Data, gbuffer_albedo);
         l_PropertyInfo.size =
             sizeof(RenderView::Data::gbuffer_albedo);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::Texture::IDENTIFIER;
@@ -768,6 +796,8 @@ namespace Low {
             offsetof(RenderView::Data, gbuffer_normals);
         l_PropertyInfo.size =
             sizeof(RenderView::Data::gbuffer_normals);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::Texture::IDENTIFIER;
@@ -802,6 +832,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, gbuffer_depth);
         l_PropertyInfo.size = sizeof(RenderView::Data::gbuffer_depth);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::Texture::IDENTIFIER;
@@ -837,6 +869,8 @@ namespace Low {
             offsetof(RenderView::Data, gbuffer_viewposition);
         l_PropertyInfo.size =
             sizeof(RenderView::Data::gbuffer_viewposition);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::Texture::IDENTIFIER;
@@ -871,6 +905,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, object_map);
         l_PropertyInfo.size = sizeof(RenderView::Data::object_map);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::Texture::IDENTIFIER;
@@ -904,6 +940,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, highlight_map);
         l_PropertyInfo.size = sizeof(RenderView::Data::highlight_map);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::Texture::IDENTIFIER;
@@ -938,6 +976,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, lit_image);
         l_PropertyInfo.size = sizeof(RenderView::Data::lit_image);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::Texture::IDENTIFIER;
@@ -971,6 +1011,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, ssgi_image);
         l_PropertyInfo.size = sizeof(RenderView::Data::ssgi_image);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::Texture::IDENTIFIER;
@@ -1004,6 +1046,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, blurred_image);
         l_PropertyInfo.size = sizeof(RenderView::Data::blurred_image);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::Texture::IDENTIFIER;
@@ -1038,6 +1082,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, ssao_image);
         l_PropertyInfo.size = sizeof(RenderView::Data::ssao_image);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::Texture::IDENTIFIER;
@@ -1072,6 +1118,8 @@ namespace Low {
             offsetof(RenderView::Data, cavities_image);
         l_PropertyInfo.size =
             sizeof(RenderView::Data::cavities_image);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::Texture::IDENTIFIER;
@@ -1107,6 +1155,8 @@ namespace Low {
             offsetof(RenderView::Data, tonemapped_image);
         l_PropertyInfo.size =
             sizeof(RenderView::Data::tonemapped_image);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::Texture::IDENTIFIER;
@@ -1141,6 +1191,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, shadow_atlas);
         l_PropertyInfo.size = sizeof(RenderView::Data::shadow_atlas);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::Texture::IDENTIFIER;
@@ -1174,6 +1226,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RenderView::Data, steps);
         l_PropertyInfo.size = sizeof(RenderView::Data::steps);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -1189,8 +1243,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          *((Low::Util::List<Low::Renderer::RenderStep> *)p_Data) =
-              l_Handle.get_steps();
+          *((void **)p_Data) = &l_Handle.get_steps();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: steps
@@ -1203,6 +1256,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, step_data);
         l_PropertyInfo.size = sizeof(RenderView::Data::step_data);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -1222,8 +1277,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          *((Low::Util::List<RenderStepDataPtr> *)p_Data) =
-              l_Handle.get_step_data();
+          *((void **)p_Data) = &l_Handle.get_step_data();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: step_data
@@ -1236,6 +1290,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, ui_canvases);
         l_PropertyInfo.size = sizeof(RenderView::Data::ui_canvases);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -1251,8 +1307,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          *((Low::Util::List<Low::Renderer::UiCanvas> *)p_Data) =
-              l_Handle.get_ui_canvases();
+          *((void **)p_Data) = &l_Handle.get_ui_canvases();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: ui_canvases
@@ -1266,6 +1321,8 @@ namespace Low {
             offsetof(RenderView::Data, debug_geometry);
         l_PropertyInfo.size =
             sizeof(RenderView::Data::debug_geometry);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -1281,8 +1338,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          *((Low::Util::List<Low::Renderer::DebugGeometryDraw> *)
-                p_Data) = l_Handle.get_debug_geometry();
+          *((void **)p_Data) = &l_Handle.get_debug_geometry();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: debug_geometry
@@ -1296,6 +1352,8 @@ namespace Low {
             offsetof(RenderView::Data, debug_geometry_lines);
         l_PropertyInfo.size =
             sizeof(RenderView::Data::debug_geometry_lines);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -1311,8 +1369,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          *((Low::Util::List<Low::Renderer::DebugLineDraw> *)p_Data) =
-              l_Handle.get_debug_geometry_lines();
+          *((void **)p_Data) = &l_Handle.get_debug_geometry_lines();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: debug_geometry_lines
@@ -1326,6 +1383,8 @@ namespace Low {
             offsetof(RenderView::Data, debug_geometry_triangles);
         l_PropertyInfo.size =
             sizeof(RenderView::Data::debug_geometry_triangles);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -1341,8 +1400,8 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          *((Low::Util::List<Low::Renderer::DebugTriangleDraw> *)
-                p_Data) = l_Handle.get_debug_geometry_triangles();
+          *((void **)p_Data) =
+              &l_Handle.get_debug_geometry_triangles();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: debug_geometry_triangles
@@ -1356,6 +1415,8 @@ namespace Low {
             offsetof(RenderView::Data, highlight_draws_solid);
         l_PropertyInfo.size =
             sizeof(RenderView::Data::highlight_draws_solid);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -1371,8 +1432,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          *((Low::Util::List<Low::Renderer::HighlightDrawSolid> *)
-                p_Data) = l_Handle.get_highlight_draws_solid();
+          *((void **)p_Data) = &l_Handle.get_highlight_draws_solid();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: highlight_draws_solid
@@ -1386,6 +1446,8 @@ namespace Low {
             RenderView::Data, highlight_draws_debug_geometry);
         l_PropertyInfo.size =
             sizeof(RenderView::Data::highlight_draws_debug_geometry);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -1402,9 +1464,8 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderView l_Handle = p_Handle.get_id();
-          *((Low::Util::List<
-              Low::Renderer::HighlightDrawDebugGeometry> *)p_Data) =
-              l_Handle.get_highlight_draws_debug_geometry();
+          *((void **)p_Data) =
+              &l_Handle.get_highlight_draws_debug_geometry();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: highlight_draws_debug_geometry
@@ -1417,6 +1478,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, camera_dirty);
         l_PropertyInfo.size = sizeof(RenderView::Data::camera_dirty);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -1448,6 +1511,8 @@ namespace Low {
             offsetof(RenderView::Data, dimensions_dirty);
         l_PropertyInfo.size =
             sizeof(RenderView::Data::dimensions_dirty);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -1477,6 +1542,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RenderView::Data, name);
         l_PropertyInfo.size = sizeof(RenderView::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

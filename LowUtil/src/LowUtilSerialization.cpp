@@ -213,8 +213,6 @@ namespace Low {
         if (l_EnumInfo.identifier.name.m_Index != 0) {
           p_Node["enum_identifier"] =
               ((Util::String)l_EnumInfo.identifier).c_str();
-        } else {
-          p_Node["enum_id"] = p_EnumId;
         }
         p_Node["enum_value"] =
             l_EnumInfo.entry_name(p_EnumValue).c_str();
@@ -349,8 +347,6 @@ namespace Low {
           TypeIdentifier l_Identifier = TypeIdentifier::from_string(
               p_Node["enum_identifier"].as<String>());
           l_EnumInfo = &get_enum_info(l_Identifier);
-        } else {
-          l_EnumInfo = &get_enum_info(p_Node["enum_id"].as<u16>());
         }
 
         return l_EnumInfo->entry_value(
@@ -379,9 +375,10 @@ namespace Low {
         }
       }
 
-      static void serialize_list_field(Node &p_Node,
-                                       const RTTI::StructFieldInfo &p_Field,
-                                       void *l_FieldPtr)
+      static void
+      serialize_list_field(Node &p_Node,
+                           const RTTI::StructFieldInfo &p_Field,
+                           void *l_FieldPtr)
       {
         switch (p_Field.type) {
         case RTTI::PropertyType::FLOAT:
@@ -449,9 +446,10 @@ namespace Low {
         }
       }
 
-      static void deserialize_list_field(Node &p_Node,
-                                         const RTTI::StructFieldInfo &p_Field,
-                                         void *l_FieldPtr)
+      static void
+      deserialize_list_field(Node &p_Node,
+                             const RTTI::StructFieldInfo &p_Field,
+                             void *l_FieldPtr)
       {
         switch (p_Field.type) {
         case RTTI::PropertyType::FLOAT:
@@ -491,7 +489,8 @@ namespace Low {
           deserialize_scalar_list<Math::Vector4>(p_Node, l_FieldPtr);
           break;
         case RTTI::PropertyType::QUATERNION:
-          deserialize_scalar_list<Math::Quaternion>(p_Node, l_FieldPtr);
+          deserialize_scalar_list<Math::Quaternion>(p_Node,
+                                                    l_FieldPtr);
           break;
         case RTTI::PropertyType::HANDLE: {
           auto &l_List = *static_cast<List<Handle> *>(l_FieldPtr);
@@ -518,9 +517,10 @@ namespace Low {
         }
       }
 
-      static void serialize_field(Node &p_Node,
-                                    const RTTI::StructFieldInfo &p_Field,
-                                    void *p_Instance)
+      static void
+      serialize_field(Node &p_Node,
+                      const RTTI::StructFieldInfo &p_Field,
+                      void *p_Instance)
       {
         void *l_FieldPtr =
             static_cast<char *>(p_Instance) + p_Field.offset;
@@ -575,8 +575,7 @@ namespace Low {
                            *static_cast<Handle *>(l_FieldPtr));
           break;
         case RTTI::PropertyType::ENUM:
-          serialize_enum(p_Node,
-                         get_enum_id(p_Field.referenced_type),
+          serialize_enum(p_Node, get_enum_id(p_Field.referenced_type),
                          *static_cast<u8 *>(l_FieldPtr));
           break;
         case RTTI::PropertyType::STRUCT:
@@ -588,9 +587,10 @@ namespace Low {
         }
       }
 
-      static void deserialize_field(Node &p_Node,
-                                     const RTTI::StructFieldInfo &p_Field,
-                                     void *p_Instance)
+      static void
+      deserialize_field(Node &p_Node,
+                        const RTTI::StructFieldInfo &p_Field,
+                        void *p_Instance)
       {
         void *l_FieldPtr =
             static_cast<char *>(p_Instance) + p_Field.offset;
@@ -664,8 +664,7 @@ namespace Low {
       {
         RTTI::StructInfo &l_Info = get_struct_info(p_Identifier);
 
-        p_Node["struct_type"] =
-            ((String)l_Info.identifier).c_str();
+        p_Node["struct_type"] = ((String)l_Info.identifier).c_str();
 
         Node &l_Fields = p_Node["fields"];
         for (const RTTI::StructFieldInfo &i_Field : l_Info.fields) {

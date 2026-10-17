@@ -2,7 +2,6 @@
 
 #include <algorithm>
 
-#include "LowCoreUiController.h"
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
@@ -217,6 +216,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(WidgetAsset::Data, state);
           l_PropertyInfo.size = sizeof(WidgetAsset::Data::state);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -250,6 +251,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(WidgetAsset::Data, content);
           l_PropertyInfo.size = sizeof(WidgetAsset::Data::content);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::LIST;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -271,8 +274,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             WidgetAsset l_Handle = p_Handle.get_id();
-            *((Low::Util::List<Low::Core::UI::ElementDescriptor> *)
-                  p_Data) = l_Handle.get_content();
+            *((void **)p_Data) = &l_Handle.get_content();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: content
@@ -285,6 +287,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(WidgetAsset::Data, path);
           l_PropertyInfo.size = sizeof(WidgetAsset::Data::path);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -312,6 +316,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(WidgetAsset::Data, data_path);
           l_PropertyInfo.size = sizeof(WidgetAsset::Data::data_path);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -339,6 +345,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(WidgetAsset::Data, controller);
           l_PropertyInfo.size = sizeof(WidgetAsset::Data::controller);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Low::Core::UI::Controller::IDENTIFIER;
@@ -374,6 +382,8 @@ namespace Low {
               offsetof(WidgetAsset::Data, has_custom_controller);
           l_PropertyInfo.size =
               sizeof(WidgetAsset::Data::has_custom_controller);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -405,6 +415,8 @@ namespace Low {
               offsetof(WidgetAsset::Data, local_element_id_counter);
           l_PropertyInfo.size =
               sizeof(WidgetAsset::Data::local_element_id_counter);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -427,6 +439,8 @@ namespace Low {
               offsetof(WidgetAsset::Data, custom_controller_id);
           l_PropertyInfo.size =
               sizeof(WidgetAsset::Data::custom_controller_id);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -459,6 +473,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(WidgetAsset::Data, bindings);
           l_PropertyInfo.size = sizeof(WidgetAsset::Data::bindings);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::LIST;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -479,8 +495,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             WidgetAsset l_Handle = p_Handle.get_id();
-            *((Low::Util::List<BindingDescription> *)p_Data) =
-                l_Handle.get_bindings();
+            *((void **)p_Data) = &l_Handle.get_bindings();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: bindings
@@ -493,6 +508,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(WidgetAsset::Data, unique_id);
           l_PropertyInfo.size = sizeof(WidgetAsset::Data::unique_id);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -522,6 +539,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(WidgetAsset::Data, name);
           l_PropertyInfo.size = sizeof(WidgetAsset::Data::name);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -2221,5 +2240,5 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace UI
-  } // namespace Core
+  }   // namespace Core
 } // namespace Low

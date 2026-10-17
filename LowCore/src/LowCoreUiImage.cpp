@@ -194,6 +194,8 @@ namespace Low {
             l_PropertyInfo.dataOffset =
                 offsetof(Image::Data, texture);
             l_PropertyInfo.size = sizeof(Image::Data::texture);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType =
@@ -228,6 +230,8 @@ namespace Low {
             l_PropertyInfo.dataOffset =
                 offsetof(Image::Data, material);
             l_PropertyInfo.size = sizeof(Image::Data::material);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType =
@@ -263,6 +267,8 @@ namespace Low {
             l_PropertyInfo.dataOffset =
                 offsetof(Image::Data, render_object);
             l_PropertyInfo.size = sizeof(Image::Data::render_object);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType =
@@ -299,6 +305,8 @@ namespace Low {
             l_PropertyInfo.dataOffset =
                 offsetof(Image::Data, element);
             l_PropertyInfo.size = sizeof(Image::Data::element);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType =
@@ -333,6 +341,8 @@ namespace Low {
             l_PropertyInfo.dataOffset =
                 offsetof(Image::Data, unique_id);
             l_PropertyInfo.size = sizeof(Image::Data::unique_id);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UINT64;
             l_PropertyInfo.handleType = 0;
@@ -362,6 +372,8 @@ namespace Low {
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset = offsetof(Image::Data, dirty);
             l_PropertyInfo.size = sizeof(Image::Data::dirty);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =

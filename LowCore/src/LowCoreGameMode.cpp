@@ -167,6 +167,8 @@ namespace Low {
             offsetof(GameMode::Data, tick_function_name);
         l_PropertyInfo.size =
             sizeof(GameMode::Data::tick_function_name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -198,6 +200,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GameMode::Data, unique_id);
         l_PropertyInfo.size = sizeof(GameMode::Data::unique_id);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -224,6 +228,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = true;
         l_PropertyInfo.dataOffset = offsetof(GameMode::Data, name);
         l_PropertyInfo.size = sizeof(GameMode::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

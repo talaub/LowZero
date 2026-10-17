@@ -168,7 +168,9 @@ namespace Low {
         enum Enum
         {
           NONE,
-          LIST
+          LIST,
+          SET,
+          ENUM_MASK
         };
       }
 
@@ -178,6 +180,7 @@ namespace Low {
       {
         Util::Name name;
         u32 type;
+        u32 containerType;
         TypeIdentifier handleType;
         bool editorProperty;
         void (*get)(Handle, void *);

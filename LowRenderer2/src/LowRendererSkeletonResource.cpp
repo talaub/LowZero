@@ -147,6 +147,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(SkeletonResource::Data, path);
         l_PropertyInfo.size = sizeof(SkeletonResource::Data::path);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -175,6 +177,8 @@ namespace Low {
             offsetof(SkeletonResource::Data, data_path);
         l_PropertyInfo.size =
             sizeof(SkeletonResource::Data::data_path);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -203,6 +207,8 @@ namespace Low {
             offsetof(SkeletonResource::Data, skeleton_id);
         l_PropertyInfo.size =
             sizeof(SkeletonResource::Data::skeleton_id);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -230,6 +236,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(SkeletonResource::Data, name);
         l_PropertyInfo.size = sizeof(SkeletonResource::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

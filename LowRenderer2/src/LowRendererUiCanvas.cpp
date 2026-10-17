@@ -153,6 +153,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(UiCanvas::Data, z_sorting);
         l_PropertyInfo.size = sizeof(UiCanvas::Data::z_sorting);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -183,6 +185,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(UiCanvas::Data, draw_commands);
         l_PropertyInfo.size = sizeof(UiCanvas::Data::draw_commands);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -198,8 +202,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiCanvas l_Handle = p_Handle.get_id();
-          *((Low::Util::List<UiDrawCommand> *)p_Data) =
-              l_Handle.get_draw_commands();
+          *((void **)p_Data) = &l_Handle.get_draw_commands();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: draw_commands
@@ -211,6 +214,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(UiCanvas::Data, z_dirty);
         l_PropertyInfo.size = sizeof(UiCanvas::Data::z_dirty);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -240,6 +245,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(UiCanvas::Data, name);
         l_PropertyInfo.size = sizeof(UiCanvas::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -424,8 +431,6 @@ namespace Low {
 
       if (p_Node["z_sorting"]) {
         l_Handle.set_z_sorting(p_Node["z_sorting"].as<uint32_t>());
-      }
-      if (p_Node["draw_commands"]) {
       }
       if (p_Node["name"]) {
         l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());

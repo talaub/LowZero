@@ -314,6 +314,8 @@ namespace Low {
               offsetof(ViewInfo::Data, dirty_point_lights);
           l_PropertyInfo.size =
               sizeof(ViewInfo::Data::dirty_point_lights);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::SET;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -345,8 +347,9 @@ namespace Low {
               offsetof(ViewInfo::Data, freed_point_light_slots);
           l_PropertyInfo.size =
               sizeof(ViewInfo::Data::freed_point_light_slots);
-          l_PropertyInfo.type =
-              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::SET;
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
@@ -376,6 +379,8 @@ namespace Low {
               offsetof(ViewInfo::Data, shadow_pass_data);
           l_PropertyInfo.size =
               sizeof(ViewInfo::Data::shadow_pass_data);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -411,6 +416,8 @@ namespace Low {
               offsetof(ViewInfo::Data, directional_light_shadow_info);
           l_PropertyInfo.size =
               sizeof(ViewInfo::Data::directional_light_shadow_info);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -446,6 +453,8 @@ namespace Low {
               offsetof(ViewInfo::Data, view_data_buffer);
           l_PropertyInfo.size =
               sizeof(ViewInfo::Data::view_data_buffer);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -480,6 +489,8 @@ namespace Low {
               offsetof(ViewInfo::Data, directional_light_buffer);
           l_PropertyInfo.size =
               sizeof(ViewInfo::Data::directional_light_buffer);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -515,6 +526,8 @@ namespace Low {
               offsetof(ViewInfo::Data, view_data_descriptor_set);
           l_PropertyInfo.size =
               sizeof(ViewInfo::Data::view_data_descriptor_set);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -550,6 +563,8 @@ namespace Low {
               offsetof(ViewInfo::Data, lighting_descriptor_set);
           l_PropertyInfo.size =
               sizeof(ViewInfo::Data::lighting_descriptor_set);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -585,6 +600,8 @@ namespace Low {
               offsetof(ViewInfo::Data, staging_buffers);
           l_PropertyInfo.size =
               sizeof(ViewInfo::Data::staging_buffers);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::LIST;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -605,8 +622,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             ViewInfo l_Handle = p_Handle.get_id();
-            *((Low::Util::List<StagingBuffer> *)p_Data) =
-                l_Handle.get_staging_buffers();
+            *((void **)p_Data) = &l_Handle.get_staging_buffers();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: staging_buffers
@@ -619,6 +635,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(ViewInfo::Data, initialized);
           l_PropertyInfo.size = sizeof(ViewInfo::Data::initialized);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -650,6 +668,8 @@ namespace Low {
               offsetof(ViewInfo::Data, gbuffer_descriptor_set);
           l_PropertyInfo.size =
               sizeof(ViewInfo::Data::gbuffer_descriptor_set);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -685,6 +705,8 @@ namespace Low {
               offsetof(ViewInfo::Data, point_light_cluster_buffer);
           l_PropertyInfo.size =
               sizeof(ViewInfo::Data::point_light_cluster_buffer);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -720,6 +742,8 @@ namespace Low {
               offsetof(ViewInfo::Data, point_light_buffer);
           l_PropertyInfo.size =
               sizeof(ViewInfo::Data::point_light_buffer);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -755,6 +779,8 @@ namespace Low {
               offsetof(ViewInfo::Data, light_clusters);
           l_PropertyInfo.size =
               sizeof(ViewInfo::Data::light_clusters);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -790,6 +816,8 @@ namespace Low {
               offsetof(ViewInfo::Data, light_cluster_count);
           l_PropertyInfo.size =
               sizeof(ViewInfo::Data::light_cluster_count);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -822,6 +850,8 @@ namespace Low {
               offsetof(ViewInfo::Data, ui_drawcommand_buffer);
           l_PropertyInfo.size =
               sizeof(ViewInfo::Data::ui_drawcommand_buffer);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -857,6 +887,8 @@ namespace Low {
               offsetof(ViewInfo::Data, debug_geometry_buffer);
           l_PropertyInfo.size =
               sizeof(ViewInfo::Data::debug_geometry_buffer);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -892,6 +924,8 @@ namespace Low {
               offsetof(ViewInfo::Data, object_id_buffer);
           l_PropertyInfo.size =
               sizeof(ViewInfo::Data::object_id_buffer);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -924,6 +958,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(ViewInfo::Data, name);
           l_PropertyInfo.size = sizeof(ViewInfo::Data::name);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -1201,10 +1237,6 @@ namespace Low {
       {
         ViewInfo l_Handle = ViewInfo::make(N(ViewInfo));
 
-        if (p_Node["dirty_point_lights"]) {
-        }
-        if (p_Node["freed_point_light_slots"]) {
-        }
         if (p_Node["shadow_pass_data"]) {
         }
         if (p_Node["directional_light_shadow_info"]) {
@@ -1216,8 +1248,6 @@ namespace Low {
         if (p_Node["view_data_descriptor_set"]) {
         }
         if (p_Node["lighting_descriptor_set"]) {
-        }
-        if (p_Node["staging_buffers"]) {
         }
         if (p_Node["initialized"]) {
           l_Handle.set_initialized(p_Node["initialized"].as<bool>());

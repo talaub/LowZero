@@ -155,6 +155,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Image::Data, allocated_image);
           l_PropertyInfo.size = sizeof(Image::Data::allocated_image);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -186,6 +188,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Image::Data, depth);
           l_PropertyInfo.size = sizeof(Image::Data::depth);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -215,6 +219,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Image::Data, name);
           l_PropertyInfo.size = sizeof(Image::Data::name);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

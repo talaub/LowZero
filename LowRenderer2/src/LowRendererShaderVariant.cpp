@@ -240,6 +240,8 @@ namespace Low {
             offsetof(ShaderVariant::Data, source_handle);
         l_PropertyInfo.size =
             sizeof(ShaderVariant::Data::source_handle);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -268,6 +270,8 @@ namespace Low {
             offsetof(ShaderVariant::Data, entry_point);
         l_PropertyInfo.size =
             sizeof(ShaderVariant::Data::entry_point);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -300,6 +304,8 @@ namespace Low {
             offsetof(ShaderVariant::Data, compiled_path);
         l_PropertyInfo.size =
             sizeof(ShaderVariant::Data::compiled_path);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -333,7 +339,9 @@ namespace Low {
             offsetof(ShaderVariant::Data, dependent_pipelines);
         l_PropertyInfo.size =
             sizeof(ShaderVariant::Data::dependent_pipelines);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
@@ -352,8 +360,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           ShaderVariant l_Handle = p_Handle.get_id();
-          *((Low::Util::List<uint64_t> *)p_Data) =
-              l_Handle.get_dependent_pipelines();
+          *((void **)p_Data) = &l_Handle.get_dependent_pipelines();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: dependent_pipelines
@@ -366,6 +373,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(ShaderVariant::Data, defines);
         l_PropertyInfo.size = sizeof(ShaderVariant::Data::defines);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -381,8 +390,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           ShaderVariant l_Handle = p_Handle.get_id();
-          *((Low::Util::List<Low::Renderer::ShaderDefine> *)p_Data) =
-              l_Handle.get_defines();
+          *((void **)p_Data) = &l_Handle.get_defines();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: defines
@@ -395,6 +403,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(ShaderVariant::Data, key_hash);
         l_PropertyInfo.size = sizeof(ShaderVariant::Data::key_hash);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -422,6 +432,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(ShaderVariant::Data, name);
         l_PropertyInfo.size = sizeof(ShaderVariant::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

@@ -164,6 +164,8 @@ namespace Low {
               offsetof(CapsuleController::Data, backend_id);
           l_PropertyInfo.size =
               sizeof(CapsuleController::Data::backend_id);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -192,6 +194,8 @@ namespace Low {
               offsetof(CapsuleController::Data, world);
           l_PropertyInfo.size =
               sizeof(CapsuleController::Data::world);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = World::IDENTIFIER;
           l_PropertyInfo.get_return =
@@ -219,6 +223,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(CapsuleController::Data, name);
           l_PropertyInfo.size = sizeof(CapsuleController::Data::name);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -246,6 +252,8 @@ namespace Low {
           Low::Util::RTTI::VirtualPropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(position);
           l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.handleType = 0;
@@ -269,6 +277,8 @@ namespace Low {
           Low::Util::RTTI::VirtualPropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(rotation);
           l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::QUATERNION;
           l_PropertyInfo.handleType = 0;

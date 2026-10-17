@@ -190,6 +190,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Font::Data, texture);
         l_PropertyInfo.size = sizeof(Font::Data::texture);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::Texture::IDENTIFIER;
@@ -221,6 +223,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Font::Data, resource);
         l_PropertyInfo.size = sizeof(Font::Data::resource);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::FontResource::IDENTIFIER;
@@ -253,6 +257,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Font::Data, glyphs);
         l_PropertyInfo.size = sizeof(Font::Data::glyphs);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -286,6 +292,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(Font::Data, sidecar_loaded);
         l_PropertyInfo.size = sizeof(Font::Data::sidecar_loaded);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -315,6 +323,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Font::Data, ascender);
         l_PropertyInfo.size = sizeof(Font::Data::ascender);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -344,6 +354,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Font::Data, descender);
         l_PropertyInfo.size = sizeof(Font::Data::descender);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -373,6 +385,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Font::Data, line_height);
         l_PropertyInfo.size = sizeof(Font::Data::line_height);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -403,6 +417,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(Font::Data, import_height);
         l_PropertyInfo.size = sizeof(Font::Data::import_height);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -432,7 +448,9 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Font::Data, references);
         l_PropertyInfo.size = sizeof(Font::Data::references);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::SET;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
@@ -452,6 +470,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Font::Data, unique_id);
         l_PropertyInfo.size = sizeof(Font::Data::unique_id);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -478,6 +498,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Font::Data, name);
         l_PropertyInfo.size = sizeof(Font::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

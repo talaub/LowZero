@@ -4,6 +4,7 @@
 
 #include "LowEditorChangeList.h"
 
+#include "LowEditorMainWindow.h"
 #include "LowRendererEditorImage.h"
 
 #include "LowCoreEntity.h"
@@ -109,13 +110,15 @@ namespace Low {
 
     void LOW_EDITOR_API open_file_in_code_editor(Util::String p_Path);
 
-    void LOW_EDITOR_API
-    open_vs_file(const Util::String &p_Path);
+    void LOW_EDITOR_API open_vs_file(const Util::String &p_Path);
 
     void LOW_EDITOR_API close_widget(Widget *p_Widget);
 
     void LOW_EDITOR_API
     delete_file_if_exists(Low::Util::String p_Path);
+
+    void LOW_EDITOR_API
+    open_widget_for_handle(Util::Handle p_Handle);
 
     Math::Color get_color_for_asset_type(const AssetType p_AssetType);
     Util::String get_asset_type_name(const AssetType p_AssetType);

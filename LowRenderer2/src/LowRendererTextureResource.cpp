@@ -151,6 +151,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(TextureResource::Data, path);
         l_PropertyInfo.size = sizeof(TextureResource::Data::path);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -179,6 +181,8 @@ namespace Low {
             offsetof(TextureResource::Data, texture_path);
         l_PropertyInfo.size =
             sizeof(TextureResource::Data::texture_path);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -207,6 +211,8 @@ namespace Low {
             offsetof(TextureResource::Data, sidecar_path);
         l_PropertyInfo.size =
             sizeof(TextureResource::Data::sidecar_path);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -235,6 +241,8 @@ namespace Low {
             offsetof(TextureResource::Data, source_file);
         l_PropertyInfo.size =
             sizeof(TextureResource::Data::source_file);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -263,6 +271,8 @@ namespace Low {
             offsetof(TextureResource::Data, texture_id);
         l_PropertyInfo.size =
             sizeof(TextureResource::Data::texture_id);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -291,6 +301,8 @@ namespace Low {
             offsetof(TextureResource::Data, asset_hash);
         l_PropertyInfo.size =
             sizeof(TextureResource::Data::asset_hash);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -321,6 +333,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(TextureResource::Data, name);
         l_PropertyInfo.size = sizeof(TextureResource::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

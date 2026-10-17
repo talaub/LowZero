@@ -180,9 +180,11 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Skeleton::Data, state);
         l_PropertyInfo.size = sizeof(Skeleton::Data::state);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
-        l_PropertyInfo.handleType =
-            Low::Renderer::SkeletonStateEnumHelper::get_enum_id();
+        l_PropertyInfo.handleType = Low::Renderer::
+            SkeletonStateEnumHelper::get_enum_identifier();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Skeleton l_Handle = p_Handle.get_id();
@@ -213,6 +215,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(Skeleton::Data, resource);
         l_PropertyInfo.size = sizeof(Skeleton::Data::resource);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::SkeletonResource::IDENTIFIER;
@@ -246,6 +250,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Skeleton::Data, bones);
         l_PropertyInfo.size = sizeof(Skeleton::Data::bones);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -260,8 +266,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Skeleton l_Handle = p_Handle.get_id();
-          *((Util::List<SkeletonBone> *)p_Data) =
-              l_Handle.get_bones();
+          *((void **)p_Data) = &l_Handle.get_bones();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: bones
@@ -274,6 +279,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(Skeleton::Data, bone_map);
         l_PropertyInfo.size = sizeof(Skeleton::Data::bone_map);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -303,6 +310,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(Skeleton::Data, bone_count);
         l_PropertyInfo.size = sizeof(Skeleton::Data::bone_count);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -330,7 +339,9 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(Skeleton::Data, references);
         l_PropertyInfo.size = sizeof(Skeleton::Data::references);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::SET;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
@@ -351,6 +362,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(Skeleton::Data, unique_id);
         l_PropertyInfo.size = sizeof(Skeleton::Data::unique_id);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -377,6 +390,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Skeleton::Data, name);
         l_PropertyInfo.size = sizeof(Skeleton::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -652,14 +667,10 @@ namespace Low {
                 p_Node["resource"], l_Handle.get_id())
                 .get_id());
       }
-      if (p_Node["bones"]) {
-      }
       if (p_Node["bone_map"]) {
       }
       if (p_Node["bone_count"]) {
         l_Handle.set_bone_count(p_Node["bone_count"].as<uint32_t>());
-      }
-      if (p_Node["references"]) {
       }
       if (p_Node["unique_id"]) {
         l_Handle.set_unique_id(

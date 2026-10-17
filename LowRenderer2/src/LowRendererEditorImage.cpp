@@ -168,6 +168,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(EditorImage::Data, path);
         l_PropertyInfo.size = sizeof(EditorImage::Data::path);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -197,6 +199,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(EditorImage::Data, gpu);
         l_PropertyInfo.size = sizeof(EditorImage::Data::gpu);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::EditorImageGpu::IDENTIFIER;
@@ -230,6 +234,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(EditorImage::Data, staging);
         l_PropertyInfo.size = sizeof(EditorImage::Data::staging);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::EditorImageStaging::IDENTIFIER;
@@ -264,9 +270,11 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(EditorImage::Data, state);
         l_PropertyInfo.size = sizeof(EditorImage::Data::state);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
-        l_PropertyInfo.handleType =
-            Low::Renderer::TextureStateEnumHelper::get_enum_id();
+        l_PropertyInfo.handleType = Low::Renderer::
+            TextureStateEnumHelper::get_enum_identifier();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           EditorImage l_Handle = p_Handle.get_id();
@@ -296,6 +304,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(EditorImage::Data, name);
         l_PropertyInfo.size = sizeof(EditorImage::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

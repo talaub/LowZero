@@ -184,6 +184,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(NavmeshAgent::Data, speed);
           l_PropertyInfo.size = sizeof(NavmeshAgent::Data::speed);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -214,6 +216,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(NavmeshAgent::Data, height);
           l_PropertyInfo.size = sizeof(NavmeshAgent::Data::height);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -244,6 +248,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(NavmeshAgent::Data, radius);
           l_PropertyInfo.size = sizeof(NavmeshAgent::Data::radius);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -274,6 +280,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(NavmeshAgent::Data, offset);
           l_PropertyInfo.size = sizeof(NavmeshAgent::Data::offset);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.handleType = 0;
@@ -306,6 +314,8 @@ namespace Low {
               offsetof(NavmeshAgent::Data, agent_index);
           l_PropertyInfo.size =
               sizeof(NavmeshAgent::Data::agent_index);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::INT;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -336,6 +346,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(NavmeshAgent::Data, entity);
           l_PropertyInfo.size = sizeof(NavmeshAgent::Data::entity);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::IDENTIFIER;
           l_PropertyInfo.get_return =
@@ -366,6 +378,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(NavmeshAgent::Data, unique_id);
           l_PropertyInfo.size = sizeof(NavmeshAgent::Data::unique_id);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

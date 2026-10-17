@@ -12,6 +12,7 @@
 #include "LowMath.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
+#include "LowUtilEnum.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -42,6 +43,7 @@ namespace Low {
             float margin_right;
             float margin_bottom;
             LayoutSizeMode size_mode;
+            Util::EnumMask<LayoutSizeMode> mode_mask;
             Low::Math::Vector2 fixed_size;
             Low::Math::Vector2 pivot;
             float aspect_ratio;
@@ -189,6 +191,9 @@ namespace Low {
 
           LayoutSizeMode get_size_mode() const;
           void set_size_mode(LayoutSizeMode p_Value);
+
+          Util::EnumMask<LayoutSizeMode> &get_mode_mask() const;
+          void set_mode_mask(Util::EnumMask<LayoutSizeMode> &p_Value);
 
           Low::Math::Vector2 get_fixed_size() const;
           void set_fixed_size(Low::Math::Vector2 p_Value);

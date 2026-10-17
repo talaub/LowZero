@@ -111,6 +111,31 @@ function get_property_type(p_Type) {
   return "UNKNOWN";
 }
 
+function get_container_type(p_TypeObject) {
+  if (!p_TypeObject.supported) {
+    return "NONE";
+  }
+  if (p_TypeObject.container === "list") {
+    return "LIST";
+  }
+  if (p_TypeObject.container === "set") {
+    return "SET";
+  }
+  if (p_TypeObject.container === "enum_mask") {
+    return "ENUM_MASK";
+  }
+  return "NONE";
+}
+
+// For container properties type/handleType in the PropertyInfo describe the
+// element type
+function get_property_element_plain_type(p_Prop) {
+  if (get_container_type(p_Prop.type_object) === "NONE") {
+    return p_Prop.plain_type;
+  }
+  return get_plain_type(p_Prop.type_object.inner.text);
+}
+
 function write_header_imports(p_Imports) {}
 
 const g_EnumType = "uint8_t";
@@ -132,6 +157,7 @@ function generate_enum_header(p_Enum) {
   t += empty();
   t += include(`LowMath.h`);
   t += include(`LowUtilName.h`);
+  t += include(`LowUtilHandle.h`);
   t += empty();
 
   for (let i_Namespace of p_Enum.namespace) {
@@ -174,6 +200,10 @@ function generate_enum_header(p_Enum) {
   t += empty();
   t += line(`u16 ${p_Enum.dll_macro} get_enum_id();`);
   t += empty();
+  t += line(
+    `Low::Util::TypeIdentifier ${p_Enum.dll_macro} get_enum_identifier();`,
+  );
+  t += empty();
   t += line(`u8 ${p_Enum.dll_macro} get_entry_count();`);
 
   t += line("}");
@@ -214,10 +244,14 @@ function generate_enum_source(p_Enum) {
   }
 
   t += line(`namespace ${p_Enum.name}EnumHelper {`);
+  t += line(
+    `const Low::Util::TypeIdentifier g_Identifier(LOW_NAME(${hash_name(p_Enum.module)}), LOW_NAME(${hash_name(p_Enum.identifier_name)}));`,
+    n,
+  );
+  t += line(`u16 g_EnumId = 0;`);
   t += line(`void initialize() {`);
   t += line(`Low::Util::RTTI::EnumInfo l_EnumInfo;`);
   t += line(`l_EnumInfo.name = N(${p_Enum.name});`);
-  t += line(`l_EnumInfo.enumId = ${p_Enum.enumId};`);
   t += line(`l_EnumInfo.entry_name = &_entry_name;`);
   t += line(`l_EnumInfo.entry_value = &_entry_value;`);
   t += empty();
@@ -233,7 +267,9 @@ function generate_enum_source(p_Enum) {
     l_OptionIndex++;
   }
   t += empty();
-  t += line(`Low::Util::register_enum_info(${p_Enum.enumId}, l_EnumInfo);`);
+  t += line(
+    `g_EnumId = Low::Util::register_enum_info(g_Identifier, l_EnumInfo);`,
+  );
   t += line(`}`);
   t += empty();
   t += line(`void cleanup() {`);
@@ -284,7 +320,12 @@ function generate_enum_source(p_Enum) {
   t += empty();
 
   t += line(`u16 get_enum_id() {`);
-  t += line(`return ${p_Enum.enumId};`);
+  t += line(`return g_EnumId;`);
+  t += line("}");
+  t += empty();
+
+  t += line(`Low::Util::TypeIdentifier get_enum_identifier() {`);
+  t += line(`return g_Identifier;`);
   t += line("}");
   t += empty();
 
@@ -1270,24 +1311,38 @@ function generate_source(p_Type) {
     t += line(
       `l_PropertyInfo.size = sizeof(${p_Type.name}::Data::${i_PropName});`,
     );
-    if (i_Prop.handle) {
+    const i_ElementPlainType = get_property_element_plain_type(i_Prop);
+    t += line(
+      `l_PropertyInfo.containerType = Low::Util::RTTI::ContainerType::${get_container_type(i_Prop.type_object)};`,
+    );
+    if (!i_Prop.type_object.supported) {
+      t += line(
+        `l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;`,
+      );
+      t += line(`l_PropertyInfo.handleType = 0;`);
+    } else if (i_Prop.handle) {
       t += line(`l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;`);
       t += line(
-        `l_PropertyInfo.handleType = ${i_Prop.plain_type}::IDENTIFIER;`,
+        `l_PropertyInfo.handleType = ${i_ElementPlainType}::IDENTIFIER;`,
       );
     } else if (i_Prop.enum) {
       t += line(`l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;`);
       t += line(
-        `l_PropertyInfo.handleType = ${i_Prop.plain_type}EnumHelper::get_enum_id();`,
+        `l_PropertyInfo.handleType = ${i_ElementPlainType}EnumHelper::get_enum_identifier();`,
       );
     } else if (i_Prop.lens_enum) {
       t += line(`l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;`);
       t += line(
-        `l_PropertyInfo.handleType = ${i_Prop.plain_type}Enum::get_enum_id();`,
+        `l_PropertyInfo.handleType = ${i_ElementPlainType}Enum::IDENTIFIER;`,
+      );
+    } else if (i_Prop.lens_struct) {
+      t += line(`l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRUCT;`);
+      t += line(
+        `l_PropertyInfo.handleType = ${i_ElementPlainType}Struct::IDENTIFIER;`,
       );
     } else {
       t += line(
-        `l_PropertyInfo.type = Low::Util::RTTI::PropertyType::${get_property_type(i_Prop.plain_type)};`,
+        `l_PropertyInfo.type = Low::Util::RTTI::PropertyType::${get_property_type(i_ElementPlainType)};`,
       );
       t += line(`l_PropertyInfo.handleType = 0;`);
     }
@@ -1321,9 +1376,16 @@ function generate_source(p_Type) {
     );
     if (!i_Prop.no_getter && !i_Prop.private_getter) {
       t += line(`${p_Type.name} l_Handle = p_Handle.get_id();`);
-      t += line(
-        `*((${i_Prop.plain_type}*) p_Data) = l_Handle.${i_Prop.getter_name}();`,
-      );
+
+      if (i_Prop.type_object.container === "list") {
+        t += line(`*((void**)p_Data) = &l_Handle.${i_Prop.getter_name}();`);
+      } else if (i_Prop.type_object.container === "enum_mask") {
+        t += line(`*((void**)p_Data) = &l_Handle.${i_Prop.getter_name}();`);
+      } else {
+        t += line(
+          `*((${i_Prop.plain_type}*) p_Data) = l_Handle.${i_Prop.getter_name}();`,
+        );
+      }
       //t += line(`memcpy(p_Data, &l_Data, sizeof(${i_Prop.plain_type}));`);
       /*
        */
@@ -1345,21 +1407,37 @@ function generate_source(p_Type) {
       t += line(
         `l_PropertyInfo.editorProperty = ${i_VProp.editor_editable ? "true" : "false"};`,
       );
-      if (i_VProp.handle) {
+      const i_ElementPlainType = get_property_element_plain_type(i_VProp);
+      t += line(
+        `l_PropertyInfo.containerType = Low::Util::RTTI::ContainerType::${get_container_type(i_VProp.type_object)};`,
+      );
+      if (!i_VProp.type_object.supported) {
+        t += line(
+          `l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;`,
+        );
+        t += line(`l_PropertyInfo.handleType = 0;`);
+      } else if (i_VProp.handle) {
         t += line(
           `l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;`,
         );
         t += line(
-          `l_PropertyInfo.handleType = ${i_VProp.plain_type}::type_id();`,
+          `l_PropertyInfo.handleType = ${i_ElementPlainType}::type_id();`,
         );
       } else if (i_VProp.enum) {
         t += line(`l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;`);
         t += line(
-          `l_PropertyInfo.handleType = ${i_VProp.plain_type}EnumHelper::get_enum_id();`,
+          `l_PropertyInfo.handleType = ${i_ElementPlainType}EnumHelper::get_enum_identifier();`,
+        );
+      } else if (i_VProp.lens_struct) {
+        t += line(
+          `l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRUCT;`,
+        );
+        t += line(
+          `l_PropertyInfo.handleType = ${i_ElementPlainType}Struct::IDENTIFIER;`,
         );
       } else {
         t += line(
-          `l_PropertyInfo.type = Low::Util::RTTI::PropertyType::${get_property_type(i_VProp.plain_type)};`,
+          `l_PropertyInfo.type = Low::Util::RTTI::PropertyType::${get_property_type(i_ElementPlainType)};`,
         );
         t += line(`l_PropertyInfo.handleType = 0;`);
       }
@@ -1782,6 +1860,11 @@ function generate_source(p_Type) {
         continue;
       }
 
+      // Container serialization not supported yet
+      if (get_container_type(i_Prop.type_object) !== "NONE") {
+        continue;
+      }
+
       if (i_PropName == "unique_id" && p_Type.unique_id) {
         t += line(
           `p_Node["_unique_id"] = Low::Util::U64Id{${i_Prop.getter_name}()};`,
@@ -1832,6 +1915,15 @@ function generate_source(p_Type) {
         t += line(
           `Low::Util::Serial::serialize_enum(p_Node["${i_PropName}"], ${i_Prop.plain_type}Enum::get_enum_id(), static_cast<${g_EnumType}>(${i_Prop.getter_name}()));`,
         );
+      } else if (i_Prop.lens_struct) {
+        t += line(`{`);
+        t += line(
+          `${i_Prop.plain_type} l_StructValue = ${i_Prop.getter_name}();`,
+        );
+        t += line(
+          `Low::Util::Serial::serialize_struct(p_Node["${i_PropName}"], ${i_Prop.plain_type}Struct::IDENTIFIER, &l_StructValue);`,
+        );
+        t += line(`}`);
       }
     }
   }
@@ -1929,6 +2021,11 @@ function generate_source(p_Type) {
         continue;
       }
 
+      // Container deserialization not supported yet
+      if (get_container_type(i_Prop.type_object) !== "NONE") {
+        continue;
+      }
+
       t += line(`if (p_Node["${i_PropName}"]) {`);
 
       if (i_Prop.plain_type.endsWith("Variant")) {
@@ -1997,6 +2094,12 @@ function generate_source(p_Type) {
         t += line(
           `l_Handle.${i_Prop.setter_name}(static_cast<${i_Prop.plain_type}>(Low::Util::Serial::deserialize_enum(p_Node["${i_PropName}"])));`,
         );
+      } else if (i_Prop.lens_struct) {
+        t += line(`${i_Prop.plain_type} l_StructValue;`);
+        t += line(
+          `Low::Util::Serial::deserialize_struct(p_Node["${i_PropName}"], &l_StructValue);`,
+        );
+        t += line(`l_Handle.${i_Prop.setter_name}(l_StructValue);`);
       }
       t += line(`}`);
     }

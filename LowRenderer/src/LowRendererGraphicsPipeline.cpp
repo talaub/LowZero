@@ -162,6 +162,8 @@ namespace Low {
               offsetof(GraphicsPipeline::Data, pipeline);
           l_PropertyInfo.size =
               sizeof(GraphicsPipeline::Data::pipeline);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -191,6 +193,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(GraphicsPipeline::Data, name);
           l_PropertyInfo.size = sizeof(GraphicsPipeline::Data::name);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

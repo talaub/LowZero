@@ -59,6 +59,9 @@ namespace Low {
             ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
         l_Handle.m_Data.m_Type = Transform::ms_TypeId;
 
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Transform, testlist,
+                                   Low::Util::List<int>))
+            Low::Util::List<int>();
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Transform, children,
                                    Low::Util::List<uint64_t>))
             Low::Util::List<uint64_t>();
@@ -91,6 +94,7 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
 
         l_Handle.scale(Math::Vector3(1.0f));
+
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -188,6 +192,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, position);
           l_PropertyInfo.size = sizeof(Transform::Data::position);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.handleType = 0;
@@ -219,6 +225,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, rotation);
           l_PropertyInfo.size = sizeof(Transform::Data::rotation);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::QUATERNION;
           l_PropertyInfo.handleType = 0;
@@ -250,6 +258,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, scale);
           l_PropertyInfo.size = sizeof(Transform::Data::scale);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.handleType = 0;
@@ -281,6 +291,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, parent);
           l_PropertyInfo.size = sizeof(Transform::Data::parent);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -311,6 +323,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, parent_uid);
           l_PropertyInfo.size = sizeof(Transform::Data::parent_uid);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -331,6 +345,38 @@ namespace Low {
           // End property: parent_uid
         }
         {
+          // Property: testlist
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(testlist);
+          l_PropertyInfo.editorProperty = true;
+          l_PropertyInfo.dataOffset =
+              offsetof(Transform::Data, testlist);
+          l_PropertyInfo.size = sizeof(Transform::Data::testlist);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::LIST;
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::INT;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.get_testlist();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Transform, testlist, Low::Util::List<int>);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.set_testlist(*(Low::Util::List<int> *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Transform l_Handle = p_Handle.get_id();
+            *((void **)p_Data) = &l_Handle.get_testlist();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: testlist
+        }
+        {
           // Property: children
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(children);
@@ -338,8 +384,9 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, children);
           l_PropertyInfo.size = sizeof(Transform::Data::children);
-          l_PropertyInfo.type =
-              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::LIST;
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
@@ -354,8 +401,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Transform l_Handle = p_Handle.get_id();
-            *((Low::Util::List<uint64_t> *)p_Data) =
-                l_Handle.get_children();
+            *((void **)p_Data) = &l_Handle.get_children();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: children
@@ -369,6 +415,8 @@ namespace Low {
               offsetof(Transform::Data, world_position);
           l_PropertyInfo.size =
               sizeof(Transform::Data::world_position);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.handleType = 0;
@@ -400,6 +448,8 @@ namespace Low {
               offsetof(Transform::Data, world_rotation);
           l_PropertyInfo.size =
               sizeof(Transform::Data::world_rotation);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::QUATERNION;
           l_PropertyInfo.handleType = 0;
@@ -430,6 +480,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, world_scale);
           l_PropertyInfo.size = sizeof(Transform::Data::world_scale);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.handleType = 0;
@@ -459,6 +511,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, world_matrix);
           l_PropertyInfo.size = sizeof(Transform::Data::world_matrix);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -490,6 +544,8 @@ namespace Low {
               offsetof(Transform::Data, world_updated);
           l_PropertyInfo.size =
               sizeof(Transform::Data::world_updated);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -520,6 +576,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, entity);
           l_PropertyInfo.size = sizeof(Transform::Data::entity);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::IDENTIFIER;
           l_PropertyInfo.get_return =
@@ -550,6 +608,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, unique_id);
           l_PropertyInfo.size = sizeof(Transform::Data::unique_id);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -578,6 +638,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, dirty);
           l_PropertyInfo.size = sizeof(Transform::Data::dirty);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -608,6 +670,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Transform::Data, world_dirty);
           l_PropertyInfo.size = sizeof(Transform::Data::world_dirty);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -733,6 +797,7 @@ namespace Low {
         l_Handle.position(position());
         l_Handle.rotation(rotation());
         l_Handle.scale(scale());
+        l_Handle.set_testlist(get_testlist());
         l_Handle.set_dirty(is_dirty());
         l_Handle.set_world_dirty(is_world_dirty());
 
@@ -1167,6 +1232,46 @@ namespace Low {
 
           broadcast_observable(N(parent_uid));
         }
+      }
+
+      Low::Util::List<int> &Transform::get_testlist() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_testlist
+        // LOW_CODEGEN::END::CUSTOM:GETTER_testlist
+
+        return TYPE_SOA(Transform, testlist, Low::Util::List<int>);
+      }
+      void Transform::set_testlist(Low::Util::List<int> &p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_testlist
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_testlist
+
+        // Set new value
+        TYPE_SOA(Transform, testlist, Low::Util::List<int>) = p_Value;
+        {
+          Low::Core::Entity l_Entity = get_entity();
+          if (l_Entity.has_component(
+                  Low::Core::Component::PrefabInstance::type_id())) {
+            Low::Core::Component::PrefabInstance l_Instance =
+                l_Entity.get_component(
+                    Low::Core::Component::PrefabInstance::type_id());
+            Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
+            if (l_Prefab.is_alive()) {
+              l_Instance.override(
+                  ms_TypeId, N(testlist),
+                  !l_Prefab.compare_property(*this, N(testlist)));
+            }
+          }
+        }
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_testlist
+        // LOW_CODEGEN::END::CUSTOM:SETTER_testlist
+
+        broadcast_observable(N(testlist));
       }
 
       Low::Util::List<uint64_t> &Transform::get_children() const

@@ -171,6 +171,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(TextureStaging::Data, mip0);
         l_PropertyInfo.size = sizeof(TextureStaging::Data::mip0);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::TexturePixels::IDENTIFIER;
@@ -204,6 +206,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(TextureStaging::Data, mip1);
         l_PropertyInfo.size = sizeof(TextureStaging::Data::mip1);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::TexturePixels::IDENTIFIER;
@@ -237,6 +241,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(TextureStaging::Data, mip2);
         l_PropertyInfo.size = sizeof(TextureStaging::Data::mip2);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::TexturePixels::IDENTIFIER;
@@ -270,6 +276,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(TextureStaging::Data, mip3);
         l_PropertyInfo.size = sizeof(TextureStaging::Data::mip3);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::TexturePixels::IDENTIFIER;
@@ -303,6 +311,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(TextureStaging::Data, name);
         l_PropertyInfo.size = sizeof(TextureStaging::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

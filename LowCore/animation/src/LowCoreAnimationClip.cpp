@@ -151,6 +151,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Clip::Data, renderer_clip);
           l_PropertyInfo.size = sizeof(Clip::Data::renderer_clip);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Renderer::AnimationClip::IDENTIFIER;
@@ -181,8 +183,9 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Clip::Data, references);
           l_PropertyInfo.size = sizeof(Clip::Data::references);
-          l_PropertyInfo.type =
-              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::SET;
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
@@ -202,6 +205,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Clip::Data, name);
           l_PropertyInfo.size = sizeof(Clip::Data::name);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -465,8 +470,6 @@ namespace Low {
               Renderer::AnimationClip::deserialize(
                   p_Node["renderer_clip"], l_Handle.get_id())
                   .get_id());
-        }
-        if (p_Node["references"]) {
         }
         if (p_Node["name"]) {
           l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());

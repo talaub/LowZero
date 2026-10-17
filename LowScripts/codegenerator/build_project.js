@@ -1,11 +1,20 @@
-const g_FullProjectPath = "/home/mino/projects/LowEngine/misteda";
-
 const { assert } = require("console");
 const fs = require("fs");
+const path = require("path");
 const YAML = require("yaml");
 const { spawnSync } = require("child_process");
 
 const { load_project_info } = require("./lib.js");
+
+function to_cmake_path(p_Path) {
+  return path.resolve(p_Path).replace(/\\/g, "/");
+}
+
+// This script lives in <engine>/LowScripts/codegenerator, so the engine root
+// is derived from its location instead of the machine-specific project.yaml
+function get_engine_root() {
+  return to_cmake_path(path.resolve(__dirname, "../.."));
+}
 
 function read_file(p_FilePath) {
   return fs.readFileSync(p_FilePath, { encoding: "utf8", flag: "r" });
@@ -62,7 +71,7 @@ function generate_module_dll_api(p_Module) {
   fs.writeFileSync(p_Module.api_header_path, t);
 }
 
-function generate_module_cmake(p_Module) {
+function generate_module_cmake(p_Module, p_ProjectModuleNames) {
   let t = "";
   t +=
     "# THIS FILE HAS BEEN GENERATED AUTOMATICALLY BY THE LOWENGINE BUILD SYSTEM\n\n";
@@ -135,7 +144,83 @@ function generate_module_cmake(p_Module) {
     t += `)\n\n`;
   }
 
+  // Only project modules produce a lensdb. Relies on the root CMakeLists
+  // adding modules in dependency order so LOW_LENSDB_<dep> is already set.
+  const l_ProjectDependencies = get_project_dependencies(
+    p_Module,
+    p_ProjectModuleNames,
+  );
+
+  t += `low_lens_generate(${p_Module.name} ${p_Module.name} \${CMAKE_CURRENT_SOURCE_DIR}/include\n`;
+  t += '  UPSTREAM_DB "${LOW_LENSDB_LowCore}"\n';
+  for (const i_Dependency of l_ProjectDependencies) {
+    t += `              "\${LOW_LENSDB_${i_Dependency}}"\n`;
+  }
+  t += '  YAML_CONFIGS "${LOW_PATH}/" "${CMAKE_SOURCE_DIR}/" PROJECT\n';
+  t += `  API_MACRO ${p_Module.api_macro}\n`;
+  t += `  API_HEADER ${path.basename(p_Module.api_header_path)}\n`;
+  t += `)\n\n`;
+
+  // The build-time LowLens run has to wait for the dependency's run, since
+  // it reads the dependency's lensdb
+  if (l_ProjectDependencies.length > 0) {
+    t += `add_dependencies(${p_Module.name}_LowLensGenerate\n`;
+    for (const i_Dependency of l_ProjectDependencies) {
+      t += `  ${i_Dependency}_LowLensGenerate\n`;
+    }
+    t += `)\n\n`;
+  }
+
   fs.writeFileSync(p_Module.cmake_path, t);
+}
+
+function get_project_dependencies(p_Module, p_ProjectModuleNames) {
+  if (!p_Module.public_dependencies) {
+    return [];
+  }
+
+  return p_Module.public_dependencies.filter((i_Entry) =>
+    p_ProjectModuleNames.includes(i_Entry),
+  );
+}
+
+// Orders modules so every module comes after the project modules it depends
+// on. CMake processes add_subdirectory() calls in order, so this is what makes
+// a dependency's LOW_LENSDB_<name> visible to its dependents.
+function sort_modules_by_dependencies(p_Modules) {
+  const l_ModuleNames = p_Modules.map((i_Module) => i_Module.name);
+  const l_Sorted = [];
+  const l_Visited = new Set();
+  const l_Visiting = new Set();
+
+  function visit(p_Module) {
+    if (l_Visited.has(p_Module.name)) {
+      return;
+    }
+    if (l_Visiting.has(p_Module.name)) {
+      throw new Error(
+        `Circular module dependency involving ${p_Module.name}`,
+      );
+    }
+
+    l_Visiting.add(p_Module.name);
+    for (const i_Dependency of get_project_dependencies(
+      p_Module,
+      l_ModuleNames,
+    )) {
+      visit(p_Modules.find((i_Module) => i_Module.name === i_Dependency));
+    }
+    l_Visiting.delete(p_Module.name);
+
+    l_Visited.add(p_Module.name);
+    l_Sorted.push(p_Module);
+  }
+
+  for (const i_Module of p_Modules) {
+    visit(i_Module);
+  }
+
+  return l_Sorted;
 }
 
 function generate_root_cmake(p_ProjectConfig) {
@@ -150,11 +235,12 @@ function generate_root_cmake(p_ProjectConfig) {
   t += `set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo" CACHE STRING "Supported configurations" FORCE)\n`;
   t += `set(TARGET_BUILD_PLATFORM "windows")\n`;
   t += `set(CMAKE_EXPORT_COMPILE_COMMANDS ON)\n\n`;
-  t += `set(CMAKE_CXX_STANDARD 17)\n`;
+  t += `set(CMAKE_CXX_STANDARD 20)\n`;
   t += `set(CMAKE_CXX_STANDARD_REQUIRED ON)\n`;
   t += `set(CMAKE_CXX_EXTENSIONS OFF)\n\n`;
+  t += "add_compile_definitions($<$<CONFIG:Debug>:_DEBUG>)\n\n";
 
-  t += `set(LOW_PATH ${p_ProjectConfig.engine_root})\n\n`;
+  t += `set(LOW_PATH ${get_engine_root()})\n\n`;
 
   t += "add_subdirectory(${LOW_PATH} EXTERNAL)\n\n";
 
@@ -173,19 +259,21 @@ function generate_root_cmake(p_ProjectConfig) {
     t += `set_target_properties(${i_Module.name} PROPERTIES FOLDER "${p_ProjectConfig.name}Modules")\n\n`;
   }
 
-  t += "set(PROJECT_DEBUG_VISUALIZERS\n";
+  const l_VisualizersVar = `${p_ProjectConfig.name.toUpperCase()}_DEBUG_VISUALIZERS`;
+
+  t += `set(${l_VisualizersVar}\n`;
   t += '  "${LOW_PATH}/LowDependencies/EASTL/doc/EASTL.natvis"\n';
   t += '  "${LOW_PATH}/LowDebug.natvis"\n';
   t += ")\n\n";
 
   t += "if (MSVC)\n";
   for (const i_Module of p_ProjectConfig.modules) {
-    t += `  target_sources(${i_Module.name} PRIVATE \${PROJECT_DEBUG_VISUALIZERS})\n`;
+    t += `  target_sources(${i_Module.name} PRIVATE \${${l_VisualizersVar}})\n`;
   }
-  t += '  source_group("Debug Visualizers" FILES ${PROJECT_DEBUG_VISUALIZERS})\n';
+  t += `  source_group("Debug Visualizers" FILES \${${l_VisualizersVar}})\n`;
   t += "endif()\n\n";
 
-  t += `add_custom_target(${p_ProjectConfig.name}Project SOURCES \${PROJECT_DEBUG_VISUALIZERS})\n\n`;
+  t += `add_custom_target(${p_ProjectConfig.name}Project SOURCES \${${l_VisualizersVar}})\n\n`;
 
   t += `add_dependencies(${p_ProjectConfig.name}Project\n`;
   for (const i_Module of p_ProjectConfig.modules) {
@@ -196,8 +284,8 @@ function generate_root_cmake(p_ProjectConfig) {
 
   t += `set_target_properties(${p_ProjectConfig.name}Project PROPERTIES\n`;
   t += '  VS_DEBUGGER_COMMAND "${LOW_PATH}/build/Debug/app/lowder.exe"\n';
-  t += `  VS_DEBUGGER_COMMAND_ARGUMENTS "${p_ProjectConfig.full_path}"\n`;
-  t += `  VS_DEBUGGER_WORKING_DIRECTORY "${p_ProjectConfig.full_path}"\n`;
+  t += '  VS_DEBUGGER_COMMAND_ARGUMENTS "${CMAKE_SOURCE_DIR}"\n';
+  t += '  VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"\n';
   t += `)\n\n`;
 
   fs.writeFileSync(p_ProjectConfig.root_cmake_path, t);
@@ -207,12 +295,18 @@ function build_project(p_FullProjectPath) {
   console.log(`⚙️ Building ${p_FullProjectPath}`);
 
   const l_ProjectConfig = load_project_info(p_FullProjectPath);
+  l_ProjectConfig.modules = sort_modules_by_dependencies(
+    l_ProjectConfig.modules,
+  );
+  const l_ProjectModuleNames = l_ProjectConfig.modules.map(
+    (i_Module) => i_Module.name,
+  );
 
   generate_root_cmake(l_ProjectConfig);
 
   for (const i_Module of l_ProjectConfig.modules) {
     generate_module_dll_api(i_Module);
-    generate_module_cmake(i_Module);
+    generate_module_cmake(i_Module, l_ProjectModuleNames);
   }
 
   process.chdir(p_FullProjectPath);
@@ -234,4 +328,10 @@ function build_project(p_FullProjectPath) {
   console.log("✔️ Configuration successful");
 }
 
-build_project(g_FullProjectPath);
+// Usage: node build_project.js <project_path>
+if (process.argv.length < 3) {
+  console.error("Usage: node build_project.js <project_path>");
+  process.exit(1);
+}
+
+build_project(to_cmake_path(process.argv[2]));

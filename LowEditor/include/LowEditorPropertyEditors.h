@@ -12,6 +12,11 @@
 namespace Low {
   namespace Editor {
     namespace PropertyEditors {
+      struct ListEditorResult
+      {
+        bool added = false;
+      };
+
       void LOW_EDITOR_API render_editor(
           PropertyMetadata &p_PropertyMetadata, Util::Handle p_Handle,
           const void *p_DataPtr, bool p_RenderLabel = true);
@@ -34,6 +39,10 @@ namespace Low {
                                                int *p_Value,
                                                Util::String p_Label,
                                                bool p_RenderLabel);
+
+      bool LOW_EDITOR_API render_enum_selector(
+          Util::TypeIdentifier p_EnumIdentifier, int *p_Value,
+          Util::String p_Label, bool p_RenderLabel);
 
       bool LOW_EDITOR_API render_enum_selector(
           PropertyMetadata &p_Metadata, Util::Handle p_Handle);
@@ -76,16 +85,19 @@ namespace Low {
       bool render_line(Util::String p_Label,
                        const Util::Function<bool()> &p_DrawEditor);
 
+      void LOW_EDITOR_API render_struct_editor_standalone(
+          Util::TypeIdentifier p_StructType, void *p_StructPtr);
+
       bool LOW_EDITOR_API render_struct_editor(
           Util::String p_Label, Util::TypeIdentifier p_StructType,
           void *p_StructPtr);
 
       template <typename T>
-      bool render_list_editor(
-          Util::String p_Label, Util::List<T> &p_List,
-          const Util::Function<bool(Util::String, T &)>
-              &p_ElementEditor,
-          T p_DefaultValue = T())
+      bool
+      render_list_editor(Util::String p_Label, Util::List<T> &p_List,
+                         const Util::Function<bool(Util::String, T &)>
+                             &p_ElementEditor,
+                         T p_DefaultValue = T())
       {
         bool l_Changed = false;
 

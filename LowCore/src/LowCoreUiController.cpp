@@ -4,7 +4,6 @@
 
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
-#include "LowUtilHandle.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
@@ -157,6 +156,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Controller::Data, value);
           l_PropertyInfo.size = sizeof(Controller::Data::value);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -188,6 +189,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Controller::Data, type);
           l_PropertyInfo.size = sizeof(Controller::Data::type);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -216,6 +219,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Controller::Data, name);
           l_PropertyInfo.size = sizeof(Controller::Data::name);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -828,5 +833,5 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace UI
-  } // namespace Core
+  }   // namespace Core
 } // namespace Low

@@ -214,6 +214,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Element::Data, components);
           l_PropertyInfo.size = sizeof(Element::Data::components);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -244,6 +246,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Element::Data, cached_screen);
           l_PropertyInfo.size = sizeof(Element::Data::cached_screen);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Low::Core::UI::Screen::IDENTIFIER;
@@ -275,6 +279,8 @@ namespace Low {
               offsetof(Element::Data, click_passthrough);
           l_PropertyInfo.size =
               sizeof(Element::Data::click_passthrough);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -304,6 +310,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Element::Data, canvas);
           l_PropertyInfo.size = sizeof(Element::Data::canvas);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Low::Renderer::UiCanvas::IDENTIFIER;
@@ -334,6 +342,8 @@ namespace Low {
               offsetof(Element::Data, widget_instance);
           l_PropertyInfo.size =
               sizeof(Element::Data::widget_instance);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -364,6 +374,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Element::Data, local_id);
           l_PropertyInfo.size = sizeof(Element::Data::local_id);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -394,6 +406,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Element::Data, unique_id);
           l_PropertyInfo.size = sizeof(Element::Data::unique_id);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -421,6 +435,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(Element::Data, name);
           l_PropertyInfo.size = sizeof(Element::Data::name);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

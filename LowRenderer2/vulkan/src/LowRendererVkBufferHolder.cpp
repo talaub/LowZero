@@ -156,6 +156,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(BufferHolder::Data, bf);
           l_PropertyInfo.size = sizeof(BufferHolder::Data::bf);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -187,6 +189,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(BufferHolder::Data, name);
           l_PropertyInfo.size = sizeof(BufferHolder::Data::name);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

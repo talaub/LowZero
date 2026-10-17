@@ -183,6 +183,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(PointLight::Data, color);
           l_PropertyInfo.size = sizeof(PointLight::Data::color);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::COLORRGB;
           l_PropertyInfo.handleType = 0;
@@ -214,6 +216,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(PointLight::Data, intensity);
           l_PropertyInfo.size = sizeof(PointLight::Data::intensity);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -244,6 +248,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(PointLight::Data, range);
           l_PropertyInfo.size = sizeof(PointLight::Data::range);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -275,6 +281,8 @@ namespace Low {
               offsetof(PointLight::Data, renderer_point_light);
           l_PropertyInfo.size =
               sizeof(PointLight::Data::renderer_point_light);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Low::Renderer::PointLight::IDENTIFIER;
@@ -309,6 +317,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(PointLight::Data, entity);
           l_PropertyInfo.size = sizeof(PointLight::Data::entity);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::IDENTIFIER;
           l_PropertyInfo.get_return =
@@ -339,6 +349,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(PointLight::Data, unique_id);
           l_PropertyInfo.size = sizeof(PointLight::Data::unique_id);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

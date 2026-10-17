@@ -176,6 +176,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Asset::Data, module);
           l_PropertyInfo.size = sizeof(Asset::Data::module);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Low::Core::Scripting::Module::IDENTIFIER;
@@ -210,6 +212,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Asset::Data, source_path);
           l_PropertyInfo.size = sizeof(Asset::Data::source_path);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -241,9 +245,11 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Asset::Data, generator);
           l_PropertyInfo.size = sizeof(Asset::Data::generator);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
           l_PropertyInfo.handleType = Low::Core::Scripting::
-              AssetGeneratorEnumHelper::get_enum_id();
+              AssetGeneratorEnumHelper::get_enum_identifier();
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Asset l_Handle = p_Handle.get_id();
@@ -275,6 +281,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Asset::Data, unique_id);
           l_PropertyInfo.size = sizeof(Asset::Data::unique_id);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -302,6 +310,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Asset::Data, name);
           l_PropertyInfo.size = sizeof(Asset::Data::name);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -344,17 +354,32 @@ namespace Low {
             ".script.yaml");
         l_Builder.add_initialize_directory(
             Util::get_project().assetCachePath);
-        l_Builder.initializer(
-            [](const Util::String p_Path) -> Util::Handle {
-              const Util::String l_FileName =
-                  Util::PathHelper::get_base_name_no_ext(p_Path);
-              Util::Serial::Node l_SidecarNode =
-                  Util::Serial::load_yaml_file(p_Path.c_str());
-              ScriptAsset l_Asset =
-                  deserialize(l_SidecarNode, Util::Handle::DEAD);
+        l_Builder.initializer([](const Util::String p_Path)
+                                  -> Util::Handle {
+          Util::Serial::Node l_SidecarNode =
+              Util::Serial::load_yaml_file(p_Path.c_str());
+          ScriptAsset l_Asset =
+              deserialize(l_SidecarNode, Util::Handle::DEAD);
 
-              return l_Asset.get_id();
-            });
+          if (l_Asset.is_alive()) {
+            const bool l_IsGenerated = l_Asset.get_generator() ==
+                                       AssetGenerator::VISUALSCRIPT;
+            Util::AssetManager::register_bundle(
+                Util::AssetManager::BundleBuilder(l_Asset.get_id())
+                    .file(l_Asset.get_full_path(), N(source),
+                          l_IsGenerated
+                              ? Util::AssetManager::OnMissingPolicy::
+                                    Ignore
+                              : Util::AssetManager::OnMissingPolicy::
+                                    DeleteBundle)
+                    .file(p_Path, N(sidecar),
+                          Util::AssetManager::OnMissingPolicy::
+                              Regenerate)
+                    .build());
+          }
+
+          return l_Asset.get_id();
+        });
 
         Util::AssetManager::register_asset_type(l_Builder.build());
         // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
@@ -541,6 +566,7 @@ namespace Low {
               (AssetGenerator)Util::Serial::deserialize_enum(
                   p_Node["generator"]);
         }
+        l_Asset.set_generator(l_Generator);
 
         if (!l_Module.is_alive()) {
           l_Module = Module::find_by_name(N(low.misc));
@@ -840,5 +866,5 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Scripting
-  }   // namespace Core
+  } // namespace Core
 } // namespace Low

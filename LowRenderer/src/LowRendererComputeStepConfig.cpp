@@ -169,6 +169,8 @@ namespace Low {
             offsetof(ComputeStepConfig::Data, callbacks);
         l_PropertyInfo.size =
             sizeof(ComputeStepConfig::Data::callbacks);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -202,6 +204,8 @@ namespace Low {
             offsetof(ComputeStepConfig::Data, resources);
         l_PropertyInfo.size =
             sizeof(ComputeStepConfig::Data::resources);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -217,8 +221,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           ComputeStepConfig l_Handle = p_Handle.get_id();
-          *((Util::List<ResourceConfig> *)p_Data) =
-              l_Handle.get_resources();
+          *((void **)p_Data) = &l_Handle.get_resources();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: resources
@@ -232,6 +235,8 @@ namespace Low {
             offsetof(ComputeStepConfig::Data, pipelines);
         l_PropertyInfo.size =
             sizeof(ComputeStepConfig::Data::pipelines);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -247,8 +252,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           ComputeStepConfig l_Handle = p_Handle.get_id();
-          *((Util::List<ComputePipelineConfig> *)p_Data) =
-              l_Handle.get_pipelines();
+          *((void **)p_Data) = &l_Handle.get_pipelines();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: pipelines
@@ -262,6 +266,8 @@ namespace Low {
             offsetof(ComputeStepConfig::Data, output_image);
         l_PropertyInfo.size =
             sizeof(ComputeStepConfig::Data::output_image);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -295,6 +301,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(ComputeStepConfig::Data, name);
         l_PropertyInfo.size = sizeof(ComputeStepConfig::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -512,10 +520,6 @@ namespace Low {
           ComputeStepConfig::make(N(ComputeStepConfig));
 
       if (p_Node["callbacks"]) {
-      }
-      if (p_Node["resources"]) {
-      }
-      if (p_Node["pipelines"]) {
       }
       if (p_Node["output_image"]) {
       }

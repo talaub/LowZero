@@ -161,6 +161,8 @@ namespace Low {
             offsetof(EditorImageStaging::Data, dimensions);
         l_PropertyInfo.size =
             sizeof(EditorImageStaging::Data::dimensions);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -194,6 +196,8 @@ namespace Low {
             offsetof(EditorImageStaging::Data, channels);
         l_PropertyInfo.size =
             sizeof(EditorImageStaging::Data::channels);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -225,6 +229,8 @@ namespace Low {
             offsetof(EditorImageStaging::Data, format);
         l_PropertyInfo.size =
             sizeof(EditorImageStaging::Data::format);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -259,6 +265,8 @@ namespace Low {
             offsetof(EditorImageStaging::Data, pixel_data);
         l_PropertyInfo.size =
             sizeof(EditorImageStaging::Data::pixel_data);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -278,8 +286,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           EditorImageStaging l_Handle = p_Handle.get_id();
-          *((Low::Util::List<uint8_t> *)p_Data) =
-              l_Handle.get_pixel_data();
+          *((void **)p_Data) = &l_Handle.get_pixel_data();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: pixel_data
@@ -293,6 +300,8 @@ namespace Low {
             offsetof(EditorImageStaging::Data, data_size);
         l_PropertyInfo.size =
             sizeof(EditorImageStaging::Data::data_size);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -323,6 +332,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(EditorImageStaging::Data, name);
         l_PropertyInfo.size = sizeof(EditorImageStaging::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -527,8 +538,6 @@ namespace Low {
         l_Handle.set_channels(p_Node["channels"].as<uint8_t>());
       }
       if (p_Node["format"]) {
-      }
-      if (p_Node["pixel_data"]) {
       }
       if (p_Node["data_size"]) {
         l_Handle.set_data_size(p_Node["data_size"].as<uint64_t>());

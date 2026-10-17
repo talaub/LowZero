@@ -153,6 +153,8 @@ namespace Low {
             offsetof(AnimationClipResource::Data, path);
         l_PropertyInfo.size =
             sizeof(AnimationClipResource::Data::path);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -181,6 +183,8 @@ namespace Low {
             offsetof(AnimationClipResource::Data, data_path);
         l_PropertyInfo.size =
             sizeof(AnimationClipResource::Data::data_path);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -210,6 +214,8 @@ namespace Low {
             offsetof(AnimationClipResource::Data, name);
         l_PropertyInfo.size =
             sizeof(AnimationClipResource::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

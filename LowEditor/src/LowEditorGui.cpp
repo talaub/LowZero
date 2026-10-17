@@ -1,5 +1,6 @@
 #include "LowEditorGui.h"
 
+#include "LowMath.h"
 #include "LowUtilHandle.h"
 
 #include "LowCoreEntity.h"
@@ -7,6 +8,7 @@
 #include "LowEditorThemes.h"
 #include "LowMathVectorUtil.h"
 
+#include "LowUtilString.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "IconsFontAwesome5.h"
@@ -1250,6 +1252,131 @@ namespace Low {
         return ImGui::InvisibleButton(p_Label, l_Size) && !p_Disabled;
       }
 
+      bool DetailButton(const Util::String &p_Text,
+                        Util::Function<void()> p_Subline,
+                        const char *p_Icon,
+                        Low::Math::Color p_IconColor,
+                        const bool p_Selected)
+      {
+        ImGuiWindow *window = ImGui::GetCurrentWindow();
+        if (window->SkipItems) {
+          return false;
+        }
+
+        const ImGuiID l_Id = window->GetID(p_Text.c_str());
+
+        const ImVec2 l_Spacing{10.0f, 8.0f};
+        const float l_TextIconSpacing = 7.0f;
+        const float l_SublineSpacing = 2.0f;
+
+        const ImVec2 l_Position = ImGui::GetCursorScreenPos();
+        const float l_Width = ImGui::GetContentRegionAvail().x;
+
+        // Content goes to channel 1 so the background (channel 0)
+        // can be drawn behind it once the final height is known
+        ImDrawList *l_DrawList = window->DrawList;
+        l_DrawList->ChannelsSplit(2);
+        l_DrawList->ChannelsSetCurrent(1);
+
+        ImGui::PushFont(Fonts::UI(20.0f, Fonts::Weight::Medium));
+
+        const ImVec2 l_TitleSize =
+            ImGui::CalcTextSize(p_Text.c_str());
+        float l_ContentX = l_Position.x + l_Spacing.x;
+
+        if (p_Icon != nullptr) {
+          const ImVec2 l_IconSize = ImGui::CalcTextSize(p_Icon);
+
+          const float l_IconOffsetY = 2.0f;
+
+          ImGui::PushStyleColor(ImGuiCol_Text,
+                                color_to_imvec4(Math::Color(
+                                    p_IconColor.r, p_IconColor.g,
+                                    p_IconColor.b, 1.0f)));
+          ImGui::RenderText(
+              ImVec2(l_ContentX,
+                     l_Position.y + l_Spacing.y + l_IconOffsetY),
+              p_Icon);
+          ImGui::PopStyleColor();
+          l_ContentX += l_IconSize.x + l_TextIconSpacing;
+        }
+
+        const float l_ContentMaxX =
+            l_Position.x + l_Width - l_Spacing.x;
+        ImGui::PushClipRect(l_Position,
+                            ImVec2(l_ContentMaxX, FLT_MAX), true);
+        ImGui::RenderText(
+            ImVec2(l_ContentX, l_Position.y + l_Spacing.y),
+            p_Text.c_str());
+        ImGui::PopClipRect();
+
+        ImGui::PopFont();
+
+        float l_ContentBottom =
+            l_Position.y + l_Spacing.y + l_TitleSize.y;
+
+        if (p_Subline) {
+          ImGui::SetCursorScreenPos(
+              ImVec2(l_ContentX, l_ContentBottom + l_SublineSpacing));
+
+          ImGui::PushID(l_Id);
+          ImGui::PushTextWrapPos(l_ContentMaxX - window->Pos.x +
+                                 window->Scroll.x);
+          ImGui::BeginGroup();
+          ImGui::PushStyleColor(
+              ImGuiCol_Text,
+              color_to_imvec4(theme_get_current().subtext));
+          p_Subline();
+          ImGui::PopStyleColor();
+          ImGui::EndGroup();
+          ImGui::PopTextWrapPos();
+          ImGui::PopID();
+
+          l_ContentBottom = LOW_MATH_MAX(l_ContentBottom,
+                                         ImGui::GetItemRectMax().y);
+        }
+
+        const ImRect bb(l_Position,
+                        ImVec2(l_Position.x + l_Width,
+                               l_ContentBottom + l_Spacing.y));
+
+        ImGui::SetCursorScreenPos(l_Position);
+        ImGui::ItemSize(bb);
+        if (!ImGui::ItemAdd(bb, l_Id)) {
+          l_DrawList->ChannelsMerge();
+          return false;
+        }
+
+        // Submitted after the subline, so interactive widgets inside
+        // it take hover/click priority over the button itself
+        bool l_Hovered = false;
+        bool l_Held = false;
+        const bool l_Pressed =
+            ImGui::ButtonBehavior(bb, l_Id, &l_Hovered, &l_Held);
+
+        const ImU32 l_BorderColor =
+            color_to_imcolor(theme_get_current().buttonBorder);
+        const ImU32 l_BackgroundColor =
+            p_Selected
+                ? color_to_imcolor(theme_get_current().buttonHover)
+            : l_Held
+                ? color_to_imcolor(theme_get_current().buttonActive)
+            : l_Hovered
+                ? color_to_imcolor(theme_get_current().buttonHover)
+                : color_to_imcolor(theme_get_current().button);
+
+        const float l_Rounding = 3.0f;
+
+        l_DrawList->ChannelsSetCurrent(0);
+        l_DrawList->AddRectFilled(bb.Min, bb.Max, l_BackgroundColor,
+                                  l_Rounding);
+        l_DrawList->AddRect(bb.Min, bb.Max, l_BorderColor, l_Rounding,
+                            0, 1.0f);
+        l_DrawList->ChannelsMerge();
+
+        return l_Pressed;
+      }
+
       void VerticalSeparator(float p_Padding)
       {
         ImGui::Dummy(ImVec2(p_Padding, 0.0f));
@@ -2138,6 +2265,60 @@ namespace Low {
 
         return result;
       }
+
+      CollectionListResult
+      collection_list(Util::Function<void()> p_Content,
+                      const bool p_AllowAdd,
+                      const Util::String &p_AddTest,
+                      const bool p_DisplayCount, const int p_Count)
+      {
+
+        ImGui::BeginGroup();
+
+        CollectionListResult l_Result;
+
+        if (p_AllowAdd) {
+          if (Gui::AddButton(p_AddTest.c_str())) {
+            l_Result.added = true;
+          }
+        }
+
+        if (p_DisplayCount) {
+          if (p_AllowAdd) {
+
+            const float l_ButtonH =
+                ImGui::GetItemRectSize().y; // right after AddButton
+            ImGui::SameLine();
+            ImGui::SetCursorPosY(
+                ImGui::GetCursorPosY() +
+                (l_ButtonH - ImGui::GetTextLineHeight()) * 0.5f);
+          }
+
+          Util::StringBuilder l_CountText;
+          l_CountText.append(p_Count).append(" entries");
+
+          ImGui::Text(l_CountText.get().c_str());
+        }
+
+        ImGui::Dummy(ImVec2(0, 10.0f));
+
+        ImGui::PushStyleColor(ImGuiCol_ChildBg,
+                              ImVec4(0.12f, 0.12f, 0.14f, 1.0f));
+
+        ImGui::BeginChild("collection_content", ImVec2(0.0f, 120.0f),
+                          ImGuiChildFlags_None);
+
+        p_Content();
+
+        ImGui::EndChild();
+
+        ImGui::PopStyleColor();
+
+        ImGui::EndGroup();
+
+        return l_Result;
+      }
+
     } // namespace Gui
   } // namespace Editor
 } // namespace Low

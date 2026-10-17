@@ -14,6 +14,172 @@ const g_AllTypeIds = [];
 let g_EnumIdMap = {};
 const g_AllEnumIds = [];
 
+const g_SupportedContainers = {
+  List: "list",
+  Set: "set",
+  EnumMask: "enum_mask",
+};
+
+const g_ContainerPrefixes = ["Low::Util::", "Util::", ""];
+
+function strip_container_prefix(p_Name) {
+  for (const i_Prefix of g_ContainerPrefixes) {
+    if (i_Prefix.length > 0 && p_Name.startsWith(i_Prefix)) {
+      return p_Name.substring(i_Prefix.length);
+    }
+  }
+  return p_Name;
+}
+
+function parse_container(p_Name) {
+  const l_Name = strip_container_prefix(p_Name);
+
+  if (Object.prototype.hasOwnProperty.call(g_SupportedContainers, l_Name)) {
+    return g_SupportedContainers[l_Name];
+  }
+
+  return undefined;
+}
+
+function split_template(p_Text) {
+  const l_OpenIndex = p_Text.indexOf("<");
+
+  if (l_OpenIndex < 0) {
+    return { name: p_Text.trim(), args: [] };
+  }
+
+  if (!p_Text.endsWith(">")) {
+    return undefined;
+  }
+
+  const l_Name = p_Text.substring(0, l_OpenIndex).trim();
+  const l_Body = p_Text.substring(l_OpenIndex + 1, p_Text.length - 1);
+
+  const l_Args = [];
+  let l_Depth = 0;
+  let l_Current = "";
+
+  for (const i_Char of l_Body) {
+    if (i_Char === "<" || i_Char === "(") {
+      l_Depth++;
+    } else if (i_Char === ">" || i_Char === ")") {
+      l_Depth--;
+      if (l_Depth < 0) {
+        return undefined;
+      }
+    }
+
+    if (i_Char === "," && l_Depth === 0) {
+      l_Args.push(l_Current.trim());
+      l_Current = "";
+      continue;
+    }
+
+    l_Current += i_Char;
+  }
+
+  if (l_Depth !== 0) {
+    return undefined;
+  }
+
+  if (l_Current.trim().length > 0) {
+    l_Args.push(l_Current.trim());
+  }
+
+  return { name: l_Name, args: l_Args };
+}
+
+function parse_type(p_Text) {
+  const l_TypeObject = {
+    text: p_Text.trim(),
+    name: undefined,
+    plain: undefined,
+    template_args: [],
+    is_const: false,
+    reference: false,
+    pointer_level: 0,
+    container: undefined,
+    inner: undefined,
+    supported: true,
+  };
+
+  let l_Text = l_TypeObject.text;
+
+  if (l_Text.startsWith("const ")) {
+    l_TypeObject.is_const = true;
+    l_Text = l_Text.substring("const ".length).trim();
+  }
+
+  if (l_Text.endsWith("&")) {
+    l_TypeObject.reference = true;
+    l_Text = l_Text.substring(0, l_Text.length - 1).trim();
+  }
+
+  while (l_Text.endsWith("*")) {
+    l_TypeObject.pointer_level++;
+    l_Text = l_Text.substring(0, l_Text.length - 1).trim();
+  }
+
+  l_TypeObject.plain = l_Text;
+
+  const l_Split = split_template(l_Text);
+  if (!l_Split) {
+    console.log(`WARNING: Could not parse type '${p_Text}'`);
+    l_TypeObject.name = l_Text;
+    l_TypeObject.supported = false;
+    return l_TypeObject;
+  }
+
+  l_TypeObject.name = l_Split.name;
+  l_TypeObject.template_args = l_Split.args;
+
+  if (l_Split.args.length === 0) {
+    return l_TypeObject;
+  }
+
+  l_TypeObject.container = parse_container(l_Split.name);
+
+  if (!l_TypeObject.container || l_Split.args.length !== 1) {
+    l_TypeObject.container = undefined;
+    l_TypeObject.supported = false;
+    return l_TypeObject;
+  }
+
+  l_TypeObject.inner = parse_type(l_Split.args[0]);
+
+  // Only one container level is supported for now
+  if (
+    l_TypeObject.inner.template_args.length > 0 ||
+    !l_TypeObject.inner.supported
+  ) {
+    l_TypeObject.supported = false;
+  }
+
+  return l_TypeObject;
+}
+
+// The type that flags like handle/enum refer to: the element type for
+// containers, the type itself otherwise.
+function get_element_type(p_TypeObject) {
+  if (p_TypeObject.container) {
+    return p_TypeObject.inner;
+  }
+  return p_TypeObject;
+}
+
+function apply_type_object(p_TypeName, p_Prop) {
+  p_Prop.type_object = parse_type(p_Prop.type);
+
+  if (
+    !p_Prop.type_object.supported &&
+    (p_Prop.handle || p_Prop.enum || p_Prop.lens_enum || p_Prop.lens_struct)
+  ) {
+    console.log(
+      `WARNING: ${p_TypeName}.${p_Prop.name} has handle/enum/struct flags but its type '${p_Prop.type}' is not supported, flags will be ignored for it`,
+    );
+  }
+}
+
 function read_yaml_file(p_FilePath) {
   const l_FileContent = read_file(p_FilePath);
   return YAML.parse(l_FileContent);
@@ -220,10 +386,6 @@ function process_enum_file(p_Path, p_FileName, p_Project) {
 
   const l_Config = YAML.parse(l_FileContent);
 
-  if (!g_EnumIdMap[l_Config.module]) {
-    g_EnumIdMap[l_Config.module] = {};
-  }
-
   const l_Enums = [];
 
   for (let [i_EnumName, i_Enum] of Object.entries(l_Config.enums)) {
@@ -232,14 +394,8 @@ function process_enum_file(p_Path, p_FileName, p_Project) {
     i_Enum.prefix = l_Config.prefix ? l_Config.prefix : l_Config.module;
     i_Enum.namespace = l_Config.namespace;
     i_Enum.scripting_namespace = "";
-
-    i_Enum.enumId = 0;
-    if (g_EnumIdMap[l_Config.module][i_EnumName]) {
-      i_Enum.enumId = g_EnumIdMap[l_Config.module][i_EnumName];
-    } else {
-      i_Enum.enumId = get_unused_enum_id(p_Project);
-      g_AllEnumIds.push(i_Enum.enumId);
-      g_EnumIdMap[l_Config.module][i_EnumName] = i_Enum.enumId;
+    if (!i_Enum.identifier_name) {
+      i_Enum.identifier_name = i_Enum.name;
     }
 
     i_Enum.api_file = `${i_Enum.module}Api.h`;
@@ -250,6 +406,8 @@ function process_enum_file(p_Path, p_FileName, p_Project) {
     i_Enum.dll_macro = l_Config.dll_macro;
 
     i_Enum.namespace_string = "";
+
+    i_Enum.identifier = `${i_Enum.module}:${i_Enum.identifier_name}`;
 
     for (let i = 0; i < i_Enum.namespace.length; ++i) {
       if (i) {
@@ -497,6 +655,8 @@ function process_file(p_Path, p_FileName, p_Project = false) {
         i_Prop.dirty_flag = [i_Prop.dirty_flag];
       }
 
+      apply_type_object(i_Type.name, i_Prop);
+
       i_Prop.plain_type = get_plain_type(i_Prop.type);
       i_Prop.soa_type = i_Prop.plain_type;
       i_Prop.cs_type = get_cs_type(i_Prop);
@@ -562,6 +722,8 @@ function process_file(p_Path, p_FileName, p_Project = false) {
 
         i_VProp.hide_setter_flode =
           i_VProp.hide_flode || i_VProp.hide_setter_flode;
+
+        apply_type_object(i_Type.name, i_VProp);
 
         i_VProp.plain_type = get_plain_type(i_VProp.type);
         i_VProp.soa_type = i_VProp.plain_type;
@@ -828,18 +990,6 @@ function collect_enums_for_project(p_Path, p_WriteIds = true) {
   const l_TypeConfigsPath = `${p_Path}data/_internal/type_configs`;
   const l_FileList = fs.readdirSync(l_TypeConfigsPath);
 
-  const l_EnumIdContent = read_file(`${l_TypeConfigsPath}/enumids.yaml`);
-  g_EnumIdMap = YAML.parse(l_EnumIdContent);
-  if (!g_EnumIdMap) {
-    g_EnumIdMap = {};
-  }
-
-  for (const [key, value] of Object.entries(g_EnumIdMap)) {
-    for (const [k, v] of Object.entries(value)) {
-      g_AllEnumIds.push(v);
-    }
-  }
-
   const l_Enums = [];
 
   const l_EnumFiles = [];
@@ -854,30 +1004,12 @@ function collect_enums_for_project(p_Path, p_WriteIds = true) {
     l_Enums.push(...process_enum_file(p_Path, i_FileName, true));
   }
 
-  if (p_WriteIds && Object.keys(g_EnumIdMap).length > 0)
-    fs.writeFileSync(
-      `${l_TypeConfigsPath}/enumids.yaml`,
-      YAML.stringify(g_EnumIdMap),
-    );
-
   return l_Enums;
 }
 
 function collect_enums_for_low(p_Path, p_WriteIds = true) {
   const l_TypeConfigsPath = `${p_Path}LowData/type_configs`;
   const l_FileList = fs.readdirSync(l_TypeConfigsPath);
-
-  const l_EnumIdContent = read_file(`${l_TypeConfigsPath}/enumids.yaml`);
-  g_EnumIdMap = YAML.parse(l_EnumIdContent);
-  if (!g_EnumIdMap) {
-    g_EnumIdMap = {};
-  }
-
-  for (const [key, value] of Object.entries(g_EnumIdMap)) {
-    for (const [k, v] of Object.entries(value)) {
-      g_AllEnumIds.push(v);
-    }
-  }
 
   const l_Enums = [];
 
@@ -891,13 +1023,6 @@ function collect_enums_for_low(p_Path, p_WriteIds = true) {
 
   for (let i_FileName of l_EnumFiles) {
     l_Enums.push(...process_enum_file(p_Path, i_FileName, false));
-  }
-
-  if (p_WriteIds && Object.keys(g_EnumIdMap).length > 0) {
-    fs.writeFileSync(
-      `${l_TypeConfigsPath}/enumids.yaml`,
-      YAML.stringify(g_EnumIdMap),
-    );
   }
 
   return l_Enums;
@@ -1140,16 +1265,6 @@ function build_database_for(p_Path) {
 }
 
 function collect_types_for_low(p_Path, p_WriteIds = true) {
-  const l_TypeIdContent = read_file(
-    `${p_Path}LowData/type_configs/typeids.yaml`,
-  );
-  g_TypeIdMap = YAML.parse(l_TypeIdContent);
-  for (const [key, value] of Object.entries(g_TypeIdMap)) {
-    for (const [k, v] of Object.entries(value)) {
-      g_AllTypeIds.push(v);
-    }
-  }
-
   const l_FileList = fs.readdirSync(`${p_Path}LowData/type_configs`);
 
   const l_Types = [];
@@ -1166,31 +1281,10 @@ function collect_types_for_low(p_Path, p_WriteIds = true) {
     l_Types.push(...process_file(p_Path, i_FileName, false));
   }
 
-  if (p_WriteIds) {
-    fs.writeFileSync(
-      `${p_Path}LowData/type_configs/typeids.yaml`,
-      YAML.stringify(g_TypeIdMap),
-    );
-  }
-
   return l_Types;
 }
 
 function collect_types_for_project(p_Path, p_WriteIds = true) {
-  const l_TypeIdContent = read_file(
-    `${p_Path}data/_internal/type_configs/typeids.yaml`,
-  );
-  g_TypeIdMap = YAML.parse(l_TypeIdContent);
-  if (g_TypeIdMap) {
-    for (const [key, value] of Object.entries(g_TypeIdMap)) {
-      for (const [k, v] of Object.entries(value)) {
-        g_AllTypeIds.push(v);
-      }
-    }
-  } else {
-    g_TypeIdMap = {};
-  }
-
   const l_FileList = fs.readdirSync(`${p_Path}data/_internal/type_configs`);
 
   const l_Types = [];
@@ -1205,13 +1299,6 @@ function collect_types_for_project(p_Path, p_WriteIds = true) {
 
   for (let i_FileName of l_TypeFiles) {
     l_Types.push(...process_file(p_Path, i_FileName, true));
-  }
-
-  if (p_WriteIds && Object.keys(g_TypeIdMap).length > 0) {
-    fs.writeFileSync(
-      `${p_Path}data/_internal/type_configs/typeids.yaml`,
-      YAML.stringify(g_TypeIdMap),
-    );
   }
 
   return l_Types;
@@ -1371,4 +1458,6 @@ module.exports = {
   is_string_type,
   get_scripting_type,
   build_database_for,
+  parse_type,
+  get_element_type,
 };

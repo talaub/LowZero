@@ -8,11 +8,13 @@ namespace Low {
   namespace Core {
     namespace Navigation {
       namespace SourceModeEnumHelper {
+        const Low::Util::TypeIdentifier
+            g_Identifier(LOW_NAME(1181529166), LOW_NAME(3505407832));
+        u16 g_EnumId = 0;
         void initialize()
         {
           Low::Util::RTTI::EnumInfo l_EnumInfo;
           l_EnumInfo.name = N(SourceMode);
-          l_EnumInfo.enumId = 15;
           l_EnumInfo.entry_name = &_entry_name;
           l_EnumInfo.entry_value = &_entry_value;
 
@@ -45,7 +47,8 @@ namespace Low {
             l_EnumInfo.entries.push_back(l_Entry);
           }
 
-          Low::Util::register_enum_info(15, l_EnumInfo);
+          g_EnumId =
+              Low::Util::register_enum_info(g_Identifier, l_EnumInfo);
         }
 
         void cleanup()
@@ -108,7 +111,12 @@ namespace Low {
 
         u16 get_enum_id()
         {
-          return 15;
+          return g_EnumId;
+        }
+
+        Low::Util::TypeIdentifier get_enum_identifier()
+        {
+          return g_Identifier;
         }
 
         u8 get_entry_count()

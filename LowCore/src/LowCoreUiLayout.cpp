@@ -71,6 +71,9 @@ namespace Low {
           new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Layout, size_mode,
                                      LayoutSizeMode))
               LayoutSizeMode();
+          new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Layout, mode_mask,
+                                     Util::EnumMask<LayoutSizeMode>))
+              Util::EnumMask<LayoutSizeMode>();
           ACCESSOR_TYPE_SOA(l_Handle, Layout, aspect_ratio, float) =
               0.0f;
           ACCESSOR_TYPE_SOA(l_Handle, Layout, world_updated, bool) =
@@ -189,6 +192,8 @@ namespace Low {
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, anchor_min);
             l_PropertyInfo.size = sizeof(Layout::Data::anchor_min);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::VECTOR2;
             l_PropertyInfo.handleType = 0;
@@ -222,6 +227,8 @@ namespace Low {
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, anchor_max);
             l_PropertyInfo.size = sizeof(Layout::Data::anchor_max);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::VECTOR2;
             l_PropertyInfo.handleType = 0;
@@ -255,6 +262,8 @@ namespace Low {
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, margin_left);
             l_PropertyInfo.size = sizeof(Layout::Data::margin_left);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::FLOAT;
             l_PropertyInfo.handleType = 0;
@@ -287,6 +296,8 @@ namespace Low {
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, margin_top);
             l_PropertyInfo.size = sizeof(Layout::Data::margin_top);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::FLOAT;
             l_PropertyInfo.handleType = 0;
@@ -319,6 +330,8 @@ namespace Low {
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, margin_right);
             l_PropertyInfo.size = sizeof(Layout::Data::margin_right);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::FLOAT;
             l_PropertyInfo.handleType = 0;
@@ -351,6 +364,8 @@ namespace Low {
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, margin_bottom);
             l_PropertyInfo.size = sizeof(Layout::Data::margin_bottom);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::FLOAT;
             l_PropertyInfo.handleType = 0;
@@ -383,9 +398,11 @@ namespace Low {
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, size_mode);
             l_PropertyInfo.size = sizeof(Layout::Data::size_mode);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
             l_PropertyInfo.handleType =
-                LayoutSizeModeEnum::get_enum_id();
+                LayoutSizeModeEnum::IDENTIFIER;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Layout l_Handle = p_Handle.get_id();
@@ -408,6 +425,42 @@ namespace Low {
             // End property: size_mode
           }
           {
+            // Property: mode_mask
+            Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+            l_PropertyInfo.name = N(mode_mask);
+            l_PropertyInfo.editorProperty = true;
+            l_PropertyInfo.dataOffset =
+                offsetof(Layout::Data, mode_mask);
+            l_PropertyInfo.size = sizeof(Layout::Data::mode_mask);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::ENUM_MASK;
+            l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
+            l_PropertyInfo.handleType =
+                LayoutSizeModeEnum::IDENTIFIER;
+            l_PropertyInfo.get_return =
+                [](Low::Util::Handle p_Handle) -> void const * {
+              Layout l_Handle = p_Handle.get_id();
+              l_Handle.get_mode_mask();
+              return (void *)&ACCESSOR_TYPE_SOA(
+                  p_Handle, Layout, mode_mask,
+                  Util::EnumMask<LayoutSizeMode>);
+            };
+            l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                    const void *p_Data) -> void {
+              Layout l_Handle = p_Handle.get_id();
+              l_Handle.set_mode_mask(
+                  *(Util::EnumMask<LayoutSizeMode> *)p_Data);
+            };
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Layout l_Handle = p_Handle.get_id();
+              *((void **)p_Data) = &l_Handle.get_mode_mask();
+            };
+            l_TypeInfo.properties[l_PropertyInfo.name] =
+                l_PropertyInfo;
+            // End property: mode_mask
+          }
+          {
             // Property: fixed_size
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(fixed_size);
@@ -415,6 +468,8 @@ namespace Low {
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, fixed_size);
             l_PropertyInfo.size = sizeof(Layout::Data::fixed_size);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::VECTOR2;
             l_PropertyInfo.handleType = 0;
@@ -447,6 +502,8 @@ namespace Low {
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset = offsetof(Layout::Data, pivot);
             l_PropertyInfo.size = sizeof(Layout::Data::pivot);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::VECTOR2;
             l_PropertyInfo.handleType = 0;
@@ -479,6 +536,8 @@ namespace Low {
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, aspect_ratio);
             l_PropertyInfo.size = sizeof(Layout::Data::aspect_ratio);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::FLOAT;
             l_PropertyInfo.handleType = 0;
@@ -511,6 +570,8 @@ namespace Low {
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, world_updated);
             l_PropertyInfo.size = sizeof(Layout::Data::world_updated);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
@@ -542,6 +603,8 @@ namespace Low {
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, element);
             l_PropertyInfo.size = sizeof(Layout::Data::element);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType =
@@ -576,6 +639,8 @@ namespace Low {
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, unique_id);
             l_PropertyInfo.size = sizeof(Layout::Data::unique_id);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UINT64;
             l_PropertyInfo.handleType = 0;
@@ -605,6 +670,8 @@ namespace Low {
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset = offsetof(Layout::Data, dirty);
             l_PropertyInfo.size = sizeof(Layout::Data::dirty);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
@@ -636,6 +703,8 @@ namespace Low {
             l_PropertyInfo.dataOffset =
                 offsetof(Layout::Data, world_dirty);
             l_PropertyInfo.size = sizeof(Layout::Data::world_dirty);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
@@ -768,6 +837,7 @@ namespace Low {
           l_Handle.set_margin_right(get_margin_right());
           l_Handle.set_margin_bottom(get_margin_bottom());
           l_Handle.set_size_mode(get_size_mode());
+          l_Handle.set_mode_mask(get_mode_mask());
           l_Handle.set_fixed_size(get_fixed_size());
           l_Handle.set_pivot(get_pivot());
           l_Handle.set_aspect_ratio(get_aspect_ratio());
@@ -1195,6 +1265,34 @@ namespace Low {
 
             broadcast_observable(N(size_mode));
           }
+        }
+
+        Util::EnumMask<LayoutSizeMode> &Layout::get_mode_mask() const
+        {
+          _LOW_ASSERT(is_alive());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mode_mask
+          // LOW_CODEGEN::END::CUSTOM:GETTER_mode_mask
+
+          return TYPE_SOA(Layout, mode_mask,
+                          Util::EnumMask<LayoutSizeMode>);
+        }
+        void
+        Layout::set_mode_mask(Util::EnumMask<LayoutSizeMode> &p_Value)
+        {
+          _LOW_ASSERT(is_alive());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mode_mask
+          // LOW_CODEGEN::END::CUSTOM:PRESETTER_mode_mask
+
+          // Set new value
+          TYPE_SOA(Layout, mode_mask,
+                   Util::EnumMask<LayoutSizeMode>) = p_Value;
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mode_mask
+          // LOW_CODEGEN::END::CUSTOM:SETTER_mode_mask
+
+          broadcast_observable(N(mode_mask));
         }
 
         Low::Math::Vector2 Layout::get_fixed_size() const

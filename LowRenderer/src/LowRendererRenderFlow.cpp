@@ -188,6 +188,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, context);
         l_PropertyInfo.size = sizeof(RenderFlow::Data::context);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Interface::Context::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -209,6 +211,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, dimensions);
         l_PropertyInfo.size = sizeof(RenderFlow::Data::dimensions);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -236,6 +240,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, output_image);
         l_PropertyInfo.size = sizeof(RenderFlow::Data::output_image);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Resource::Image::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -265,7 +271,9 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RenderFlow::Data, steps);
         l_PropertyInfo.size = sizeof(RenderFlow::Data::steps);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
@@ -282,8 +290,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderFlow l_Handle = p_Handle.get_id();
-          *((Util::List<Util::Handle> *)p_Data) =
-              l_Handle.get_steps();
+          *((void **)p_Data) = &l_Handle.get_steps();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: steps
@@ -296,6 +303,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, resources);
         l_PropertyInfo.size = sizeof(RenderFlow::Data::resources);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -324,6 +333,8 @@ namespace Low {
             offsetof(RenderFlow::Data, frame_info_buffer);
         l_PropertyInfo.size =
             sizeof(RenderFlow::Data::frame_info_buffer);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Resource::Buffer::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -354,6 +365,8 @@ namespace Low {
             offsetof(RenderFlow::Data, resource_signature);
         l_PropertyInfo.size =
             sizeof(RenderFlow::Data::resource_signature);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Interface::PipelineResourceSignature::IDENTIFIER;
@@ -385,6 +398,8 @@ namespace Low {
             offsetof(RenderFlow::Data, camera_position);
         l_PropertyInfo.size =
             sizeof(RenderFlow::Data::camera_position);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -416,6 +431,8 @@ namespace Low {
             offsetof(RenderFlow::Data, camera_direction);
         l_PropertyInfo.size =
             sizeof(RenderFlow::Data::camera_direction);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -447,6 +464,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, camera_fov);
         l_PropertyInfo.size = sizeof(RenderFlow::Data::camera_fov);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -478,6 +497,8 @@ namespace Low {
             offsetof(RenderFlow::Data, camera_near_plane);
         l_PropertyInfo.size =
             sizeof(RenderFlow::Data::camera_near_plane);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -509,6 +530,8 @@ namespace Low {
             offsetof(RenderFlow::Data, camera_far_plane);
         l_PropertyInfo.size =
             sizeof(RenderFlow::Data::camera_far_plane);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -540,6 +563,8 @@ namespace Low {
             offsetof(RenderFlow::Data, projection_matrix);
         l_PropertyInfo.size =
             sizeof(RenderFlow::Data::projection_matrix);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -569,6 +594,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, view_matrix);
         l_PropertyInfo.size = sizeof(RenderFlow::Data::view_matrix);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -597,6 +624,8 @@ namespace Low {
             offsetof(RenderFlow::Data, directional_light);
         l_PropertyInfo.size =
             sizeof(RenderFlow::Data::directional_light);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -629,6 +658,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, point_lights);
         l_PropertyInfo.size = sizeof(RenderFlow::Data::point_lights);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -644,8 +675,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderFlow l_Handle = p_Handle.get_id();
-          *((Util::List<PointLight> *)p_Data) =
-              l_Handle.get_point_lights();
+          *((void **)p_Data) = &l_Handle.get_point_lights();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: point_lights
@@ -657,6 +687,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RenderFlow::Data, name);
         l_PropertyInfo.size = sizeof(RenderFlow::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -992,8 +1024,6 @@ namespace Low {
                                          l_Handle.get_id())
                 .get_id());
       }
-      if (p_Node["steps"]) {
-      }
       if (p_Node["resources"]) {
       }
       if (p_Node["frame_info_buffer"]) {
@@ -1032,8 +1062,6 @@ namespace Low {
       if (p_Node["view_matrix"]) {
       }
       if (p_Node["directional_light"]) {
-      }
-      if (p_Node["point_lights"]) {
       }
       if (p_Node["name"]) {
         l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());

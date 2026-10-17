@@ -33,6 +33,7 @@ namespace Low {
           Low::Math::Vector3 scale;
           uint64_t parent;
           uint64_t parent_uid;
+          Low::Util::List<int> testlist;
           Low::Util::List<uint64_t> children;
           Low::Math::Vector3 world_position;
           Low::Math::Quaternion world_rotation;
@@ -175,6 +176,9 @@ namespace Low {
         void set_parent(uint64_t p_Value);
 
         uint64_t get_parent_uid() const;
+
+        Low::Util::List<int> &get_testlist() const;
+        void set_testlist(Low::Util::List<int> &p_Value);
 
         Low::Util::List<uint64_t> &get_children() const;
 

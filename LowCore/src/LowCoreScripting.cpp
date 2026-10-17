@@ -39,6 +39,8 @@ namespace Low {
       Util::List<StructInfo> g_RegisteredStructs;
       Util::List<EnumInfo> g_RegisteredEnums;
 
+      Util::List<Util::Function<void()>> g_ScriptingCallbacks;
+
       static bool g_Initialized = false;
 
       asIScriptEngine *get_engine()
@@ -637,8 +639,7 @@ namespace Low {
           }
 
           for (asUINT j = 0; j < i_Type->GetMethodCount(); ++j) {
-            asIScriptFunction *i_Method =
-                i_Type->GetMethodByIndex(j);
+            asIScriptFunction *i_Method = i_Type->GetMethodByIndex(j);
             if (!i_Method) {
               continue;
             }
@@ -658,10 +659,9 @@ namespace Low {
               i_Method->GetParam(k, &i_ParamTypeId);
 
               InputParameter i_Parameter;
-              i_Parameter.type =
-                  (u32)property_type_from_declaration(
-                      i_Type->GetEngine()->GetTypeDeclaration(
-                          i_ParamTypeId));
+              i_Parameter.type = (u32)property_type_from_declaration(
+                  i_Type->GetEngine()->GetTypeDeclaration(
+                      i_ParamTypeId));
               i_MethodInfo.parameters.push_back(i_Parameter);
             }
 
@@ -861,6 +861,9 @@ namespace Low {
         expose(g_Engine);
         register_types(g_Engine);
         register_lowcore_scripting();
+        for (const auto &i_Callback : g_ScriptingCallbacks) {
+          i_Callback();
+        }
         expose_types(g_Engine);
         expose_late(g_Engine);
         register_interfaces(g_Engine);
@@ -1415,6 +1418,12 @@ namespace Low {
         }
         _LOW_ASSERT(false);
         return g_RegisteredFunctions[0];
+      }
+
+      void
+      register_scripting_callback(Util::Function<void()> p_Callback)
+      {
+        g_ScriptingCallbacks.push_back(p_Callback);
       }
     } // namespace Scripting
   } // namespace Core

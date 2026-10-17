@@ -7,6 +7,7 @@ namespace:
 dll_macro: LOW_CORE_API
 enums:
   AssetGenerator:
+    identifier_name: ScriptAssetGenerator
     options:
       - name: UserAuthored
       - name: VisualScript

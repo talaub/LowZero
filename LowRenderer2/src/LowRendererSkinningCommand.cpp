@@ -162,6 +162,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(SkinningCommand::Data, instance);
         l_PropertyInfo.size = sizeof(SkinningCommand::Data::instance);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = SkinningInstance::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -189,6 +191,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(SkinningCommand::Data, submesh);
         l_PropertyInfo.size = sizeof(SkinningCommand::Data::submesh);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = GpuSubmesh::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -217,6 +221,8 @@ namespace Low {
             offsetof(SkinningCommand::Data, weights_start);
         l_PropertyInfo.size =
             sizeof(SkinningCommand::Data::weights_start);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -248,6 +254,8 @@ namespace Low {
             offsetof(SkinningCommand::Data, skinned_vertex_start);
         l_PropertyInfo.size =
             sizeof(SkinningCommand::Data::skinned_vertex_start);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -280,6 +288,8 @@ namespace Low {
             offsetof(SkinningCommand::Data, vertex_count);
         l_PropertyInfo.size =
             sizeof(SkinningCommand::Data::vertex_count);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -308,6 +318,8 @@ namespace Low {
             offsetof(SkinningCommand::Data, active_vertex_buffer);
         l_PropertyInfo.size =
             sizeof(SkinningCommand::Data::active_vertex_buffer);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -340,6 +352,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(SkinningCommand::Data, name);
         l_PropertyInfo.size = sizeof(SkinningCommand::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

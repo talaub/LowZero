@@ -245,10 +245,9 @@ namespace Low {
 
     TypeIdentifier enum_identifier(u16 p_EnumId)
     {
-      LOW_ASSERT(
-          g_EnumRuntimeIdToIdentifier.find(p_EnumId) !=
-              g_EnumRuntimeIdToIdentifier.end(),
-          "No identifier registered for this enum id.");
+      LOW_ASSERT(g_EnumRuntimeIdToIdentifier.find(p_EnumId) !=
+                     g_EnumRuntimeIdToIdentifier.end(),
+                 "No identifier registered for this enum id.");
 
       return TypeIdentifier(g_EnumRuntimeIdToIdentifier[p_EnumId]);
     }
@@ -281,7 +280,8 @@ namespace Low {
 
     RTTI::StructInfo &get_struct_info(u16 p_StructId)
     {
-      LOW_ASSERT(g_StructInfos.find(p_StructId) != g_StructInfos.end(),
+      LOW_ASSERT(g_StructInfos.find(p_StructId) !=
+                     g_StructInfos.end(),
                  "Struct info has not been registered for struct id");
       return g_StructInfos[p_StructId];
     }
@@ -302,11 +302,11 @@ namespace Low {
 
     TypeIdentifier struct_identifier(u16 p_StructId)
     {
-      LOW_ASSERT(
-          g_StructRuntimeIdToIdentifier.find(p_StructId) !=
-              g_StructRuntimeIdToIdentifier.end(),
-          "No identifier registered for this struct id.");
-      return TypeIdentifier(g_StructRuntimeIdToIdentifier[p_StructId]);
+      LOW_ASSERT(g_StructRuntimeIdToIdentifier.find(p_StructId) !=
+                     g_StructRuntimeIdToIdentifier.end(),
+                 "No identifier registered for this struct id.");
+      return TypeIdentifier(
+          g_StructRuntimeIdToIdentifier[p_StructId]);
     }
 
     List<u16> &get_struct_ids()
@@ -660,9 +660,14 @@ namespace Low {
         Util::RTTI::PropertyInfo &p_PropertyInfo,
         Util::Map<Util::Name, Util::Variant> &p_Variants)
     {
+      if (p_PropertyInfo.containerType !=
+          Util::RTTI::ContainerType::NONE) {
+        return;
+      }
       if (p_PropertyInfo.type == Util::RTTI::PropertyType::UNKNOWN) {
         return;
       }
+
       if (p_PropertyInfo.type == Util::RTTI::PropertyType::SHAPE) {
         Math::Shape l_Shape;
         p_PropertyInfo.get(p_Handle, &l_Shape);

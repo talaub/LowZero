@@ -142,10 +142,9 @@ namespace Low {
         Util::String declaration;
       };
 
-      bool LOW_CORE_API
-      call_function_dynamic(Module p_Module,
-                            const Util::String &p_Declaration,
-                            const Util::List<Util::Variant> &p_Args = {});
+      bool LOW_CORE_API call_function_dynamic(
+          Module p_Module, const Util::String &p_Declaration,
+          const Util::List<Util::Variant> &p_Args = {});
 
       bool LOW_CORE_API call_function_internal(
           Module p_Module, const char *p_Declaration,
@@ -167,7 +166,8 @@ namespace Low {
       }
 
       template <typename... TArgs>
-      bool call_function(const Function &p_Function, TArgs &&...p_Args)
+      bool call_function(const Function &p_Function,
+                         TArgs &&...p_Args)
       {
         return call_function(p_Function.module,
                              p_Function.declaration.c_str(),
@@ -207,14 +207,17 @@ namespace Low {
       LOW_CORE_API
       const Util::List<StructInfo> &get_registered_structs();
       LOW_CORE_API
-      const StructInfo &
-      find_registered_struct_checked(Util::TypeIdentifier p_Identifier);
+      const StructInfo &find_registered_struct_checked(
+          Util::TypeIdentifier p_Identifier);
 
       LOW_CORE_API
       const Util::List<EnumInfo> &get_registered_enums();
       LOW_CORE_API
       const EnumInfo &
       find_registered_enum_checked(Util::TypeIdentifier p_Identifier);
+
+      void LOW_CORE_API
+      register_scripting_callback(Util::Function<void()> p_Callback);
     } // namespace Scripting
   } // namespace Core
 } // namespace Low

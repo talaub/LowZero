@@ -39,7 +39,8 @@ namespace Low {
         }
       } // namespace
 
-      ClassInstance find_instance_by_script_object(void *p_ScriptObject)
+      ClassInstance
+      find_instance_by_script_object(void *p_ScriptObject)
       {
         auto l_Pos = g_InstanceByScriptObject.find(p_ScriptObject);
         if (l_Pos == g_InstanceByScriptObject.end()) {
@@ -185,6 +186,8 @@ namespace Low {
               offsetof(ClassInstance::Data, script_class);
           l_PropertyInfo.size =
               sizeof(ClassInstance::Data::script_class);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -216,6 +219,8 @@ namespace Low {
               offsetof(ClassInstance::Data, reload_index);
           l_PropertyInfo.size =
               sizeof(ClassInstance::Data::reload_index);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -246,6 +251,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(ClassInstance::Data, ptr);
           l_PropertyInfo.size = sizeof(ClassInstance::Data::ptr);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -271,6 +278,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(ClassInstance::Data, name);
           l_PropertyInfo.size = sizeof(ClassInstance::Data::name);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -1127,8 +1136,8 @@ namespace Low {
         return true;
       }
 
-      bool ClassInstance::call_method_by_name(
-          Low::Util::Name p_MethodName)
+      bool
+      ClassInstance::call_method_by_name(Low::Util::Name p_MethodName)
       {
         ScriptClass l_Class = get_script_class();
 

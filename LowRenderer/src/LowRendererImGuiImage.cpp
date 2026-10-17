@@ -158,6 +158,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(ImGuiImage::Data, imgui_image);
           l_PropertyInfo.size = sizeof(ImGuiImage::Data::imgui_image);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -188,6 +190,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(ImGuiImage::Data, image);
           l_PropertyInfo.size = sizeof(ImGuiImage::Data::image);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Resource::Image::IDENTIFIER;
           l_PropertyInfo.get_return =
@@ -215,6 +219,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(ImGuiImage::Data, name);
           l_PropertyInfo.size = sizeof(ImGuiImage::Data::name);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

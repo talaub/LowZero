@@ -161,8 +161,9 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Module::Data, scripts);
           l_PropertyInfo.size = sizeof(Module::Data::scripts);
-          l_PropertyInfo.type =
-              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::LIST;
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
@@ -176,8 +177,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Module l_Handle = p_Handle.get_id();
-            *((Low::Util::List<uint64_t> *)p_Data) =
-                l_Handle.get_scripts();
+            *((void **)p_Data) = &l_Handle.get_scripts();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: scripts
@@ -190,6 +190,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Module::Data, as_module);
           l_PropertyInfo.size = sizeof(Module::Data::as_module);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -220,8 +222,9 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Module::Data, classes);
           l_PropertyInfo.size = sizeof(Module::Data::classes);
-          l_PropertyInfo.type =
-              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::LIST;
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
@@ -235,8 +238,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Module l_Handle = p_Handle.get_id();
-            *((Low::Util::List<uint64_t> *)p_Data) =
-                l_Handle.get_classes();
+            *((void **)p_Data) = &l_Handle.get_classes();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: classes
@@ -249,6 +251,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Module::Data, reload_index);
           l_PropertyInfo.size = sizeof(Module::Data::reload_index);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -280,6 +284,8 @@ namespace Low {
               offsetof(Module::Data, ticking_functions);
           l_PropertyInfo.size =
               sizeof(Module::Data::ticking_functions);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::LIST;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -296,8 +302,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Module l_Handle = p_Handle.get_id();
-            *((Low::Util::List<char *> *)p_Data) =
-                l_Handle.get_ticking_functions();
+            *((void **)p_Data) = &l_Handle.get_ticking_functions();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: ticking_functions
@@ -309,6 +314,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Module::Data, name);
           l_PropertyInfo.size = sizeof(Module::Data::name);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

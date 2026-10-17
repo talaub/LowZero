@@ -153,6 +153,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GameplaySystem::Data, value);
         l_PropertyInfo.size = sizeof(GameplaySystem::Data::value);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -183,6 +185,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GameplaySystem::Data, type);
         l_PropertyInfo.size = sizeof(GameplaySystem::Data::type);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -210,6 +214,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GameplaySystem::Data, name);
         l_PropertyInfo.size = sizeof(GameplaySystem::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

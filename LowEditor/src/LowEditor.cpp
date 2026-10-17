@@ -68,6 +68,7 @@
 #include "FlodeOperatorNodes.h"
 #include "imgui.h"
 
+#include <corecrt_io.h>
 #include <filesystem>
 
 namespace Low {
@@ -2048,6 +2049,11 @@ namespace Low {
     {
       get_flode_widget()->m_Editor->load(p_Path);
       ImGui::SetWindowFocus(ICON_LC_WORKFLOW " Flode");
+    }
+
+    void open_widget_for_handle(Util::Handle p_Handle)
+    {
+      _open_widget_for_handle(p_Handle);
     }
 
     void open_file_in_code_editor(Util::String p_Path)

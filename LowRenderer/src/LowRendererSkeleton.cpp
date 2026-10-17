@@ -154,6 +154,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(Skeleton::Data, root_bone);
         l_PropertyInfo.size = sizeof(Skeleton::Data::root_bone);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -184,6 +186,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(Skeleton::Data, bone_count);
         l_PropertyInfo.size = sizeof(Skeleton::Data::bone_count);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -214,6 +218,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(Skeleton::Data, animations);
         l_PropertyInfo.size = sizeof(Skeleton::Data::animations);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -229,8 +235,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Skeleton l_Handle = p_Handle.get_id();
-          *((Util::List<SkeletalAnimation> *)p_Data) =
-              l_Handle.get_animations();
+          *((void **)p_Data) = &l_Handle.get_animations();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: animations
@@ -242,6 +247,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Skeleton::Data, name);
         l_PropertyInfo.size = sizeof(Skeleton::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -428,8 +435,6 @@ namespace Low {
       }
       if (p_Node["bone_count"]) {
         l_Handle.set_bone_count(p_Node["bone_count"].as<uint32_t>());
-      }
-      if (p_Node["animations"]) {
       }
       if (p_Node["name"]) {
         l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());

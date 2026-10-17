@@ -176,6 +176,8 @@ namespace Low {
             offsetof(RenderScene::Data, draw_commands);
         l_PropertyInfo.size =
             sizeof(RenderScene::Data::draw_commands);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -191,8 +193,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderScene l_Handle = p_Handle.get_id();
-          *((Low::Util::List<DrawCommand> *)p_Data) =
-              l_Handle.get_draw_commands();
+          *((void **)p_Data) = &l_Handle.get_draw_commands();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: draw_commands
@@ -206,7 +207,9 @@ namespace Low {
             offsetof(RenderScene::Data, pointlight_deleted_slots);
         l_PropertyInfo.size =
             sizeof(RenderScene::Data::pointlight_deleted_slots);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::SET;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
@@ -235,6 +238,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderScene::Data, data_handle);
         l_PropertyInfo.size = sizeof(RenderScene::Data::data_handle);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -266,6 +271,8 @@ namespace Low {
             offsetof(RenderScene::Data, directional_light_direction);
         l_PropertyInfo.size =
             sizeof(RenderScene::Data::directional_light_direction);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -300,6 +307,8 @@ namespace Low {
             offsetof(RenderScene::Data, directional_light_color);
         l_PropertyInfo.size =
             sizeof(RenderScene::Data::directional_light_color);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::COLORRGB;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -334,6 +343,8 @@ namespace Low {
             offsetof(RenderScene::Data, directional_light_intensity);
         l_PropertyInfo.size =
             sizeof(RenderScene::Data::directional_light_intensity);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -367,6 +378,8 @@ namespace Low {
             offsetof(RenderScene::Data, directional_light_dirty);
         l_PropertyInfo.size =
             sizeof(RenderScene::Data::directional_light_dirty);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -396,6 +409,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RenderScene::Data, name);
         l_PropertyInfo.size = sizeof(RenderScene::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

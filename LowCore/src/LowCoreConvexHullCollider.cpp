@@ -230,8 +230,10 @@ namespace Low {
               offsetof(ConvexHullCollider::Data, points);
           l_PropertyInfo.size =
               sizeof(ConvexHullCollider::Data::points);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::LIST;
           l_PropertyInfo.type =
-              Low::Util::RTTI::PropertyType::UNKNOWN;
+              Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
@@ -250,8 +252,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             ConvexHullCollider l_Handle = p_Handle.get_id();
-            *((Low::Util::List<Low::Math::Vector3> *)p_Data) =
-                l_Handle.get_points();
+            *((void **)p_Data) = &l_Handle.get_points();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: points
@@ -265,6 +266,8 @@ namespace Low {
               offsetof(ConvexHullCollider::Data, trigger);
           l_PropertyInfo.size =
               sizeof(ConvexHullCollider::Data::trigger);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -296,6 +299,8 @@ namespace Low {
               offsetof(ConvexHullCollider::Data, shape);
           l_PropertyInfo.size =
               sizeof(ConvexHullCollider::Data::shape);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Low::Core::Physics::Shape::IDENTIFIER;
@@ -327,6 +332,8 @@ namespace Low {
               offsetof(ConvexHullCollider::Data, static_body);
           l_PropertyInfo.size =
               sizeof(ConvexHullCollider::Data::static_body);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Low::Core::Physics::Body::IDENTIFIER;
@@ -358,6 +365,8 @@ namespace Low {
               offsetof(ConvexHullCollider::Data, initialized);
           l_PropertyInfo.size =
               sizeof(ConvexHullCollider::Data::initialized);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -386,6 +395,8 @@ namespace Low {
               offsetof(ConvexHullCollider::Data, entity);
           l_PropertyInfo.size =
               sizeof(ConvexHullCollider::Data::entity);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::IDENTIFIER;
           l_PropertyInfo.get_return =
@@ -418,6 +429,8 @@ namespace Low {
               offsetof(ConvexHullCollider::Data, unique_id);
           l_PropertyInfo.size =
               sizeof(ConvexHullCollider::Data::unique_id);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -448,6 +461,8 @@ namespace Low {
               offsetof(ConvexHullCollider::Data, dirty);
           l_PropertyInfo.size =
               sizeof(ConvexHullCollider::Data::dirty);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -647,8 +662,6 @@ namespace Low {
         ConvexHullCollider l_Handle = ConvexHullCollider::make(
             p_Creator.get_id(), l_HandleUniqueId);
 
-        if (p_Node["points"]) {
-        }
         if (p_Node["trigger"]) {
           l_Handle.set_trigger(p_Node["trigger"].as<bool>());
         }

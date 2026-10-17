@@ -192,6 +192,8 @@ namespace Low {
             offsetof(GraphicsStepConfig::Data, callbacks);
         l_PropertyInfo.size =
             sizeof(GraphicsStepConfig::Data::callbacks);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -225,6 +227,8 @@ namespace Low {
             offsetof(GraphicsStepConfig::Data, resources);
         l_PropertyInfo.size =
             sizeof(GraphicsStepConfig::Data::resources);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -240,8 +244,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
-          *((Util::List<ResourceConfig> *)p_Data) =
-              l_Handle.get_resources();
+          *((void **)p_Data) = &l_Handle.get_resources();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: resources
@@ -255,6 +258,8 @@ namespace Low {
             offsetof(GraphicsStepConfig::Data, dimensions_config);
         l_PropertyInfo.size =
             sizeof(GraphicsStepConfig::Data::dimensions_config);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -285,6 +290,8 @@ namespace Low {
             offsetof(GraphicsStepConfig::Data, pipelines);
         l_PropertyInfo.size =
             sizeof(GraphicsStepConfig::Data::pipelines);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -300,8 +307,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
-          *((Util::List<GraphicsPipelineConfig> *)p_Data) =
-              l_Handle.get_pipelines();
+          *((void **)p_Data) = &l_Handle.get_pipelines();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: pipelines
@@ -315,6 +321,8 @@ namespace Low {
             offsetof(GraphicsStepConfig::Data, rendertargets);
         l_PropertyInfo.size =
             sizeof(GraphicsStepConfig::Data::rendertargets);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -330,8 +338,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
-          *((Util::List<PipelineResourceBindingConfig> *)p_Data) =
-              l_Handle.get_rendertargets();
+          *((void **)p_Data) = &l_Handle.get_rendertargets();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: rendertargets
@@ -345,6 +352,8 @@ namespace Low {
             GraphicsStepConfig::Data, rendertargets_clearcolor);
         l_PropertyInfo.size = sizeof(
             GraphicsStepConfig::Data::rendertargets_clearcolor);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::COLOR;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -379,6 +388,8 @@ namespace Low {
             offsetof(GraphicsStepConfig::Data, depth_rendertarget);
         l_PropertyInfo.size =
             sizeof(GraphicsStepConfig::Data::depth_rendertarget);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -413,6 +424,8 @@ namespace Low {
             offsetof(GraphicsStepConfig::Data, use_depth);
         l_PropertyInfo.size =
             sizeof(GraphicsStepConfig::Data::use_depth);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -444,6 +457,8 @@ namespace Low {
             offsetof(GraphicsStepConfig::Data, depth_clear);
         l_PropertyInfo.size =
             sizeof(GraphicsStepConfig::Data::depth_clear);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -475,6 +490,8 @@ namespace Low {
             offsetof(GraphicsStepConfig::Data, depth_test);
         l_PropertyInfo.size =
             sizeof(GraphicsStepConfig::Data::depth_test);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -506,6 +523,8 @@ namespace Low {
             offsetof(GraphicsStepConfig::Data, depth_write);
         l_PropertyInfo.size =
             sizeof(GraphicsStepConfig::Data::depth_write);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -537,6 +556,8 @@ namespace Low {
                                              depth_compare_operation);
         l_PropertyInfo.size =
             sizeof(GraphicsStepConfig::Data::depth_compare_operation);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -570,6 +591,8 @@ namespace Low {
             offsetof(GraphicsStepConfig::Data, output_image);
         l_PropertyInfo.size =
             sizeof(GraphicsStepConfig::Data::output_image);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -603,6 +626,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfig::Data, name);
         l_PropertyInfo.size = sizeof(GraphicsStepConfig::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -840,13 +865,7 @@ namespace Low {
 
       if (p_Node["callbacks"]) {
       }
-      if (p_Node["resources"]) {
-      }
       if (p_Node["dimensions_config"]) {
-      }
-      if (p_Node["pipelines"]) {
-      }
-      if (p_Node["rendertargets"]) {
       }
       if (p_Node["rendertargets_clearcolor"]) {
         l_Handle.set_rendertargets_clearcolor(

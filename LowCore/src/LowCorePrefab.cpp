@@ -215,6 +215,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Prefab::Data, parent);
         l_PropertyInfo.size = sizeof(Prefab::Data::parent);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -244,7 +246,9 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Prefab::Data, children);
         l_PropertyInfo.size = sizeof(Prefab::Data::children);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
@@ -261,8 +265,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Prefab l_Handle = p_Handle.get_id();
-          *((Util::List<Util::Handle> *)p_Data) =
-              l_Handle.get_children();
+          *((void **)p_Data) = &l_Handle.get_children();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: children
@@ -275,6 +278,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(Prefab::Data, components);
         l_PropertyInfo.size = sizeof(Prefab::Data::components);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -311,6 +316,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Prefab::Data, unique_id);
         l_PropertyInfo.size = sizeof(Prefab::Data::unique_id);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -337,6 +344,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = true;
         l_PropertyInfo.dataOffset = offsetof(Prefab::Data, name);
         l_PropertyInfo.size = sizeof(Prefab::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -639,8 +648,6 @@ namespace Low {
       Prefab l_Handle = Prefab::make(N(Prefab), l_HandleUniqueId);
 
       if (p_Node["parent"]) {
-      }
-      if (p_Node["children"]) {
       }
       if (p_Node["components"]) {
       }

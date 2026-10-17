@@ -161,6 +161,8 @@ namespace Low {
             offsetof(SkeletalAnimation::Data, duration);
         l_PropertyInfo.size =
             sizeof(SkeletalAnimation::Data::duration);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -192,6 +194,8 @@ namespace Low {
             offsetof(SkeletalAnimation::Data, ticks_per_second);
         l_PropertyInfo.size =
             sizeof(SkeletalAnimation::Data::ticks_per_second);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -223,6 +227,8 @@ namespace Low {
             offsetof(SkeletalAnimation::Data, channels);
         l_PropertyInfo.size =
             sizeof(SkeletalAnimation::Data::channels);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -238,8 +244,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SkeletalAnimation l_Handle = p_Handle.get_id();
-          *((Util::List<Util::Resource::AnimationChannel> *)p_Data) =
-              l_Handle.get_channels();
+          *((void **)p_Data) = &l_Handle.get_channels();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: channels
@@ -252,6 +257,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(SkeletalAnimation::Data, name);
         l_PropertyInfo.size = sizeof(SkeletalAnimation::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -452,8 +459,6 @@ namespace Low {
       if (p_Node["ticks_per_second"]) {
         l_Handle.set_ticks_per_second(
             p_Node["ticks_per_second"].as<float>());
-      }
-      if (p_Node["channels"]) {
       }
       if (p_Node["name"]) {
         l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());

@@ -182,6 +182,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(WidgetInstance::Data, root);
           l_PropertyInfo.size = sizeof(WidgetInstance::Data::root);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Low::Core::UI::Element::IDENTIFIER;
@@ -215,6 +217,8 @@ namespace Low {
               offsetof(WidgetInstance::Data, elements);
           l_PropertyInfo.size =
               sizeof(WidgetInstance::Data::elements);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::LIST;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -231,8 +235,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             WidgetInstance l_Handle = p_Handle.get_id();
-            *((Low::Util::List<Low::Core::UI::Element> *)p_Data) =
-                l_Handle.get_elements();
+            *((void **)p_Data) = &l_Handle.get_elements();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: elements
@@ -246,6 +249,8 @@ namespace Low {
               offsetof(WidgetInstance::Data, element_map);
           l_PropertyInfo.size =
               sizeof(WidgetInstance::Data::element_map);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -282,6 +287,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(WidgetInstance::Data, widgets);
           l_PropertyInfo.size = sizeof(WidgetInstance::Data::widgets);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::LIST;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -298,8 +305,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             WidgetInstance l_Handle = p_Handle.get_id();
-            *((Low::Util::List<Low::Core::UI::WidgetInstance> *)
-                  p_Data) = l_Handle.get_widgets();
+            *((void **)p_Data) = &l_Handle.get_widgets();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: widgets
@@ -313,6 +319,8 @@ namespace Low {
               offsetof(WidgetInstance::Data, controller_instance);
           l_PropertyInfo.size =
               sizeof(WidgetInstance::Data::controller_instance);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               Low::Core::UI::ControllerInstance::IDENTIFIER;
@@ -347,6 +355,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(WidgetInstance::Data, asset);
           l_PropertyInfo.size = sizeof(WidgetInstance::Data::asset);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -377,6 +387,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(WidgetInstance::Data, name);
           l_PropertyInfo.size = sizeof(WidgetInstance::Data::name);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -984,5 +996,5 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace UI
-  } // namespace Core
+  }   // namespace Core
 } // namespace Low

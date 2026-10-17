@@ -4,6 +4,7 @@
 
 #include "LowMath.h"
 #include "LowUtilName.h"
+#include "LowUtilHandle.h"
 
 namespace Low {
   namespace Core {
@@ -27,6 +28,8 @@ namespace Low {
         uint8_t LOW_CORE_API _entry_value(Low::Util::Name p_Name);
 
         u16 LOW_CORE_API get_enum_id();
+
+        Low::Util::TypeIdentifier LOW_CORE_API get_enum_identifier();
 
         u8 LOW_CORE_API get_entry_count();
       } // namespace AssetGeneratorEnumHelper

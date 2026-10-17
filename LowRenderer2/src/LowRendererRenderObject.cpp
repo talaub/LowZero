@@ -194,6 +194,8 @@ namespace Low {
             offsetof(RenderObject::Data, world_transform);
         l_PropertyInfo.size =
             sizeof(RenderObject::Data::world_transform);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -227,6 +229,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderObject::Data, mesh);
         l_PropertyInfo.size = sizeof(RenderObject::Data::mesh);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Low::Renderer::Mesh::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -255,6 +259,8 @@ namespace Low {
             offsetof(RenderObject::Data, last_uploaded_mesh_gpu_id);
         l_PropertyInfo.size =
             sizeof(RenderObject::Data::last_uploaded_mesh_gpu_id);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -287,6 +293,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderObject::Data, uploaded);
         l_PropertyInfo.size = sizeof(RenderObject::Data::uploaded);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -317,6 +325,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderObject::Data, slot);
         l_PropertyInfo.size = sizeof(RenderObject::Data::slot);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -348,6 +358,8 @@ namespace Low {
             offsetof(RenderObject::Data, render_scene_handle);
         l_PropertyInfo.size =
             sizeof(RenderObject::Data::render_scene_handle);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -375,6 +387,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderObject::Data, material);
         l_PropertyInfo.size = sizeof(RenderObject::Data::material);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::Material::IDENTIFIER;
@@ -409,6 +423,8 @@ namespace Low {
             offsetof(RenderObject::Data, draw_commands);
         l_PropertyInfo.size =
             sizeof(RenderObject::Data::draw_commands);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -424,8 +440,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderObject l_Handle = p_Handle.get_id();
-          *((Low::Util::List<DrawCommand> *)p_Data) =
-              l_Handle.get_draw_commands();
+          *((void **)p_Data) = &l_Handle.get_draw_commands();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: draw_commands
@@ -438,6 +453,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderObject::Data, object_id);
         l_PropertyInfo.size = sizeof(RenderObject::Data::object_id);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -468,6 +485,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderObject::Data, dirty);
         l_PropertyInfo.size = sizeof(RenderObject::Data::dirty);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -498,6 +517,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderObject::Data, name);
         l_PropertyInfo.size = sizeof(RenderObject::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

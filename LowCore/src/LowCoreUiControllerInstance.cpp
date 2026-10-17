@@ -165,6 +165,8 @@ namespace Low {
               offsetof(ControllerInstance::Data, value);
           l_PropertyInfo.size =
               sizeof(ControllerInstance::Data::value);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -199,6 +201,8 @@ namespace Low {
               offsetof(ControllerInstance::Data, controller);
           l_PropertyInfo.size =
               sizeof(ControllerInstance::Data::controller);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -230,6 +234,8 @@ namespace Low {
               offsetof(ControllerInstance::Data, name);
           l_PropertyInfo.size =
               sizeof(ControllerInstance::Data::name);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =

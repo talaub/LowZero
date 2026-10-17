@@ -39,17 +39,24 @@ function process_directory(p_DirPath, p_Extensions = ['.h', '.hpp', '.cpp']) {
 //   --upstream-db <path>    (repeatable) upstream lensdb.yaml files to read
 //   --yaml-configs <path>   (repeatable) engine/project root paths to read YAML type configs from
 //   --yaml-project          flag: treat the preceding --yaml-configs path as a project (not Low)
+//   --api-macro <macro>     DLL export macro put on generated declarations
+//   --api-header <header>   header defining --api-macro, included by generated headers
 function parse_args(p_Args) {
   const l_Result = {
     positional: [],
     upstream_dbs: [],
     yaml_configs: [],
+    api: {},
   };
 
   let l_I = 0;
   while (l_I < p_Args.length) {
     const l_Arg = p_Args[l_I];
-    if (l_Arg === '--upstream-db') {
+    if (l_Arg === '--api-macro') {
+      l_Result.api.macro = p_Args[++l_I];
+    } else if (l_Arg === '--api-header') {
+      l_Result.api.header = p_Args[++l_I];
+    } else if (l_Arg === '--upstream-db') {
       l_Result.upstream_dbs.push(p_Args[++l_I]);
     } else if (l_Arg === '--yaml-configs') {
       const l_ConfigPath = p_Args[++l_I];
@@ -80,7 +87,7 @@ function write_file_if_changed(p_FilePath, p_Content) {
 module.exports = { process_file, process_directory };
 
 // CLI:
-//   node index.js <input_dir> <output_dir> <module_name> [--upstream-db <path>]... [--yaml-configs <path> [--yaml-project]]...
+//   node index.js <input_dir> <output_dir> <module_name> [--upstream-db <path>]... [--yaml-configs <path> [--yaml-project]]... [--api-macro <macro>] [--api-header <header>]
 //   node index.js <file>
 if (require.main === module) {
   const l_Parsed = parse_args(process.argv.slice(2));
@@ -134,7 +141,7 @@ if (require.main === module) {
       if (i_Result.enums.length > 0 || i_Result.structs.length > 0) {
         const l_GenHeaderName = `${path.basename(l_BaseName, path.extname(l_BaseName))}.gen.h`;
         const l_GenHeaderPath = path.join(l_GenDir, l_GenHeaderName);
-        if (write_file_if_changed(l_GenHeaderPath, generate_header_file(i_Result.enums, i_Result.structs))) {
+        if (write_file_if_changed(l_GenHeaderPath, generate_header_file(i_Result.enums, i_Result.structs, l_Parsed.api))) {
           console.log(`LowLens: wrote ${l_GenHeaderPath}`);
         }
         patch_source_header(i_Result.file, l_GenHeaderName);
@@ -158,7 +165,7 @@ if (require.main === module) {
 
   } else {
     console.error('Usage:');
-    console.error('  node index.js <input_dir> <output_dir> <module_name> [--upstream-db <path>]... [--yaml-configs <path> [--yaml-project]]...');
+    console.error('  node index.js <input_dir> <output_dir> <module_name> [--upstream-db <path>]... [--yaml-configs <path> [--yaml-project]]... [--api-macro <macro>] [--api-header <header>]');
     console.error('  node index.js <file>');
     process.exit(1);
   }

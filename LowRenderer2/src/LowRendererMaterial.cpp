@@ -204,9 +204,11 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Material::Data, state);
         l_PropertyInfo.size = sizeof(Material::Data::state);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
         l_PropertyInfo.handleType =
-            MaterialStateEnumHelper::get_enum_id();
+            MaterialStateEnumHelper::get_enum_identifier();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Material l_Handle = p_Handle.get_id();
@@ -235,6 +237,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(Material::Data, material_type);
         l_PropertyInfo.size = sizeof(Material::Data::material_type);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = MaterialType::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -265,6 +269,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(Material::Data, resource);
         l_PropertyInfo.size = sizeof(Material::Data::resource);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::MaterialResource::IDENTIFIER;
@@ -298,6 +304,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Material::Data, gpu);
         l_PropertyInfo.size = sizeof(Material::Data::gpu);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Low::Renderer::GpuMaterial::IDENTIFIER;
@@ -329,6 +337,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Material::Data, path);
         l_PropertyInfo.size = sizeof(Material::Data::path);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -359,6 +369,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(Material::Data, properties);
         l_PropertyInfo.size = sizeof(Material::Data::properties);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -389,7 +401,9 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(Material::Data, references);
         l_PropertyInfo.size = sizeof(Material::Data::references);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::SET;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
@@ -410,6 +424,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(Material::Data, unique_id);
         l_PropertyInfo.size = sizeof(Material::Data::unique_id);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -436,6 +452,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Material::Data, name);
         l_PropertyInfo.size = sizeof(Material::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -1060,8 +1078,6 @@ namespace Low {
       Material l_Handle =
           Material::make(N(Material), l_HandleUniqueId);
 
-      if (p_Node["references"]) {
-      }
       if (p_Node["unique_id"]) {
         l_Handle.set_unique_id(
             p_Node["unique_id"].as<Low::Util::UniqueId>());

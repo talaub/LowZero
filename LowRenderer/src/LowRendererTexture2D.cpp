@@ -159,6 +159,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Texture2D::Data, image);
         l_PropertyInfo.size = sizeof(Texture2D::Data::image);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Resource::Image::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -186,6 +188,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(Texture2D::Data, context);
         l_PropertyInfo.size = sizeof(Texture2D::Data::context);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Interface::Context::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -206,6 +210,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Texture2D::Data, name);
         l_PropertyInfo.size = sizeof(Texture2D::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

@@ -172,6 +172,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Context::Data, context);
           l_PropertyInfo.size = sizeof(Context::Data::context);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -200,6 +202,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Context::Data, renderpasses);
           l_PropertyInfo.size = sizeof(Context::Data::renderpasses);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::LIST;
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -216,8 +220,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Context l_Handle = p_Handle.get_id();
-            *((Util::List<Renderpass> *)p_Data) =
-                l_Handle.get_renderpasses();
+            *((void **)p_Data) = &l_Handle.get_renderpasses();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: renderpasses
@@ -231,6 +234,8 @@ namespace Low {
               offsetof(Context::Data, global_signature);
           l_PropertyInfo.size =
               sizeof(Context::Data::global_signature);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               PipelineResourceSignature::IDENTIFIER;
@@ -262,6 +267,8 @@ namespace Low {
               offsetof(Context::Data, frame_info_buffer);
           l_PropertyInfo.size =
               sizeof(Context::Data::frame_info_buffer);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Resource::Buffer::IDENTIFIER;
           l_PropertyInfo.get_return =
@@ -292,6 +299,8 @@ namespace Low {
               offsetof(Context::Data, material_data_buffer);
           l_PropertyInfo.size =
               sizeof(Context::Data::material_data_buffer);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Resource::Buffer::IDENTIFIER;
           l_PropertyInfo.get_return =
@@ -320,6 +329,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Context::Data, name);
           l_PropertyInfo.size = sizeof(Context::Data::name);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::NONE;
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
@@ -727,8 +738,6 @@ namespace Low {
         Context l_Handle = Context::make(N(Context));
 
         if (p_Node["context"]) {
-        }
-        if (p_Node["renderpasses"]) {
         }
         if (p_Node["global_signature"]) {
           l_Handle.set_global_signature(

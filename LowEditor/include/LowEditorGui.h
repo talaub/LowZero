@@ -28,6 +28,11 @@ namespace Low {
       bool hovered = false;
     };
 
+    struct CollectionListResult
+    {
+      bool added = false;
+    };
+
     namespace Gui {
 
       extern const ImVec2 g_AssetCardSize;
@@ -92,6 +97,14 @@ namespace Low {
                                  Low::Math::Color p_IconColor =
                                      Low::Math::Color(1.0f, 1.0f,
                                                       1.0f, 1.0f));
+
+      bool LOW_EDITOR_API DetailButton(
+          const Util::String &p_Text,
+          Util::Function<void()> p_Subline = nullptr,
+          const char *p_Icon = nullptr,
+          Low::Math::Color p_IconColor = Low::Math::Color(1.0f, 1.0f,
+                                                          1.0f, 1.0f),
+          const bool p_Selected = false);
       void LOW_EDITOR_API VerticalSeparator(float p_Padding = 8.0f);
       bool LOW_EDITOR_API AddButton(bool p_Disabled = false);
       bool LOW_EDITOR_API AddButton(const char *p_Label,
@@ -140,6 +153,12 @@ namespace Low {
                                  const AssetType p_AssetType,
                                  const Util::Handle p_Handle,
                                  const Util::String &p_DisplayName);
+
+      CollectionListResult
+      collection_list(Util::Function<void()> p_Content,
+                      const bool p_AllowAdd,
+                      const Util::String &p_AddTest,
+                      const bool p_DisplayCount, const int p_Count);
 
       struct ToolbarState
       {

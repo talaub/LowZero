@@ -170,6 +170,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(SkinningInstance::Data, pose);
         l_PropertyInfo.size = sizeof(SkinningInstance::Data::pose);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = SkinningPose::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -200,6 +202,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(SkinningInstance::Data, mesh);
         l_PropertyInfo.size = sizeof(SkinningInstance::Data::mesh);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Mesh::IDENTIFIER;
         l_PropertyInfo.get_return =
@@ -228,6 +232,8 @@ namespace Low {
             offsetof(SkinningInstance::Data, skinning_commands);
         l_PropertyInfo.size =
             sizeof(SkinningInstance::Data::skinning_commands);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::LIST;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -243,8 +249,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SkinningInstance l_Handle = p_Handle.get_id();
-          *((Low::Util::List<SkinningCommand> *)p_Data) =
-              l_Handle.get_skinning_commands();
+          *((void **)p_Data) = &l_Handle.get_skinning_commands();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: skinning_commands
@@ -258,6 +263,8 @@ namespace Low {
             offsetof(SkinningInstance::Data, render_object_id);
         l_PropertyInfo.size =
             sizeof(SkinningInstance::Data::render_object_id);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -288,6 +295,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(SkinningInstance::Data, name);
         l_PropertyInfo.size = sizeof(SkinningInstance::Data::name);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =

@@ -9,6 +9,7 @@ namespace:
 dll_macro: LOW_CORE_API
 enums:
   SourceMode:
+    identifier_name: NavigationSourceMode
     options:
       - name: Surface
         aliases:
@@ -17,12 +18,14 @@ enums:
       - name: Modifier
       - name: Ignore
   SourceGeometryType:
+    identifier_name: NavigationSourceGeometryType
     options:
       - name: Collider
       - name: RenderMesh
       - name: Terrain
       - name: CustomMesh
   AreaType:
+    identifier_name: NavigationSourceAreaType
     options:
       - name: Preferred
       - name: Normal
