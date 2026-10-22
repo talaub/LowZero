@@ -67,6 +67,7 @@
 [submodule "LowDependencies/Cflat"]
 	path = LowDependencies/Cflat
 	url = https://github.com/arturocepeda/cflat.git
+	ignore = dirty
 [submodule "LowDependencies/inja"]
 	path = LowDependencies/inja
 	url = https://github.com/pantor/inja.git
