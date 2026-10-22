@@ -22,6 +22,110 @@ const g_SupportedContainers = {
 
 const g_ContainerPrefixes = ["Low::Util::", "Util::", ""];
 
+function output_section(p_Name) {
+  process.stdout.write(
+    JSON.stringify({ type: "section", label: p_Name }) + "\n",
+  );
+}
+
+function output_result(p_Text) {
+  process.stdout.write(JSON.stringify({ type: "result", msg: p_Text }) + "\n");
+}
+
+function output_log(p_Level, p_Msg, p_Details, p_Hint) {
+  const l_Obj = {
+    type: "log",
+    level: p_Level,
+    msg: p_Msg,
+  };
+
+  if (p_Details) {
+    l_Obj.details = p_Details;
+  }
+  if (p_Hint) {
+    l_Obj.hint = p_Hint;
+  }
+
+  process.stdout.write(JSON.stringify(l_Obj) + "\n");
+}
+function output_info(p_Msg, p_Details, p_Hint) {
+  output_log("info", p_Msg, p_Details, p_Hint);
+}
+function output_warn(p_Msg, p_Details, p_Hint) {
+  output_log("warn", p_Msg, p_Details, p_Hint);
+}
+function output_error(p_Msg, p_Details, p_Hint) {
+  output_log("error", p_Msg, p_Details, p_Hint);
+}
+function output_debug(p_Msg, p_Details, p_Hint) {
+  output_log("debug", p_Msg, p_Details, p_Hint);
+}
+function output_detail(p_Msg, p_Details, p_Hint) {
+  output_log("detail", p_Msg, p_Details, p_Hint);
+}
+
+function output_begin_task(p_Id, p_Label, p_Total) {
+  const l_Obj = {
+    type: "task_begin",
+    id: p_Id,
+    label: p_Label,
+  };
+  if (p_Total) {
+    l_Obj.total = p_Total;
+  }
+
+  process.stdout.write(JSON.stringify(l_Obj) + "\n");
+
+  return p_Id;
+}
+function output_update_task(p_Id, p_Done, p_Label) {
+  const l_Obj = {
+    type: "task_update",
+    id: p_Id,
+    done: p_Done,
+  };
+  if (p_Label) {
+    l_Obj.label = p_Label;
+  }
+
+  process.stdout.write(JSON.stringify(l_Obj) + "\n");
+
+  return p_Id;
+}
+function output_task_end(p_Id, p_Status) {
+  process.stdout.write(
+    JSON.stringify({ type: "task_end", id: p_Id, status: p_Status }) + "\n",
+  );
+}
+function output_task_success(p_Id) {
+  output_task_end(p_Id, "ok");
+}
+function output_task_failed(p_Id) {
+  output_task_end(p_Id, "failed");
+}
+function output_task_cancelled(p_Id) {
+  output_task_end(p_Id, "cancelled");
+}
+
+function write_file_if_changed(p_Path, p_Content) {
+  if (!fs.existsSync(p_Path)) {
+    fs.mkdirSync(path.dirname(p_Path), { recursive: true });
+    fs.writeFileSync(p_Path, p_Content);
+    return true;
+  }
+
+  const l_FileContent = fs.readFileSync(p_Path, {
+    encoding: "utf8",
+    flag: "r",
+  });
+
+  if (l_FileContent !== p_Content) {
+    fs.writeFileSync(p_Path, p_Content);
+    return true;
+  }
+  return false;
+}
+
 function strip_container_prefix(p_Name) {
   for (const i_Prefix of g_ContainerPrefixes) {
     if (i_Prefix.length > 0 && p_Name.startsWith(i_Prefix)) {
@@ -276,7 +380,7 @@ function load_project_info(p_FullProjectPath) {
   const l_ProjectModulesPath = `${p_FullProjectPath}/modules`;
   const l_ProjectConfigPath = `${p_FullProjectPath}/project.yaml`;
 
-  console.log(`🔍 Looking for project at ${p_FullProjectPath}`);
+  output_info(`Looking for project at ${p_FullProjectPath}`);
   assert(fs.existsSync(p_FullProjectPath), "Project directory does not exist");
   assert(
     fs.existsSync(l_ProjectConfigPath),
@@ -292,12 +396,9 @@ function load_project_info(p_FullProjectPath) {
   l_ProjectConfig.modules_path = l_ProjectModulesPath;
   l_ProjectConfig.full_path = p_FullProjectPath;
 
-  l_ProjectConfig.root_cmake_path = `${p_FullProjectPath}/CMakeLists.txt`;
+  l_ProjectConfig.root_cmake_path = `${p_FullProjectPath}/.low/cmake/CMakeLists.txt`;
 
-  assert(
-    l_ProjectConfig.engine_root,
-    "No engine root defined in project config",
-  );
+  assert(l_ProjectConfig.engine, "No engine defined in project config");
 
   const l_ProjectModuleDirectories = fs
     .readdirSync(l_ProjectModulesPath, { withFileTypes: true })
@@ -325,7 +426,8 @@ function load_project_info(p_FullProjectPath) {
       name: i_ModuleDirectory,
       path: i_ModulePath,
       api_header_path: `${i_ModulePath}/include/${l_ProjectConfig.name}${i_ModuleDirectory}Api.h`,
-      cmake_path: `${i_ModulePath}/CMakeLists.txt`,
+      api_header_path: `${p_FullProjectPath}/.low/generated/modules/${i_ModuleDirectory}/include/${l_ProjectConfig.name}${i_ModuleDirectory}Api.h`,
+      cmake_path: `${p_FullProjectPath}/.low/cmake/modules/${i_ModuleDirectory}/CMakeLists.txt`,
       exports_marker: `${l_ProjectConfig.name.toLowerCase()}_${i_ModuleDirectory.toLowerCase()}_EXPORTS`,
       static_marker: `${l_ProjectConfig.name.toLowerCase()}_${i_ModuleDirectory.toLowerCase()}_BUILD_STATIC`,
       project_name: l_ProjectConfig.name,
@@ -1426,6 +1528,23 @@ function is_container_type(p_Type) {
   return false;
 }
 
+function normalize_string_path_and_make_absolute(p_Input) {
+  let l_Path = p_Input;
+
+  if (l_Path.endsWith("/")) {
+    l_Path = l_Path.substring(0, l_Path.length - 1);
+  }
+
+  if (l_Path.startsWith("\\") || l_Path.startsWith("/")) {
+    l_Path = l_Path.replace(/\\/g, "/");
+  } else {
+    l_Path = path.resolve(l_Path);
+    l_Path = l_Path.replace(/\\/g, "/");
+  }
+
+  return l_Path;
+}
+
 module.exports = {
   read_file,
   collect_types_for_project,
@@ -1460,4 +1579,20 @@ module.exports = {
   build_database_for,
   parse_type,
   get_element_type,
+  write_file_if_changed,
+  normalize_string_path_and_make_absolute,
+  output_task_end,
+  output_log,
+  output_section,
+  output_begin_task,
+  output_info,
+  output_error,
+  output_task_success,
+  output_task_cancelled,
+  output_task_failed,
+  output_task_end,
+  output_debug,
+  output_detail,
+  output_update_task,
+  output_result,
 };

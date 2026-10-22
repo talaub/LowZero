@@ -145,6 +145,16 @@ namespace Low {
       {
         using namespace msdf_atlas;
 
+        p_ImportPath = Util::from_project_relative_path(p_ImportPath);
+
+        if (!Util::is_inside_project(p_ImportPath)) {
+          LOW_LOG_ERROR << "Cannot import font '" << p_ImportPath
+                        << "' from outside the project. Copy it into "
+                           "the data folder first."
+                        << LOW_LOG_END;
+          return false;
+        }
+
         bool success = false;
 
         FT_Library ft;
@@ -303,7 +313,8 @@ namespace Low {
                 Util::hash_to_string(l_FontId).c_str();
             l_ResourceNode["asset_hash"] =
                 Util::hash_to_string(l_AssetHash).c_str();
-            l_ResourceNode["source_file"] = p_ImportPath.c_str();
+            l_ResourceNode["source_file"] =
+                Util::to_project_relative_path(p_ImportPath).c_str();
             l_ResourceNode["name"] = l_FileName.c_str();
           }
 

@@ -1156,7 +1156,8 @@ namespace Low {
         l_ResourceNode["skeleton_id"] = Util::U64Id{l_SkeletonId};
         l_ResourceNode["skeleton_hash"] =
             Util::U64Id{p_SkeletonData.exactHash};
-        l_ResourceNode["source_file"] = p_ImportPath;
+        l_ResourceNode["source_file"] =
+            Util::to_project_relative_path(p_ImportPath);
         l_ResourceNode["version"] = 1;
         l_ResourceNode["bone_count"] = p_SkeletonData.bones.size();
 
@@ -1309,7 +1310,8 @@ namespace Low {
 
         Util::Serial::Node l_ResourceNode;
         l_ResourceNode["version"] = 1;
-        l_ResourceNode["source_file"] = p_ImportPath;
+        l_ResourceNode["source_file"] =
+            Util::to_project_relative_path(p_ImportPath);
         l_ResourceNode["name"] = p_Clip.name;
         l_ResourceNode["hash"] = Util::U64Id{p_Clip.exactHash};
         l_ResourceNode["clip_id"] = Util::U64Id{l_AnimationClipId};
@@ -1330,6 +1332,18 @@ namespace Low {
         Assimp::Importer l_Importer;
 
         using namespace MeshImport;
+
+        // Absolute from here on, so the reimport lookup compares like
+        // with like
+        p_ImportPath = Util::from_project_relative_path(p_ImportPath);
+
+        if (!Util::is_inside_project(p_ImportPath)) {
+          LOW_LOG_ERROR << "Cannot import mesh '" << p_ImportPath
+                        << "' from outside the project. Copy it into "
+                           "the data folder first."
+                        << LOW_LOG_END;
+          return false;
+        }
 
         MeshSourceData l_SourceData;
         LOWR_IMP_ASSERT_RETURN(
@@ -1436,7 +1450,8 @@ namespace Low {
           l_ResourceNode["version"] = 1;
           l_ResourceNode["mesh_id"] = Util::U64Id{l_MeshId};
           l_ResourceNode["asset_hash"] = Util::U64Id{l_AssetHash};
-          l_ResourceNode["source_file"] = p_ImportPath;
+          l_ResourceNode["source_file"] =
+              Util::to_project_relative_path(p_ImportPath);
           l_ResourceNode["name"] = l_FileName;
           l_ResourceNode["submesh_count"] =
               l_SidecarInfo["submeshes"].size();

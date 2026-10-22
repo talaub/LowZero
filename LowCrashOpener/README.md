@@ -26,16 +26,12 @@ Some apps may show custom protocol links as plain text. In that case, paste the 
 
 ## Symbols
 
-The opener reads `release_manifest.json` from the crash zip. If it finds `release_id`, it adds this folder to `_NT_SYMBOL_PATH` before launching Visual Studio:
+`low package` stores the PDBs of every packaged build in a symbol store (`<store>\<name>.pdb\<GUID><age>\<name>.pdb`). The opener adds it to `_NT_SYMBOL_PATH` as `srv*<store>` before launching Visual Studio, and the debugger picks the matching PDB for each module of the dump by itself.
 
-```text
-<SymbolRoot>\<release_id>
-```
+The store is `$SymbolRoot` from `LowCrashOpener.config.ps1`, or, if that is empty, the one `low config get symbol_store` returns. Change it with:
 
-By default this matches the release script's private PDB layout:
-
-```text
-release_symbols\<release_id>
+```powershell
+low config set symbol_store D:\LowSymbols
 ```
 
 ## Cleanup

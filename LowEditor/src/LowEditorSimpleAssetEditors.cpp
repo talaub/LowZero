@@ -20,6 +20,7 @@
 #include "LowUtilHashing.h"
 #include "LowUtilLogger.h"
 #include "LowUtilAssetManager.h"
+#include "LowUtil.h"
 #include <imgui.h>
 
 namespace Low {
@@ -142,7 +143,8 @@ namespace Low {
       }
 
       show_line("Source file",
-                l_Mesh.get_resource().get_source_file());
+                Util::to_project_relative_path(
+                    l_Mesh.get_resource().get_source_file()));
 
       ImGui::Dummy(ImVec2{0, 5});
 
@@ -317,7 +319,8 @@ namespace Low {
       }
 
       show_line("Source file",
-                l_Texture.get_resource().get_source_file());
+                Util::to_project_relative_path(
+                    l_Texture.get_resource().get_source_file()));
 
       Renderer::EditorImage l_EditorImage =
           l_Texture.get_editor_image();
@@ -345,7 +348,8 @@ namespace Low {
                           l_Font.get_resource().get_font_id()));
 
       show_line("Source file",
-                l_Font.get_resource().get_source_file());
+                Util::to_project_relative_path(
+                    l_Font.get_resource().get_source_file()));
     }
 
     void SkeletonAssetEditor::render(const float p_Delta)

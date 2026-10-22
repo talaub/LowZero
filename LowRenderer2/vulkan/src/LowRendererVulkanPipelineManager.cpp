@@ -97,21 +97,23 @@ namespace Low {
         {
 #if LOW_RENDERER_COMPILE_SHADERS
 #if 1
+          // Paths are quoted, the engine can live in a folder with
+          // spaces
           Util::String l_IncludeCommand =
-              "-I " + Util::get_project().engineDataPath +
-              "/lowr_shaders/lib";
-          Util::String l_Command =
-              "glslc -g -O0 " + l_IncludeCommand + " " + p_SourcePath;
+              "-I \"" + Util::get_project().engineDataPath +
+              "/lowr_shaders/lib\"";
+          Util::String l_Command = "glslc -g -O0 " + l_IncludeCommand +
+                                   " \"" + p_SourcePath + "\"";
 #else
           Util::String l_IncludeCommand =
-              "-I" + Util::get_project().engineDataPath +
-              "/lowr_shaders/lib";
+              "-I\"" + Util::get_project().engineDataPath +
+              "/lowr_shaders/lib\"";
           Util::String l_Command = "glslangValidator -V -gVS " +
-                                   l_IncludeCommand + " " +
-                                   p_SourcePath;
+                                   l_IncludeCommand + " \"" +
+                                   p_SourcePath + "\"";
 #endif
 
-          l_Command += " -o" + p_OutPath;
+          l_Command += " -o \"" + p_OutPath + "\"";
 
           Util::String l_Notice = "Compiling shader " + p_SourcePath;
 
@@ -154,19 +156,23 @@ namespace Low {
           Util::String l_DefineString = "";
 
 #if 1
+          // Paths are quoted, the engine can live in a folder with
+          // spaces
           Util::String l_IncludeCommand =
-              "-I " + Util::get_project().engineDataPath +
-              "/lowr_shaders/lib";
-          Util::String l_Command =
-              "glslc -g -O0 " + l_IncludeCommand + " " + p_SourcePath;
+              "-I \"" + Util::get_project().engineDataPath +
+              "/lowr_shaders/lib\"";
+          Util::String l_Command = "glslc -g -O0 " + l_IncludeCommand +
+                                   " \"" + p_SourcePath + "\"";
 #else
           Util::String l_IncludeCommand =
-              "-I" + Util::PathHelper::normalize(
-                         Util::get_project().engineDataPath +
-                         "/lowr_shaders/lib");
+              "-I\"" +
+              Util::PathHelper::normalize(
+                  Util::get_project().engineDataPath +
+                  "/lowr_shaders/lib") +
+              "\"";
           Util::String l_Command =
-              "glslangValidator -V -gVS " + l_IncludeCommand + " " +
-              Util::PathHelper::normalize(p_SourcePath);
+              "glslangValidator -V -gVS " + l_IncludeCommand + " \"" +
+              Util::PathHelper::normalize(p_SourcePath) + "\"";
 #endif
 
           for (ShaderDefine &i_Define : p_Variant.get_defines()) {
@@ -183,7 +189,8 @@ namespace Low {
             }
             l_DefineString += " ";
           }
-          l_Command += " -o" + Util::PathHelper::normalize(p_OutPath);
+          l_Command +=
+              " -o \"" + Util::PathHelper::normalize(p_OutPath) + "\"";
 
           Util::String l_Notice = "Compiling shader " + p_SourcePath;
 

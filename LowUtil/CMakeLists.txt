@@ -1,11 +1,18 @@
-SET(CMAKE_CURRENT_BINARY_DIR "${LOW_BINARY_PATH}/LowUtil")
-
 project(LowUtil)
 
-file(GLOB_RECURSE SOURCES "src/*.cpp")
-file(GLOB_RECURSE INCLUDES "include/*.h")
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
+file(GLOB_RECURSE INCLUDES CONFIGURE_DEPENDS "include/*.h")
 
-set(LOW_GENERATED_INCLUDE_DIR "${LOW_BINARY_PATH}/generated/include")
+set(LOW_GENERATED_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated/include")
+
+# LowEngine_VERSION instead of PROJECT_VERSION: project(LowUtil) above
+# resets the latter
+if (LOW_ENGINE_BUILD_ID STREQUAL "lowengine-v${LowEngine_VERSION}")
+  set(LOW_ENGINE_IS_RELEASE 1)
+else()
+  set(LOW_ENGINE_IS_RELEASE 0)
+endif()
+
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/include/LowUtilVersion.h.in"
   "${LOW_GENERATED_INCLUDE_DIR}/LowUtilVersion.h"
@@ -47,6 +54,8 @@ source_group("Header Files" FILES ${INCLUDES})
 target_compile_definitions(LowUtil PRIVATE
   LOW_MODULE_NAME="lowutil"
   lowutil_EXPORTS
+  LOW_ENGINE_SOURCE_ROOT="${LOW_SOURCE_PATH}"
+  LOW_COLOR_LOG
 )
 
 target_link_libraries(LowUtil PRIVATE

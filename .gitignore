@@ -12,7 +12,6 @@ build-clang/
 /.idea
 /packman-repo
 /release_symbols
-/Lowder/CrashReporter.local.cmake
 /LowCrashOpener/LowCrashOpener.config.ps1
 /misteda
 LowScriptingApi/bin
@@ -30,3 +29,5 @@ LowLens/node_modules/
 LowLens/*.gen.cpp
 LowLens/*.gen.h
 .nc_project
+/bin
+/projone

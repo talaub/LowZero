@@ -1,5 +1,13 @@
 #pragma once
 
-#define LOW_VERSION_YEAR "@LOW_YEAR_VERSION@"
-#define LOW_VERSION_MAJOR "@LOW_MAJOR_VERSION@"
-#define LOW_VERSION_MINOR "@LOW_EFFECTIVE_MINOR_VERSION@"
+#define LOW_VERSION_YEAR "@LowEngine_VERSION_MAJOR@"
+#define LOW_VERSION_RELEASE "@LowEngine_VERSION_MINOR@"
+#define LOW_VERSION_PATCH "@LowEngine_VERSION_PATCH@"
+#define LOW_VERSION_STRING "@LowEngine_VERSION@"
+
+// git describe of the engine repo at configure time, "unknown" without
+// git
+#define LOW_ENGINE_BUILD_ID "@LOW_ENGINE_BUILD_ID@"
+
+// 1 only if the engine was configured exactly on its clean release tag
+#define LOW_ENGINE_IS_RELEASE @LOW_ENGINE_IS_RELEASE@

@@ -43,6 +43,7 @@
 #include "LowEditorJobWidget.h"
 #include "LowEditorNavigationDebugWidget.h"
 #include "LowEditor.h"
+#include "LowEditorAboutWidget.h"
 #include "LowEditorNodeGraph.h"
 #include "LowUtil.h"
 #include "LowUtilContainers.h"
@@ -715,43 +716,31 @@ namespace Low {
           render_menu_entry(*it);
         }
 
-        Util::String l_MinorVersion = LOW_VERSION_MINOR;
-        const Util::String l_DevSuffix = "-DEV";
-        const bool l_IsDevVersion =
-            l_MinorVersion.size() >= l_DevSuffix.size() &&
-            l_MinorVersion.compare(
-                l_MinorVersion.size() - l_DevSuffix.size(),
-                l_DevSuffix.size(), l_DevSuffix) == 0;
+        const Util::Project &l_Project = Util::get_project();
+        const bool l_IsSourceBuild =
+            l_Project.engineSource == Util::EngineSource::Source;
 
-        if (l_IsDevVersion) {
-          l_MinorVersion.resize(l_MinorVersion.size() -
-                                l_DevSuffix.size());
-        }
-
-        Util::String l_VersionString = "";
-        l_VersionString += LOW_VERSION_YEAR;
-        l_VersionString += ".";
-        l_VersionString += LOW_VERSION_MAJOR;
-        l_VersionString += ".";
-        l_VersionString += l_MinorVersion;
+        const Util::String l_VersionString =
+            l_Project.name + " " + l_Project.version;
 
         const bool l_DebuggerAttached = is_debugger_attached();
-        const char *l_DevLabel = ICON_CI_CODE " DEV";
+        const char *l_SourceLabel = ICON_CI_CODE " SOURCE";
         const char *l_DebuggerLabel =
             ICON_CI_DEBUG_ALT_SMALL " DEBUGGER";
-        const float l_DevSpacing = l_IsDevVersion ? 14.0f : 0.0f;
+        const float l_SourceSpacing = l_IsSourceBuild ? 14.0f : 0.0f;
         const float l_DebuggerSpacing =
             l_DebuggerAttached ? 16.0f : 0.0f;
         const float l_VersionWidth =
             ImGui::CalcTextSize(l_VersionString.c_str()).x;
-        const float l_DevWidth =
-            l_IsDevVersion ? ImGui::CalcTextSize(l_DevLabel).x : 0.0f;
+        const float l_SourceWidth =
+            l_IsSourceBuild ? ImGui::CalcTextSize(l_SourceLabel).x
+                            : 0.0f;
         const float l_DebuggerWidth =
             l_DebuggerAttached
                 ? ImGui::CalcTextSize(l_DebuggerLabel).x
                 : 0.0f;
-        const float l_StatusWidth = l_VersionWidth + l_DevSpacing +
-                                    l_DevWidth + l_DebuggerSpacing +
+        const float l_StatusWidth = l_VersionWidth + l_SourceSpacing +
+                                    l_SourceWidth + l_DebuggerSpacing +
                                     l_DebuggerWidth;
 
         ImGuiViewport *l_Viewport = ImGui::GetMainViewport();
@@ -774,19 +763,19 @@ namespace Low {
         ImGui::PushFont(Fonts::UI(12));
         ImVec2 cursor = ImGui::GetCursorPos();
         ImGui::SetCursorPos(cursor + ImVec2(0.0f, 3.0f));
-        ImGui::Text(l_VersionString.c_str());
+        ImGui::TextUnformatted(l_VersionString.c_str());
         ImGui::PopFont();
         ImGui::PopStyleColor();
 
-        if (l_IsDevVersion) {
-          ImGui::SameLine(0.0f, l_DevSpacing);
+        if (l_IsSourceBuild) {
+          ImGui::SameLine(0.0f, l_SourceSpacing);
           ImGui::PushStyleColor(
               ImGuiCol_Text,
               color_to_imvec4(theme_get_current().debug));
           ImGui::PushFont(Fonts::UI(12));
           cursor = ImGui::GetCursorPos();
           ImGui::SetCursorPos(cursor + ImVec2(0.0f, 3.0f));
-          ImGui::TextUnformatted(l_DevLabel);
+          ImGui::TextUnformatted(l_SourceLabel);
           ImGui::PopFont();
           ImGui::PopStyleColor();
         }
@@ -1307,6 +1296,7 @@ namespace Low {
       g_FlodeWidget = new FlodeWidget();
       // register_editor_widget("Flode", g_FlodeWidget, false);
       register_editor_widget("Scripting errors",
+
                              new ScriptingErrorWidget, false);
       g_ScriptWidget = new ScriptWidget;
       register_editor_widget("Tools/Code Editor", g_ScriptWidget,
@@ -1330,6 +1320,8 @@ namespace Low {
               i_Path, new TypeManagerWidget(it.second.typeId));
         }
       }
+
+      register_widget("Help/About LowEngine", new AboutWidget);
     }
 
     static void handle_shortcuts(float p_Delta)

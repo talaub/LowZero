@@ -159,13 +159,13 @@ template <> struct Converter<String, void>
         out = b ? "true" : "false";
         return true;
       } else if (std::holds_alternative<u64>(sc->value)) {
-        out += std::get<u64>(sc->value);
+        out = std::to_string(std::get<u64>(sc->value)).c_str();
         return true;
       } else if (std::holds_alternative<i64>(sc->value)) {
-        out += std::get<i64>(sc->value);
+        out = std::to_string(std::get<i64>(sc->value)).c_str();
         return true;
       } else if (std::holds_alternative<float>(sc->value)) {
-        out += std::get<float>(sc->value);
+        out = std::to_string(std::get<float>(sc->value)).c_str();
         return true;
       }
     }

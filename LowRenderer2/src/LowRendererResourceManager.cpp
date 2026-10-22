@@ -2278,8 +2278,8 @@ namespace Low {
 
           LOWR_ASSERT_RETURN(p_Node["source_file"],
                              "Could not find source file");
-          p_Config.sourceFile =
-              p_Node["source_file"].as<Util::String>();
+          p_Config.sourceFile = Util::from_project_relative_path(
+              p_Node["source_file"].as<Util::String>());
 
           LOWR_ASSERT_RETURN(p_Node["submesh_count"],
                              "Could not find submesh count");
@@ -2336,8 +2336,8 @@ namespace Low {
 
           LOWR_ASSERT_RETURN(p_Node["source_file"],
                              "Could not find source file");
-          p_Config.sourceFile =
-              p_Node["source_file"].as<Util::String>();
+          p_Config.sourceFile = Util::from_project_relative_path(
+              p_Node["source_file"].as<Util::String>());
 
           p_Config.sidecarPath =
               Util::get_project().assetCachePath + "/" +

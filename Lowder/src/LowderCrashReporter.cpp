@@ -19,18 +19,16 @@
 #include <winhttp.h>
 #endif
 
-#ifndef LOW_CRASH_REPORT_UPLOAD_URL
-#define LOW_CRASH_REPORT_UPLOAD_URL ""
-#endif
-
-#ifndef LOW_CRASH_REPORT_UPLOAD_TOKEN
-#define LOW_CRASH_REPORT_UPLOAD_TOKEN ""
-#endif
-
 namespace Lowder {
   namespace CrashReporter {
     namespace {
       std::string g_ProjectPath = ".";
+      std::string g_ImageDirectory;
+      std::string g_ProjectName;
+      std::string g_ProjectVersion;
+      std::string g_ProjectBuildId;
+      std::string g_UploadUrl;
+      std::string g_UploadToken;
 
       static std::string normalize_path(const std::string &p_Path)
       {
@@ -152,11 +150,13 @@ namespace Lowder {
 
       static std::string find_logo_path()
       {
+        if (g_ImageDirectory.empty()) {
+          return "";
+        }
+
         const std::string l_Candidates[] = {
-            join_path(g_ProjectPath,
-                      "data/.editor_images/lowlogo_90.png"),
-            join_path(g_ProjectPath,
-                      "data/.editor_images/lowlogo_36.png")};
+            join_path(g_ImageDirectory, "lowlogo_90.png"),
+            join_path(g_ImageDirectory, "lowlogo_36.png")};
 
         for (const std::string &i_Path : l_Candidates) {
           if (file_exists(i_Path)) {
@@ -169,8 +169,12 @@ namespace Lowder {
 
       static std::string find_logo_text_path()
       {
-        const std::string l_Path = join_path(
-            g_ProjectPath, "data/.editor_images/lowfont_500.png");
+        if (g_ImageDirectory.empty()) {
+          return "";
+        }
+
+        const std::string l_Path =
+            join_path(g_ImageDirectory, "lowfont_500.png");
         return file_exists(l_Path) ? l_Path : "";
       }
 
@@ -266,6 +270,8 @@ namespace Lowder {
             join_path(p_ReportDirectory, "low.log"));
         delete_file_if_exists(
             join_path(p_ReportDirectory, "lowerr.log"));
+        // Reports from older builds still contain it, and
+        // RemoveDirectoryA only removes empty folders
         delete_file_if_exists(
             join_path(p_ReportDirectory, "release_manifest.json"));
         delete_file_if_exists(
@@ -405,18 +411,30 @@ namespace Lowder {
         return l_Stream.str();
       }
 
+      // Empty if the crash happened before the project was loaded
+      static std::string value_or_unknown(const std::string &p_Value)
+      {
+        return p_Value.empty() ? "unknown" : p_Value;
+      }
+
       static std::string
       format_exception_info(EXCEPTION_POINTERS *p_ExceptionPointers)
       {
         std::string l_Text;
         l_Text += "LowEngine crash report\r\n";
         l_Text += "Version: ";
-        l_Text += LOW_VERSION_YEAR;
-        l_Text += ".";
-        l_Text += LOW_VERSION_MAJOR;
-        l_Text += ".";
-        l_Text += LOW_VERSION_MINOR;
+        l_Text += LOW_VERSION_STRING;
         l_Text += "\r\n";
+        l_Text += "Build: ";
+        l_Text += LOW_ENGINE_BUILD_ID;
+        l_Text += "\r\n";
+        // The upload reads these back with get_crash_text_value, which
+        // matches case-sensitively ("Build: " vs "Project build: ")
+        l_Text += "Project: " + value_or_unknown(g_ProjectName) + "\r\n";
+        l_Text += "Project version: " +
+                  value_or_unknown(g_ProjectVersion) + "\r\n";
+        l_Text += "Project build: " +
+                  value_or_unknown(g_ProjectBuildId) + "\r\n";
         l_Text += "Project path: " + g_ProjectPath + "\r\n";
 
         if (p_ExceptionPointers &&
@@ -539,35 +557,6 @@ namespace Lowder {
       }
 
       static std::string
-      get_json_string_value(const std::string &p_Text,
-                            const char *p_Key)
-      {
-        const std::string l_Key = std::string("\"") + p_Key + "\"";
-        size_t l_Position = p_Text.find(l_Key);
-        if (l_Position == std::string::npos) {
-          return "";
-        }
-
-        l_Position = p_Text.find(':', l_Position + l_Key.size());
-        if (l_Position == std::string::npos) {
-          return "";
-        }
-
-        l_Position = p_Text.find('"', l_Position);
-        if (l_Position == std::string::npos) {
-          return "";
-        }
-
-        const size_t l_Start = l_Position + 1u;
-        const size_t l_End = p_Text.find('"', l_Start);
-        if (l_End == std::string::npos) {
-          return "";
-        }
-
-        return p_Text.substr(l_Start, l_End - l_Start);
-      }
-
-      static std::string
       get_crash_text_value(const std::string &p_Text,
                            const char *p_Key)
       {
@@ -656,10 +645,11 @@ namespace Lowder {
       upload_crash_report(const std::string &p_ReportDirectory,
                           std::string &p_Error)
       {
-        const std::string l_Url = LOW_CRASH_REPORT_UPLOAD_URL;
-        const std::string l_Token = LOW_CRASH_REPORT_UPLOAD_TOKEN;
+        const std::string &l_Url = g_UploadUrl;
+        const std::string &l_Token = g_UploadToken;
         if (l_Url.empty() || l_Token.empty()) {
-          p_Error = "Crash upload URL or token is empty.";
+          p_Error = "The project has no crash_reporting url and token "
+                    "in its project.yaml.";
           return false;
         }
 
@@ -685,8 +675,6 @@ namespace Lowder {
             "----LowEngineCrashBoundary7MA4YWxkTrZu0gW";
         std::vector<char> l_Body;
 
-        const std::string l_Manifest = read_text_file(
-            join_path(p_ReportDirectory, "release_manifest.json"));
         const std::string l_CrashText =
             read_text_file(join_path(p_ReportDirectory, "crash.txt"));
         const std::string l_UserNote = read_text_file(join_path(
@@ -702,18 +690,20 @@ namespace Lowder {
 
         append_multipart_field(l_Body, l_Boundary, "report_id",
                                l_ReportId);
-        append_multipart_field(
-            l_Body, l_Boundary, "release_id",
-            get_json_string_value(l_Manifest, "release_id"));
+        // Same form fields as when they came from release_manifest.json,
+        // so the server does not need to change
+        const std::string l_ProjectBuildId =
+            get_crash_text_value(l_CrashText, "Project build");
+        append_multipart_field(l_Body, l_Boundary, "release_id",
+                               l_ProjectBuildId);
         append_multipart_field(
             l_Body, l_Boundary, "version",
-            get_json_string_value(l_Manifest, "release_version"));
+            get_crash_text_value(l_CrashText, "Project version"));
         append_multipart_field(
             l_Body, l_Boundary, "lowengine_revision",
-            get_json_string_value(l_Manifest, "lowengine_revision"));
-        append_multipart_field(
-            l_Body, l_Boundary, "misteda_revision",
-            get_json_string_value(l_Manifest, "misteda_revision"));
+            get_crash_text_value(l_CrashText, "Build"));
+        append_multipart_field(l_Body, l_Boundary, "misteda_revision",
+                               l_ProjectBuildId);
         append_multipart_field(
             l_Body, l_Boundary, "exception_code",
             get_crash_text_value(l_CrashText, "Exception code"));
@@ -733,7 +723,6 @@ namespace Lowder {
                                      "minidump.dmp",
                                      "low.log",
                                      "lowerr.log",
-                                     "release_manifest.json",
                                      "user_name.txt",
                                      "last_actions_before_crash.txt"};
         for (const char *i_FileName : l_FileNames) {
@@ -786,7 +775,7 @@ namespace Lowder {
 
         const std::string l_Header =
             "Content-Type: multipart/form-data; boundary=" +
-            l_Boundary + "\r\nX-Misteda-Crash-Token: " + l_Token +
+            l_Boundary + "\r\nX-Low-Crash-Token: " + l_Token +
             "\r\n";
         const std::wstring l_HeaderWide =
             std::wstring(l_Header.begin(), l_Header.end());
@@ -1256,9 +1245,6 @@ namespace Lowder {
         copy_file_if_exists(
             join_path(g_ProjectPath, "lowerr.log"),
             join_path(l_ReportDirectory, "lowerr.log"));
-        copy_file_if_exists(
-            join_path(g_ProjectPath, "release_manifest.json"),
-            join_path(l_ReportDirectory, "release_manifest.json"));
 
         show_reporter_popup(l_ReportDirectory);
       }
@@ -1278,10 +1264,12 @@ namespace Lowder {
 #endif
     } // namespace
 
-    void initialize(const std::string &p_ProjectPath)
+    void initialize(const std::string &p_ProjectPath,
+                    const std::string &p_ImageDirectory)
     {
       g_ProjectPath =
           normalize_path(p_ProjectPath.empty() ? "." : p_ProjectPath);
+      g_ImageDirectory = p_ImageDirectory;
 
 #ifdef _WIN32
       Gdiplus::GdiplusStartupInput l_Input;
@@ -1290,6 +1278,22 @@ namespace Lowder {
           SetUnhandledExceptionFilter(unhandled_exception_filter);
       std::set_terminate(terminate_handler);
 #endif
+    }
+
+    void set_project_info(const std::string &p_Name,
+                          const std::string &p_Version,
+                          const std::string &p_BuildId)
+    {
+      g_ProjectName = p_Name;
+      g_ProjectVersion = p_Version;
+      g_ProjectBuildId = p_BuildId;
+    }
+
+    void set_upload_target(const std::string &p_Url,
+                           const std::string &p_Token)
+    {
+      g_UploadUrl = p_Url;
+      g_UploadToken = p_Token;
     }
 
     void shutdown()

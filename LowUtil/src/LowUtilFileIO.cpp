@@ -84,6 +84,12 @@ namespace Low {
 
       void write_sync(FILE *p_File, const char *p_Content, uint32_t p_Length)
       {
+        // Files that failed to open are skipped silently. No log
+        // here: the logger writes through this function itself.
+        if (!p_File || !p_Content) {
+          return;
+        }
+
         std::fwrite(p_Content, 1, p_Length, p_File);
       }
 

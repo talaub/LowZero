@@ -9,7 +9,6 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <gdiplus.h>
-#include <vector>
 
 #pragma comment(lib, "Gdiplus.lib")
 #endif
@@ -24,6 +23,9 @@ namespace Lowder {
       std::thread g_Thread;
       std::atomic<bool> g_Running{false};
       std::atomic<bool> g_Ready{false};
+      std::atomic<bool> g_SourceBuild{false};
+      // Only written before start(), the splash thread reads it
+      std::string g_ImageDirectory;
       DWORD g_ThreadId = 0;
       HWND g_Window = nullptr;
       Gdiplus::Image *g_Logo = nullptr;
@@ -75,55 +77,15 @@ namespace Lowder {
         return p_Left + "/" + p_Right;
       }
 
-      void
-      add_image_candidates(const std::string &p_Base,
-                           const char *p_FileName,
-                           std::vector<std::string> &p_Candidates)
-      {
-        std::string l_Current = p_Base;
-        for (int i = 0; i < 8 && !l_Current.empty(); ++i) {
-          p_Candidates.push_back(
-              join_path(join_path(l_Current, "data/.editor_images"),
-                        p_FileName));
-          p_Candidates.push_back(join_path(
-              join_path(l_Current, "misteda/data/.editor_images"),
-              p_FileName));
-
-          size_t l_Pos = l_Current.find_last_of("\\/");
-          if (l_Pos == std::string::npos) {
-            break;
-          }
-          l_Current = l_Current.substr(0, l_Pos);
-        }
-      }
-
       std::string find_image_path(const char *p_FileName)
       {
-        std::vector<std::string> l_Candidates;
-
-        char l_CurrentDirectory[MAX_PATH] = {};
-        if (GetCurrentDirectoryA(MAX_PATH, l_CurrentDirectory) > 0) {
-          add_image_candidates(l_CurrentDirectory, p_FileName,
-                               l_Candidates);
+        if (g_ImageDirectory.empty()) {
+          return "";
         }
 
-        char l_ModulePath[MAX_PATH] = {};
-        if (GetModuleFileNameA(nullptr, l_ModulePath, MAX_PATH) > 0) {
-          std::string l_ModuleDirectory = l_ModulePath;
-          size_t l_Pos = l_ModuleDirectory.find_last_of("\\/");
-          if (l_Pos != std::string::npos) {
-            l_ModuleDirectory = l_ModuleDirectory.substr(0, l_Pos);
-            add_image_candidates(l_ModuleDirectory, p_FileName,
-                                 l_Candidates);
-          }
-        }
-
-        for (const std::string &i_Path : l_Candidates) {
-          if (file_exists(i_Path)) {
-            return i_Path;
-          }
-        }
-        return "";
+        const std::string l_Path =
+            join_path(g_ImageDirectory, p_FileName);
+        return file_exists(l_Path) ? l_Path : "";
       }
 
       Gdiplus::Image *load_image(const char *p_FileName)
@@ -227,33 +189,35 @@ namespace Lowder {
 
         HGDIOBJ l_PreviousFont = nullptr;
 
-#if !defined(RELEASE_BUILD) || !RELEASE_BUILD
-        RECT l_DevBadgeRect{SPLASH_WIDTH - 150, 24, SPLASH_WIDTH - 50,
-                            50};
-        HBRUSH l_DevBadgeBrush = CreateSolidBrush(RGB(32, 28, 38));
-        HPEN l_DevBadgePen = CreatePen(PS_SOLID, 1, RGB(2, 173, 191));
-        HGDIOBJ l_PreviousBadgeBrush =
-            SelectObject(l_MemoryDc, l_DevBadgeBrush);
-        l_PreviousPen = SelectObject(l_MemoryDc, l_DevBadgePen);
-        RoundRect(l_MemoryDc, l_DevBadgeRect.left, l_DevBadgeRect.top,
-                  l_DevBadgeRect.right, l_DevBadgeRect.bottom, 6, 6);
-        SelectObject(l_MemoryDc, l_PreviousBadgeBrush);
-        SelectObject(l_MemoryDc, l_PreviousPen);
-        DeleteObject(l_DevBadgePen);
-        DeleteObject(l_DevBadgeBrush);
+        if (g_SourceBuild) {
+          RECT l_SourceBadgeRect{SPLASH_WIDTH - 160, 24,
+                                 SPLASH_WIDTH - 50, 50};
+          HBRUSH l_SourceBadgeBrush = CreateSolidBrush(RGB(32, 28, 38));
+          HPEN l_SourceBadgePen =
+              CreatePen(PS_SOLID, 1, RGB(2, 173, 191));
+          HGDIOBJ l_PreviousBadgeBrush =
+              SelectObject(l_MemoryDc, l_SourceBadgeBrush);
+          l_PreviousPen = SelectObject(l_MemoryDc, l_SourceBadgePen);
+          RoundRect(l_MemoryDc, l_SourceBadgeRect.left,
+                    l_SourceBadgeRect.top, l_SourceBadgeRect.right,
+                    l_SourceBadgeRect.bottom, 6, 6);
+          SelectObject(l_MemoryDc, l_PreviousBadgeBrush);
+          SelectObject(l_MemoryDc, l_PreviousPen);
+          DeleteObject(l_SourceBadgePen);
+          DeleteObject(l_SourceBadgeBrush);
 
-        HFONT l_DevBadgeFont =
-            CreateFontA(14, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE,
-                        DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
-                        CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
-                        DEFAULT_PITCH | FF_DONTCARE, "Segoe UI");
-        l_PreviousFont = SelectObject(l_MemoryDc, l_DevBadgeFont);
-        SetTextColor(l_MemoryDc, RGB(2, 173, 191));
-        DrawTextA(l_MemoryDc, "DEV BUILD", -1, &l_DevBadgeRect,
-                  DT_CENTER | DT_SINGLELINE | DT_VCENTER);
-        SelectObject(l_MemoryDc, l_PreviousFont);
-        DeleteObject(l_DevBadgeFont);
-#endif
+          HFONT l_SourceBadgeFont =
+              CreateFontA(14, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE,
+                          DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
+                          CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+                          DEFAULT_PITCH | FF_DONTCARE, "Segoe UI");
+          l_PreviousFont = SelectObject(l_MemoryDc, l_SourceBadgeFont);
+          SetTextColor(l_MemoryDc, RGB(2, 173, 191));
+          DrawTextA(l_MemoryDc, "SOURCE BUILD", -1, &l_SourceBadgeRect,
+                    DT_CENTER | DT_SINGLELINE | DT_VCENTER);
+          SelectObject(l_MemoryDc, l_PreviousFont);
+          DeleteObject(l_SourceBadgeFont);
+        }
 
         if (IsDebuggerPresent()) {
           RECT l_DebuggerBadgeRect{SPLASH_WIDTH - 208, 56,
@@ -310,9 +274,7 @@ namespace Lowder {
                         CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
                         DEFAULT_PITCH | FF_DONTCARE, "Segoe UI");
         l_PreviousFont = SelectObject(l_MemoryDc, l_VersionFont);
-        const std::string l_Version =
-            std::string(LOW_VERSION_YEAR) + "." + LOW_VERSION_MAJOR +
-            "." + LOW_VERSION_MINOR;
+        const std::string l_Version = LOW_VERSION_STRING;
         RECT l_VersionRect{SPLASH_WIDTH - 170, SPLASH_HEIGHT - 36,
                            SPLASH_WIDTH - 22, SPLASH_HEIGHT - 16};
         DrawTextA(l_MemoryDc, l_Version.c_str(), -1, &l_VersionRect,
@@ -418,6 +380,20 @@ namespace Lowder {
       }
     } // namespace
 #endif
+
+    void set_source_build(bool p_SourceBuild)
+    {
+#ifdef _WIN32
+      g_SourceBuild = p_SourceBuild;
+#endif
+    }
+
+    void set_image_directory(const std::string &p_Directory)
+    {
+#ifdef _WIN32
+      g_ImageDirectory = p_Directory;
+#endif
+    }
 
     void start()
     {

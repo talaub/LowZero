@@ -152,7 +152,8 @@ namespace Low {
           }
         }
         if (l_Root["output_path"]) {
-          output_path = l_Root["output_path"].as<Util::String>();
+          output_path = Util::from_project_relative_path(
+              l_Root["output_path"].as<Util::String>());
         }
 
         if (l_Root["compile_profile"]) {
@@ -222,7 +223,8 @@ namespace Low {
           l_Root["context"] = context;
         }
         if (!output_path.empty()) {
-          l_Root["output_path"] = output_path;
+          l_Root["output_path"] =
+              Util::to_project_relative_path(output_path);
         }
         l_Root["compile_profile"] = compile_profile;
         if (compile_settings) {
@@ -291,11 +293,17 @@ namespace Low {
           return false;
         }
 
+        Util::FileIO::File l_File = Util::FileIO::open(
+            output_path.c_str(), Util::FileIO::FileMode::WRITE);
+        if (!l_File.is_open()) {
+          LOW_LOG_ERROR << "Could not open visual script output file "
+                        << output_path << "." << LOW_LOG_END;
+          return false;
+        }
+
         LOW_LOG_DEBUG << "CODE: " << l_Context.main_code.get()
                       << LOW_LOG_END;
 
-        Util::FileIO::File l_File = Util::FileIO::open(
-            output_path.c_str(), Util::FileIO::FileMode::WRITE);
         Util::FileIO::write_sync(l_File, l_Context.main_code.get());
         Util::FileIO::close(l_File);
 
@@ -682,10 +690,10 @@ namespace Low {
         static void render_add_variable_form(Editor &p_Editor)
         {
           static const PinType l_TypeOptions[] = {
-              PinType::Bool,   PinType::Number,     PinType::String,
-              PinType::Handle, PinType::Vector2,    PinType::Vector3,
+              PinType::Bool,    PinType::Number,     PinType::String,
+              PinType::Handle,  PinType::Vector2,    PinType::Vector3,
               PinType::Vector4, PinType::Quaternion, PinType::Struct,
-              PinType::Enum,   PinType::Signal};
+              PinType::Enum,    PinType::Signal};
 
           Gui::InputText("##new_variable_name",
                          p_Editor.new_variable_name, 128,
@@ -799,10 +807,12 @@ namespace Low {
                   p_Editor.new_variable_container_type ==
                   i_ContainerType;
               const char *l_Label =
-                  i_ContainerType == PinContainerType::List ? "List"
-                                                            : "Single";
+                  i_ContainerType == PinContainerType::List
+                      ? "List"
+                      : "Single";
               if (ImGui::Selectable(l_Label, l_Selected)) {
-                p_Editor.new_variable_container_type = i_ContainerType;
+                p_Editor.new_variable_container_type =
+                    i_ContainerType;
               }
               if (l_Selected) {
                 ImGui::SetItemDefaultFocus();
@@ -927,8 +937,7 @@ namespace Low {
             Variable &i_Variable = l_Graph.variables[i];
             ImGui::PushID((int)i);
 
-            const float l_AvailW =
-                ImGui::GetContentRegionAvail().x;
+            const float l_AvailW = ImGui::GetContentRegionAvail().x;
             const ImVec2 l_Start = ImGui::GetCursorScreenPos();
             const ImVec2 l_End(l_Start.x + l_AvailW,
                                l_Start.y + l_HdrH);
@@ -937,8 +946,7 @@ namespace Low {
                 ImGui::GetID("##varopen"), false);
 
             const bool l_HdrClicked = ImGui::InvisibleButton(
-                "##varhdr",
-                ImVec2(l_AvailW - l_DeleteW, l_HdrH));
+                "##varhdr", ImVec2(l_AvailW - l_DeleteW, l_HdrH));
             const bool l_HdrHovered = ImGui::IsItemHovered();
             if (l_HdrClicked) {
               *l_IsOpen = !*l_IsOpen;
@@ -946,12 +954,10 @@ namespace Low {
 
             if (ImGui::BeginDragDropSource(
                     ImGuiDragDropFlags_SourceAllowNullID)) {
-              ImGui::SetDragDropPayload(
-                  g_VariableDragDropPayloadType,
-                  i_Variable.name.c_str(),
-                  i_Variable.name.size() + 1);
-              ImGui::Text("Variable: %s",
-                          i_Variable.name.c_str());
+              ImGui::SetDragDropPayload(g_VariableDragDropPayloadType,
+                                        i_Variable.name.c_str(),
+                                        i_Variable.name.size() + 1);
+              ImGui::Text("Variable: %s", i_Variable.name.c_str());
               ImGui::EndDragDropSource();
             }
 
@@ -963,8 +969,7 @@ namespace Low {
               l_DeleteVariable = i_Variable.name;
             }
 
-            ImDrawList *l_DrawList =
-                ImGui::GetWindowDrawList();
+            ImDrawList *l_DrawList = ImGui::GetWindowDrawList();
             const Theme &l_Theme = theme_get_current();
             const ImU32 l_Accent =
                 get_pin_type_accent(i_Variable.type);
@@ -980,57 +985,47 @@ namespace Low {
                                 color_to_imcolor(l_Theme.border),
                                 l_Rounding);
             l_DrawList->AddRectFilled(
-                l_Start,
-                ImVec2(l_Start.x + l_AccentW, l_End.y),
-                l_Accent, l_Rounding,
-                ImDrawFlags_RoundCornersLeft);
+                l_Start, ImVec2(l_Start.x + l_AccentW, l_End.y),
+                l_Accent, l_Rounding, ImDrawFlags_RoundCornersLeft);
 
             const float l_MidY =
                 l_Start.y +
                 (l_HdrH - ImGui::GetTextLineHeight()) * 0.5f;
 
             // Expand chevron
-            const char *l_Chevron = *l_IsOpen
-                                        ? ICON_LC_CHEVRON_DOWN
-                                        : ICON_LC_CHEVRON_RIGHT;
-            const ImVec2 l_ChevronPos(
-                l_Start.x + l_AccentW + 5.0f, l_MidY);
-            const ImU32 l_DimText = ImGui::GetColorU32(
-                ImGuiCol_TextDisabled);
-            l_DrawList->AddText(l_ChevronPos, l_DimText,
-                                l_Chevron);
-            const float l_ChevronW =
-                ImGui::CalcTextSize(l_Chevron).x;
+            const char *l_Chevron = *l_IsOpen ? ICON_LC_CHEVRON_DOWN
+                                              : ICON_LC_CHEVRON_RIGHT;
+            const ImVec2 l_ChevronPos(l_Start.x + l_AccentW + 5.0f,
+                                      l_MidY);
+            const ImU32 l_DimText =
+                ImGui::GetColorU32(ImGuiCol_TextDisabled);
+            l_DrawList->AddText(l_ChevronPos, l_DimText, l_Chevron);
+            const float l_ChevronW = ImGui::CalcTextSize(l_Chevron).x;
 
             // Type icon (accent colored)
-            const char *l_Icon =
-                get_pin_type_icon(i_Variable.type);
-            const ImVec2 l_IconPos(
-                l_ChevronPos.x + l_ChevronW + 4.0f, l_MidY);
+            const char *l_Icon = get_pin_type_icon(i_Variable.type);
+            const ImVec2 l_IconPos(l_ChevronPos.x + l_ChevronW + 4.0f,
+                                   l_MidY);
             l_DrawList->AddText(l_IconPos, l_Accent, l_Icon);
-            const float l_IconW =
-                ImGui::CalcTextSize(l_Icon).x;
+            const float l_IconW = ImGui::CalcTextSize(l_Icon).x;
 
             // Variable name
             Util::String l_DisplayName = i_Variable.name;
-            if (i_Variable.container_type ==
-                PinContainerType::List) {
+            if (i_Variable.container_type == PinContainerType::List) {
               l_DisplayName += "[]";
             }
-            const ImVec2 l_NamePos(
-                l_IconPos.x + l_IconW + 5.0f, l_MidY);
-            const ImVec2 l_NameClip(
-                l_End.x - l_DeleteW - 4.0f, l_End.y);
+            const ImVec2 l_NamePos(l_IconPos.x + l_IconW + 5.0f,
+                                   l_MidY);
+            const ImVec2 l_NameClip(l_End.x - l_DeleteW - 4.0f,
+                                    l_End.y);
             ImGui::RenderTextEllipsis(
-                l_DrawList, l_NamePos, l_NameClip,
-                l_NameClip.x, l_DisplayName.c_str(),
-                nullptr, nullptr);
+                l_DrawList, l_NamePos, l_NameClip, l_NameClip.x,
+                l_DisplayName.c_str(), nullptr, nullptr);
 
             // Trash icon
             const float l_TrashX =
                 l_End.x - l_DeleteW +
-                (l_DeleteW -
-                 ImGui::CalcTextSize(ICON_LC_TRASH_2).x) *
+                (l_DeleteW - ImGui::CalcTextSize(ICON_LC_TRASH_2).x) *
                     0.5f;
             const ImU32 l_TrashColor =
                 l_DelHovered ? IM_COL32(220, 80, 80, 255)
@@ -1044,13 +1039,12 @@ namespace Low {
               ImGui::Dummy(ImVec2(0.0f, 3.0f));
 
               if ((i_Variable.type == PinType::Handle ||
-                  i_Variable.type == PinType::Struct ||
-                  i_Variable.type == PinType::Enum) &&
+                   i_Variable.type == PinType::Struct ||
+                   i_Variable.type == PinType::Enum) &&
                   ((u64)i_Variable.handle_type) != 0) {
                 ImGui::TextDisabled(
                     "%s",
-                    ((Util::String)i_Variable.handle_type)
-                        .c_str());
+                    ((Util::String)i_Variable.handle_type).c_str());
               }
 
               ImGui::PushItemWidth(-1.0f);
@@ -1186,8 +1180,7 @@ namespace Low {
           if (!p_Data || !p_DataSize) {
             return;
           }
-          const char *l_FuncName =
-              static_cast<const char *>(p_Data);
+          const char *l_FuncName = static_cast<const char *>(p_Data);
 
           Graph &l_ActiveGraph = p_Editor.get_active_graph();
           if (!l_ActiveGraph.find_node_class(N(vs_function_call))) {
@@ -1196,15 +1189,13 @@ namespace Low {
 
           Util::String l_FuncNameStr = l_FuncName;
           CanvasDropAction l_Action;
-          l_Action.label =
-              Util::String("Call ") + l_FuncNameStr;
+          l_Action.label = Util::String("Call ") + l_FuncNameStr;
           l_Action.execute = [&p_Editor, &l_ActiveGraph,
-                               l_FuncNameStr,
-                               p_CanvasPosition]() {
+                              l_FuncNameStr, p_CanvasPosition]() {
             NodeGraphMutationResult<Low::Editor::Node> l_Result =
-                l_ActiveGraph.create_node(
-                    N(vs_function_call), p_CanvasPosition,
-                    &p_Editor.document->schema);
+                l_ActiveGraph.create_node(N(vs_function_call),
+                                          p_CanvasPosition,
+                                          &p_Editor.document->schema);
             if (!l_Result.succeeded() || !l_Result.value) {
               return;
             }
@@ -1264,11 +1255,10 @@ namespace Low {
                                          p_CanvasPosition, p_Actions);
           }
 
-          if (strcmp(p_PayloadType,
-                     g_FunctionDragDropPayloadType) == 0) {
-            append_function_drop_actions(p_Editor, p_Data,
-                                          p_DataSize, p_CanvasPosition,
-                                          p_Actions);
+          if (strcmp(p_PayloadType, g_FunctionDragDropPayloadType) ==
+              0) {
+            append_function_drop_actions(p_Editor, p_Data, p_DataSize,
+                                         p_CanvasPosition, p_Actions);
           }
 
           const ContextDefinition *l_Context =
@@ -1313,17 +1303,16 @@ namespace Low {
         static const ImU32 g_FunctionAccentColor =
             IM_COL32(100, 160, 220, 255);
 
-        static bool render_graph_entry(
-            const char *p_Label, const char *p_Icon,
-            ImU32 p_AccentColor, bool p_Active,
-            bool p_ShowDelete, bool &p_DeleteClicked)
+        static bool
+        render_graph_entry(const char *p_Label, const char *p_Icon,
+                           ImU32 p_AccentColor, bool p_Active,
+                           bool p_ShowDelete, bool &p_DeleteClicked)
         {
           const float l_Height = 32.0f;
           const float l_DeleteW = p_ShowDelete ? 28.0f : 0.0f;
           const float l_Rounding = 5.0f;
           const float l_AccentW = 3.0f;
-          const float l_AvailW =
-              ImGui::GetContentRegionAvail().x;
+          const float l_AvailW = ImGui::GetContentRegionAvail().x;
 
           const ImVec2 l_Start = ImGui::GetCursorScreenPos();
           const ImVec2 l_End(l_Start.x + l_AvailW,
@@ -1336,9 +1325,8 @@ namespace Low {
           if (p_ShowDelete) {
             if (ImGui::BeginDragDropSource(
                     ImGuiDragDropFlags_SourceAllowNullID)) {
-              ImGui::SetDragDropPayload(
-                  g_FunctionDragDropPayloadType, p_Label,
-                  strlen(p_Label) + 1);
+              ImGui::SetDragDropPayload(g_FunctionDragDropPayloadType,
+                                        p_Label, strlen(p_Label) + 1);
               ImGui::Text("Call: %s", p_Label);
               ImGui::EndDragDropSource();
             }
@@ -1357,55 +1345,47 @@ namespace Low {
           const Theme &l_Theme = theme_get_current();
 
           const ImU32 l_Bg =
-              p_Active
-                  ? (ImU32)IM_COL32(55, 58, 72, 255)
-                  : (l_RowHovered || l_DelHovered)
+              p_Active ? (ImU32)IM_COL32(55, 58, 72, 255)
+              : (l_RowHovered || l_DelHovered)
                   ? (ImU32)color_to_imcolor(l_Theme.headerHover)
                   : (ImU32)color_to_imcolor(l_Theme.input);
 
-          l_DrawList->AddRectFilled(l_Start, l_End, l_Bg,
-                                    l_Rounding);
+          l_DrawList->AddRectFilled(l_Start, l_End, l_Bg, l_Rounding);
           l_DrawList->AddRect(l_Start, l_End,
                               color_to_imcolor(l_Theme.border),
                               l_Rounding);
           l_DrawList->AddRectFilled(
-              l_Start,
-              ImVec2(l_Start.x + l_AccentW, l_End.y),
+              l_Start, ImVec2(l_Start.x + l_AccentW, l_End.y),
               p_AccentColor, l_Rounding,
               ImDrawFlags_RoundCornersLeft);
 
           const float l_MidY =
               l_Start.y +
               (l_Height - ImGui::GetTextLineHeight()) * 0.5f;
-          const ImVec2 l_IconPos(
-              l_Start.x + l_AccentW + 8.0f, l_MidY);
+          const ImVec2 l_IconPos(l_Start.x + l_AccentW + 8.0f,
+                                 l_MidY);
           l_DrawList->AddText(
-              l_IconPos,
-              ImGui::GetColorU32(ImGuiCol_Text), p_Icon);
-          const float l_IconW =
-              ImGui::CalcTextSize(p_Icon).x;
+              l_IconPos, ImGui::GetColorU32(ImGuiCol_Text), p_Icon);
+          const float l_IconW = ImGui::CalcTextSize(p_Icon).x;
 
-          const ImVec2 l_TextPos(
-              l_IconPos.x + l_IconW + 6.0f, l_MidY);
-          const ImVec2 l_TextClip(
-              l_End.x - l_DeleteW - 4.0f, l_End.y);
-          ImGui::RenderTextEllipsis(l_DrawList, l_TextPos,
-                                    l_TextClip, l_TextClip.x,
-                                    p_Label, nullptr, nullptr);
+          const ImVec2 l_TextPos(l_IconPos.x + l_IconW + 6.0f,
+                                 l_MidY);
+          const ImVec2 l_TextClip(l_End.x - l_DeleteW - 4.0f,
+                                  l_End.y);
+          ImGui::RenderTextEllipsis(l_DrawList, l_TextPos, l_TextClip,
+                                    l_TextClip.x, p_Label, nullptr,
+                                    nullptr);
 
           if (p_ShowDelete) {
             const float l_TrashX =
                 l_End.x - l_DeleteW +
-                (l_DeleteW -
-                 ImGui::CalcTextSize(ICON_LC_TRASH_2).x) *
+                (l_DeleteW - ImGui::CalcTextSize(ICON_LC_TRASH_2).x) *
                     0.5f;
             const ImU32 l_TrashColor =
-                l_DelHovered
-                    ? IM_COL32(220, 80, 80, 255)
-                    : IM_COL32(180, 80, 80, 140);
-            l_DrawList->AddText(
-                ImVec2(l_TrashX, l_MidY), l_TrashColor,
-                ICON_LC_TRASH_2);
+                l_DelHovered ? IM_COL32(220, 80, 80, 255)
+                             : IM_COL32(180, 80, 80, 140);
+            l_DrawList->AddText(ImVec2(l_TrashX, l_MidY),
+                                l_TrashColor, ICON_LC_TRASH_2);
           }
 
           ImGui::Dummy(ImVec2(0.0f, 3.0f));
@@ -1441,10 +1421,9 @@ namespace Low {
 
             int l_NewIdx =
                 (int)p_Editor.document->functions.size() - 1;
-            p_Editor.document->functions[l_NewIdx]
-                .graph.create_node(N(vs_function_entry),
-                                   Math::Vector2(100.0f, 100.0f),
-                                   nullptr);
+            p_Editor.document->functions[l_NewIdx].graph.create_node(
+                N(vs_function_entry), Math::Vector2(100.0f, 100.0f),
+                nullptr);
             p_Editor.new_function_name[0] = '\0';
           }
 
@@ -1453,11 +1432,10 @@ namespace Low {
           // Event Graph entry
           bool l_Unused = false;
           ImGui::PushID("evtgraph");
-          if (render_graph_entry(
-                  "Event Graph", ICON_LC_ZAP,
-                  g_EventGraphAccentColor,
-                  p_Editor.active_function_index < 0, false,
-                  l_Unused)) {
+          if (render_graph_entry("Event Graph", ICON_LC_ZAP,
+                                 g_EventGraphAccentColor,
+                                 p_Editor.active_function_index < 0,
+                                 false, l_Unused)) {
             p_Editor.switch_to_event_graph();
           }
           ImGui::PopID();
@@ -1465,16 +1443,13 @@ namespace Low {
           // User functions
           int l_DeleteIdx = -1;
           for (int i = 0;
-               i < (int)p_Editor.document->functions.size();
-               ++i) {
-            FunctionGraph &i_Func =
-                p_Editor.document->functions[i];
+               i < (int)p_Editor.document->functions.size(); ++i) {
+            FunctionGraph &i_Func = p_Editor.document->functions[i];
             ImGui::PushID(i);
 
             bool l_DelClicked = false;
             if (render_graph_entry(
-                    i_Func.name.c_str(),
-                    ICON_LC_SQUARE_FUNCTION,
+                    i_Func.name.c_str(), ICON_LC_SQUARE_FUNCTION,
                     g_FunctionAccentColor,
                     p_Editor.active_function_index == i, true,
                     l_DelClicked)) {
@@ -1490,13 +1465,11 @@ namespace Low {
           if (l_DeleteIdx >= 0) {
             if (p_Editor.active_function_index == l_DeleteIdx) {
               p_Editor.switch_to_event_graph();
-            } else if (p_Editor.active_function_index >
-                       l_DeleteIdx) {
+            } else if (p_Editor.active_function_index > l_DeleteIdx) {
               p_Editor.active_function_index--;
             }
             p_Editor.document->functions.erase(
-                p_Editor.document->functions.begin() +
-                l_DeleteIdx);
+                p_Editor.document->functions.begin() + l_DeleteIdx);
             p_Editor.refresh_active_graph_ptrs();
           }
         }
@@ -1538,8 +1511,7 @@ namespace Low {
               document->state;
         }
         active_function_index = p_Index;
-        document->canvas =
-            document->functions[p_Index].canvas;
+        document->canvas = document->functions[p_Index].canvas;
         document->state = document->functions[p_Index].state;
         document->schema.set_graph(
             document->functions[p_Index].graph);

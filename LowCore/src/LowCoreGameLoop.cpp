@@ -305,12 +305,6 @@ namespace Low {
       {
         g_Running = true;
 
-#if 0
-        Low::Renderer::ResourceImporter::import_font(
-            "D:/Roboto-Regular.ttf", "roboto");
-        return;
-#endif
-
         Renderer::UiCanvas l_Canvas =
             Renderer::UiCanvas::make(N(TestCanvas));
         Renderer::get_game_renderview().add_ui_canvas(l_Canvas);

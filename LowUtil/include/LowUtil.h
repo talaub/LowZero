@@ -15,7 +15,7 @@
 
 namespace Low {
   namespace Util {
-    LOW_EXPORT void initialize();
+    LOW_EXPORT void initialize(const Util::String &p_ProjectPath);
     LOW_EXPORT void tick(float p_Delta);
     LOW_EXPORT void cleanup();
     LOW_EXPORT void set_main_window_initially_hidden(bool p_Hidden);
@@ -79,8 +79,7 @@ namespace Low {
         return values.find(p_Name) != values.end();
       }
 
-      void set(const Util::Name p_Name,
-               const Util::Variant &p_Value)
+      void set(const Util::Name p_Name, const Util::Variant &p_Value)
       {
         values[p_Name] = p_Value;
       }
@@ -122,8 +121,7 @@ namespace Low {
             continue;
           }
 
-          Util::Serial::Node &l_ValueNode =
-              (*l_CurrentNode)[l_Part];
+          Util::Serial::Node &l_ValueNode = (*l_CurrentNode)[l_Part];
           if (value.m_Type == Util::VariantType::Bool) {
             l_ValueNode = value.m_Bool;
           } else if (value.m_Type == Util::VariantType::Int32) {
@@ -151,8 +149,9 @@ namespace Low {
           } else if (value.m_Type == Util::VariantType::Handle) {
             l_ValueNode = value.m_Uint64;
           } else {
-            LOW_ASSERT(false,
-                       "Cannot serialize unknown config setting type.");
+            LOW_ASSERT(
+                false,
+                "Cannot serialize unknown config setting type.");
           }
         }
 
@@ -205,7 +204,8 @@ namespace Low {
           return static_cast<u32>(l_Value.m_Int32);
         }
 
-        LOW_ASSERT(false, "Project setting is not an unsigned integer.");
+        LOW_ASSERT(false,
+                   "Project setting is not an unsigned integer.");
         return p_Default;
       }
 
@@ -236,21 +236,48 @@ namespace Low {
       }
     };
 
+    enum class EngineSource
+    {
+      Unknown,
+      Packaged,
+      Source
+    };
+
     struct Project
     {
+      // name: and version: from project.yaml, exactly as written
+      String name;
+      String version;
+
       String dataPath;
       String rootPath;
       String assetCachePath;
       String editorImagesPath;
       String engineRootPath;
       String engineDataPath;
+      EngineSource engineSource = EngineSource::Unknown;
       String managedPath;
       String visualScriptOut;
+      String userPath;
 
       ConfigSettings settings;
     };
     LOW_EXPORT const Project &get_project();
     LOW_EXPORT ConfigSettings &get_project_settings();
+
+    LOW_EXPORT String get_executable_directory();
+    // p_OutSource optionally receives which route found the engine
+    LOW_EXPORT String
+    find_engine_root(EngineSource *p_OutSource = nullptr);
+
+    /** Walks up from p_StartDirectory to the first folder with a
+     project.yaml. Empty if there is none.*/
+    LOW_EXPORT String find_project_root(StringView p_StartDirectory);
+
+    /** p_Path can be the project folder or its project.yaml. Empty if
+     it is not a project.*/
+    LOW_EXPORT String resolve_project_path(StringView p_Path);
+
     LOW_EXPORT bool save_project_settings();
 
     struct LOW_EXPORT ProjectPathBuilder
@@ -290,6 +317,21 @@ namespace Low {
     project_visual_script_out_path(const String &p_RelativePath);
     LOW_EXPORT String engine_root_path(const String &p_RelativePath);
     LOW_EXPORT String engine_data_path(const String &p_RelativePath);
+
+    /** Turns a path into the form stored in project files:
+     relative to the project root if it lies inside the project,
+     otherwise unchanged
+     */
+    LOW_EXPORT String to_project_relative_path(StringView p_Path);
+
+    /** Inverse of to_project_relative_path. Absolute paths are
+     returned unchanged, relative ones are joined onto the project
+     root (a leading "./" is accepted for older files)*/
+    LOW_EXPORT String from_project_relative_path(StringView p_Path);
+
+    /** Whether the path (absolute or project relative) lies inside
+     the project folder */
+    LOW_EXPORT bool is_inside_project(StringView p_Path);
 
     struct LOW_EXPORT Window
     {

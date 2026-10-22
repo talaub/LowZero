@@ -72,6 +72,11 @@ set(VK_BOOTSTRAP_TEST OFF CACHE BOOL "" FORCE)
 set(VK_BOOTSTRAP_INSTALL OFF CACHE BOOL "" FORCE)
 add_subdirectory(vk-bootstrap)
 
+# Precompiled keeps CLI11's Windows headers out of our code (VOID, ERROR, ...)
+set(CLI11_PRECOMPILED ON CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+add_subdirectory(CLI11)
+
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)  # makes ALL targets compile with -fPIC on non-Windows
 
 # Some FreeType trees export 'freetype' (lowercase). Provide the alias msdfgen expects:
@@ -105,26 +110,6 @@ set(MSDF_ATLAS_USE_VCPKG OFF CACHE BOOL "" FORCE)
 set(MSDF_ATLAS_USE_SKIA OFF CACHE BOOL "" FORCE)
 add_subdirectory(msdf-atlas-gen)
 
-
-set_target_properties(EASTL PROPERTIES FOLDER "Dependencies")
-set_target_properties(gli_dummy PROPERTIES FOLDER "Dependencies")
-set_target_properties(assimp PROPERTIES FOLDER "Dependencies")
-set_target_properties(freetype PROPERTIES FOLDER "Dependencies")
-set_target_properties(zlibstatic PROPERTIES FOLDER "Dependencies")
-#set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER "Dependencies")
-set_target_properties(msdfgen-core PROPERTIES FOLDER "Dependencies")
-set_target_properties(msdfgen-ext PROPERTIES FOLDER "Dependencies")
-
-set_target_properties(yaml-cpp PROPERTIES FOLDER "Dependencies")
-#set_target_properties(yaml-cpp-parse PROPERTIES FOLDER "Dependencies/yaml")
-#set_target_properties(yaml-cpp-read PROPERTIES FOLDER "Dependencies/yaml")
-#set_target_properties(yaml-cpp-sandbox PROPERTIES FOLDER "Dependencies/yaml")
-#set_target_properties(format PROPERTIES FOLDER "Dependencies/yaml")
-
-if (TARGET uninstall)
-  set_target_properties(uninstall PROPERTIES FOLDER "Dependencies")
-endif()
-
 project(tlsf)
 
 add_library(tlsf STATIC "${CMAKE_CURRENT_SOURCE_DIR}/tlsf/tlsf.c")
@@ -132,7 +117,6 @@ target_include_directories(tlsf PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/tlsf>
   $<INSTALL_INTERFACE:include>
 )
-set_target_properties(tlsf PROPERTIES FOLDER "Dependencies")
 cmake_minimum_required(VERSION 3.20)
 
 # project(nativefiledialog)
@@ -174,7 +158,6 @@ set(JPH_USE_VK OFF CACHE BOOL "" FORCE)
 set(JPH_USE_MTL OFF CACHE BOOL "" FORCE)
 set(JPH_USE_CPU_COMPUTE ON CACHE BOOL "" FORCE)
 add_subdirectory(jolt/Build EXCLUDE_FROM_ALL)
-set_target_properties(Jolt PROPERTIES FOLDER "Dependencies")
 
 project(physx)
 
@@ -265,8 +248,6 @@ else()
   target_compile_options(physx PRIVATE -w -Wno-error)
 endif()
 
-set_target_properties(physx PROPERTIES FOLDER "Dependencies")
-
 add_library(inja INTERFACE)
 
 # inja is header-only; expose its include directory
@@ -274,3 +255,7 @@ target_include_directories(inja INTERFACE
   ${CMAKE_CURRENT_SOURCE_DIR}/inja/third_party/include
   ${CMAKE_CURRENT_SOURCE_DIR}/inja/include
 )
+
+# Has to stay at the end so every third-party target exists already. FORCE
+# because some libraries (e.g. glfw) put their targets into their own folders
+low_set_folder("${CMAKE_CURRENT_SOURCE_DIR}" "LowEngine/Dependencies" RECURSIVE FORCE)

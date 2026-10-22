@@ -49,6 +49,17 @@ namespace Low {
       bool import_texture(Util::String p_ImportPath,
                           Util::String p_OutputPath)
       {
+        // Absolute from here on, so the reimport lookup compares like
+        // with like
+        p_ImportPath = Util::from_project_relative_path(p_ImportPath);
+
+        if (!Util::is_inside_project(p_ImportPath)) {
+          LOW_LOG_ERROR << "Cannot import texture '" << p_ImportPath
+                        << "' from outside the project. Copy it into "
+                           "the data folder first."
+                        << LOW_LOG_END;
+          return false;
+        }
 
         if (!Util::FileIO::file_exists_sync(p_ImportPath.c_str())) {
           LOW_LOG_ERROR << "File does not exist" << LOW_LOG_END;
@@ -176,7 +187,8 @@ namespace Low {
               Util::hash_to_string(l_TextureId).c_str();
           l_ResourceNode["asset_hash"] =
               Util::hash_to_string(l_AssetHash).c_str();
-          l_ResourceNode["source_file"] = p_ImportPath.c_str();
+          l_ResourceNode["source_file"] =
+              Util::to_project_relative_path(p_ImportPath).c_str();
           l_ResourceNode["name"] = l_FileName.c_str();
         }
 

@@ -55,34 +55,43 @@ layout(set = 2, binding = 9) uniform sampler2DShadow g_ShadowAtlas;
 
 #define SHADOW_ATLAS_SIZE 4096.0
 
-float sample_shadow_pcf(vec2 p_UV, float p_Depth, float p_Bias) {
+float sample_shadow_pcf(vec2 p_UV, float p_Depth, float p_Bias,
+                        vec2 p_TileMin, vec2 p_TileMax) {
   if (p_Depth <= 0.0 || p_Depth >= 1.0 ||
       any(lessThan(p_UV, vec2(0.0))) ||
       any(greaterThan(p_UV, vec2(1.0)))) {
     return 1.0;
   }
 
+  // Poisson disk — wider spread, no grid banding
+  const vec2 disk[12] = vec2[](
+    vec2(-0.326,-0.406), vec2(-0.840,-0.074),
+    vec2(-0.696, 0.457), vec2(-0.203, 0.621),
+    vec2( 0.962,-0.195), vec2( 0.473,-0.480),
+    vec2( 0.519, 0.767), vec2( 0.185,-0.893),
+    vec2( 0.507, 0.064), vec2( 0.896, 0.412),
+    vec2(-0.322,-0.933), vec2(-0.792,-0.598)
+  );
+
   float l_Shadow = 0.0;
-  vec2  l_Texel  = 1.0 / vec2(SHADOW_ATLAS_SIZE);
+  float l_Radius = 3.5 / SHADOW_ATLAS_SIZE;
   float l_Depth  = p_Depth - p_Bias;
-  for (int x = -1; x <= 1; ++x) {
-    for (int y = -1; y <= 1; ++y) {
-      l_Shadow += texture(g_ShadowAtlas,
-                          vec3(p_UV + vec2(x, y) * l_Texel, l_Depth));
-    }
+  for (int i = 0; i < 12; ++i) {
+    vec2 l_SampleUV = clamp(p_UV + disk[i] * l_Radius, p_TileMin, p_TileMax);
+    l_Shadow += texture(g_ShadowAtlas, vec3(l_SampleUV, l_Depth));
   }
-  return l_Shadow / 9.0;
+  return l_Shadow / 12.0;
 }
 
-float compute_directional_shadow(vec3 p_FragPosView) {
-  float l_Depth = -p_FragPosView.z;
-  int   l_Cascade = 3;
-  if      (l_Depth < g_DirShadow.dir_cascade_splits.x) l_Cascade = 0;
-  else if (l_Depth < g_DirShadow.dir_cascade_splits.y) l_Cascade = 1;
-  else if (l_Depth < g_DirShadow.dir_cascade_splits.z) l_Cascade = 2;
+float directional_shadow_bias(int p_Cascade, vec3 p_NormalView) {
+  vec3 l_LightDir = normalize(-g_DirectionalLight.direction.xyz);
+  float l_NoL = clamp(dot(normalize(p_NormalView), l_LightDir), 0.0, 1.0);
+  float l_Slope = 1.0 - l_NoL;
+  return 0.00005 + 0.00005 * float(p_Cascade) + l_Slope * 0.00035;
+}
 
-  vec4 l_WorldPos = g_ViewInfo.inverseViewMatrix * vec4(p_FragPosView, 1.0);
-  vec4 l_LightSpace = g_DirShadow.dir_light_space[l_Cascade] * l_WorldPos;
+float sample_cascade(int p_Cascade, vec4 p_WorldPos, float p_Bias) {
+  vec4 l_LightSpace = g_DirShadow.dir_light_space[p_Cascade] * p_WorldPos;
   vec3 l_Proj = l_LightSpace.xyz / l_LightSpace.w;
 
   // XY: NDC [-1,1] -> [0,1]; Z already [0,1] (depth_zero_to_one)
@@ -93,11 +102,63 @@ float compute_directional_shadow(vec3 p_FragPosView) {
     return 1.0;
   }
 
-  // Clamp to tile bounds
-  ShadowTile l_Tile = g_DirShadow.dir_tiles[l_Cascade];
-  vec2 l_AtlasUV = l_Tile.atlas_offset + l_UV * l_Tile.atlas_scale;
+  ShadowTile l_Tile = g_DirShadow.dir_tiles[p_Cascade];
+  const float l_HalfTexel = 0.5 / SHADOW_ATLAS_SIZE;
+  vec2 l_TileMin = l_Tile.atlas_offset + l_HalfTexel;
+  vec2 l_TileMax = l_Tile.atlas_offset + l_Tile.atlas_scale - l_HalfTexel;
+  vec2 l_AtlasUV = clamp(l_Tile.atlas_offset + l_UV * l_Tile.atlas_scale,
+                         l_TileMin, l_TileMax);
+  return sample_shadow_pcf(l_AtlasUV, l_Proj.z, p_Bias, l_TileMin, l_TileMax);
+}
 
-  return sample_shadow_pcf(l_AtlasUV, l_Proj.z, 0.0002);
+float compute_directional_shadow(vec3 p_FragPosView, vec3 p_NormalView) {
+  float l_Depth = -p_FragPosView.z;
+  int   l_Cascade = 3;
+  if      (l_Depth < g_DirShadow.dir_cascade_splits.x) l_Cascade = 0;
+  else if (l_Depth < g_DirShadow.dir_cascade_splits.y) l_Cascade = 1;
+  else if (l_Depth < g_DirShadow.dir_cascade_splits.z) l_Cascade = 2;
+
+  vec4 l_WorldPos = g_ViewInfo.inverseViewMatrix * vec4(p_FragPosView, 1.0);
+  float l_Shadow = sample_cascade(
+      l_Cascade, l_WorldPos,
+      directional_shadow_bias(l_Cascade, p_NormalView));
+
+  // Symmetric cascade blend: both sides of each split contribute so the seam
+  // is continuous. t=0 at range start, t=0.5 at split, t=1 at range end.
+  const float l_BlendRange = 8.0;
+
+  // End side: approaching the split from inside the current cascade
+  if (l_Cascade < 3) {
+    float l_Split = l_Cascade == 0 ? g_DirShadow.dir_cascade_splits.x
+                  : l_Cascade == 1 ? g_DirShadow.dir_cascade_splits.y
+                                   : g_DirShadow.dir_cascade_splits.z;
+    float l_Dist = l_Split - l_Depth;
+    if (l_Dist < l_BlendRange) {
+      float l_T = (l_BlendRange - l_Dist) / (2.0 * l_BlendRange);
+      l_Shadow = mix(
+          l_Shadow,
+          sample_cascade(l_Cascade + 1, l_WorldPos,
+                         directional_shadow_bias(l_Cascade + 1, p_NormalView)),
+          l_T);
+    }
+  }
+
+  // Start side: receding from the split into the current cascade
+  if (l_Cascade > 0) {
+    float l_PrevSplit = l_Cascade == 1 ? g_DirShadow.dir_cascade_splits.x
+                      : l_Cascade == 2 ? g_DirShadow.dir_cascade_splits.y
+                                       : g_DirShadow.dir_cascade_splits.z;
+    float l_DistFromStart = l_Depth - l_PrevSplit;
+    if (l_DistFromStart < l_BlendRange) {
+      float l_T = (l_BlendRange + l_DistFromStart) / (2.0 * l_BlendRange);
+      l_Shadow = mix(
+          sample_cascade(l_Cascade - 1, l_WorldPos,
+                         directional_shadow_bias(l_Cascade - 1, p_NormalView)),
+          l_Shadow, l_T);
+    }
+  }
+
+  return l_Shadow;
 }
 
 int point_shadow_face(vec3 p_LightToFrag) {
@@ -111,7 +172,17 @@ int point_shadow_face(vec3 p_LightToFrag) {
   return p_LightToFrag.z >= 0.0 ? 4 : 5;
 }
 
-float compute_point_shadow(vec3 p_FragPosView, uint p_LightIndex) {
+float point_shadow_bias(vec3 p_FragPosView, vec3 p_NormalView,
+                        uint p_LightIndex) {
+  vec3 l_LightDir =
+      normalize(g_ViewPointLights[p_LightIndex].transform.xyz - p_FragPosView);
+  float l_NoL = clamp(dot(normalize(p_NormalView), l_LightDir), 0.0, 1.0);
+  float l_Slope = 1.0 - l_NoL;
+  return 0.00075 + l_Slope * 0.00125;
+}
+
+float compute_point_shadow(vec3 p_FragPosView, vec3 p_NormalView,
+                           uint p_LightIndex) {
   if (p_LightIndex >= 128 ||
       g_PointLightShadows[p_LightIndex].casts_shadow == 0) {
     return 1.0;
@@ -139,9 +210,16 @@ float compute_point_shadow(vec3 p_FragPosView, uint p_LightIndex) {
 
   ShadowTile l_Tile =
       g_PointLightShadows[p_LightIndex].tiles[l_Face];
-  vec2 l_AtlasUV = l_Tile.atlas_offset + l_UV * l_Tile.atlas_scale;
+  const float l_HalfTexel = 0.5 / SHADOW_ATLAS_SIZE;
+  vec2 l_TileMin = l_Tile.atlas_offset + l_HalfTexel;
+  vec2 l_TileMax = l_Tile.atlas_offset + l_Tile.atlas_scale - l_HalfTexel;
+  vec2 l_AtlasUV = clamp(l_Tile.atlas_offset + l_UV * l_Tile.atlas_scale,
+                         l_TileMin, l_TileMax);
 
-  return sample_shadow_pcf(l_AtlasUV, l_Proj.z, 0.002);
+  return sample_shadow_pcf(l_AtlasUV, l_Proj.z,
+                           point_shadow_bias(p_FragPosView, p_NormalView,
+                                             p_LightIndex),
+                           l_TileMin, l_TileMax);
 }
 
 #define MAX_POINTLIGHTS_PER_CLUSTER 32
@@ -187,7 +265,7 @@ vec3 compute_lighting(vec3 fragPos, vec3 normal) {
         float att = clamp(1.0 - dist / radius, 0.0, 1.0);
 
         float diff = max(dot(normal, L), 0.0);
-        float shadow = compute_point_shadow(fragPos, lightIndex);
+        float shadow = compute_point_shadow(fragPos, normal, lightIndex);
         color += lightColor * intensity * diff * att * shadow;
     }
 
@@ -200,7 +278,7 @@ vec3 compute_lighting(vec3 fragPos, vec3 normal) {
         vec3 L = normalize(-g_DirectionalLight.direction.xyz);
 
         float diff = max(dot(normal, L), 0.0);
-        float shadow = compute_directional_shadow(fragPos);
+        float shadow = max(compute_directional_shadow(fragPos, normal), 0.35);
         color += lightColor * intensity * diff * shadow;
     }
 
@@ -231,7 +309,7 @@ void main() {
     float ao = texture(TEX2D(g_ViewInfo.textureIndices.x), uv).r;
 
     vec3 diffuse = lighting * albedo;
-    vec3 ambient = vec3(0.03) * albedo;
+    vec3 ambient = vec3(0.18) * albedo;
 
     vec3 color = (diffuse + ambient) * ao;
 

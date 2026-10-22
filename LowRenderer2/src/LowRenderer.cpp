@@ -79,6 +79,20 @@
 #include <imgui.h>
 #include <vulkan/vulkan_core.h>
 
+void *operator new[](size_t size, const char *pName, int flags,
+                     unsigned debugFlags, const char *file, int line)
+{
+  return malloc(size);
+}
+
+void *operator new[](size_t size, size_t alignment,
+                     size_t alignmentOffset, const char *pName,
+                     int flags, unsigned debugFlags, const char *file,
+                     int line)
+{
+  return malloc(size);
+}
+
 namespace Low {
   namespace Renderer {
 
@@ -452,8 +466,8 @@ namespace Low {
 
         LOWR_ASSERT_RETURN(p_Node["source_file"],
                            "Could not find source file");
-        p_Config.sourceFile =
-            p_Node["source_file"].as<Util::String>();
+        p_Config.sourceFile = Util::from_project_relative_path(
+            p_Node["source_file"].as<Util::String>());
 
         p_Config.sidecarPath =
             Util::get_project().assetCachePath + "/" +
@@ -497,6 +511,8 @@ namespace Low {
         l_Builder.auto_initialize(true)
             .initialize_on_startup(true)
             .add_asset_suffix(".png");
+        l_Builder.add_initialize_directory(
+            Util::get_project().engineDataPath + "/editor/images");
         l_Builder.add_initialize_directory(
             Util::get_project().editorImagesPath, true);
         l_Builder

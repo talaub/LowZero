@@ -50,14 +50,21 @@ void main() {
             continue;
         }
 
-        vec3 sampleViewPos = texture(VIEW_GBUFFER_VIEWPOSITION, sampleUV).xyz;
-        float rangeCheck = smoothstep(0.0, 1.0, params.radius / max(abs(fragPos.z - sampleViewPos.z), 0.0001));
+        float sampleDepth = texture(VIEW_GBUFFER_DEPTH, sampleUV).r;
+        vec3 litColor = texture(TEX2D(g_ViewInfo.textureIndices.z), sampleUV).rgb;
+        float cosWeight = max(dot(normalize(sampleDir), normal), 0.0);
 
-        if (abs(sampleViewPos.z - samplePos.z) < params.radius * 1.5) {
-            vec3 litColor = texture(TEX2D(g_ViewInfo.textureIndices.z), sampleUV).rgb;
-            float cosWeight = max(dot(normalize(sampleDir), normal), 0.0);
-            indirectLight += litColor * cosWeight * rangeCheck;
+        if (sampleDepth >= 1.0) {
+            indirectLight += litColor * cosWeight;
             totalWeight += cosWeight;
+        } else {
+            vec3 sampleViewPos = texture(VIEW_GBUFFER_VIEWPOSITION, sampleUV).xyz;
+            float rangeCheck = smoothstep(0.0, 1.0, params.radius / max(abs(fragPos.z - sampleViewPos.z), 0.0001));
+
+            if (abs(sampleViewPos.z - samplePos.z) < params.radius * 1.5) {
+                indirectLight += litColor * cosWeight * rangeCheck;
+                totalWeight += cosWeight;
+            }
         }
     }
 

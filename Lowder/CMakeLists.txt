@@ -1,7 +1,7 @@
 project(Lowder)
 
-file(GLOB_RECURSE SOURCES "src/*.cpp")
-file(GLOB_RECURSE INCLUDES "include/*.h")
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
+file(GLOB_RECURSE INCLUDES CONFIGURE_DEPENDS "include/*.h")
 set(WINDOWS_RESOURCES "")
 if(WIN32)
   set(WINDOWS_RESOURCES "resources/Lowder.rc")
@@ -35,24 +35,11 @@ set(LOWDER_INCLUDE_DIRS
 
 #set_property(TARGET Lowder PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_}")
 
-set(LOW_CRASH_REPORT_UPLOAD_URL "" CACHE STRING "Crash reporter submit URL")
-set(LOW_CRASH_REPORT_UPLOAD_TOKEN "" CACHE STRING "Crash reporter upload token")
-
-if(DEFINED ENV{LOW_CRASH_REPORT_UPLOAD_URL} AND NOT "$ENV{LOW_CRASH_REPORT_UPLOAD_URL}" STREQUAL "")
-  set(LOW_CRASH_REPORT_UPLOAD_URL "$ENV{LOW_CRASH_REPORT_UPLOAD_URL}")
-endif()
-
-if(DEFINED ENV{LOW_CRASH_REPORT_UPLOAD_TOKEN} AND NOT "$ENV{LOW_CRASH_REPORT_UPLOAD_TOKEN}" STREQUAL "")
-  set(LOW_CRASH_REPORT_UPLOAD_TOKEN "$ENV{LOW_CRASH_REPORT_UPLOAD_TOKEN}")
-endif()
-
-include("${CMAKE_CURRENT_SOURCE_DIR}/CrashReporter.local.cmake" OPTIONAL)
-
+# The crash upload URL and token come from crash_reporting: in the
+# project's project.yaml at runtime, see LowderCrashReporter.h
 target_compile_definitions(Lowder PRIVATE
   LOW_MODULE_NAME="lowder"
-  LOW_HIDE_WINDOWS_CONSOLE=$<IF:$<BOOL:${ENGINE_BUILD}>,1,0>
-  "LOW_CRASH_REPORT_UPLOAD_URL=\"${LOW_CRASH_REPORT_UPLOAD_URL}\""
-  "LOW_CRASH_REPORT_UPLOAD_TOKEN=\"${LOW_CRASH_REPORT_UPLOAD_TOKEN}\""
+  LOW_HIDE_WINDOWS_CONSOLE=$<IF:$<BOOL:${LOW_HIDE_CONSOLE}>,1,0>
 )
 
 include_directories(
@@ -80,3 +67,6 @@ endif()
 target_link_libraries(Lowder PRIVATE
   LowEditor
 )
+
+install(TARGETS Lowder RUNTIME DESTINATION bin COMPONENT editor)
+install(FILES $<TARGET_RUNTIME_DLLS:Lowder> DESTINATION bin COMPONENT editor)

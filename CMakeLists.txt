@@ -1,67 +1,39 @@
-project(LowEngineZero)
-
-option(ENGINE_BUILD "Enable engine release build")
-
 cmake_minimum_required(VERSION 3.5)
+
+project(LowEngine VERSION 2026.1.0)
+
+# Feature flags. Defaults are for local development, `low package` sets
+# its own values in a separate build dir
+option(LOW_RUNTIME_SHADER_COMPILATION
+       "Compile shaders at runtime instead of only loading SPIR-V" ON)
+option(LOW_VULKAN_VALIDATION "Enable the Vulkan validation layers" ON)
+option(LOW_HIDE_CONSOLE "Hide the console window of lowder" OFF)
+
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 
-set(LOW_YEAR_VERSION 2026)
-set(LOW_MAJOR_VERSION 6)
-set(LOW_MINOR_VERSION 2)
-set(LOW_RELEASE_VERSION_SUFFIX "")
+SET(LOW_SOURCE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 
-if (DEFINED LOW_OVERRIDE_YEAR_VERSION)
-  set(LOW_YEAR_VERSION 2026)
+# A project that pulls the engine in via add_subdirectory() decides where
+# binaries go; standalone engine builds keep their own layout
+if (NOT CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIG>/app")
 endif()
 
-if (DEFINED LOW_OVERRIDE_MAJOR_VERSION)
-  set(LOW_MAJOR_VERSION 6)
+if (NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+  if (UNIX)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIG>/app")
+  else()
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIG>/lib")
+  endif()
 endif()
 
-if (DEFINED LOW_OVERRIDE_MINOR_VERSION)
-  set(LOW_MINOR_VERSION 2)
+if (NOT CMAKE_ARCHIVE_OUTPUT_DIRECTORY)
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIG>/lib")
 endif()
 
-if (DEFINED LOW_OVERRIDE_RELEASE_VERSION_SUFFIX)
-  set(LOW_RELEASE_VERSION_SUFFIX "${LOW_OVERRIDE_RELEASE_VERSION_SUFFIX}")
+if (NOT CMAKE_PDB_OUTPUT_DIRECTORY)
+  set(CMAKE_PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIG>/pdb")
 endif()
-
-SET(LOW_SOURCE_PATH ${CMAKE_SOURCE_DIR})
-SET(LOW_BINARY_PATH ${CMAKE_BINARY_DIR})
-
-if (LOW_PATH)
-  SET(LOW_BINARY_PATH "${LOW_PATH}/build")
-  SET(LOW_SOURCE_PATH "${LOW_PATH}/")
-endif()
-
-SET(SAVED_BINARY_PATH ${CMAKE_BINARY_DIR})
-SET(CMAKE_BINARY_DIR LOW_BINARY_PATH)
-
-foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
-   string( TOUPPER ${OUTPUTCONFIG} UOUTPUTCONFIG )
-  set(  SAVED_RUNTIME_OUTPUT_DIRECTORY_${UOUTPUTCONFIG} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG}})
-set(  SAVED_LIBRARY_OUTPUT_DIRECTORY_${UOUTPUTCONFIG} ${CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG}})
-set(  SAVED_ARCHIVE_OUTPUT_DIRECTORY_${UOUTPUTCONFIG} ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG}})
-set(  SAVED_PDB_OUTPUT_DIRECTORY_${UOUTPUTCONFIG} ${CMAKE_PDB_OUTPUT_DIRECTORY_${OUTPUTCONFIG}})
-endforeach( OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
-
-foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
-    string( TOUPPER ${OUTPUTCONFIG} UOUTPUTCONFIG )
-    set(  CMAKE_RUNTIME_OUTPUT_DIRECTORY_${UOUTPUTCONFIG} ${LOW_BINARY_PATH}/${OUTPUTCONFIG}/app )
- if(UNIX)
-    set(  CMAKE_LIBRARY_OUTPUT_DIRECTORY_${UOUTPUTCONFIG} ${LOW_BINARY_PATH}/${OUTPUTCONFIG}/app )
-else()
-    set(  CMAKE_LIBRARY_OUTPUT_DIRECTORY_${UOUTPUTCONFIG} ${LOW_BINARY_PATH}/${OUTPUTCONFIG}/lib )
-endif()
-    set(  CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${UOUTPUTCONFIG} ${LOW_BINARY_PATH}/${OUTPUTCONFIG}/lib )
-    set(  CMAKE_PDB_OUTPUT_DIRECTORY_${UOUTPUTCONFIG} ${LOW_BINARY_PATH}/${OUTPUTCONFIG}/pdb )
-endforeach( OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
-
-if (ENGINE_BUILD)
-  set(LOW_EFFECTIVE_MINOR_VERSION "${LOW_MINOR_VERSION}${LOW_RELEASE_VERSION_SUFFIX}")
-ELSE()
-  set(LOW_EFFECTIVE_MINOR_VERSION "${LOW_MINOR_VERSION}-DEV")
-ENDIF()
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo" CACHE STRING "Supported configurations" FORCE)
 set(TARGET_BUILD_PLATFORM "windows")
@@ -75,6 +47,18 @@ add_compile_definitions($<$<CONFIG:Debug>:_DEBUG>)
 
 if (MSVC)
   add_compile_options(/FS)
+endif()
+
+find_package(Git QUIET)
+
+set(LOW_ENGINE_BUILD_ID "unknown")
+if (GIT_FOUND)
+  execute_process(
+    COMMAND "${GIT_EXECUTABLE}" describe --tags --match "lowengine-v*" --always --dirty
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    OUTPUT_VARIABLE LOW_ENGINE_BUILD_ID
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET)
 endif()
 
 set(EASTL_BUILD_TESTS OFF)
@@ -99,44 +83,17 @@ add_compile_definitions(
   GLM_ENABLE_EXPERIMENTAL
 )
 
-if (ENGINE_BUILD)
+# The feature flags above are applied per target (LowRenderer2, Lowder)
+# so toggling one only rebuilds the target that uses it
 add_compile_definitions(
   LOW_EDITOR_BUILD
   IMGUI_DEFINE_MATH_OPERATORS
-  LOW_DATA_PATH="./data"
-  PX_PHYSX_STATIC_LIB
-  DISABLE_CUDA_PHYSX
-  PX_COOKING
-  LOW_RENDERER_RENDEROBJECT_COUNT=1024
-  LOW_SCRIPTS_PATH=./data/scripts
-  CFLAT_ENABLED=1
-  RELEASE_BUILD=1
-  LOW_RENDERER_COMPILE_SHADERS=0
-
-  GAME_DLL_PATH="./Gameplay.dll"
-)
-else()
-add_compile_definitions(
-  LOW_EDITOR_BUILD
-  IMGUI_DEFINE_MATH_OPERATORS
-  #LOW_DATA_PATH="../../../misteda/data"
-  LOW_RENDERER_COMPILE_SHADERS=1
-  LOW_RENDERER_VALIDATION_ENABLED
-  # LOW_RENDERER_VALIDATION_VERBOSE
-  # LOW_RENDERER_VALIDATION_BEST_PRACTICES
-  # LOW_RENDERER_VALIDATION_SYNCHRONIZATION
-  # LOW_RENDERER_VALIDATION_GPU_ASSISTED
-  LOW_COLOR_LOG
   PX_PHYSX_STATIC_LIB
   DISABLE_CUDA_PHYSX
   PX_COOKING
   LOW_RENDERER_RENDEROBJECT_COUNT=1024
   CFLAT_ENABLED=1
-  RELEASE_BUILD=0
-
-  GAME_DLL_PATH="../../../misteda/bin/Debug/Gameplay.dll"
 )
-endif()
 
 # Excluded directories
 # These directorories are not part of the build tree
@@ -189,14 +146,53 @@ endif()
 
 include(${LOW_SOURCE_PATH}/LowLens/cmake/LowLens.cmake)
 
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+# Sorts all targets defined in p_Dir into the solution folder p_Folder.
+# LowLens codegen targets go into a Codegen subfolder. Targets that already
+# have a folder keep it unless FORCE is given. RECURSIVE also handles all
+# subdirectories, which is what third-party code needs.
+function(low_set_folder p_Dir p_Folder)
+  cmake_parse_arguments(LOW_FOLDER "RECURSIVE;FORCE" "" "" ${ARGN})
+
+  get_property(l_Targets DIRECTORY "${p_Dir}" PROPERTY BUILDSYSTEM_TARGETS)
+  foreach(i_Target IN LISTS l_Targets)
+    get_target_property(l_Folder ${i_Target} FOLDER)
+    if (l_Folder AND NOT LOW_FOLDER_FORCE)
+      continue()
+    endif()
+
+    if (i_Target MATCHES "\\.Lens$")
+      set_target_properties(${i_Target} PROPERTIES FOLDER "${p_Folder}/Codegen")
+    else()
+      set_target_properties(${i_Target} PROPERTIES FOLDER "${p_Folder}")
+    endif()
+  endforeach()
+
+  if (LOW_FOLDER_RECURSIVE)
+    get_property(l_SubDirs DIRECTORY "${p_Dir}" PROPERTY SUBDIRECTORIES)
+    foreach(i_Dir IN LISTS l_SubDirs)
+      low_set_folder("${i_Dir}" "${p_Folder}" ${ARGN})
+    endforeach()
+  endif()
+endfunction()
+
 add_subdirectory(LowDependencies)
 add_subdirectory(LowMath)
 add_subdirectory(LowUtil)
 add_subdirectory(LowRenderer)
 add_subdirectory(LowRenderer2)
 add_subdirectory(LowCore)
+add_subdirectory(LowCliCore)
+add_subdirectory(LowCli)
+add_subdirectory(LowShim)
+add_subdirectory(LowLauncher)
 add_subdirectory(LowEditor)
 add_subdirectory(Lowder)
+
+foreach(i_Dir LowMath LowUtil LowRenderer LowRenderer2 LowCore LowCliCore LowCli LowShim LowLauncher LowEditor Lowder)
+  low_set_folder("${CMAKE_CURRENT_SOURCE_DIR}/${i_Dir}" "LowEngine")
+endforeach()
 
 set(LOW_DEBUG_VISUALIZERS
   "${CMAKE_CURRENT_SOURCE_DIR}/LowDependencies/EASTL/doc/EASTL.natvis"
@@ -222,20 +218,5 @@ foreach(LOW_VISUALIZER_TARGET
   low_add_debug_visualizers(${LOW_VISUALIZER_TARGET})
 endforeach()
 
-# add_dependencies(LowEngineZero
-  #LowMath
-  #LowUtil
-  #LowRenderer
-  #LowCore
-  #LowEditor
-#)
-
-foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
-    string( TOUPPER ${OUTPUTCONFIG} UOUTPUTCONFIG )
-    set(  CMAKE_RUNTIME_OUTPUT_DIRECTORY_${UOUTPUTCONFIG} ${SAVED_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG}})
-   set(  CMAKE_LIBRARY_OUTPUT_DIRECTORY_${UOUTPUTCONFIG} ${SAVED_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG}})
-    set(  CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${UOUTPUTCONFIG} ${SAVED_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG}})
-    set(  CMAKE_PDB_OUTPUT_DIRECTORY_${UOUTPUTCONFIG} ${SAVED_PDB_OUTPUT_DIRECTORY_${OUTPUTCONFIG}})
-endforeach( OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
-
-SET(CMAKE_BINARY_DIR SAVED_BINARY_PATH)
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/LowData/"
+  DESTINATION LowData COMPONENT editor)

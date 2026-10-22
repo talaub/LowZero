@@ -93,6 +93,8 @@ namespace Low {
 
     Util::List<Util::Handle> g_SelectedHandles;
 
+    static Util::String g_LayoutPath = "";
+
     Math::Color get_color_for_asset_type(const AssetType p_AssetType)
     {
       auto l_Pos = g_AssetTypeColor.find(p_AssetType);
@@ -588,57 +590,6 @@ namespace Low {
       return l_SidecarPath;
     }
 
-    static Util::String
-    get_script_source_storage_path(const Util::String p_Path)
-    {
-      Util::String l_NormalizedPath =
-          Util::PathHelper::normalize(p_Path);
-      Util::String l_NormalizedDataPath =
-          Util::PathHelper::normalize(Util::get_project().dataPath);
-      while (
-          Util::StringHelper::begins_with(l_NormalizedPath, "./")) {
-        l_NormalizedPath = l_NormalizedPath.substr(2);
-      }
-      while (Util::StringHelper::begins_with(l_NormalizedDataPath,
-                                             "./")) {
-        l_NormalizedDataPath = l_NormalizedDataPath.substr(2);
-      }
-      if (!l_NormalizedDataPath.empty() &&
-          Util::StringHelper::begins_with(
-              l_NormalizedPath, l_NormalizedDataPath + "/")) {
-        return l_NormalizedPath.substr(l_NormalizedDataPath.size() +
-                                       1);
-      }
-
-      std::filesystem::path l_Path(p_Path.c_str());
-      std::filesystem::path l_DataPath(
-          Util::get_project().dataPath.c_str());
-
-      if (!l_Path.is_absolute()) {
-        l_Path = std::filesystem::path(
-                     Util::get_project().rootPath.c_str()) /
-                 l_Path;
-      }
-      if (!l_DataPath.is_absolute()) {
-        l_DataPath = std::filesystem::path(
-                         Util::get_project().rootPath.c_str()) /
-                     l_DataPath;
-      }
-
-      l_Path = std::filesystem::weakly_canonical(l_Path);
-      l_DataPath = std::filesystem::weakly_canonical(l_DataPath);
-
-      if (Util::FileSystem::is_file_in_directory(l_Path, l_DataPath,
-                                                 true)) {
-        return Util::PathHelper::normalize(
-            std::filesystem::relative(l_Path, l_DataPath)
-                .string()
-                .c_str());
-      }
-
-      return Util::PathHelper::normalize(l_Path.string().c_str());
-    }
-
     static void
     register_script_bundle(Core::ScriptAsset p_Asset,
                            const Util::String p_SourcePath)
@@ -677,7 +628,7 @@ namespace Low {
           get_script_sidecar_path(l_Asset);
 
       const Util::String l_StoragePath =
-          get_script_source_storage_path(p_Path);
+          Util::to_project_relative_path(p_Path);
 
       if (l_Reimport) {
         const bool l_NeedsRewrite =
@@ -1007,14 +958,13 @@ namespace Low {
     void load_user_settings()
     {
       Util::String l_Path =
-          Util::get_project().rootPath + "/user.yaml";
+          Util::get_project().userPath + "/user.yaml";
 
-      if (!Util::FileIO::file_exists_sync(l_Path.c_str())) {
-        return;
+      Util::Serial::Node l_Root;
+
+      if (Util::FileIO::file_exists_sync(l_Path.c_str())) {
+        l_Root = Util::Serial::load_yaml_file(l_Path.c_str());
       }
-
-      Util::Serial::Node l_Root =
-          Util::Serial::load_yaml_file(l_Path.c_str());
 
       Low::Core::Scene l_Scene =
           Low::Core::Scene::find_by_name(N(TestScene));
@@ -1576,6 +1526,21 @@ namespace Low {
 
     void initialize()
     {
+
+      g_LayoutPath = Util::get_project().userPath + "/loweditor.ini";
+
+      ImGui::GetIO().IniFilename = g_LayoutPath.c_str();
+
+      const Util::String l_DefaultLayoutPath =
+          Util::get_project().engineDataPath +
+          "/editor/default_layout.ini";
+
+      if (!Util::FileIO::file_exists_sync(g_LayoutPath.c_str()) &&
+          Util::FileIO::file_exists_sync(
+              l_DefaultLayoutPath.c_str())) {
+        ImGui::LoadIniSettingsFromDisk(l_DefaultLayoutPath.c_str());
+      }
+
       load_low_metadata();
       load_project_metadata();
       register_core_asset_authoring_types();
@@ -1862,12 +1827,6 @@ namespace Low {
     {
       LOW_PROFILE_CPU("Editor", "TICK");
 
-      static bool t = false;
-      if (!t) {
-        t = true;
-        Flode::tmp_build_mapping();
-      }
-
       render_main_window(p_Delta, p_State);
 
       register_script_asset_authoring_types();
@@ -2117,9 +2076,20 @@ namespace Low {
 
       l_Config["custom"] = l_CustomSettings;
 
-      Util::String l_Path =
-          Util::get_project().rootPath + "/user.yaml";
-      Util::Serial::write_yaml_file(l_Path.c_str(), l_Config);
+      const Util::String l_Path =
+          Util::get_project().userPath + "/user.yaml";
+
+      // Only overwrite the editor's keys so others (e.g.
+      // engine_override) survive
+      Util::Yaml::Node l_UserConfig;
+      if (Util::FileIO::file_exists_sync(l_Path.c_str())) {
+        l_UserConfig = Util::Yaml::load_file(l_Path.c_str());
+      }
+      for (auto [i_Key, i_Value] : l_Config) {
+        l_UserConfig[i_Key->c_str()] = i_Value;
+      }
+
+      Util::Yaml::write_file(l_Path.c_str(), l_UserConfig);
     }
 
     void set_focused_widget(Widget *p_Widget)

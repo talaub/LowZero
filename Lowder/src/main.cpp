@@ -1,3 +1,4 @@
+#include "LowUtilFileSystem.h"
 #include <iostream>
 
 #ifndef LOW_HIDE_WINDOWS_CONSOLE
@@ -26,6 +27,7 @@
 #include "LowUtilContainers.h"
 #include "LowUtilGlobals.h"
 #include "LowUtilString.h"
+#include "LowUtilModuleInfo.h"
 
 #include "LowRenderer.h"
 #include "LowRendererRenderView.h"
@@ -42,6 +44,7 @@
 #include <stdint.h>
 
 #include "LowEditor.h"
+#include <assert.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -213,9 +216,12 @@ int load_module_lib(ModuleType type, const Low::Util::String &path)
     return 1;
   }
 
-  // keep 'lib' around if you need it later; if you close it now,
-  // function ptrs go invalid. Store LibHandle in a vector/map keyed
-  // by module if you need later cleanup.
+  auto l_GetInfo = reinterpret_cast<Low::Util::GetModuleInfoFunction>(
+      get_symbol(lib, LOW_MODULE_INFO_FUNCTION_NAME));
+  if (l_GetInfo) {
+    Low::Util::register_module_info(l_GetInfo());
+  }
+
   return 0;
 }
 
@@ -246,19 +252,12 @@ static Low::Util::String
 build_module_lib_path(Low::Util::String p_ProjectPath,
                       Low::Util::String p_ModulePath)
 {
-  Low::Util::String l_Path = p_ProjectPath;
-
-#ifdef _WIN32
-  l_Path += "/bin";
-#else
-  l_Path += "/build";
-#endif
-
-#ifdef NDEBUG
-  l_Path += "/RelWithDebInfo/";
-#else
-  l_Path += "/Debug/";
-#endif
+  Low::Util::String l_Path =
+      Low::Util::get_executable_directory() + "/";
+  if (Low::Util::get_project().engineSource ==
+      Low::Util::EngineSource::Packaged) {
+    l_Path = p_ProjectPath + "/bin/";
+  }
 
 #ifdef _WIN32
   l_Path += get_name_from_path(p_ModulePath);
@@ -300,23 +299,23 @@ void load_project(Low::Util::String p_ProjectPath)
 
   Util::FileIO::list_directory(l_Path.c_str(), l_FilePaths);
 
-/*
-for (int i = 0; i < l_FilePaths.size(); ++i) {
-  if (!Util::FileIO::is_directory(l_FilePaths[i].c_str())) {
-    continue;
-  }
-  Util::String i_ModuleConfigPath =
-      l_FilePaths[i] + "/module.yaml";
-  if (!Util::FileIO::file_exists_sync(i_ModuleConfigPath.c_str())) {
-    continue;
-  }
+  /*
+  for (int i = 0; i < l_FilePaths.size(); ++i) {
+    if (!Util::FileIO::is_directory(l_FilePaths[i].c_str())) {
+      continue;
+    }
+    Util::String i_ModuleConfigPath =
+        l_FilePaths[i] + "/module.yaml";
+    if (!Util::FileIO::file_exists_sync(i_ModuleConfigPath.c_str())) {
+      continue;
+    }
 
-  load_module(p_ProjectPath, l_FilePaths[i]);
-}
-*/
+    load_module(p_ProjectPath, l_FilePaths[i]);
+  }
+  */
 
-// HACK: We need some kind of dependency graph so we know which
-// modules to load first
+  // HACK: We need some kind of dependency graph so we know which
+  // modules to load first
   load_module(p_ProjectPath, p_ProjectPath + "/modules/Gameplay");
   load_module(p_ProjectPath, p_ProjectPath + "/modules/Editor");
 }
@@ -327,13 +326,23 @@ int run_low(bool p_IsHost, Low::Util::String p_ProjectPath)
   Low::Util::set_main_window_initially_hidden(true);
   Low::Util::Log::set_console_output_enabled(
       !LOW_HIDE_WINDOWS_CONSOLE);
-  Low::Util::initialize();
+  Low::Util::initialize(p_ProjectPath);
 
   Low::Util::Globals::set(N(IS_HOST), p_IsHost);
 
   Lowder::Splash::set_status("Loading project...");
   load_project(p_ProjectPath);
   // return 0;
+
+  // All modules of a project share its build id
+  {
+    const Low::Util::Project &l_Project = Low::Util::get_project();
+    const auto &l_Modules = Low::Util::get_module_infos();
+    Lowder::CrashReporter::set_project_info(
+        l_Project.name.c_str(), l_Project.version.c_str(),
+        l_Modules.empty() ? "unknown"
+                          : l_Modules[0].projectBuildId.c_str());
+  }
 
   Lowder::Splash::set_status("Initializing renderer...");
   Low::Renderer::initialize();
@@ -344,12 +353,6 @@ int run_low(bool p_IsHost, Low::Util::String p_ProjectPath)
   Low::Core::GameLoop::register_tick_callback(&Low::Editor::tick);
   Low::Core::GameLoop::register_late_tick_callback(
       &tick_splash_shutdown);
-
-  if (0) {
-    Low::Renderer::ResourceImporter::import_font("C:/roboto.ttf",
-                                                 "roboto");
-    Low::Util::cleanup();
-  }
 
   // Mtd::initialize();
 
@@ -396,25 +399,85 @@ int run_low(bool p_IsHost, Low::Util::String p_ProjectPath)
   return 0;
 }
 
+// Read straight from project.yaml instead of through Util, so crashes
+// during startup can already be uploaded
+static void configure_crash_upload(const Low::Util::String &p_ProjectPath)
+{
+  try {
+    const Low::Util::Yaml::Node l_Config = Low::Util::Yaml::load_file(
+        (p_ProjectPath + "/project.yaml").c_str());
+    const Low::Util::Yaml::Node l_CrashReporting =
+        l_Config["crash_reporting"];
+    if (!l_CrashReporting || !l_CrashReporting.IsMap()) {
+      return;
+    }
+
+    std::string l_Url;
+    std::string l_Token;
+    if (l_CrashReporting["url"]) {
+      l_Url = l_CrashReporting["url"].as<std::string>();
+    }
+    if (l_CrashReporting["token"]) {
+      l_Token = l_CrashReporting["token"].as<std::string>();
+    }
+    Lowder::CrashReporter::set_upload_target(l_Url, l_Token);
+  } catch (const std::exception &) {
+    // A broken project.yaml is reported by Util::initialize, without
+    // upload target the crash reporter only saves reports locally
+  }
+}
+
 int main(int argc, char *argv[])
 {
   bool l_IsHost = false;
   Low::Util::String l_ProjectPath = "";
-  if (argc > 1) {
+  const bool l_HasArgument = argc > 1;
+  if (l_HasArgument) {
     l_ProjectPath = argv[1];
   }
   if (argc > 2) {
     Low::Util::String l_Arg = argv[2];
     l_IsHost = l_Arg == "1";
   }
-#if RELEASE_BUILD
-  l_IsHost = true;
-  l_ProjectPath = "./";
-#endif
-  Lowder::CrashReporter::initialize(l_ProjectPath.c_str());
+
+  if (!l_ProjectPath.empty()) {
+    l_ProjectPath = Low::Util::resolve_project_path(l_ProjectPath);
+  }
+  if (l_ProjectPath.empty()) {
+    assert(!l_HasArgument &&
+           "The passed project path does not seem to be a valid "
+           "LowEngine project.");
+    l_ProjectPath = Low::Util::find_project_root(
+        Low::Util::get_executable_directory());
+  }
+  if (l_ProjectPath.empty()) {
+    l_ProjectPath = Low::Util::find_project_root(
+        Low::Util::FileSystem::get_cwd());
+  }
+
+  // TODO: Replace with message box
+  assert(!l_ProjectPath.empty() &&
+         "Lowder started without a project.");
+
+  // Util isn't initialized yet, so ask the lookup directly
+  Low::Util::EngineSource l_EngineSource;
+  const Low::Util::String l_EngineRoot =
+      Low::Util::find_engine_root(&l_EngineSource);
+  const Low::Util::String l_ImageDirectory =
+      l_EngineRoot.empty() ? ""
+                           : l_EngineRoot + "/LowData/editor/images";
+
+  Lowder::CrashReporter::initialize(l_ProjectPath.c_str(),
+                                    l_ImageDirectory.c_str());
+  configure_crash_upload(l_ProjectPath);
+
+  Lowder::Splash::set_source_build(l_EngineSource ==
+                                   Low::Util::EngineSource::Source);
+  Lowder::Splash::set_image_directory(l_ImageDirectory.c_str());
 
   Lowder::Splash::start();
-  int l_Result = run_low(l_IsHost, l_ProjectPath);
+  int l_Result = run_low(
+      l_IsHost, Low::Util::PathHelper::normalize(l_ProjectPath));
   Lowder::Splash::stop();
   Lowder::CrashReporter::shutdown();
   return l_Result;

@@ -76,3 +76,6 @@
 [submodule "LowDependencies/jolt"]
 	path = LowDependencies/jolt
 	url = https://github.com/jrouwe/JoltPhysics.git
+[submodule "LowDependencies/CLI11"]
+	path = LowDependencies/CLI11
+	url = https://github.com/CLIUtils/CLI11.git

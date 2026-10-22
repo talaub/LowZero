@@ -1,5 +1,6 @@
 #include "LowUtil.h"
 
+#include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 #include "LowUtilConfig.h"
 #include "LowUtilHandle.h"
@@ -9,6 +10,8 @@
 #include "LowUtilFileSystem.h"
 #include "LowUtilAssetManager.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilFileIO.h"
+#include "LowUtilYaml.h"
 #include "SDL_video.h"
 
 #define SDL_MAIN_HANDLED
@@ -16,9 +19,14 @@
 #include <SDL_syswm.h>
 #include <SDL_vulkan.h>
 
+#include <filesystem>
+
 #ifdef _WIN32
 #include <windows.h>
 #include <windowsx.h>
+#else
+#include <limits.h>
+#include <unistd.h>
 #endif
 
 namespace Low {
@@ -213,20 +221,29 @@ namespace Low {
       return SDL_HITTEST_NORMAL;
     }
 
-    void initialize()
+    void initialize(const Util::String &p_ProjectPath)
     {
 
-      g_Project.dataPath = "./data";
-      g_Project.rootPath = "./";
-      g_Project.assetCachePath = "./data/.asset_cache";
-      g_Project.editorImagesPath = "./data/.editor_images";
-      g_Project.managedPath = "./data/.managed";
-      g_Project.visualScriptOut = "./data/.vs_out";
+      g_Project.dataPath = p_ProjectPath + "/data";
+      g_Project.rootPath = p_ProjectPath;
+      g_Project.assetCachePath = g_Project.dataPath + "/.asset_cache";
+      g_Project.editorImagesPath =
+          g_Project.dataPath + "/.editor_images";
+      g_Project.managedPath = g_Project.dataPath + "/.managed";
+      g_Project.visualScriptOut = g_Project.dataPath + "/.vs_out";
+      g_Project.userPath = g_Project.rootPath + "/.user";
 
-      g_Project.engineRootPath = "./";
-      g_Project.engineDataPath = "./LowData";
+      std::filesystem::create_directories(g_Project.userPath.c_str());
 
       Log::initialize();
+
+      g_Project.engineRootPath =
+          find_engine_root(&g_Project.engineSource);
+      LOW_ASSERT(!g_Project.engineRootPath.empty(),
+                 "Unable to find engine root.");
+      g_Project.engineDataPath =
+          g_Project.engineRootPath + "/LowData";
+
       Memory::initialize();
       Name::initialize();
       Config::initialize();
@@ -235,11 +252,30 @@ namespace Low {
 
       {
         const Serial::Node l_ProjectConfig = Serial::load_yaml_file(
-            (g_Project.rootPath + "project.yaml").c_str());
+            (g_Project.rootPath + "/project.yaml").c_str());
 
         if (l_ProjectConfig["settings"]) {
           g_Project.settings.initialize_from(
               l_ProjectConfig["settings"]);
+        }
+      }
+
+      {
+        // Raw yaml, the serial node would turn version: 1.10 into the
+        // number 1.1
+        const Yaml::Node l_RawConfig = Yaml::load_file(
+            (g_Project.rootPath + "/project.yaml").c_str());
+
+        g_Project.name = "Unnamed project";
+        if (l_RawConfig["name"]) {
+          g_Project.name =
+              l_RawConfig["name"].as<std::string>().c_str();
+        }
+
+        g_Project.version = "0.0.0";
+        if (l_RawConfig["version"]) {
+          g_Project.version =
+              l_RawConfig["version"].as<std::string>().c_str();
         }
       }
 
@@ -412,6 +448,170 @@ namespace Low {
       return g_Project;
     }
 
+    String get_executable_directory()
+    {
+      String l_Path;
+
+#ifdef _WIN32
+      wchar_t l_WidePath[MAX_PATH * 4];
+      const DWORD l_Length =
+          GetModuleFileNameW(nullptr, l_WidePath, MAX_PATH * 4);
+      if (l_Length == 0) {
+        return "";
+      }
+
+      const int l_Size =
+          WideCharToMultiByte(CP_UTF8, 0, l_WidePath, l_Length,
+                              nullptr, 0, nullptr, nullptr);
+      l_Path.resize(l_Size);
+      WideCharToMultiByte(CP_UTF8, 0, l_WidePath, l_Length,
+                          l_Path.data(), l_Size, nullptr, nullptr);
+#else
+      char l_Buffer[PATH_MAX];
+      const ssize_t l_Length =
+          readlink("/proc/self/exe", l_Buffer, sizeof(l_Buffer) - 1);
+      if (l_Length <= 0) {
+        return "";
+      }
+      l_Path.assign(l_Buffer, l_Length);
+#endif
+
+      l_Path = PathHelper::normalize(l_Path);
+      const size_t l_LastSlash = l_Path.find_last_of('/');
+      if (l_LastSlash == String::npos) {
+        return "";
+      }
+      return l_Path.substr(0, l_LastSlash);
+    }
+
+    String find_engine_root(EngineSource *p_OutSource)
+    {
+      if (p_OutSource) {
+        *p_OutSource = EngineSource::Unknown;
+      }
+
+      const String l_ExeDirectory = get_executable_directory();
+      if (l_ExeDirectory.empty()) {
+        return "";
+      }
+
+      // Installed and bundled engines keep their binaries in
+      // <engine>/bin
+      const size_t l_LastSlash = l_ExeDirectory.find_last_of('/');
+      if (l_LastSlash == String::npos) {
+        return "";
+      }
+      const String l_Parent = l_ExeDirectory.substr(0, l_LastSlash);
+      if (FileIO::is_directory((l_Parent + "/LowData").c_str())) {
+        if (p_OutSource) {
+          *p_OutSource = EngineSource::Packaged;
+        }
+        return l_Parent;
+      }
+
+#ifdef LOW_ENGINE_SOURCE_ROOT
+      if (p_OutSource) {
+        *p_OutSource = EngineSource::Source;
+      }
+      return LOW_ENGINE_SOURCE_ROOT;
+#else
+      return "";
+#endif
+    }
+
+    static std::filesystem::path to_path(StringView p_Path)
+    {
+      return std::filesystem::path(std::u8string(
+          reinterpret_cast<const char8_t *>(p_Path.data()),
+          p_Path.size()));
+    }
+
+    static String from_path(const std::filesystem::path &p_Path)
+    {
+      const std::u8string l_Path = p_Path.generic_u8string();
+      return String(reinterpret_cast<const char *>(l_Path.data()),
+                    l_Path.size());
+    }
+
+    static bool
+    has_project_file(const std::filesystem::path &p_Directory)
+    {
+      std::error_code l_Error;
+      return std::filesystem::is_regular_file(
+          p_Directory / "project.yaml", l_Error);
+    }
+
+    String find_project_root(StringView p_StartDirectory)
+    {
+      std::error_code l_Error;
+      std::filesystem::path l_Directory =
+          std::filesystem::weakly_canonical(to_path(p_StartDirectory),
+                                            l_Error);
+      if (l_Error) {
+        return "";
+      }
+
+      while (true) {
+        if (has_project_file(l_Directory)) {
+          return from_path(l_Directory);
+        }
+        // The root is its own parent
+        const std::filesystem::path l_Parent =
+            l_Directory.parent_path();
+        if (l_Parent == l_Directory) {
+          return "";
+        }
+        l_Directory = l_Parent;
+      }
+    }
+
+    String to_project_relative_path(StringView p_Path)
+    {
+      const String l_Path = PathHelper::normalize(String(p_Path));
+      const String l_RootPrefix = get_project().rootPath + "/";
+      if (StringHelper::begins_with(l_Path, l_RootPrefix)) {
+        return l_Path.substr(l_RootPrefix.size());
+      }
+      return l_Path;
+    }
+
+    String from_project_relative_path(StringView p_Path)
+    {
+      String l_Path = PathHelper::normalize(String(p_Path));
+      if (l_Path.empty() || to_path(l_Path).is_absolute()) {
+        return l_Path;
+      }
+      while (StringHelper::begins_with(l_Path, "./")) {
+        l_Path = l_Path.substr(2);
+      }
+      return get_project().rootPath + "/" + l_Path;
+    }
+
+    bool is_inside_project(StringView p_Path)
+    {
+      return StringHelper::begins_with(
+          from_project_relative_path(p_Path),
+          get_project().rootPath + "/");
+    }
+
+    String resolve_project_path(StringView p_Path)
+    {
+      std::error_code l_Error;
+      std::filesystem::path l_Path =
+          std::filesystem::weakly_canonical(to_path(p_Path), l_Error);
+      if (l_Error) {
+        return "";
+      }
+
+      if (l_Path.filename() == "project.yaml") {
+        l_Path = l_Path.parent_path();
+      }
+      if (!has_project_file(l_Path)) {
+        return "";
+      }
+      return from_path(l_Path);
+    }
+
     ConfigSettings &get_project_settings()
     {
       return g_Project.settings;
@@ -420,14 +620,14 @@ namespace Low {
     bool save_project_settings()
     {
       const String l_ProjectConfigPath =
-          g_Project.rootPath + "project.yaml";
-      Serial::Node l_ProjectConfig =
-          Serial::load_yaml_file(l_ProjectConfigPath.c_str());
+          g_Project.rootPath + "/project.yaml";
+      // Raw yaml so keys like engine: 2026.6 stay untouched
+      Yaml::Node l_ProjectConfig =
+          Yaml::load_file(l_ProjectConfigPath.c_str());
 
       l_ProjectConfig["settings"] =
           g_Project.settings.to_serial_node();
-      Serial::write_yaml_file(l_ProjectConfigPath.c_str(),
-                              l_ProjectConfig);
+      Yaml::write_file(l_ProjectConfigPath.c_str(), l_ProjectConfig);
 
       return true;
     }

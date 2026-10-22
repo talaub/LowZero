@@ -12,11 +12,11 @@ SET(NODEGRAPH_SOURCES
   "${NODEGRAPH_PATH}/examples/blueprints-example/utilities/widgets.cpp"
 )
 
-file(GLOB_RECURSE SOURCES "src/*.cpp")
-file(GLOB_RECURSE INCLUDES "include/*.h")
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
+file(GLOB_RECURSE INCLUDES CONFIGURE_DEPENDS "include/*.h")
 
-file(GLOB_RECURSE FLODE_SOURCES "../Flode/src/*.cpp")
-file(GLOB_RECURSE FLODE_INCLUDES "../Flode/include/*.h")
+file(GLOB_RECURSE FLODE_SOURCES CONFIGURE_DEPENDS "../Flode/src/*.cpp")
+file(GLOB_RECURSE FLODE_INCLUDES CONFIGURE_DEPENDS "../Flode/include/*.h")
 
 set(ZEP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/zep")
 

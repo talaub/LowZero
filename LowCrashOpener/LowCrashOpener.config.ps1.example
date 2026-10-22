@@ -2,7 +2,8 @@ $ServerBaseUrl = "https://crash-reporter.example.com"
 $Username = "admin"
 $Password = "replace-with-admin-password"
 
-$SymbolRoot = "C:\Path\To\LowEngine\release_symbols"
+# Leave empty to use the symbol store of `low config get symbol_store`
+$SymbolRoot = ""
 $DownloadRoot = "$env:LOCALAPPDATA\LowEngine\CrashReports"
 $CleanupAfterVisualStudioCloses = $true
 $AutoStartVisualStudioDebugging = $true

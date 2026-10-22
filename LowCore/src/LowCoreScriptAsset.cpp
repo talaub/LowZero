@@ -787,9 +787,8 @@ namespace Low {
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_full_path
 
-        Util::String l_Path = Util::get_project().dataPath;
-        l_Path += "/" + get_source_path();
-        return l_Path;
+        // source_path is stored relative to the project root
+        return Util::from_project_relative_path(get_source_path());
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_full_path
       }
 

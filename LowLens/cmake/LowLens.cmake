@@ -24,7 +24,7 @@ function(low_lens_generate p_Target p_ModuleName p_IncludeDir)
   set(l_Stamp "${CMAKE_CURRENT_BINARY_DIR}/${p_ModuleName}.lowlens.stamp")
   set(l_GenDir "${CMAKE_CURRENT_BINARY_DIR}/gen")
 
-  file(GLOB_RECURSE l_Headers
+  file(GLOB_RECURSE l_Headers CONFIGURE_DEPENDS
     "${p_IncludeDir}/*.h"
     "${p_IncludeDir}/*.hpp"
   )
@@ -78,8 +78,8 @@ function(low_lens_generate p_Target p_ModuleName p_IncludeDir)
     VERBATIM
   )
 
-  add_custom_target(${p_Target}_LowLensGenerate DEPENDS "${l_Stamp}")
-  add_dependencies(${p_Target} ${p_Target}_LowLensGenerate)
+  add_custom_target(${p_Target}.Lens DEPENDS "${l_Stamp}")
+  add_dependencies(${p_Target} ${p_Target}.Lens)
 
   # Expose the lensdb path so downstream targets can reference it
   set(LOW_LENSDB_${p_ModuleName} "${l_DbOutput}" CACHE INTERNAL "")

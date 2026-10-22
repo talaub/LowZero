@@ -60,11 +60,9 @@ namespace Low {
 
         String l_HeaderString =
             "LowEngine " + p_Title + "\nEngine version: ";
-        l_HeaderString += LOW_VERSION_YEAR;
-        l_HeaderString += ".";
-        l_HeaderString += LOW_VERSION_MAJOR;
-        l_HeaderString += ".";
-        l_HeaderString += LOW_VERSION_MINOR;
+        l_HeaderString += LOW_VERSION_STRING;
+        l_HeaderString += "\nEngine build: ";
+        l_HeaderString += LOW_ENGINE_BUILD_ID;
         l_HeaderString += "\n----------------------\n";
 
         FileIO::write_sync(l_LogFile, l_HeaderString);

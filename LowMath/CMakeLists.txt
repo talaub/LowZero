@@ -1,9 +1,7 @@
-SET(CMAKE_CURRENT_BINARY_DIR "${LOW_BINARY_PATH}/LowMath")
-
 project(LowMath)
 
-file(GLOB_RECURSE SOURCES "src/*.cpp")
-file(GLOB_RECURSE INCLUDES "include/*.h")
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
+file(GLOB_RECURSE INCLUDES CONFIGURE_DEPENDS "include/*.h")
 
 add_library(LowMath SHARED
   ${SOURCES}

@@ -127,25 +127,20 @@ if (!$dump) {
   throw "Downloaded report does not contain minidump.dmp."
 }
 
-$manifest = Get-ChildItem -Path $reportRoot -Recurse -Filter "release_manifest.json" -File | Select-Object -First 1
-$releaseId = ""
-if ($manifest) {
-  $manifestJson = Get-Content -Path $manifest.FullName -Raw | ConvertFrom-Json
-  $releaseId = [string]$manifestJson.release_id
+# The symbol store finds every PDB by the GUID and age the linker wrote
+# into the binary, so no release id is needed to pick the right folder
+if ([string]::IsNullOrWhiteSpace($SymbolRoot)) {
+  $configuredStore = & low config get symbol_store 2>$null
+  if ($LASTEXITCODE -eq 0 -and ![string]::IsNullOrWhiteSpace($configuredStore)) {
+    $SymbolRoot = ([string]$configuredStore).Trim()
+  }
 }
 
 $symbolPathParts = @()
-if (![string]::IsNullOrWhiteSpace($SymbolRoot)) {
-  if (![string]::IsNullOrWhiteSpace($releaseId)) {
-    $releaseSymbols = Join-Path $SymbolRoot $releaseId
-    if (Test-Path $releaseSymbols) {
-      $symbolPathParts += $releaseSymbols
-    }
-  }
-
-  if (Test-Path $SymbolRoot) {
-    $symbolPathParts += $SymbolRoot
-  }
+if (![string]::IsNullOrWhiteSpace($SymbolRoot) -and (Test-Path $SymbolRoot)) {
+  $symbolPathParts += "srv*$SymbolRoot"
+} else {
+  Write-Warning "No symbol store found, set `$SymbolRoot in LowCrashOpener.config.ps1 or run: low config set symbol_store <path>"
 }
 
 $symbolCache = Join-Path $DownloadRoot "symbol_cache"
