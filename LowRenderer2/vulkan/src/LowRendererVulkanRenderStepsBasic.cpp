@@ -2687,6 +2687,7 @@ namespace Low {
               l_Data->debugLinePipelineLayout.destroy();
             }
             delete l_Data;
+            GET_STEP_DATA(p_RenderView, p_RenderStep) = nullptr;
           }
           return true;
         });

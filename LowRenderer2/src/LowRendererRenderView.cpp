@@ -160,6 +160,10 @@ namespace Low {
       l_Handle.set_dimensions_dirty(true);
       l_Handle.get_step_data().resize(RenderStep::get_capacity());
 
+      for (int i = 0; i < RenderStep::get_capacity(); ++i) {
+        l_Handle.get_step_data()[i] = nullptr;
+      }
+
       l_Handle.set_ui_camera_zoom(1.0f);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
@@ -182,7 +186,9 @@ namespace Low {
         for (auto it = get_steps().begin(); it != get_steps().end();
              ++it) {
           it->teardown(get_id());
-          free(get_step_data()[it->get_index()]);
+          if (get_step_data()[it->get_index()] != nullptr) {
+            free(get_step_data()[it->get_index()]);
+          }
         }
 
         Vulkan::ViewInfo l_ViewInfo = get_view_info_handle();
