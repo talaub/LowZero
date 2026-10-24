@@ -39,6 +39,7 @@
 #include <IconsCodicons.h>
 #include <imgui.h>
 #include "glm/matrix.hpp"
+#include "glm/trigonometric.hpp"
 
 #define SEARCH_LENGTH 300
 
@@ -423,8 +424,10 @@ namespace Low {
             m_SelectedElement.get_display();
         const Math::Vector2 l_PixelPosition =
             l_Display.get_absolute_pixel_position();
+        const float l_Rotation = l_Display.get_absolute_rotation();
         m_SelectedMarker.set_position(l_PixelPosition.x,
                                       l_PixelPosition.y, 0);
+        m_SelectedMarker.set_rotation2D(glm::radians(-l_Rotation));
         m_SelectedMarker.set_size(
             l_Display.get_absolute_pixel_scale());
 

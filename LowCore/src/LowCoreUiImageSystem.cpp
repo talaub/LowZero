@@ -76,7 +76,7 @@ namespace Low {
 
                 i_Image.get_render_object().set_position(i_Position);
                 i_Image.get_render_object().set_rotation2D(
-                    i_Display.get_absolute_rotation());
+                    glm::radians(-i_Display.get_absolute_rotation()));
                 i_Image.get_render_object().set_size(
                     i_Display.get_absolute_pixel_scale());
                 i_Image.get_render_object().set_z_sorting(

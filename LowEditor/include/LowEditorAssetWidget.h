@@ -33,7 +33,8 @@ namespace Low {
       void
       render_directory_list(const Util::FileSystem::DirectoryWatcher
                                 &p_DirectoryWatcher,
-                            const Util::String p_DisplayName = "");
+                            const Util::String p_DisplayName = "",
+                            const bool p_DefaultOpen = false);
 
       void render_directory_content(
           const Util::FileSystem::DirectoryWatcher

@@ -61,15 +61,13 @@ namespace Low {
 
       ImDrawList *l_DrawList = ImGui::GetWindowDrawList();
       const Theme &l_Theme = theme_get_current();
-      const ImVec2 l_End(l_Start.x + l_Width,
-                         l_Start.y + l_Height);
+      const ImVec2 l_End(l_Start.x + l_Width, l_Start.y + l_Height);
 
       const ImU32 l_Background =
           l_Hovered ? color_to_imcolor(l_Theme.headerHover)
                     : color_to_imcolor(l_Theme.input);
-      const ImU32 l_TextColor =
-          ImGui::GetColorU32(l_Enabled ? ImGuiCol_Text
-                                       : ImGuiCol_TextDisabled);
+      const ImU32 l_TextColor = ImGui::GetColorU32(
+          l_Enabled ? ImGuiCol_Text : ImGuiCol_TextDisabled);
 
       l_DrawList->AddRectFilled(l_Start, l_End, l_Background,
                                 l_Rounding);
@@ -78,12 +76,11 @@ namespace Low {
                           l_Rounding);
       l_DrawList->AddRectFilled(
           l_Start, ImVec2(l_Start.x + 3.0f, l_End.y),
-          color_to_imcolor(get_color_for_asset_type(
-              p_Action.assetType)),
+          color_to_imcolor(
+              get_color_for_asset_type(p_Action.assetType)),
           l_Rounding, ImDrawFlags_RoundCornersLeft);
 
-      const ImVec2 l_IconMin(l_Start.x + 10.0f,
-                             l_Start.y + 5.0f);
+      const ImVec2 l_IconMin(l_Start.x + 10.0f, l_Start.y + 5.0f);
       const ImVec2 l_IconMax(l_IconMin.x + l_PreviewSize,
                              l_IconMin.y + l_PreviewSize);
 
@@ -109,9 +106,8 @@ namespace Low {
 
       const float l_TextX = l_IconMax.x + 10.0f;
       const ImVec2 l_NamePos(l_TextX, l_Start.y + 8.0f);
-      const ImVec2 l_NameClipMax(l_End.x - 10.0f,
-                                 l_NamePos.y +
-                                     ImGui::GetTextLineHeight());
+      const ImVec2 l_NameClipMax(
+          l_End.x - 10.0f, l_NamePos.y + ImGui::GetTextLineHeight());
       ImGui::RenderTextEllipsis(
           l_DrawList, l_NamePos, l_NameClipMax, l_NameClipMax.x,
           p_Action.label.c_str(), nullptr, nullptr);
@@ -126,10 +122,10 @@ namespace Low {
       ImGui::PopFont();
 
       if (!l_Enabled) {
-        l_DrawList->AddRectFilled(l_Start, l_End,
-                                  ImGui::GetColorU32(
-                                      ImGuiCol_ModalWindowDimBg),
-                                  l_Rounding);
+        l_DrawList->AddRectFilled(
+            l_Start, l_End,
+            ImGui::GetColorU32(ImGuiCol_ModalWindowDimBg),
+            l_Rounding);
       }
 
       return l_Clicked;
@@ -271,7 +267,7 @@ namespace Low {
 
     void AssetWidget::render_directory_list(
         const Util::FileSystem::DirectoryWatcher &p_DirectoryWatcher,
-        const Util::String p_DisplayName)
+        const Util::String p_DisplayName, const bool p_DefaultOpen)
     {
       using namespace Low::Util::FileSystem;
 
@@ -289,6 +285,10 @@ namespace Low {
       if (l_Leaf) {
         l_BaseFlags |= ImGuiTreeNodeFlags_Leaf |
                        ImGuiTreeNodeFlags_NoTreePushOnOpen;
+      }
+
+      if (p_DefaultOpen) {
+        l_BaseFlags |= ImGuiTreeNodeFlags_DefaultOpen;
       }
 
       Util::String l_DisplayName = p_DirectoryWatcher.name;
@@ -423,7 +423,7 @@ namespace Low {
         DirectoryWatcher &l_DataWatcher =
             get_directory_watcher(m_DataWatcher);
 
-        render_directory_list(l_DataWatcher, "Game");
+        render_directory_list(l_DataWatcher, "Game", true);
       }
 
       ImGui::EndChild();
@@ -514,7 +514,8 @@ namespace Low {
               "Create Asset", nullptr,
               ImGuiWindowFlags_AlwaysAutoResize |
                   ImGuiWindowFlags_NoSavedSettings)) {
-        ImGui::TextUnformatted(m_PendingCreationAction->label.c_str());
+        ImGui::TextUnformatted(
+            m_PendingCreationAction->label.c_str());
         ImGui::Spacing();
 
         Gui::NameInput("Name", m_CreationName, 128);
@@ -525,21 +526,19 @@ namespace Low {
 
         ImGui::Spacing();
 
-        const bool l_CanCreate =
-            m_CreationName.is_valid() &&
-            m_CreationName.c_str()[0] != '\0';
+        const bool l_CanCreate = m_CreationName.is_valid() &&
+                                 m_CreationName.c_str()[0] != '\0';
         if (ImGui::Button("Create") && l_CanCreate) {
           AssetCreation::Context l_Context;
           l_Context.directoryPath = m_CreationDirectoryPath;
           if (m_PendingCreationAction->create) {
-            m_PendingCreationAction->create(
-                l_Context, m_CreationName);
+            m_PendingCreationAction->create(l_Context,
+                                            m_CreationName);
           }
           m_PendingCreationAction = nullptr;
           ImGui::CloseCurrentPopup();
         }
-        if (l_SubmitName && l_CanCreate &&
-            m_PendingCreationAction) {
+        if (l_SubmitName && l_CanCreate && m_PendingCreationAction) {
           AssetCreation::Context l_Context;
           l_Context.directoryPath = m_CreationDirectoryPath;
           if (m_PendingCreationAction->create) {
