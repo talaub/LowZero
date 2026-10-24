@@ -90,6 +90,12 @@ namespace Low {
           const Util::String p_DirectoryPath,
           const bool p_IncludeSubdirectories = false);
 
+      /**
+       * Creates a directory in the filesystem
+       * @param p_Path The path for the new directory
+       */
+      void LOW_EXPORT create_directory(const Util::String &p_Path);
+
       class LOW_EXPORT Watcher
       {
       public:

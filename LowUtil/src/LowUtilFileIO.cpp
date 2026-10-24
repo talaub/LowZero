@@ -48,7 +48,8 @@ namespace Low {
 
       void File::open(const char *p_Path, uint8_t p_Mode)
       {
-        LOW_ASSERT(!m_FilePointer, "Cannot open file that is already opened");
+        LOW_ASSERT(!m_FilePointer,
+                   "Cannot open file that is already opened");
         m_FilePointer = FileIO::open(p_Path, p_Mode).m_FilePointer;
       }
 
@@ -61,7 +62,8 @@ namespace Low {
       uint64_t modified_sync(const char *p_Path)
       {
         struct stat l_Result;
-        LOW_ASSERT(stat(p_Path, &l_Result) == 0, "Could not find file");
+        LOW_ASSERT(stat(p_Path, &l_Result) == 0,
+                   "Could not find file");
 
         return l_Result.st_mtime;
       }
@@ -82,7 +84,8 @@ namespace Low {
         return 0;
       }
 
-      void write_sync(FILE *p_File, const char *p_Content, uint32_t p_Length)
+      void write_sync(FILE *p_File, const char *p_Content,
+                      uint32_t p_Length)
       {
         // Files that failed to open are skipped silently. No log
         // here: the logger writes through this function itself.
@@ -93,14 +96,16 @@ namespace Low {
         std::fwrite(p_Content, 1, p_Length, p_File);
       }
 
-      void write_sync(File &p_File, const char *p_Content, uint32_t p_Length)
+      void write_sync(File &p_File, const char *p_Content,
+                      uint32_t p_Length)
       {
         write_sync(p_File.m_FilePointer, p_Content, p_Length);
       }
 
       void write_sync(File &p_File, String p_Content)
       {
-        write_sync(p_File.m_FilePointer, p_Content.c_str(), p_Content.size());
+        write_sync(p_File.m_FilePointer, p_Content.c_str(),
+                   p_Content.size());
       }
 
       bool write_bytes(File &p_File, const void *p_Data,
@@ -151,11 +156,16 @@ namespace Low {
         p_File.m_FilePointer = nullptr;
       }
 
-      void list_directory(const char *p_Path, List<String> &p_ContentPaths)
+      void list_directory(const char *p_Path,
+                          List<String> &p_ContentPaths)
       {
+        if (!is_directory(p_Path)) {
+          return;
+        }
         for (const auto &i_Entry :
              std::filesystem::directory_iterator(p_Path)) {
-          p_ContentPaths.push_back(String(i_Entry.path().string().c_str()));
+          p_ContentPaths.push_back(
+              String(i_Entry.path().string().c_str()));
         }
       }
 
@@ -169,5 +179,5 @@ namespace Low {
         std::filesystem::rename(p_Source, p_Target);
       }
     } // namespace FileIO
-  }   // namespace Util
+  } // namespace Util
 } // namespace Low

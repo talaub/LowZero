@@ -30,7 +30,7 @@ namespace Low {
         return l_Builder.get();
       }
 
-      static void update_directory(WatchHandle p_WatchHandle);
+      static bool update_directory(WatchHandle p_WatchHandle);
 
       static String get_name_from_path(String p_Path)
       {
@@ -134,10 +134,14 @@ namespace Low {
         return l_WatchHandle;
       }
 
-      static void update_directory(WatchHandle p_WatchHandle)
+      static bool update_directory(WatchHandle p_WatchHandle)
       {
         DirectoryWatcher &l_DirectoryWatcher =
             g_Directories[p_WatchHandle];
+
+        if (!FileIO::is_directory(l_DirectoryWatcher.path.c_str())) {
+          return false;
+        }
 
         // Resetting update timers
         l_DirectoryWatcher.update = false;
@@ -191,17 +195,23 @@ namespace Low {
                            l_DirectoryWatcher.trimAmount));
           }
         }
+        return true;
       }
 
       static void tick_directories(float p_Delta)
       {
         for (auto it = g_Directories.begin();
-             it != g_Directories.end(); ++it) {
+             it != g_Directories.end();) {
           if (it->second.update ||
               it->second.currentUpdateTimer <= 0.0f) {
-            update_directory(it->first);
+            if (update_directory(it->first)) {
+              ++it;
+            } else {
+              it = g_Directories.erase(it);
+            }
           } else {
             it->second.currentUpdateTimer -= p_Delta;
+            ++it;
           }
         }
       }
@@ -421,15 +431,19 @@ namespace Low {
         return is_direct_child_of(p_FilePath, p_DirectoryPath);
       }
 
-      bool is_file_in_directory(
-          const Util::String p_FilePath,
-          const Util::String p_DirectoryPath,
-          const bool p_IncludeSubdirectories)
+      bool is_file_in_directory(const Util::String p_FilePath,
+                                const Util::String p_DirectoryPath,
+                                const bool p_IncludeSubdirectories)
       {
         return is_file_in_directory(
             std::filesystem::path(p_FilePath.c_str()),
             std::filesystem::path(p_DirectoryPath.c_str()),
             p_IncludeSubdirectories);
+      }
+
+      void create_directory(const Util::String &p_Path)
+      {
+        fs::create_directory(p_Path.c_str());
       }
     } // namespace FileSystem
 
