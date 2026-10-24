@@ -5,6 +5,7 @@
 
 #include "LowUtilAssetManager.h"
 #include "LowUtilContainers.h"
+#include "LowUtilFileSystem.h"
 #include "LowUtilHandle.h"
 #include "LowUtilName.h"
 #include "LowUtilString.h"
@@ -44,11 +45,11 @@ namespace Low {
           const Context &p_Context, Util::List<Action *> &p_Actions);
 
       template <typename T>
-      void register_default(const char *p_Label,
-                            const Util::Name p_DefaultName,
-                            const AssetType p_AssetType =
-                                AssetType::File,
-                            const i32 p_Priority = 100)
+      void
+      register_default(const char *p_Label,
+                       const Util::Name p_DefaultName,
+                       const AssetType p_AssetType = AssetType::File,
+                       const i32 p_Priority = 100)
       {
         Action l_Action;
         l_Action.id = Util::Name(p_Label);
@@ -64,6 +65,9 @@ namespace Low {
         register_action(l_Action);
       }
 
+      void register_directory(const char *p_Label,
+                              Util::Name p_DefaultName,
+                              const i32 p_Priority = 500);
     } // namespace AssetCreation
-  }   // namespace Editor
+  } // namespace Editor
 } // namespace Low

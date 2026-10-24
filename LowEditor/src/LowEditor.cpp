@@ -1697,6 +1697,8 @@ namespace Low {
             Core::Component::ConvexHullCollider::type_id());
       }
       {
+        AssetCreation::register_directory("New directory",
+                                          "EmptyFolder");
         AssetCreation::register_default<Core::UI::WidgetAsset>(
             "New UI-Widget", N(Widget), AssetType::UiWidget);
         AssetCreation::register_default<Renderer::Material>(

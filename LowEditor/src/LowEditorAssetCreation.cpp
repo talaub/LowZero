@@ -40,6 +40,28 @@ namespace Low {
                   });
       }
 
+      void register_directory(const char *p_Label,
+                              Util::Name p_DefaultName,
+                              const i32 p_Priority)
+      {
+        Action l_Action;
+        l_Action.id = Util::Name(p_Label);
+        l_Action.label = p_Label;
+        l_Action.assetType = AssetType::File;
+        l_Action.priority = p_Priority;
+        l_Action.defaultName = p_DefaultName;
+        l_Action.create = [](const Context &p_Context,
+                             Util::Name p_Name) -> Util::Handle {
+          Util::StringBuilder l_PathBuilder;
+          l_PathBuilder.append(p_Context.directoryPath)
+              .append("/")
+              .append(p_Name);
+          Util::FileSystem::create_directory(l_PathBuilder.get());
+          return Util::Handle::DEAD;
+        };
+        register_action(l_Action);
+      }
+
     } // namespace AssetCreation
-  }   // namespace Editor
+  } // namespace Editor
 } // namespace Low
