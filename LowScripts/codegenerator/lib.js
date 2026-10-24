@@ -6,6 +6,12 @@ const { assert } = require("console");
 const { isArray } = require("util");
 const path = require("path");
 
+const {
+  process_directory,
+  parse_type_description,
+  type_children,
+} = require("../../LowLens/index.js");
+
 const g_Directory = `${__dirname}/../../misteda/data/_internal/type_configs`;
 
 let g_TypeIdMap = {};
@@ -21,6 +27,18 @@ const g_SupportedContainers = {
 };
 
 const g_ContainerPrefixes = ["Low::Util::", "Util::", ""];
+
+const isObject = (value) => {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    !(value instanceof RegExp) &&
+    !(value instanceof Date) &&
+    !(value instanceof Set) &&
+    !(value instanceof Map)
+  );
+};
 
 function output_section(p_Name) {
   process.stdout.write(
@@ -290,6 +308,9 @@ function read_yaml_file(p_FilePath) {
 }
 
 function get_scripting_type(p_RawType) {
+  if (p_RawType.endsWith("Math::UVector2")) {
+    return "UVector2";
+  }
   if (p_RawType.endsWith("Math::Vector3")) {
     return "Vector3";
   }
@@ -1073,7 +1094,9 @@ function get_accessor_type(p_Type, p_Handle) {
   const l_PlainType = get_plain_type(p_Type);
   let l_AccessorType = l_PlainType + " ";
 
-  if (is_reference_type(p_Type) && !p_Handle) {
+  if (is_container_type(p_Type)) {
+    l_AccessorType += "&";
+  } else if (is_reference_type(p_Type) && !p_Handle) {
     l_AccessorType += "&";
   }
 
@@ -1150,21 +1173,13 @@ function get_engine_root_for_plugin(p_Path) {
 }
 
 function type_desc(p_Desc, p_Handle) {
-  let container = undefined;
-  if (p_Desc.startsWith("Low::Util::List") || p_Desc.startsWith("Util::List")) {
-    container = "list";
-  }
-  if (p_Desc.startsWith("Low::Util::Map") || p_Desc.startsWith("Util::Map")) {
-    container = "map";
-  }
-  if (p_Desc.startsWith("Low::Util::Set") || p_Desc.startsWith("Util::Set")) {
-    container = "set";
-  }
+  const l_Parsed = parse_type_description(p_Desc);
 
   let l_Desc = {
     handle: p_Handle,
     string: p_Desc,
-    container: container,
+    container: l_Parsed.container,
+    parsed: l_Parsed,
   };
 
   return l_Desc;
@@ -1193,6 +1208,7 @@ function insert_type_into_db(p_Type, db) {
     ui_component: !!p_Type.ui_component,
     any_component_type: p_Type.component || p_Type.ui_component,
     scripting_static_namespace: p_Type.scripting_static_namespace,
+    description: p_Type.description || "",
   };
 
   for (let i_Prop of Object.values(p_Type.properties)) {
@@ -1208,6 +1224,7 @@ function insert_type_into_db(p_Type, db) {
       getter_exposed_scripting: !i_Prop.no_getter && !i_Prop.private_getter,
       setter_exposed_scripting: !i_Prop.no_setter && !i_Prop.private_setter,
       expose_scripting: !!i_Prop.expose_scripting,
+      visual_script_expose: !i_Prop.flode_hide && !!i_Prop.expose_scripting,
     };
   }
   for (let i_Func of Object.values(p_Type.functions)) {
@@ -1217,6 +1234,7 @@ function insert_type_into_db(p_Type, db) {
       return_type: type_desc(i_Func.return_type, !!i_Func.return_hamdle),
       expose_scripting: !!i_Func.expose_scripting,
       scripting: i_Func.scripting ? i_Func.scripting : {},
+      visual_script_expose: !i_Func.flode_hide && !!i_Func.expose_scripting,
     };
 
     l_Type.functions[i_Func.name].parameters = [];
@@ -1245,27 +1263,58 @@ function insert_type_into_db(p_Type, db) {
   db.modules[l_Type.module].push({ f: "type", id: l_Type.id });
 }
 
+function resolve_type_args(p_Parsed, p_ContextNamespace, db) {
+  for (const i_Child of type_children(p_Parsed)) {
+    if (i_Child.kind === "type") {
+      const i_ReferencedType = db.find_by_type_string(
+        i_Child.name,
+        p_ContextNamespace,
+      );
+      if (i_ReferencedType) {
+        if (i_ReferencedType.f === "type") {
+          i_Child.handle_id = i_ReferencedType.id;
+        }
+        i_Child.reference_type = i_ReferencedType.f;
+        i_Child.reference_id = i_ReferencedType.id;
+      }
+    }
+    resolve_type_args(i_Child, p_ContextNamespace, db);
+  }
+}
+
 function get_full_type_description(p_Desc, p_ContextNamespace, db) {
   let l_Desc = JSON.parse(JSON.stringify(p_Desc));
+  const l_Name = l_Desc.parsed.name;
+
+  l_Desc.reference_type = undefined;
+  l_Desc.reference_id = undefined;
+
+  const l_ReferencedType = db.find_by_type_string(l_Name, p_ContextNamespace);
+  if (l_ReferencedType) {
+    l_Desc.reference_id = l_ReferencedType.id;
+    l_Desc.reference_type = l_ReferencedType.f;
+    if (l_ReferencedType.f === "type") {
+      l_Desc.handle_id = l_ReferencedType.id;
+    }
+  }
 
   let l_IsHandle = p_Desc.handle;
   if (!l_IsHandle && !p_Desc.container) {
-    const l_Id = db.find_by_type_string(p_Desc.string, p_ContextNamespace);
-    if (l_Id) {
-      l_IsHandle = true;
-      l_Desc.handle_id = l_Id;
+    if (l_ReferencedType) {
+      if (l_ReferencedType.f === "type") {
+        l_IsHandle = true;
+        l_Desc.handle_id = l_ReferencedType.id;
+      }
+      l_Desc.reference_type = l_ReferencedType.f;
+      l_Desc.reference_id = l_ReferencedType.id;
     }
   }
 
   if (l_IsHandle && !l_Desc.handle_id) {
-    l_Desc.handle_id = db.find_by_type_string(
-      p_Desc.string,
-      p_ContextNamespace,
-    );
-    if (l_Desc.string.endsWith("Util::Handle")) {
+    if (l_Name.endsWith("Util::Handle")) {
       l_IsHandle = false;
       l_Desc.base_handle = true;
-    } else if (!l_Desc.handle_id) {
+    } else if (!l_ReferencedType || l_ReferencedType.f !== "type") {
       l_IsHandle = false;
       console.log(
         `WARNING: Expected handle but could not find type for it: '${p_Desc.string}'`,
@@ -1273,12 +1322,14 @@ function get_full_type_description(p_Desc, p_ContextNamespace, db) {
     }
   }
 
+  resolve_type_args(l_Desc.parsed, p_ContextNamespace, db);
+
   if (l_IsHandle) {
     l_Desc.full_string = db.types[l_Desc.handle_id].full_string;
     l_Desc.scripting = db.types[l_Desc.handle_id].full_scripting_string;
   } else {
-    ((l_Desc.full_string = l_Desc.string),
-      (l_Desc.scripting = get_scripting_type(l_Desc.string)));
+    l_Desc.full_string = l_Desc.parsed.string;
+    l_Desc.scripting = get_scripting_type(l_Name);
   }
 
   return l_Desc;
@@ -1313,6 +1364,177 @@ function fill_types(db) {
       }
     }
   }
+
+  for (let i_Func of Object.values(db.functions)) {
+    i_Func.type = get_full_type_description(i_Func.type, i_Func.namespace, db);
+    for (const i_Param of i_Func.params) {
+      i_Param.type = get_full_type_description(
+        i_Param.type,
+        i_Func.namespace,
+        db,
+      );
+    }
+  }
+
+  for (let i_Struct of Object.values(db.structs)) {
+    for (const i_Field of i_Struct.fields) {
+      i_Field.type = get_full_type_description(
+        i_Field.type,
+        i_Struct.namespace,
+        db,
+      );
+    }
+  }
+}
+
+function insert_enum_into_db(p_Enum, p_Module, p_ModuleId, db) {
+  let l_Enum = {
+    id: `${p_ModuleId}:${p_Enum.namespace}::${p_Enum.name}`,
+    name: p_Enum.name,
+    scripting_name: p_Enum.bind_name,
+    full_string: `${p_Enum.namespace}::${p_Enum.name}`,
+    namespace_string: p_Enum.namespace,
+    namespace: p_Enum.namespace.split("::"),
+    scripting_namespace_string: p_Enum.bind_namespace,
+    scripting_namespace: p_Enum.bind_namespace.split("::"),
+    scripting_expose: p_Enum.scripting,
+    description: "",
+    visual_script_expose: false,
+    visual_script_icon: "",
+    visual_script_category: "",
+    values: [],
+  };
+
+  if (p_Enum.macro_args && p_Enum.macro_args.vs) {
+    l_Enum.visual_script_expose = true;
+    if (isObject(p_Enum.macro_args.vs)) {
+      if (p_Enum.macro_args.vs.category) {
+        l_Enum.visual_script_category = p_Enum.macro_args.vs.category;
+      }
+      if (p_Enum.macro_args.vs.icon) {
+        l_Enum.visual_script_icon = p_Enum.macro_args.vs.icon;
+      }
+    }
+  }
+
+  for (const i_Val of p_Enum.values) {
+    let i_Value = {
+      value: i_Val.value,
+      name: i_Val.name,
+    };
+
+    l_Enum.values.push(i_Val);
+  }
+
+  if (!db.enums) {
+    db.enums = {};
+  }
+  if (!db.modules) {
+    db.modules = {};
+  }
+  if (!db.modules[p_ModuleId]) {
+    db.modules[p_ModuleId] = [];
+  }
+
+  db.enums[l_Enum.id] = l_Enum;
+
+  db.modules[p_ModuleId].push({ f: "enum", id: l_Enum.id });
+}
+
+function insert_struct_into_db(p_Struct, p_Module, p_ModuleId, db) {
+  let l_Struct = {
+    id: `${p_ModuleId}:${p_Struct.namespace}::${p_Struct.name}`,
+    name: p_Struct.name,
+    scripting_name: p_Struct.bind_name,
+    full_string: `${p_Struct.namespace}::${p_Struct.name}`,
+    namespace_string: p_Struct.namespace,
+    namespace: p_Struct.namespace.split("::"),
+    scripting_namespace_string: p_Struct.bind_namespace,
+    scripting_namespace: p_Struct.bind_namespace.split("::"),
+    scripting_expose: p_Struct.scripting,
+    description: "",
+    visual_script_expose: false,
+    visual_script_icon: "",
+    visual_script_category: "",
+    fields: [],
+  };
+
+  if (p_Struct.macro_args && p_Struct.macro_args.vs) {
+    l_Struct.visual_script_expose = true;
+    if (isObject(p_Struct.macro_args.vs)) {
+      if (p_Struct.macro_args.vs.category) {
+        l_Struct.visual_script_category = p_Struct.macro_args.vs.category;
+      }
+      if (p_Struct.macro_args.vs.icon) {
+        l_Struct.visual_script_icon = p_Struct.macro_args.vs.icon;
+      }
+    }
+  }
+
+  for (const i_Field of p_Struct.fields) {
+    let i_F = {
+      name: i_Field.name,
+      type: type_desc(i_Field.type, false),
+    };
+    l_Struct.fields.push(i_F);
+  }
+
+  if (!db.structs) {
+    db.structs = {};
+  }
+  if (!db.modules) {
+    db.modules = {};
+  }
+  if (!db.modules[p_ModuleId]) {
+    db.modules[p_ModuleId] = [];
+  }
+
+  db.structs[l_Struct.id] = l_Struct;
+
+  db.modules[p_ModuleId].push({ f: "struct", id: l_Struct.id });
+}
+
+function insert_function_into_db(p_Function, p_Module, p_ModuleId, db) {
+  let l_Function = {
+    id: `${p_ModuleId}:${p_Function.namespace}::${p_Function.name}`,
+    name: p_Function.name,
+    scripting_name: p_Function.bind_name,
+    full_string: `${p_Function.namespace}::${p_Function.name}`,
+    namespace_string: p_Function.namespace,
+    namespace: p_Function.namespace.split("::"),
+    scripting_namespace_string: p_Function.bind_namespace,
+    scripting_namespace: p_Function.bind_namespace.split("::"),
+    scripting_expose: p_Function.scripting,
+    visual_script_expose: false,
+    visual_script_icon: "",
+    visual_script_category: "",
+    type: type_desc(p_Function.return_type, false),
+    description: "",
+    params: [],
+  };
+
+  for (const i_Param of p_Function.params) {
+    const i_Parameter = {
+      name: i_Param.name,
+      scripting_name: i_Param.bind_name,
+      type: type_desc(i_Param.type, false),
+    };
+    l_Function.params.push(i_Parameter);
+  }
+
+  if (!db.functions) {
+    db.functions = {};
+  }
+  if (!db.modules) {
+    db.modules = {};
+  }
+  if (!db.modules[p_ModuleId]) {
+    db.modules[p_ModuleId] = [];
+  }
+
+  db.functions[l_Function.id] = l_Function;
+
+  db.modules[p_ModuleId].push({ f: "function", id: l_Function.id });
 }
 
 function build_database_for_low(p_Path, db) {
@@ -1320,6 +1542,88 @@ function build_database_for_low(p_Path, db) {
 
   for (let i_Type of l_Types) {
     insert_type_into_db(i_Type, db);
+  }
+
+  if (true) {
+    const l_Module = "LowCore";
+    const l_ModulePath = `${p_Path}/LowCore`;
+    const l_IncludePath = `${p_Path}/LowCore/include`;
+    const l_LensOutput = process_directory(l_IncludePath);
+
+    for (const i_File of l_LensOutput) {
+      for (const i_Function of i_File.functions) {
+        insert_function_into_db(i_Function, l_Module, l_Module, db);
+      }
+
+      for (const i_Struct of i_File.structs) {
+        insert_struct_into_db(i_Struct, l_Module, l_Module, db);
+      }
+
+      for (const i_Enum of i_File.enums) {
+        insert_enum_into_db(i_Enum, l_Module, l_Module, db);
+      }
+    }
+  }
+  if (true) {
+    const l_Module = "LowCore";
+    const l_ModuleId = "LowCoreNavigation";
+    const l_IncludePath = `${p_Path}/LowCore/navigation/include`;
+    const l_LensOutput = process_directory(l_IncludePath);
+
+    for (const i_File of l_LensOutput) {
+      for (const i_Function of i_File.functions) {
+        insert_function_into_db(i_Function, l_Module, l_ModuleId, db);
+      }
+
+      for (const i_Struct of i_File.structs) {
+        insert_struct_into_db(i_Struct, l_Module, l_ModuleId, db);
+      }
+
+      for (const i_Enum of i_File.enums) {
+        insert_enum_into_db(i_Enum, l_Module, l_ModuleId, db);
+      }
+    }
+  }
+  if (true) {
+    const l_Module = "LowCore";
+    const l_ModuleId = "LowCorePhysics";
+    const l_IncludePath = `${p_Path}/LowCore/physics/include`;
+    const l_LensOutput = process_directory(l_IncludePath);
+
+    for (const i_File of l_LensOutput) {
+      for (const i_Function of i_File.functions) {
+        insert_function_into_db(i_Function, l_Module, l_ModuleId, db);
+      }
+
+      for (const i_Struct of i_File.structs) {
+        insert_struct_into_db(i_Struct, l_Module, l_ModuleId, db);
+      }
+
+      for (const i_Enum of i_File.enums) {
+        insert_enum_into_db(i_Enum, l_Module, l_ModuleId, db);
+      }
+    }
+  }
+
+  if (true) {
+    const l_Module = "LowCore";
+    const l_ModuleId = "LowCoreAnimation";
+    const l_IncludePath = `${p_Path}/LowCore/animation/include`;
+    const l_LensOutput = process_directory(l_IncludePath);
+
+    for (const i_File of l_LensOutput) {
+      for (const i_Function of i_File.functions) {
+        insert_function_into_db(i_Function, l_Module, l_ModuleId, db);
+      }
+
+      for (const i_Struct of i_File.structs) {
+        insert_struct_into_db(i_Struct, l_Module, l_ModuleId, db);
+      }
+
+      for (const i_Enum of i_File.enums) {
+        insert_enum_into_db(i_Enum, l_Module, l_ModuleId, db);
+      }
+    }
   }
 }
 
@@ -1329,24 +1633,42 @@ function build_database_for(p_Path) {
   const IS_PLUGIN = is_plugin(p_Path);
 
   let db = {
+    fits: function (p_Str, p_CurNamespace, p_Obj) {
+      if (p_Str == p_Obj.full_string) {
+        return true;
+      }
+      let l_DStr = p_Str;
+      for (let i = p_CurNamespace.length - 1; i >= 0; --i) {
+        l_DStr = `${p_CurNamespace[i]}::${l_DStr}`;
+        if (l_DStr == p_Obj.full_string) {
+          return true;
+        }
+      }
+      let l_Ns = "";
+      for (let i_N of p_CurNamespace) {
+        l_Ns = `${l_Ns}${i_N}::`;
+        if (`${l_Ns}${p_Str}` == p_Obj.full_string) {
+          return true;
+        }
+      }
+
+      return false;
+    },
+
     find_by_type_string: function (p_Str, p_CurNamespace) {
       for (let i_Type of Object.values(db.types)) {
-        if (p_Str == i_Type.full_string) {
-          return i_Type.id;
+        if (this.fits(p_Str, p_CurNamespace, i_Type)) {
+          return { f: "type", id: i_Type.id };
         }
-        let i_DStr = p_Str;
-        for (let i = p_CurNamespace.length - 1; i >= 0; --i) {
-          i_DStr = `${p_CurNamespace[i]}::${i_DStr}`;
-          if (i_DStr == i_Type.full_string) {
-            return i_Type.id;
-          }
+      }
+      for (let i_Enum of Object.values(db.enums)) {
+        if (this.fits(p_Str, p_CurNamespace, i_Enum)) {
+          return { f: "enum", id: i_Enum.id };
         }
-        let i_Ns = "";
-        for (let i_N of p_CurNamespace) {
-          i_Ns = `${i_Ns}${i_N}::`;
-          if (`${i_Ns}${p_Str}` == i_Type.full_string) {
-            return i_Type.id;
-          }
+      }
+      for (let i_Struct of Object.values(db.structs)) {
+        if (this.fits(p_Str, p_CurNamespace, i_Struct)) {
+          return { f: "struct", id: i_Struct.id };
         }
       }
 
@@ -1367,7 +1689,11 @@ function build_database_for(p_Path) {
 }
 
 function collect_types_for_low(p_Path, p_WriteIds = true) {
-  const l_FileList = fs.readdirSync(`${p_Path}LowData/type_configs`);
+  let l_Path = p_Path;
+  if (!l_Path.endsWith("/")) {
+    l_Path += "/";
+  }
+  const l_FileList = fs.readdirSync(`${l_Path}LowData/type_configs`);
 
   const l_Types = [];
 
@@ -1380,14 +1706,18 @@ function collect_types_for_low(p_Path, p_WriteIds = true) {
   }
 
   for (let i_FileName of l_TypeFiles) {
-    l_Types.push(...process_file(p_Path, i_FileName, false));
+    l_Types.push(...process_file(l_Path, i_FileName, false));
   }
 
   return l_Types;
 }
 
 function collect_types_for_project(p_Path, p_WriteIds = true) {
-  const l_FileList = fs.readdirSync(`${p_Path}data/_internal/type_configs`);
+  let l_Path = p_Path;
+  if (!l_Path.endsWith("/")) {
+    l_Path += "/";
+  }
+  const l_FileList = fs.readdirSync(`${l_Path}data/_internal/type_configs`);
 
   const l_Types = [];
 
@@ -1545,6 +1875,8 @@ function normalize_string_path_and_make_absolute(p_Input) {
   return l_Path;
 }
 
+function resolve_engine_for_project(p_Path) {}
+
 module.exports = {
   read_file,
   collect_types_for_project,
@@ -1595,4 +1927,6 @@ module.exports = {
   output_detail,
   output_update_task,
   output_result,
+  path_contains_file,
+  is_plugin,
 };
