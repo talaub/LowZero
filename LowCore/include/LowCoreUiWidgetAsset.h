@@ -57,6 +57,7 @@ namespace Low {
           uint64_t local_element_id_counter;
           uint64_t custom_controller_id;
           Low::Util::List<BindingDescription> bindings;
+          Low::Util::Set<WidgetInstance> spawned_instances;
           Low::Util::UniqueId unique_id;
           Low::Util::Name name;
 
@@ -200,6 +201,8 @@ namespace Low {
         Low::Util::List<BindingDescription> &get_bindings() const;
         void
         set_bindings(Low::Util::List<BindingDescription> &p_Value);
+
+        Low::Util::Set<WidgetInstance> &get_spawned_instances() const;
 
         Low::Util::UniqueId get_unique_id() const;
 

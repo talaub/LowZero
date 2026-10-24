@@ -110,6 +110,12 @@ types:
         type: uint64_t
       bindings:
         type: Low::Util::List<BindingDescription>
+      spawned_instances:
+        type: Low::Util::Set<WidgetInstance>
+        handle: true
+        skip_serialization: true
+        skip_deserialization: true
+        no_setter: true
     functions:
       get_next_local_id:
         return_type: uint64_t

@@ -748,10 +748,17 @@ namespace Low {
           }
 
           Util::String i_SourceCode;
-          LOW_ASSERT(
-              load_script_to_file(i_Script.get_full_path().c_str(),
-                                  i_SourceCode),
-              "Failed to load AngelScript source code.");
+          const bool l_Success = load_script_to_file(
+              i_Script.get_full_path().c_str(), i_SourceCode);
+
+          if (!l_Success){
+            LOW_LOG_WARN << "Could not load script source file '"
+                         << i_Script.get_full_path()
+                         << ". Most likely the file was empty."
+                         << LOW_LOG_END;
+            ++it;
+            continue;
+          }
 
           l_Result = l_Builder.AddSectionFromMemory(
               i_Script.get_full_path().c_str(), i_SourceCode.c_str(),

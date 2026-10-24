@@ -100,6 +100,14 @@ namespace Low {
           for (WidgetInstance i_Instance : get_widgets()) {
             i_Instance.destroy();
           }
+
+          // Remove from asset's spawned_instances
+          WidgetAsset l_Asset = get_asset();
+          if (l_Asset.is_alive()) {
+            l_Asset.get_spawned_instances().erase(
+                (WidgetInstance)get_id());
+          }
+
           // LOW_CODEGEN::END::CUSTOM:DESTROY
         }
 

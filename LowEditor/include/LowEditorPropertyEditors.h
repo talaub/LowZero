@@ -82,8 +82,14 @@ namespace Low {
                     Util::RTTI::PropertyInfoBase p_PropertyInfoBase,
                     bool p_RenderLabel = true);
 
+      struct RenderLineResult
+      {
+        bool label_hovered = false;
+      };
+
       bool render_line(Util::String p_Label,
-                       const Util::Function<bool()> &p_DrawEditor);
+                       const Util::Function<bool()> &p_DrawEditor,
+                       RenderLineResult *p_Result = nullptr);
 
       void LOW_EDITOR_API render_struct_editor_standalone(
           Util::TypeIdentifier p_StructType, void *p_StructPtr);

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "LowCoreUiController.h"
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
@@ -101,6 +102,10 @@ namespace Low {
             l_Handle, WidgetAsset, bindings,
             Low::Util::List<BindingDescription>))
             Low::Util::List<BindingDescription>();
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, WidgetAsset,
+                                   spawned_instances,
+                                   Low::Util::Set<WidgetInstance>))
+            Low::Util::Set<WidgetInstance>();
         ACCESSOR_TYPE_SOA(l_Handle, WidgetAsset, name,
                           Low::Util::Name) = Low::Util::Name(0u);
 
@@ -499,6 +504,38 @@ namespace Low {
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: bindings
+        }
+        {
+          // Property: spawned_instances
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(spawned_instances);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(WidgetAsset::Data, spawned_instances);
+          l_PropertyInfo.size =
+              sizeof(WidgetAsset::Data::spawned_instances);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::SET;
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_PropertyInfo.handleType = WidgetInstance::IDENTIFIER;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            l_Handle.get_spawned_instances();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, WidgetAsset, spawned_instances,
+                Low::Util::Set<WidgetInstance>);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            *((Low::Util::Set<WidgetInstance> *)p_Data) =
+                l_Handle.get_spawned_instances();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: spawned_instances
         }
         {
           // Property: unique_id
@@ -992,22 +1029,45 @@ namespace Low {
                 }
 
                 if (l_DataNode["bindings"]) {
+                  Util::List<BindingOption> l_Options;
+                  l_Asset.get_controller().fill_binding_options(
+                      l_Options);
                   for (auto it = l_DataNode["bindings"].begin();
                        it != l_DataNode["bindings"].end(); ++it) {
                     Util::Serial::Node &i_Node = (*it).value;
 
-                    BindingDescription l_Binding;
-                    l_Binding.local_id =
+                    BindingDescription i_Binding;
+                    i_Binding.local_id =
                         i_Node["local_id"].as<Util::U64Id>();
-                    l_Binding.propertyName =
+                    i_Binding.propertyName =
                         i_Node["property_name"].as<Util::Name>();
-                    l_Binding.memberName =
+                    i_Binding.memberName =
                         i_Node["member_name"].as<Util::Name>();
-                    l_Binding.componentType =
+                    i_Binding.componentType =
                         i_Node["component_type"]
                             .as<Util::TypeIdentifier>();
 
-                    l_Asset.get_bindings().push_back(l_Binding);
+                    bool i_BindingFound = false;
+                    for (const BindingOption &i_Option : l_Options) {
+                      if (i_Option.name == i_Binding.memberName) {
+                        i_BindingFound = true;
+                        i_Binding.type = i_Option.type;
+                        break;
+                      }
+                    }
+
+                    if (i_BindingFound) {
+                      l_Asset.get_bindings().push_back(i_Binding);
+                    } else {
+                      LOW_LOG_WARN << "Failed to load binding '"
+                                   << i_Binding.propertyName << " -> "
+                                   << i_Binding.memberName
+                                   << "' for the UI widget "
+                                   << l_Asset.get_name()
+                                   << " because the member could not "
+                                      "be found on the controller."
+                                   << LOW_LOG_END;
+                    }
                   }
                 }
               });
@@ -1049,7 +1109,7 @@ namespace Low {
                                   DeleteBundle)
                         .file(l_Asset.get_data_path(), N(payload),
                               Util::AssetManager::OnMissingPolicy::
-                                  Ignore)
+                                  DeleteBundle)
                         .build());
 
                 return l_Asset.get_id();
@@ -1466,6 +1526,12 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_controller
 
+        if (p_Value == get_controller()) {
+          return;
+        }
+
+        const bool l_OldControllerAlive = get_controller().is_alive();
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_controller
 
         // Set new value
@@ -1474,6 +1540,27 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_controller
 
+        for (auto it = get_spawned_instances().begin();
+             it != get_spawned_instances().end();) {
+          WidgetInstance i_Instance = *it;
+          if (!i_Instance.is_alive()) {
+            it = get_spawned_instances().erase(it);
+            continue;
+          }
+
+          if (l_OldControllerAlive) {
+            if (i_Instance.get_controller_instance().is_alive()) {
+              i_Instance.get_controller_instance().destroy();
+            }
+          }
+
+          if (p_Value.is_alive()) {
+            i_Instance.set_controller_instance(
+                p_Value.spawn_instance());
+          }
+
+          ++it;
+        }
         // LOW_CODEGEN::END::CUSTOM:SETTER_controller
 
         broadcast_observable(N(controller));
@@ -1598,6 +1685,18 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_bindings
 
         broadcast_observable(N(bindings));
+      }
+
+      Low::Util::Set<WidgetInstance> &
+      WidgetAsset::get_spawned_instances() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_spawned_instances
+        // LOW_CODEGEN::END::CUSTOM:GETTER_spawned_instances
+
+        return TYPE_SOA(WidgetAsset, spawned_instances,
+                        Low::Util::Set<WidgetInstance>);
       }
 
       Low::Util::UniqueId WidgetAsset::get_unique_id() const
@@ -1796,6 +1895,8 @@ namespace Low {
               spawn_element(l_Instance, p_Canvas, i_ElementDescriptor,
                             l_RootElement);
         }
+
+        get_spawned_instances().insert(l_Instance);
 
         return l_Instance;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_spawn_instance
@@ -2240,5 +2341,5 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace UI
-  }   // namespace Core
+  } // namespace Core
 } // namespace Low

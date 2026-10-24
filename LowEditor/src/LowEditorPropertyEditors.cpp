@@ -2075,6 +2075,7 @@ namespace Low {
           }
         }
 
+        ImGui::BeginGroup();
         render_line(
             p_Label, [p_Handle, p_PropertyInfoBase]() -> bool {
               if (p_PropertyInfoBase.containerType ==
@@ -2104,140 +2105,6 @@ namespace Low {
                 return false;
               }
             });
-        return;
-
-        /*
-          Util::List<bool> test;
-          test.push_back(false);
-          test.push_back(true);
-          test.push_back(true);
-          test.push_back(false);
-          test.push_back(true);
-
-          render_list_editor<bool>(
-              "Test", *reinterpret_cast<Util::List<bool> *>(&test),
-              [](Util::String p_L, bool &p_V) {
-                return render_checkbox_bool_editor(p_L, p_V, false);
-              });
-
-          return;
-          */
-
-        ImGui::BeginGroup();
-
-        if (p_PropertyInfoBase.type ==
-            Util::RTTI::PropertyType::ENUM) {
-          int l_EnumValue;
-          p_PropertyInfoBase.get(p_Handle, &l_EnumValue);
-
-          if (render_enum_selector(p_PropertyInfoBase.handleType,
-                                   &l_EnumValue, l_Label,
-                                   p_RenderLabel)) {
-            p_PropertyInfoBase.set(p_Handle, &l_EnumValue);
-          }
-        } else if (p_PropertyInfoBase.type ==
-                   Util::RTTI::PropertyType::NAME) {
-          Util::Name l_NameValue;
-          p_PropertyInfoBase.get(p_Handle, &l_NameValue);
-          if (render_name_editor(l_Label, l_NameValue,
-                                 p_RenderLabel)) {
-            p_PropertyInfoBase.set(p_Handle, &l_NameValue);
-          }
-        } else if (p_PropertyInfoBase.type ==
-                   Util::RTTI::PropertyType::STRING) {
-          Util::String l_StringValue;
-          p_PropertyInfoBase.get(p_Handle, &l_StringValue);
-
-          if (render_string_editor(l_Label, l_StringValue, false,
-                                   p_RenderLabel)) {
-            p_PropertyInfoBase.set(p_Handle, &l_StringValue);
-          }
-        } else if (p_PropertyInfoBase.type ==
-                   Util::RTTI::PropertyType::VECTOR2) {
-          Math::Vector2 l_Vec;
-          p_PropertyInfoBase.get(p_Handle, &l_Vec);
-          if (render_vector2_editor(l_Label, l_Vec, p_RenderLabel)) {
-            p_PropertyInfoBase.set(p_Handle, &l_Vec);
-          }
-        } else if (p_PropertyInfoBase.type ==
-                   Util::RTTI::PropertyType::VECTOR3) {
-          Math::Vector3 l_Vec;
-          p_PropertyInfoBase.get(p_Handle, &l_Vec);
-
-          if (render_vector3_editor(l_Label, l_Vec, p_RenderLabel)) {
-            p_PropertyInfoBase.set(p_Handle, &l_Vec);
-          }
-        } else if (p_PropertyInfoBase.type ==
-                   Util::RTTI::PropertyType::QUATERNION) {
-          Math::Quaternion l_Quat;
-          p_PropertyInfoBase.get(p_Handle, &l_Quat);
-          if (render_quaternion_editor(l_Label, l_Quat,
-                                       p_RenderLabel)) {
-            p_PropertyInfoBase.set(p_Handle, &l_Quat);
-          }
-        } else if (p_PropertyInfoBase.type ==
-                   Util::RTTI::PropertyType::COLORRGB) {
-          Math::ColorRGB l_ColorValue;
-          p_PropertyInfoBase.get(p_Handle, &l_ColorValue);
-
-          if (render_colorrgb_editor(l_Label, l_ColorValue,
-                                     p_RenderLabel)) {
-            p_PropertyInfoBase.set(p_Handle, &l_ColorValue);
-          }
-        } else if (p_PropertyInfoBase.type ==
-                   Util::RTTI::PropertyType::COLOR) {
-          Math::Color l_ColorValue;
-          p_PropertyInfoBase.get(p_Handle, &l_ColorValue);
-
-          if (render_color_selector(l_Label, &l_ColorValue)) {
-            p_PropertyInfoBase.set(p_Handle, &l_ColorValue);
-          }
-        } else if (p_PropertyInfoBase.type ==
-                   Util::RTTI::PropertyType::BOOL) {
-          bool l_BoolValue;
-          p_PropertyInfoBase.get(p_Handle, &l_BoolValue);
-          if (render_checkbox_bool_editor(l_Label, l_BoolValue,
-                                          p_RenderLabel)) {
-            p_PropertyInfoBase.set(p_Handle, &l_BoolValue);
-          }
-        } else if (p_PropertyInfoBase.type ==
-                   Util::RTTI::PropertyType::FLOAT) {
-          float l_Float;
-          p_PropertyInfoBase.get(p_Handle, &l_Float);
-          if (render_float_editor(l_Label, l_Float, p_RenderLabel)) {
-            p_PropertyInfoBase.set(p_Handle, &l_Float);
-          }
-        } else if (p_PropertyInfoBase.type ==
-                   Util::RTTI::PropertyType::UINT32) {
-          u32 l_IntValue;
-          p_PropertyInfoBase.get(p_Handle, &l_IntValue);
-
-          if (render_uint32_editor(l_Label, l_IntValue,
-                                   p_RenderLabel)) {
-            p_PropertyInfoBase.set(p_Handle, &l_IntValue);
-          }
-        } else if (p_PropertyInfoBase.type ==
-                   Util::RTTI::PropertyType::INT) {
-          u32 l_IntValue;
-          p_PropertyInfoBase.get(p_Handle, &l_IntValue);
-
-          if (render_uint32_editor(l_Label, l_IntValue,
-                                   p_RenderLabel)) {
-            p_PropertyInfoBase.set(p_Handle, &l_IntValue);
-          }
-        } else if (p_PropertyInfoBase.type ==
-                   Util::RTTI::PropertyType::SHAPE) {
-          Math::Shape l_ShapeValue;
-          p_PropertyInfoBase.get(p_Handle, &l_ShapeValue);
-          if (render_shape_editor(l_Label, &l_ShapeValue,
-                                  p_RenderLabel)) {
-            p_PropertyInfoBase.set(p_Handle, &l_ShapeValue);
-          }
-        } else if (p_PropertyInfoBase.type ==
-                   Util::RTTI::PropertyType::HANDLE) {
-          PropertyEditors::render_handle_selector(p_PropertyInfoBase,
-                                                  p_Handle);
-        }
 
         ImGui::EndGroup();
 
@@ -2256,16 +2123,11 @@ namespace Low {
               l_PopupId.c_str(), p_Handle, p_PropertyInfoBase.name,
               PropertyActionSurface::DetailsPanel);
         }
-
-        /*
-        ImGui::SetCursorScreenPos(
-            l_Pos +
-            ImVec2(0.0f, LOW_EDITOR_LABEL_HEIGHT_ABS + 12.0f));
-            */
       }
 
       bool render_line(Util::String p_Label,
-                       const Util::Function<bool()> &p_DrawEditor)
+                       const Util::Function<bool()> &p_DrawEditor,
+                       RenderLineResult *p_Result)
       {
         static Util::Name l_SplitterName =
             N(LOW_EDITOR_DETAILS_SPLITTER);
@@ -2338,6 +2200,10 @@ namespace Low {
         const float l_EditorH =
             ImGui::GetItemRectSize().y + l_BaselineNudge / 2.0f;
         ImGui::EndGroup();
+
+        if (p_Result) {
+          p_Result->label_hovered = ImGui::IsItemHovered();
+        }
 
         // Splitter grab sized to max(label baseline, editor)
         {
