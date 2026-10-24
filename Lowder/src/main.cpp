@@ -276,7 +276,7 @@ void load_module(Low::Util::String p_ProjectPath,
 {
   using namespace Low;
 
-  LOW_LOG_INFO << "Load module: " << p_Path << LOW_LOG_END;
+  LOW_LOG_INFO << "Loading module: " << p_Path << LOW_LOG_END;
 
   Util::String l_ModuleConfigPath = p_Path + "/module.yaml";
   Util::Serial::Node l_ConfigNode =

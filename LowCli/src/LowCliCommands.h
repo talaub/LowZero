@@ -16,6 +16,7 @@ namespace Low {
 
       bool require_engine_root() const;
       bool require_project_root() const;
+      bool require_engine_source() const;
     };
 
     Util::String get_current_directory();
@@ -40,6 +41,15 @@ namespace Low {
     Util::String read_yaml_scalar(const Util::String &p_File,
                                   const char *p_Key);
 
+    /** Runs a script from <engine>/LowScripts/codegenerator with node
+    and shows its NDJSON events. Prints the error itself, returns the
+    exit code*/
+    int run_engine_script(const Context &p_Context,
+                          const char *p_ScriptName,
+                          const Util::List<Util::String> &p_Arguments,
+                          const Util::String &p_WorkingDirectory,
+                          const char *p_FailureMessage);
+
     int run_project_configure(
         Context &p_Context,
         const Util::List<Util::String> &p_ExtraArguments);
@@ -54,6 +64,7 @@ namespace Low {
       void register_package(CLI::App &p_App);
       void register_config(CLI::App &p_App);
       void register_release(CLI::App &p_App);
+      void register_codegen(CLI::App &p_App);
     } // namespace Commands
   } // namespace Cli
 } // namespace Low

@@ -174,6 +174,22 @@ namespace Low {
       return false;
     }
 
+    bool Context::require_engine_source() const
+    {
+      if (!require_engine_root()) {
+        return false;
+      }
+      if (engineSource == Util::EngineSource::Source) {
+        return true;
+      }
+
+      Output::error("This command needs an engine built from source",
+                    {"running: " + engineRoot,
+                     "a packaged engine has no type yamls or sources"},
+                    "use the low of a source engine");
+      return false;
+    }
+
     void add_command(CLI::App *p_App,
                      Util::Function<int(Context &)> p_Run)
     {
@@ -206,6 +222,7 @@ namespace Low {
         register_package(p_App);
         register_config(p_App);
         register_release(p_App);
+        register_codegen(p_App);
       }
     } // namespace Commands
   } // namespace Cli
