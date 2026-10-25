@@ -59,9 +59,6 @@ types:
         dirty_flag:
           - dirty
           - world_dirty
-      testlist:
-        type: Low::Util::List<int>
-        editor_editable: true
       children:
         type: Low::Util::List<uint64_t>
         no_setter: true

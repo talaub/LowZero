@@ -4,6 +4,9 @@
 #include "LowUtilContainers.h"
 #include "LowUtilString.h"
 #include "LowUtilHandle.h"
+#include "LowUtilVariant.h"
+
+#include <new>
 
 #include "LowMathVectorUtil.h"
 #include "LowMathQuaternionUtil.h"
@@ -305,6 +308,228 @@ namespace Low {
       }
 
       // END REGISTER HANDLE
+      // ------------------------------------------------------
+      // BEGIN REGISTER VARIANT
+      static void variant_default_construct(asIScriptGeneric *p_Gen)
+      {
+        new (p_Gen->GetObject()) Util::Variant();
+      }
+
+      static void variant_destruct(asIScriptGeneric *p_Gen)
+      {
+        static_cast<Util::Variant *>(p_Gen->GetObject())->~Variant();
+      }
+
+      template <typename T>
+      static const T &variant_input(const T &p_Value)
+      {
+        return p_Value;
+      }
+
+      // AngelScript's string is std::string; Variant owns a
+      // Util::String.
+      static Util::String variant_input(const std::string &p_Value)
+      {
+        return Util::String(p_Value.data(), p_Value.size());
+      }
+
+      template <typename T>
+      static const T &variant_argument(asIScriptGeneric *p_Gen)
+      {
+        if constexpr (std::is_arithmetic_v<T>) {
+          return *static_cast<const T *>(p_Gen->GetAddressOfArg(0));
+        } else {
+          return *static_cast<const T *>(p_Gen->GetArgObject(0));
+        }
+      }
+
+      template <typename T>
+      static void variant_construct(asIScriptGeneric *p_Gen)
+      {
+        const T &l_Value = variant_argument<T>(p_Gen);
+        new (p_Gen->GetObject())
+            Util::Variant(variant_input(l_Value));
+      }
+
+      template <typename T>
+      static void variant_assign(asIScriptGeneric *p_Gen)
+      {
+        const T &l_Value = variant_argument<T>(p_Gen);
+        auto *l_Self =
+            static_cast<Util::Variant *>(p_Gen->GetObject());
+        *l_Self = variant_input(l_Value);
+        p_Gen->SetReturnAddress(l_Self);
+      }
+
+      template <typename T>
+      static T variant_output(const Util::Variant &p_Value)
+      {
+        return static_cast<T>(p_Value);
+      }
+
+      template <>
+      Util::Handle variant_output(const Util::Variant &p_Value)
+      {
+        return p_Value.operator Util::Handle();
+      }
+
+      template <>
+      std::string variant_output(const Util::Variant &p_Value)
+      {
+        const Util::String l_Value = p_Value.as_string();
+        return std::string(l_Value.data(), l_Value.size());
+      }
+
+      template <typename T, Util::VariantType::Enum TType>
+      static void variant_get(asIScriptGeneric *p_Gen)
+      {
+        const auto &l_Self =
+            *static_cast<const Util::Variant *>(p_Gen->GetObject());
+        if (l_Self.m_Type != TType) {
+          asGetActiveContext()->SetException("Variant type mismatch");
+          return;
+        }
+        new (p_Gen->GetAddressOfReturnLocation())
+            T(variant_output<T>(l_Self));
+      }
+
+      static void variant_get_type(asIScriptGeneric *p_Gen)
+      {
+        const auto *l_Self =
+            static_cast<const Util::Variant *>(p_Gen->GetObject());
+        p_Gen->SetReturnDWord(l_Self->m_Type);
+      }
+
+      static void variant_equals(asIScriptGeneric *p_Gen)
+      {
+        const auto &l_Self =
+            *static_cast<const Util::Variant *>(p_Gen->GetObject());
+        const auto &l_Other = variant_argument<Util::Variant>(p_Gen);
+        p_Gen->SetReturnByte(l_Self == l_Other);
+      }
+
+      template <typename T, Util::VariantType::Enum TType>
+      static void register_variant_value(asIScriptEngine *p_Engine,
+                                         const char *p_TypeName,
+                                         const char *p_Parameter,
+                                         const char *p_Getter)
+      {
+        int r = p_Engine->SetDefaultNamespace("VariantType");
+        LOW_ASSERT(r >= 0, "Failed to set VariantType namespace");
+        r = p_Engine->RegisterEnumValue("Enum", p_TypeName, TType);
+        LOW_ASSERT(r >= 0, "Failed to register Variant type tag");
+        r = p_Engine->SetDefaultNamespace("");
+        LOW_ASSERT(r >= 0, "Failed to reset namespace");
+
+        const std::string l_Constructor =
+            std::string("void f(") + p_Parameter + ")";
+        r = p_Engine->RegisterObjectBehaviour(
+            "Variant", asBEHAVE_CONSTRUCT, l_Constructor.c_str(),
+            asFUNCTION(variant_construct<T>), asCALL_GENERIC);
+        LOW_ASSERT(r >= 0, "Failed to register Variant value ctor");
+
+        const std::string l_Assignment =
+            std::string("Variant &opAssign(") + p_Parameter + ")";
+        r = p_Engine->RegisterObjectMethod(
+            "Variant", l_Assignment.c_str(),
+            asFUNCTION(variant_assign<T>), asCALL_GENERIC);
+        LOW_ASSERT(r >= 0,
+                   "Failed to register Variant value assignment");
+
+        r = p_Engine->RegisterObjectMethod(
+            "Variant", p_Getter, asFUNCTION((variant_get<T, TType>)),
+            asCALL_GENERIC);
+        LOW_ASSERT(r >= 0, "Failed to register Variant getter");
+      }
+
+      static void expose_variant(asIScriptEngine *p_Engine)
+      {
+        int r = p_Engine->SetDefaultNamespace("VariantType");
+        LOW_ASSERT(r >= 0, "Failed to set VariantType namespace");
+        r = p_Engine->RegisterEnum("Enum");
+        LOW_ASSERT(r >= 0, "Failed to register VariantType enum");
+        r = p_Engine->SetDefaultNamespace("");
+        LOW_ASSERT(r >= 0, "Failed to reset namespace");
+
+        // The union and owned string storage require real lifetime
+        // operations. Generic calls avoid native aggregate ABI
+        // assumptions.
+        r = p_Engine->RegisterObjectType(
+            "Variant", sizeof(Util::Variant),
+            asOBJ_VALUE | asGetTypeTraits<Util::Variant>());
+        LOW_ASSERT(r >= 0, "Failed to register Variant type");
+        r = p_Engine->RegisterObjectBehaviour(
+            "Variant", asBEHAVE_CONSTRUCT, "void f()",
+            asFUNCTION(variant_default_construct), asCALL_GENERIC);
+        LOW_ASSERT(r >= 0, "Failed to register Variant default ctor");
+        r = p_Engine->RegisterObjectBehaviour(
+            "Variant", asBEHAVE_CONSTRUCT,
+            "void f(const Variant &in)",
+            asFUNCTION(variant_construct<Util::Variant>),
+            asCALL_GENERIC);
+        LOW_ASSERT(r >= 0, "Failed to register Variant copy ctor");
+        r = p_Engine->RegisterObjectBehaviour(
+            "Variant", asBEHAVE_DESTRUCT, "void f()",
+            asFUNCTION(variant_destruct), asCALL_GENERIC);
+        LOW_ASSERT(r >= 0, "Failed to register Variant dtor");
+        r = p_Engine->RegisterObjectMethod(
+            "Variant", "Variant &opAssign(const Variant &in)",
+            asFUNCTION(variant_assign<Util::Variant>),
+            asCALL_GENERIC);
+        LOW_ASSERT(r >= 0, "Failed to register Variant assignment");
+        r = p_Engine->RegisterObjectMethod(
+            "Variant", "bool opEquals(const Variant &in) const",
+            asFUNCTION(variant_equals), asCALL_GENERIC);
+        LOW_ASSERT(r >= 0, "Failed to register Variant equality");
+        r = p_Engine->RegisterObjectMethod(
+            "Variant", "VariantType::Enum get_type() const property",
+            asFUNCTION(variant_get_type), asCALL_GENERIC);
+        LOW_ASSERT(r >= 0,
+                   "Failed to register Variant type property");
+
+        register_variant_value<bool, Util::VariantType::Bool>(
+            p_Engine, "Bool", "bool", "bool as_bool() const");
+        register_variant_value<int32_t, Util::VariantType::Int32>(
+            p_Engine, "Int32", "int", "int as_i32() const");
+        register_variant_value<uint32_t, Util::VariantType::UInt32>(
+            p_Engine, "UInt32", "u32", "u32 as_u32() const");
+        register_variant_value<uint64_t, Util::VariantType::UInt64>(
+            p_Engine, "UInt64", "u64", "u64 as_u64() const");
+        register_variant_value<float, Util::VariantType::Float>(
+            p_Engine, "Float", "float", "float as_float() const");
+        register_variant_value<Math::UVector2,
+                               Util::VariantType::UVector2>(
+            p_Engine, "UVector2", "const UVector2 &in",
+            "UVector2 as_uvector2() const");
+        register_variant_value<Math::Vector2,
+                               Util::VariantType::Vector2>(
+            p_Engine, "Vector2", "const Vector2 &in",
+            "Vector2 as_vector2() const");
+        register_variant_value<Math::Vector3,
+                               Util::VariantType::Vector3>(
+            p_Engine, "Vector3", "const Vector3 &in",
+            "Vector3 as_vector3() const");
+        register_variant_value<Math::Vector4,
+                               Util::VariantType::Vector4>(
+            p_Engine, "Vector4", "const Vector4 &in",
+            "Vector4 as_vector4() const");
+        register_variant_value<Math::Quaternion,
+                               Util::VariantType::Quaternion>(
+            p_Engine, "Quaternion", "const Quaternion &in",
+            "Quaternion as_quaternion() const");
+        register_variant_value<Util::Name, Util::VariantType::Name>(
+            p_Engine, "Name", "const Name &in",
+            "Name as_name() const");
+        register_variant_value<Util::Handle,
+                               Util::VariantType::Handle>(
+            p_Engine, "Handle", "const Handle &in",
+            "Handle as_handle() const");
+        register_variant_value<std::string,
+                               Util::VariantType::String>(
+            p_Engine, "String", "const string &in",
+            "string as_string() const");
+      }
+      // END REGISTER VARIANT
       // ------------------------------------------------------
       // BEGIN REGISTER SIGNAL
       static void
@@ -1432,6 +1657,7 @@ namespace Low {
         expose_name(p_Engine);
         expose_logger(p_Engine);
         expose_handle(p_Engine);
+        expose_variant(p_Engine);
         expose_signal(p_Engine);
         expose_physics(p_Engine);
         expose_runtime(p_Engine);

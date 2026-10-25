@@ -16,6 +16,7 @@
 #include "LowCoreGameplaySystem.h"
 #include "LowCoreGameplaySystemInstance.h"
 #include "LowCoreNavigation.h"
+#include "LowCoreEventManager.h"
 
 #include "LowCoreInput.h"
 #include "LowCoreScriptAsset.h"

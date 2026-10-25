@@ -207,6 +207,7 @@ function get_as_type_string(p_TypeStr) {
     'Low::Util::Name': 'Name', 'Util::Name': 'Name', 'Name': 'Name',
     'Low::Util::String': 'string', 'Util::String': 'string',
     'Low::Util::Handle': 'Handle', 'Util::Handle': 'Handle',
+    'Low::Util::Variant': 'Variant', 'Util::Variant': 'Variant', 'Variant': 'Variant',
     'Low::Math::Vector2': 'Vector2', 'Math::Vector2': 'Vector2',
     'Low::Math::UVector2': 'UVector2', 'Math::UVector2': 'UVector2',
     'Low::Math::Vector3': 'Vector3', 'Math::Vector3': 'Vector3',

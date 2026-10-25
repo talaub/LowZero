@@ -29,6 +29,13 @@ function(low_lens_generate p_Target p_ModuleName p_IncludeDir)
     "${p_IncludeDir}/*.hpp"
   )
 
+  # The entry point delegates parsing and generation to src/*.js. Changes
+  # there must invalidate the stamp in every engine/project build tree.
+  get_filename_component(l_GeneratorDir "${LOW_LENSGEN_SCRIPT}" DIRECTORY)
+  file(GLOB_RECURSE l_GeneratorSources CONFIGURE_DEPENDS
+    "${l_GeneratorDir}/src/*.js"
+  )
+
   # Build extra args list
   set(l_ExtraArgs "")
   foreach(i_Db IN LISTS LENS_UPSTREAM_DB)
@@ -73,7 +80,7 @@ function(low_lens_generate p_Target p_ModuleName p_IncludeDir)
             "${p_ModuleName}"
             ${l_ExtraArgs}
     COMMAND "${CMAKE_COMMAND}" -E touch "${l_Stamp}"
-    DEPENDS "${LOW_LENSGEN_SCRIPT}" ${l_Headers} ${LENS_UPSTREAM_DB}
+    DEPENDS "${LOW_LENSGEN_SCRIPT}" ${l_GeneratorSources} ${l_Headers} ${LENS_UPSTREAM_DB}
     COMMENT "LowLens: generating ${p_ModuleName}.gen.cpp"
     VERBATIM
   )

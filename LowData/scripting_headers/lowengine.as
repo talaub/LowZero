@@ -118,6 +118,11 @@ namespace Input {
     bool is_key_down(KeyboardButton button) {return false;}
 }
 
+namespace Event {
+  void dispatch(Name eventName);
+  void dispatch(Name eventName, Variant payload);
+}
+
 interface GameplaySystem {
     void tick(const float deltaTime);
 };

@@ -157,7 +157,10 @@ function extract_function(p_Node, p_Src) {
           n => n.type === 'function_declarator'
         );
         if (l_FuncDecl) {
-          l_ReturnType = (l_ReturnType + '*').trim();
+          const l_Indirection = i_Child.type === 'reference_declarator'
+            ? (node_text(i_Child, p_Src).startsWith('&&') ? '&&' : '&')
+            : '*';
+          l_ReturnType = (l_ReturnType + l_Indirection).trim();
           const l_NameNode = l_FuncDecl.namedChildren.find(
             n => n.type === 'identifier' || n.type === 'scoped_identifier'
           );
@@ -181,6 +184,11 @@ function extract_function(p_Node, p_Src) {
     }
   }
 
+  for (const i_Qualifier of l_Qualifiers.filter(q => q === 'const' || q === 'volatile')) {
+    if (!new RegExp(`\\b${i_Qualifier}\\b`).test(l_ReturnType)) {
+      l_ReturnType = `${i_Qualifier} ${l_ReturnType}`;
+    }
+  }
   return { name: l_Name, return_type: l_ReturnType, params: l_Params, qualifiers: l_Qualifiers };
 }
 

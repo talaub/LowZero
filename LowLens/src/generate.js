@@ -151,6 +151,22 @@ function qualified_wrapper_name(p_Fn) {
   return p_Fn.namespace ? `${p_Fn.namespace}::${p_Fn.wrapper_name}` : p_Fn.wrapper_name;
 }
 
+function native_function_pointer(p_Fn) {
+  const l_FullName = p_Fn.namespace ? `${p_Fn.namespace}::${p_Fn.name}` : p_Fn.name;
+  const l_Params = p_Fn.params.map(i_Param => i_Param.type).join(', ');
+  return `static_cast<${p_Fn.return_type} (*)(${l_Params})>(&${l_FullName})`;
+}
+
+function generate_function_pointer(p_Fn) {
+  let t = '';
+  // Resolve types in the declaration's namespace, including relative names
+  // such as Util::Variant. Select the overload before erasing its type.
+  if (p_Fn.namespace) t += `namespace ${p_Fn.namespace} {\n`;
+  t += `static constexpr auto ${p_Fn.pointer_name} = ${native_function_pointer(p_Fn)};\n`;
+  if (p_Fn.namespace) t += `} // namespace ${p_Fn.namespace}\n`;
+  return t;
+}
+
 function needs_function_wrapper(p_Fn) {
   if (is_list_type(p_Fn.return_type)) {
     return true;
@@ -271,7 +287,9 @@ function generate_parameter_type_info(p_VarName, p_Param, p_Indent) {
 }
 
 function generate_function_registration(p_Fn) {
-  const l_FunctionPtr = p_Fn.wrapper_name ? qualified_wrapper_name(p_Fn) : (p_Fn.namespace ? `${p_Fn.namespace}::${p_Fn.name}` : p_Fn.name);
+  const l_FunctionPtr = p_Fn.wrapper_name
+    ? `&${qualified_wrapper_name(p_Fn)}`
+    : (p_Fn.namespace ? `${p_Fn.namespace}::${p_Fn.pointer_name}` : p_Fn.pointer_name);
 
   let t = '';
   t += `  {\n`;
@@ -280,7 +298,7 @@ function generate_function_registration(p_Fn) {
   t += `    l_FunctionInfo.bind_name = N(${p_Fn.bind_name});\n`;
   t += `    l_FunctionInfo.bind_namespace = "${p_Fn.bind_namespace}";\n`;
   t += `    l_FunctionInfo.is_property = ${p_Fn.is_property};\n`;
-  t += `    l_FunctionInfo.ptr = (void*)&${l_FunctionPtr};\n`;
+  t += `    l_FunctionInfo.ptr = (void*)${l_FunctionPtr};\n`;
   t += `\n`;
   t += generate_type_info('l_FunctionInfo.return_type', p_Fn.return_type, 2, true, true);
 
@@ -495,7 +513,7 @@ function wrapper_call_arg_with_conversions(p_Param) {
 }
 
 function generate_function_wrapper(p_Fn) {
-  const l_FullName = p_Fn.namespace ? `${p_Fn.namespace}::${p_Fn.name}` : p_Fn.name;
+  const l_FullName = `(${native_function_pointer(p_Fn)})`;
   const l_ReturnType = is_list_type(p_Fn.return_type) ? 'CScriptArray *' : (is_string_type(p_Fn.return_type) ? 'std::string' : p_Fn.return_type);
   const l_Params = p_Fn.params
       .map(i_Param => `${wrapper_param_type(i_Param)} ${i_Param.name}`)
@@ -915,6 +933,7 @@ function generate_module_file(p_ModuleName, p_Functions, p_Enums, p_Structs, p_H
   const l_Functions = p_Functions.map((i_Fn, i_Index) => ({
     ...i_Fn,
     wrapper_name: needs_function_wrapper(i_Fn) ? wrapper_name(p_ModuleName, i_Fn, i_Index) : '',
+    pointer_name: `${wrapper_name(p_ModuleName, i_Fn, i_Index)}_ptr`,
   }));
 
   let t = '';
@@ -931,11 +950,11 @@ function generate_module_file(p_ModuleName, p_Functions, p_Enums, p_Structs, p_H
   }
   t += `\n`;
 
-  // Function wrappers are emitted only when the script-facing API changes the
-  // raw C++ call shape.
+  // Keep direct native calls when no conversion is needed, but always select
+  // the exact C++ signature so annotated and unannotated overloads can coexist.
   for (const i_Fn of l_Functions) {
-    if (!i_Fn.scripting || !i_Fn.wrapper_name) continue;
-    t += generate_function_wrapper(i_Fn);
+    if (!i_Fn.scripting) continue;
+    t += i_Fn.wrapper_name ? generate_function_wrapper(i_Fn) : generate_function_pointer(i_Fn);
     t += `\n`;
   }
 
