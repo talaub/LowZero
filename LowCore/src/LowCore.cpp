@@ -20,7 +20,6 @@ void register_lowcore();
 #include "LowCorePrefab.h"
 #include "LowCoreGameLoop.h"
 #include "LowCorePrefabInstance.h"
-#include "LowCoreCflatScripting.h"
 #include "LowCoreNavmeshAgent.h"
 #include "LowCoreGameMode.h"
 #include "LowCoreCamera.h"
@@ -339,7 +338,6 @@ namespace Low {
 
       DebugGeometry::initialize();
       GameLoop::initialize();
-      Scripting::initialize();
       Input::initialize();
 
       load_assets();
@@ -451,7 +449,6 @@ namespace Low {
       Input::cleanup();
       cleanup_types();
       Scripting::cleanup_as();
-      Scripting::cleanup();
       GameLoop::cleanup();
     }
 

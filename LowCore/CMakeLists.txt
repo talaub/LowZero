@@ -1,7 +1,5 @@
 project(LowCore)
 
-SET(CFLAT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/Cflat")
-
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 file(GLOB_RECURSE INCLUDES CONFIGURE_DEPENDS "include/*.h")
 list(APPEND SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/LowCoreNavigation.cpp")
@@ -21,9 +19,6 @@ file(GLOB_RECURSE NAVIGATION_SOURCES CONFIGURE_DEPENDS "navigation/src/*.cpp")
 file(GLOB_RECURSE NAVIGATION_INCLUDES CONFIGURE_DEPENDS "navigation/include/*.h")
 file(GLOB_RECURSE NAVIGATION_PRIVATE_INCLUDES CONFIGURE_DEPENDS
      "navigation/private_include/*.h")
-
-file(GLOB CFLAT_SOURCES CONFIGURE_DEPENDS "${CFLAT_PATH}/*.cpp")
-file(GLOB CFLAT_INCLUDES CONFIGURE_DEPENDS "${CFLAT_PATH}/*.h")
 
 add_library(LowCoreAnimation OBJECT
   ${ANIMATION_SOURCES}
@@ -154,15 +149,12 @@ low_lens_generate(LowCoreNavigation LowCoreNavigation
                   ${CMAKE_CURRENT_SOURCE_DIR}/navigation/include)
 
 add_library(LowCore SHARED
-  ${CFLAT_SOURCES}
-  ${CFLAT_INCLUDES}
   ${SOURCES}
   ${INCLUDES}
   $<TARGET_OBJECTS:LowCoreAnimation>
 )
 
 source_group("Header Files" FILES ${INCLUDES})
-source_group("Cflat Header Files" FILES ${CFLAT_INCLUDES})
 
 add_dependencies(LowCore
   LowCoreAnimation
@@ -184,7 +176,6 @@ set(LOWCORE_INCLUDE_DIRS
   "${CMAKE_CURRENT_SOURCE_DIR}/animation/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/physics/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/navigation/include"
-  "${CFLAT_PATH}"
 )
 
 target_compile_definitions(LowCore PRIVATE
@@ -201,7 +192,6 @@ target_include_directories(LowCore PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/animation/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/physics/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/navigation/include>
-  $<BUILD_INTERFACE:${CFLAT_PATH}>
   $<INSTALL_INTERFACE:include>
 )
 

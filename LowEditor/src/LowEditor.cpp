@@ -44,7 +44,6 @@
 #include "LowEditorDetailsWidget.h"
 #include "LowEditorEditingWidget.h"
 #include "LowEditorTypeEditor.h"
-#include "LowEditorFlodeWidget.h"
 #include "LowEditorIcons.h"
 #include "LowEditorNotifications.h"
 #include "LowEditorFonts.h"
@@ -57,15 +56,6 @@
 #include "LowEditorConvexHullColliderTypeEditor.h"
 #include "LowEditorEditingLayerHelpers.h"
 
-#include "Flode.h"
-#include "FlodeEditor.h"
-#include "FlodeMathNodes.h"
-#include "FLodeSyntaxNodes.h"
-#include "FlodeDebugNodes.h"
-#include "FlodeCastNodes.h"
-#include "FlodeHandleNodes.h"
-#include "FlodeBoolNodes.h"
-#include "FlodeOperatorNodes.h"
 #include "imgui.h"
 
 #include <corecrt_io.h>
@@ -1017,16 +1007,6 @@ namespace Low {
       */
     }
 
-    static void register_type_nodes()
-    {
-      for (auto it = get_type_metadata().begin();
-           it != get_type_metadata().end(); ++it) {
-        if (it->second.scriptingExpose) {
-          // Flode::register_nodes_for_type(it->second.typeId);
-        }
-      }
-    }
-
     ChangeList &get_global_changelist()
     {
       return g_ChangeList;
@@ -1592,8 +1572,6 @@ namespace Low {
         ImGui::GetIO().FontDefault = Fonts::UI(17);
       }
 
-      Flode::initialize();
-
       initialize_main_window();
 
       // Load editor images
@@ -1661,17 +1639,6 @@ namespace Low {
              it != g_AssetTypeEditorImage.end(); ++it) {
           Renderer::ResourceManager::load_editor_image(it->second);
         }
-      }
-
-      {
-        Flode::MathNodes::register_nodes();
-        Flode::SyntaxNodes::register_nodes();
-        Flode::DebugNodes::register_nodes();
-        Flode::CastNodes::register_nodes();
-        Flode::BoolNodes::register_nodes();
-        Flode::OperatorNodes::register_nodes();
-
-        register_type_nodes();
       }
 
       {
@@ -2004,12 +1971,6 @@ namespace Low {
         return "";
       }
       return g_EditorJobQueue.front().title;
-    }
-
-    void open_flode_graph(Util::String p_Path)
-    {
-      get_flode_widget()->m_Editor->load(p_Path);
-      ImGui::SetWindowFocus(ICON_LC_WORKFLOW " Flode");
     }
 
     void open_widget_for_handle(Util::Handle p_Handle)

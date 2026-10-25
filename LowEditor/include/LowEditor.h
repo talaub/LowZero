@@ -106,8 +106,6 @@ namespace Low {
     bool LOW_EDITOR_API is_editor_job_in_progress();
     Util::String LOW_EDITOR_API get_active_editor_job_name();
 
-    void LOW_EDITOR_API open_flode_graph(Util::String p_Path);
-
     void LOW_EDITOR_API open_file_in_code_editor(Util::String p_Path);
 
     void LOW_EDITOR_API open_vs_file(const Util::String &p_Path);

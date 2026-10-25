@@ -16,7 +16,6 @@ namespace Low {
   namespace Editor {
     struct DetailsWidget;
     struct EditingWidget;
-    struct FlodeWidget;
     struct ScriptWidget;
     struct TypeMetadata;
     struct EnumMetadata;
@@ -38,7 +37,6 @@ namespace Low {
 
     DetailsWidget *get_details_widget();
     EditingWidget *get_editing_widget();
-    FlodeWidget *get_flode_widget();
     ScriptWidget *get_script_widget();
 
     void set_widget_open(Util::String p_Path, bool p_Open);

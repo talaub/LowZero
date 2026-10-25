@@ -23,7 +23,6 @@
 #include "LowEditorSceneWidget.h"
 #include "LowEditorChangeWidget.h"
 #include "LowEditorRegionWidget.h"
-#include "LowEditorFlodeWidget.h"
 #include "LowEditorGui.h"
 #include "LowEditorIcons.h"
 #include "LowEditorResourceProcessorImage.h"
@@ -100,7 +99,6 @@ namespace Low {
 
     EditingWidget *g_MainViewportWidget;
     DetailsWidget *g_DetailsWidget;
-    FlodeWidget *g_FlodeWidget;
     ScriptWidget *g_ScriptWidget;
 
     Low::Util::Map<Util::Handle, EditWidget *> g_EditWidgets;
@@ -1293,8 +1291,6 @@ namespace Low {
       register_editor_widget("Regions", new RegionWidget(), true);
       register_editor_widget("History", new ChangeWidget());
       // register_editor_widget("Resources", new ResourceWidget());
-      g_FlodeWidget = new FlodeWidget();
-      // register_editor_widget("Flode", g_FlodeWidget, false);
       register_editor_widget("Scripting errors",
 
                              new ScriptingErrorWidget, false);
@@ -1466,11 +1462,6 @@ namespace Low {
     EditingWidget *get_editing_widget()
     {
       return g_MainViewportWidget;
-    }
-
-    FlodeWidget *get_flode_widget()
-    {
-      return g_FlodeWidget;
     }
 
     ScriptWidget *get_script_widget()

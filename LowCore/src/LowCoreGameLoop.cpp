@@ -11,7 +11,6 @@
 #include "LowCoreTransform.h"
 #include "LowCoreNavmeshSystem.h"
 #include "LowCoreNavigationSystem.h"
-#include "LowCoreCflatScripting.h"
 #include "LowCoreCameraSystem.h"
 #include "LowCoreGameplaySystem.h"
 #include "LowCoreGameplaySystemInstance.h"
@@ -57,8 +56,6 @@ namespace Low {
   namespace Core {
     namespace GameLoop {
       using namespace std::chrono;
-
-      float g_TestCounter = 0.0f;
 
       float g_DeltaTime = 0.0f;
 
@@ -127,49 +124,9 @@ namespace Low {
         }
         Navigation::render_debug_geometry();
 
-        Scripting::tick(p_Delta, get_engine_state());
-
-        g_TestCounter += p_Delta;
-
-        if (g_TestCounter > 1.0f) {
-          g_TestCounter = 0.0f;
-
-          float param = 1.2f;
-
-          CflatVoidCall(MtdScripts::StatusEffect::Ignite::tick,
-                        CflatArg(param));
-        }
-
         for (auto it = g_TickCallbacks.begin();
              it != g_TickCallbacks.end(); ++it) {
           (*it)(p_Delta, get_engine_state());
-        }
-
-        if (get_engine_state() == Util::EngineState::PLAYING) {
-          Util::String l_TickFunctionName =
-              get_current_gamemode().get_tick_function_name();
-          Cflat::Identifier l_FunctionNameCflat(
-              l_TickFunctionName.c_str());
-
-          /*
-          Cflat::Function *l_Function =
-              CflatGlobal::getEnvironment()->getFunction(
-                  l_FunctionNameCflat);
-
-          LOW_ASSERT(l_Function,
-                     "Could not find gamemode tick function");
-
-          static const Cflat::TypeUsage kTypeUsageFloat =
-              Scripting::get_environment()->getTypeUsage("float");
-
-          Cflat::Value l_ReturnValue;
-          CflatArgsVector(Cflat::Value) l_Arguments;
-          Cflat::Value l_Val;
-          l_Val.initExternal(kTypeUsageFloat);
-          l_Val.set(&p_Delta);
-          l_Arguments.push_back(l_Val);
-          l_Function->execute(l_Arguments, &l_ReturnValue);
-          */
         }
 
         System::Light::tick(p_Delta, get_engine_state());

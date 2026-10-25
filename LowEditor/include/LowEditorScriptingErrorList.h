@@ -1,7 +1,5 @@
 #pragma once
 
-#include "LowCoreCflatScripting.h"
-
 #include "LowCoreScriptModule.h"
 #include "LowCoreScripting.h"
 #include "LowUtilContainers.h"

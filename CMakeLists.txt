@@ -92,7 +92,6 @@ add_compile_definitions(
   DISABLE_CUDA_PHYSX
   PX_COOKING
   LOW_RENDERER_RENDEROBJECT_COUNT=1024
-  CFLAT_ENABLED=1
 )
 
 # Excluded directories
