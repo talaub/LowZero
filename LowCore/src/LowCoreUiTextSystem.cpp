@@ -22,6 +22,7 @@
 #include "LowCoreDebugGeometry.h"
 
 #include "LowCoreUiImageSystem.h"
+#include "LowUtilString.h"
 #include "glm/trigonometric.hpp"
 #include <cmath>
 #include <stdint.h>
@@ -79,8 +80,6 @@ namespace Low {
                   Renderer::UiDrawCommand::make_standalone(
                       l_Canvas, l_GpuSubmesh);
               p_Text.get_draw_commands().push_back(i_DrawCommand);
-              Util::String i_CS = "";
-              i_CS += i_Char;
               i_DrawCommand.set_texture(l_Font.get_texture());
               i_DrawCommand.set_material(l_Material);
               i_DrawCommand.set_color(p_Text.get_color());
@@ -89,6 +88,26 @@ namespace Low {
             }
 
             return true;
+          }
+
+          static float
+          calculate_glyph_width(Component::Text p_Text,
+                                const Renderer::Glyph &p_Glyph)
+          {
+            const float l_TextSize = p_Text.get_size();
+
+            return static_cast<float>(p_Glyph.advance) * l_TextSize;
+          }
+
+          static float calculate_glyph_width(Component::Text p_Text,
+                                             const char p_Char)
+          {
+            Renderer::Font l_Font = p_Text.get_font();
+
+            const Renderer::Glyph &l_Glyph =
+                l_Font.find_glyph(p_Char);
+
+            return calculate_glyph_width(p_Text, l_Glyph);
           }
 
           static void align_text(Component::Text p_Text)
@@ -143,11 +162,13 @@ namespace Low {
               const Renderer::Glyph &i_Glyph =
                   l_Font.find_glyph(i_Char);
 
+              const float i_GlyphWidth =
+                  calculate_glyph_width(p_Text, i_Glyph);
+
               // Space has no visible quad, but still advances the
               // pen.
               if (i_Char == ' ') {
-                l_PenX +=
-                    static_cast<float>(i_Glyph.advance) * l_TextSize;
+                l_PenX += i_GlyphWidth;
                 continue;
               }
 
@@ -184,14 +205,56 @@ namespace Low {
               i_DrawCommand.set_z_sorting(
                   l_Display.get_absolute_layer());
 
-              l_PenX +=
-                  static_cast<float>(i_Glyph.advance) * l_TextSize;
+              l_PenX += i_GlyphWidth;
             }
           }
 
           static void calculate_format(Component::Text p_Text)
           {
-            // p_Text.get_formatted_text_lines().clear();
+            p_Text.get_formatted_text_lines().clear();
+
+            Element l_Element = p_Text.get_element();
+            Component::Display l_Display = l_Element.get_display();
+
+            const float l_MaxWidth =
+                l_Display.get_absolute_pixel_scale().x;
+
+            const Util::String &l_String = p_Text.get_text();
+
+            Util::StringBuilder l_LineBuilder;
+            float l_LineWidth = 0;
+            Util::StringBuilder l_WordBuilder;
+            float l_WordWidth = 0;
+
+            for (u32 i = 0; i < l_String.size(); ++i) {
+              const char i_Char = l_String[i];
+
+              const float i_GlyphWidth =
+                  calculate_glyph_width(p_Text, i_Char);
+
+              if (i_Char == ' ') {
+                if (l_LineWidth + l_WordWidth > l_MaxWidth) {
+                  // Start new line
+                  p_Text.get_formatted_text_lines().push_back(
+                      l_LineBuilder.get());
+                  l_LineBuilder.reset();
+                  l_LineWidth = 0;
+                }
+
+                // Add word to line
+                l_LineBuilder.append(l_WordBuilder.get());
+                l_LineWidth += l_WordWidth;
+                l_LineBuilder.append(i_Char);
+                l_LineWidth += i_GlyphWidth;
+
+                // Reset word builder
+                l_WordBuilder.reset();
+                l_WordWidth = 0;
+              }
+
+              l_WordBuilder.append(i_Char);
+              l_WordWidth += i_GlyphWidth;
+            }
           }
 
           enum class RescheduleType
@@ -211,6 +274,9 @@ namespace Low {
             Util::List<Reschedule> l_Reschedules;
 
             for (Component::Text i_Text : Component::Text::ms_Dirty) {
+              if (!i_Text.is_alive()) {
+                continue;
+              }
               if (!i_Text.get_font().is_alive()) {
                 i_Text.set_font(
                     Renderer::Font::living_instances()[0]);

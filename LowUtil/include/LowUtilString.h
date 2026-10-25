@@ -13,6 +13,13 @@ namespace Low {
 
     struct LOW_EXPORT StringBuilder
     {
+      StringBuilder()
+      {
+      }
+      StringBuilder(Util::StringView p_S)
+      {
+        m_String = p_S;
+      }
       StringBuilder &append(String p_String);
       StringBuilder &append(const char *p_String);
       StringBuilder &append(float p_Float);
@@ -21,10 +28,13 @@ namespace Low {
       StringBuilder &append(uint64_t p_Content);
       StringBuilder &append(uint8_t p_Content);
       StringBuilder &append(Name p_Content);
+      StringBuilder &append(const char p_Content);
 
       StringBuilder &endl();
 
+      int size() const;
       String get() const;
+      void reset();
 
     private:
       String m_String;

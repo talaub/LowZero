@@ -76,8 +76,8 @@ namespace Low {
           Util::String l_Friendly;
           for (u32 i = 0; i < l_String.size(); ++i) {
             if (i) {
-              if (islower(l_String[i - 1]) &&
-                  !islower(l_String[i]) && l_String[i] != ' ') {
+              if (islower(l_String[i - 1]) && !islower(l_String[i]) &&
+                  l_String[i] != ' ') {
                 l_Friendly += " ";
               }
             }
@@ -201,6 +201,16 @@ namespace Low {
       return m_String;
     }
 
+    int StringBuilder::size() const
+    {
+      return m_String.size();
+    }
+
+    void StringBuilder::reset()
+    {
+      m_String = "";
+    }
+
     StringBuilder &StringBuilder::endl()
     {
       return append("\n");
@@ -248,6 +258,12 @@ namespace Low {
     StringBuilder &StringBuilder::append(Name p_Content)
     {
       return append(p_Content.c_str());
+    }
+
+    StringBuilder &StringBuilder::append(const char p_Content)
+    {
+      m_String += p_Content;
+      return *this;
     }
   } // namespace Util
 } // namespace Low
