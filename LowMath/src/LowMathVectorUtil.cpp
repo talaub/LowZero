@@ -57,21 +57,6 @@ namespace Low {
         }
 
         return glm::quatLookAt(direction, p_Up);
-        /*
-              float dot = glm::dot(p_Up, direction);
-              if (fabs(dot - (-1.0f)) < 0.000001f) {
-                return glm::angleAxis(glm::degrees(PI),
-           LOW_VECTOR3_UP); } else if (fabs(dot - (1.0f)) < 0.000001f)
-           { return glm::quat();
-              }
-
-              float angle = -glm::degrees(acosf(dot));
-
-              glm::vec3 cross =
-                  glm::normalize(glm::cross(LOW_VECTOR3_FRONT,
-           direction)); return glm::normalize(glm::angleAxis(angle,
-           cross));
-        */
       }
 
       Vector3 to_euler(const Quaternion p_Rotation)
@@ -113,16 +98,6 @@ namespace Low {
       {
         glm::vec3 l_Radians = glm::radians(p_EulerAngles);
 
-        /*
-              glm::mat4 rotationMatrix =
-                  glm::rotate(glm::mat4(1.0f), l_Radians.y,
-           glm::vec3(0, 1, 0))
-           * glm::rotate(glm::mat4(1.0f), l_Radians.x, glm::vec3(1, 0,
-           0)) * glm::rotate(glm::mat4(1.0f), l_Radians.z,
-           glm::vec3(0, 0, 1));
-
-              glm::quat l_Quat = glm::quat_cast(rotationMatrix);
-        */
         Quaternion q;
         // xzy
         // currently the default case (confirmed to be working) :)
@@ -145,12 +120,6 @@ namespace Low {
       Vector3 rotate_by_quaternion(const Vector3 p_Vec,
                                    const Quaternion p_Quat)
       {
-        /*
-              return p_Vec +
-                     2.0f * glm::cross({p_Quat.x, p_Quat.y, p_Quat.z},
-                                       cross({p_Quat.x, p_Quat.y,
-           p_Quat.z}, p_Vec) + p_Quat.w * p_Vec);
-        */
         return p_Quat * p_Vec;
       }
 
