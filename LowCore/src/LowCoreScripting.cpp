@@ -502,7 +502,6 @@ namespace Low {
             l_Controller = UI::Controller::make_script(
                 p_Class.get_name(), p_Class);
           }
-          l_Controller.update_instances();
         }
         if (l_Type->Implements(l_GameplaySystemInterface)) {
           GameplaySystem l_System =

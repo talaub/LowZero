@@ -51,8 +51,6 @@ types:
         return_type: bool
         constant: true
         const: true
-      update_instances:
-        return_type: void
       fill_binding_options:
         return_type: void
         parameters:

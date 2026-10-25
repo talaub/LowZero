@@ -200,7 +200,6 @@ namespace Low {
         static Low::Core::UI::Controller find_by_scriptclass(
             Low::Core::Scripting::Class p_ScriptClass);
         bool is_script_controller() const;
-        void update_instances();
         void fill_binding_options(
             Low::Util::List<BindingOption> &p_Options);
         static bool get_page_for_index(const u32 p_Index,

@@ -327,15 +327,6 @@ namespace Low {
           // End function: is_script_controller
         }
         {
-          // Function: update_instances
-          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
-          l_FunctionInfo.name = N(update_instances);
-          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
-          l_FunctionInfo.handleType = 0;
-          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
-          // End function: update_instances
-        }
-        {
           // Function: fill_binding_options
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(fill_binding_options);
@@ -718,14 +709,6 @@ namespace Low {
 
         return get_type() == ControllerType::Script;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_is_script_controller
-      }
-
-      void Controller::update_instances()
-      {
-        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_instances
-
-        LOW_NOT_IMPLEMENTED_WARN;
-        // LOW_CODEGEN::END::CUSTOM:FUNCTION_update_instances
       }
 
       void Controller::fill_binding_options(
