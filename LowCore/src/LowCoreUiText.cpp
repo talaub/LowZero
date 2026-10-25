@@ -12,7 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
-
+#include "LowCoreUiDisplay.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -93,6 +93,13 @@ namespace Low {
           // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
 
           p_Element.observe(N(canvas), l_Handle);
+          if (p_Element.get_display().is_alive()) {
+            p_Element.get_display().observe(N(world_dirty), l_Handle);
+          } else {
+            LOW_LOG_WARN << "Added text UI component to an element "
+                            "without display."
+                         << LOW_LOG_END;
+          }
           // LOW_CODEGEN::END::CUSTOM:MAKE
 
           return l_Handle;
@@ -759,6 +766,9 @@ namespace Low {
           if (p_Observable == N(canvas)) {
             set_full_dirty(true);
           }
+          if (p_Observable == N(world_dirty)) {
+            mark_dirty();
+          }
           // LOW_CODEGEN::END::CUSTOM:NOTIFY
         }
 
@@ -1212,6 +1222,6 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
       } // namespace Component
-    }   // namespace UI
-  }     // namespace Core
+    } // namespace UI
+  } // namespace Core
 } // namespace Low

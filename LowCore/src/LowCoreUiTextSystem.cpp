@@ -22,8 +22,12 @@
 #include "LowCoreDebugGeometry.h"
 
 #include "LowCoreUiImageSystem.h"
+#include "glm/trigonometric.hpp"
 #include <cmath>
 #include <stdint.h>
+#include <glm/glm.hpp>
+#include <glm/gtx/rotate_vector.hpp>
+#include <glm/gtc/constants.hpp>
 
 #define RENDER_BOUNDING_BOXES 0
 
@@ -43,9 +47,10 @@ namespace Low {
           static void setup_drawcommands(Component::Text p_Text)
           {
             Renderer::Font l_Font = p_Text.get_font();
-            
-            if (!l_Font.get_texture().is_alive() || l_Font.get_texture().get_state() !=
-                Renderer::TextureState::LOADED) {
+
+            if (!l_Font.get_texture().is_alive() ||
+                l_Font.get_texture().get_state() !=
+                    Renderer::TextureState::LOADED) {
               return;
             }
 
@@ -87,12 +92,21 @@ namespace Low {
             if (p_Text.get_draw_commands().empty()) {
               return;
             }
+
             Renderer::Font l_Font = p_Text.get_font();
             Element l_Element = p_Text.get_element();
             Component::Display l_Display = l_Element.get_display();
 
             const Math::Vector2 l_Position =
                 l_Display.get_absolute_pixel_position();
+            const float l_Rotation =
+                l_Display.get_absolute_rotation();
+            const float l_RotationRadians = glm::radians(l_Rotation);
+
+            const Math::Vector2 l_Right = glm::rotate(
+                Math::Vector2(1.0f, 0.0f), l_RotationRadians);
+            const Math::Vector2 l_Down = glm::rotate(
+                Math::Vector2(0.0f, 1.0f), l_RotationRadians);
 
             const Util::String &l_String = p_Text.get_text();
             const float l_TextSize = p_Text.get_size();
@@ -136,29 +150,31 @@ namespace Low {
               Renderer::UiDrawCommand i_DrawCommand =
                   p_Text.get_draw_commands()[i];
 
-              // Top-left of the glyph quad in screen space
-              const float i_TopLeftX =
-                  l_PenX +
-                  static_cast<float>(i_Glyph.bearing.x) * l_TextSize;
-
-              const float i_TopLeftY =
-                  l_BaselineY -
-                  static_cast<float>(i_Glyph.bearing.y) * l_TextSize;
-
               const float i_Width =
                   static_cast<float>(i_Glyph.size.x) * l_TextSize;
 
               const float i_Height =
                   static_cast<float>(i_Glyph.size.y) * l_TextSize;
 
-              // Draw command position is the CENTER of the quad
-              const float i_CenterX = i_TopLeftX + i_Width * 0.5f;
-              const float i_CenterY = i_TopLeftY + i_Height * 0.5f;
+              // Compute the glyph center relative to the text origin
+              // in Y-down UI coordinates, then rotate the full offset.
+              const float i_DistanceX =
+                  l_PenX - l_Position.x +
+                  static_cast<float>(i_Glyph.bearing.x) * l_TextSize +
+                  i_Width * 0.5f;
+              const float i_DistanceY =
+                  l_BaselineY - l_Position.y -
+                  static_cast<float>(i_Glyph.bearing.y) * l_TextSize +
+                  i_Height * 0.5f;
+              const Math::Vector2 i_Center =
+                  l_Position + i_DistanceX * l_Right +
+                  i_DistanceY * l_Down;
 
               i_DrawCommand.set_color(p_Text.get_color());
 
-              i_DrawCommand.set_position({i_CenterX, i_CenterY, 0});
+              i_DrawCommand.set_position({i_Center.x, i_Center.y, 0});
               i_DrawCommand.set_size({i_Width, i_Height});
+              i_DrawCommand.set_rotation2D(-l_RotationRadians);
 
               i_DrawCommand.set_z_sorting(
                   l_Display.get_absolute_layer());
@@ -177,7 +193,8 @@ namespace Low {
                  ++i) {
               Component::Text i_Text = l_Texts[i];
               if (!i_Text.get_font().is_alive()) {
-                i_Text.set_font(Renderer::Font::living_instances()[0]);
+                i_Text.set_font(
+                    Renderer::Font::living_instances()[0]);
               }
               Element i_Element = i_Text.get_element();
               Component::Display i_Display = i_Element.get_display();

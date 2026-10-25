@@ -40,6 +40,8 @@
 #include <imgui.h>
 #include "glm/matrix.hpp"
 #include "glm/trigonometric.hpp"
+#include <glm/gtx/rotate_vector.hpp>
+#include <glm/gtc/constants.hpp>
 
 #define SEARCH_LENGTH 300
 
@@ -430,6 +432,25 @@ namespace Low {
         m_SelectedMarker.set_rotation2D(glm::radians(-l_Rotation));
         m_SelectedMarker.set_size(
             l_Display.get_absolute_pixel_scale());
+
+        if (m_SelectedElement.has_component(
+                Core::UI::Component::Text::type_id())) {
+          const Math::Vector2 l_Size =
+              l_Display.get_absolute_pixel_scale();
+
+          const Math::Vector2 l_UnrotatedMoveDirection(
+              l_Size.x / 2.0f, l_Size.y / 2.0f);
+          // Move from the text's top-left origin to the box center
+          const Math::Vector2 l_MoveDirection = glm::rotate(
+              l_UnrotatedMoveDirection, glm::radians(l_Rotation));
+
+          const Math::Vector2 l_NewPosition =
+              Math::Vector2(l_PixelPosition.x, l_PixelPosition.y) +
+              l_MoveDirection;
+
+          m_SelectedMarker.set_position(l_NewPosition.x,
+                                        l_NewPosition.y, 0);
+        }
 
       } else {
         m_SelectedMarker.set_color(

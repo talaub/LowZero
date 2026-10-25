@@ -1653,7 +1653,7 @@ namespace Low {
           if (!is_world_dirty()) {
             TYPE_SOA(Display, world_dirty, bool) = true;
             // LOW_CODEGEN:BEGIN:CUSTOM:MARK_world_dirty
-
+            broadcast_observable(N(world_dirty));
             // LOW_CODEGEN::END::CUSTOM:MARK_world_dirty
           }
         }
@@ -1691,7 +1691,15 @@ namespace Low {
                 l_Parent.get_absolute_pixel_scale();
             uint32_t l_ParentLayer = l_Parent.get_absolute_layer();
 
-            l_Position += l_ParentPosition;
+            const float l_ParentRadians =
+                glm::radians(l_ParentRotation);
+            const float l_Cos = glm::cos(l_ParentRadians);
+            const float l_Sin = glm::sin(l_ParentRadians);
+            l_Position =
+                l_ParentPosition +
+                Math::Vector2(
+                    l_Cos * l_Position.x - l_Sin * l_Position.y,
+                    l_Sin * l_Position.x + l_Cos * l_Position.y);
             l_Rotation += l_ParentRotation;
             // Could lead to some unwanted stretching
             // TODO: Introduce overall multiplier variable
