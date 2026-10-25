@@ -20,7 +20,7 @@ namespace Low {
     namespace UI {
       namespace Component {
         // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-
+        Util::Set<Text> Text::ms_Dirty;
         // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
         u16 Text::ms_TypeId = 0;
@@ -70,11 +70,18 @@ namespace Low {
           new (ACCESSOR_TYPE_SOA_PTR(
               l_Handle, Text, content_fit_approach,
               TextContentFitOptions)) TextContentFitOptions();
+          new (ACCESSOR_TYPE_SOA_PTR(
+              l_Handle, Text, formatted_text_lines,
+              Low::Util::List<Low::Util::String>))
+              Low::Util::List<Low::Util::String>();
           new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Text, element,
                                      Low::Core::UI::Element))
               Low::Core::UI::Element();
           ACCESSOR_TYPE_SOA(l_Handle, Text, full_dirty, bool) = false;
-          ACCESSOR_TYPE_SOA(l_Handle, Text, dirty, bool) = false;
+          ACCESSOR_TYPE_SOA(l_Handle, Text, align_dirty, bool) =
+              false;
+          ACCESSOR_TYPE_SOA(l_Handle, Text, format_dirty, bool) =
+              false;
 
           l_Handle.set_element(p_Element);
           p_Element.add_component(l_Handle);
@@ -94,12 +101,21 @@ namespace Low {
 
           p_Element.observe(N(canvas), l_Handle);
           if (p_Element.get_display().is_alive()) {
-            p_Element.get_display().observe(N(world_dirty), l_Handle);
+            p_Element.get_display().observe(
+                N(absolute_pixel_position), l_Handle);
+            p_Element.get_display().observe(N(absolute_rotation),
+                                            l_Handle);
+            p_Element.get_display().observe(N(absolute_pixel_scale),
+                                            l_Handle);
           } else {
             LOW_LOG_WARN << "Added text UI component to an element "
                             "without display."
                          << LOW_LOG_END;
           }
+
+          l_Handle.mark_full_dirty();
+
+          ms_Dirty.insert(l_Handle);
           // LOW_CODEGEN::END::CUSTOM:MAKE
 
           return l_Handle;
@@ -373,9 +389,9 @@ namespace Low {
                 sizeof(Text::Data::content_fit_approach);
             l_PropertyInfo.containerType =
                 Low::Util::RTTI::ContainerType::NONE;
-            l_PropertyInfo.type =
-                Low::Util::RTTI::PropertyType::UNKNOWN;
-            l_PropertyInfo.handleType = 0;
+            l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
+            l_PropertyInfo.handleType =
+                TextContentFitOptionsEnum::IDENTIFIER;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Text l_Handle = p_Handle.get_id();
@@ -399,6 +415,40 @@ namespace Low {
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
             // End property: content_fit_approach
+          }
+          {
+            // Property: formatted_text_lines
+            Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+            l_PropertyInfo.name = N(formatted_text_lines);
+            l_PropertyInfo.editorProperty = false;
+            l_PropertyInfo.dataOffset =
+                offsetof(Text::Data, formatted_text_lines);
+            l_PropertyInfo.size =
+                sizeof(Text::Data::formatted_text_lines);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::LIST;
+            l_PropertyInfo.type =
+                Low::Util::RTTI::PropertyType::STRING;
+            l_PropertyInfo.handleType = 0;
+            l_PropertyInfo.get_return =
+                [](Low::Util::Handle p_Handle) -> void const * {
+              Text l_Handle = p_Handle.get_id();
+              l_Handle.get_formatted_text_lines();
+              return (void *)&ACCESSOR_TYPE_SOA(
+                  p_Handle, Text, formatted_text_lines,
+                  Low::Util::List<Low::Util::String>);
+            };
+            l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                    const void *p_Data) -> void {};
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Text l_Handle = p_Handle.get_id();
+              *((void **)p_Data) =
+                  &l_Handle.get_formatted_text_lines();
+            };
+            l_TypeInfo.properties[l_PropertyInfo.name] =
+                l_PropertyInfo;
+            // End property: formatted_text_lines
           }
           {
             // Property: element
@@ -501,12 +551,13 @@ namespace Low {
             // End property: full_dirty
           }
           {
-            // Property: dirty
+            // Property: align_dirty
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-            l_PropertyInfo.name = N(dirty);
+            l_PropertyInfo.name = N(align_dirty);
             l_PropertyInfo.editorProperty = false;
-            l_PropertyInfo.dataOffset = offsetof(Text::Data, dirty);
-            l_PropertyInfo.size = sizeof(Text::Data::dirty);
+            l_PropertyInfo.dataOffset =
+                offsetof(Text::Data, align_dirty);
+            l_PropertyInfo.size = sizeof(Text::Data::align_dirty);
             l_PropertyInfo.containerType =
                 Low::Util::RTTI::ContainerType::NONE;
             l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
@@ -514,23 +565,56 @@ namespace Low {
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Text l_Handle = p_Handle.get_id();
-              l_Handle.is_dirty();
-              return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Text, dirty,
-                                                bool);
+              l_Handle.is_align_dirty();
+              return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Text,
+                                                align_dirty, bool);
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {
               Text l_Handle = p_Handle.get_id();
-              l_Handle.set_dirty(*(bool *)p_Data);
+              l_Handle.set_align_dirty(*(bool *)p_Data);
             };
             l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                     void *p_Data) {
               Text l_Handle = p_Handle.get_id();
-              *((bool *)p_Data) = l_Handle.is_dirty();
+              *((bool *)p_Data) = l_Handle.is_align_dirty();
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
-            // End property: dirty
+            // End property: align_dirty
+          }
+          {
+            // Property: format_dirty
+            Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+            l_PropertyInfo.name = N(format_dirty);
+            l_PropertyInfo.editorProperty = false;
+            l_PropertyInfo.dataOffset =
+                offsetof(Text::Data, format_dirty);
+            l_PropertyInfo.size = sizeof(Text::Data::format_dirty);
+            l_PropertyInfo.containerType =
+                Low::Util::RTTI::ContainerType::NONE;
+            l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+            l_PropertyInfo.handleType = 0;
+            l_PropertyInfo.get_return =
+                [](Low::Util::Handle p_Handle) -> void const * {
+              Text l_Handle = p_Handle.get_id();
+              l_Handle.is_format_dirty();
+              return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Text,
+                                                format_dirty, bool);
+            };
+            l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                    const void *p_Data) -> void {
+              Text l_Handle = p_Handle.get_id();
+              l_Handle.set_format_dirty(*(bool *)p_Data);
+            };
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Text l_Handle = p_Handle.get_id();
+              *((bool *)p_Data) = l_Handle.is_format_dirty();
+            };
+            l_TypeInfo.properties[l_PropertyInfo.name] =
+                l_PropertyInfo;
+            // End property: format_dirty
           }
           ms_TypeId = Low::Util::Handle::register_type_info(
               IDENTIFIER, l_TypeInfo);
@@ -634,7 +718,8 @@ namespace Low {
           l_Handle.set_content_fit_approach(
               get_content_fit_approach());
           l_Handle.set_full_dirty(is_full_dirty());
-          l_Handle.set_dirty(is_dirty());
+          l_Handle.set_align_dirty(is_align_dirty());
+          l_Handle.set_format_dirty(is_format_dirty());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
 
@@ -668,6 +753,10 @@ namespace Low {
           }
           p_Node["color"] = get_color();
           p_Node["size"] = get_size();
+          Low::Util::Serial::serialize_enum(
+              p_Node["content_fit_approach"],
+              TextContentFitOptionsEnum::get_enum_id(),
+              static_cast<uint8_t>(get_content_fit_approach()));
           p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
@@ -713,6 +802,10 @@ namespace Low {
             l_Handle.set_size(p_Node["size"].as<float>());
           }
           if (p_Node["content_fit_approach"]) {
+            l_Handle.set_content_fit_approach(
+                static_cast<TextContentFitOptions>(
+                    Low::Util::Serial::deserialize_enum(
+                        p_Node["content_fit_approach"])));
           }
           if (p_Node["unique_id"]) {
             l_Handle.set_unique_id(
@@ -766,8 +859,14 @@ namespace Low {
           if (p_Observable == N(canvas)) {
             set_full_dirty(true);
           }
-          if (p_Observable == N(world_dirty)) {
-            mark_dirty();
+          if (p_Observable == N(absolute_pixel_position)) {
+            mark_align_dirty();
+          }
+          if (p_Observable == N(absolute_rotation)) {
+            mark_align_dirty();
+          }
+          if (p_Observable == N(absolute_pixel_scale)) {
+            mark_format_dirty();
           }
           // LOW_CODEGEN::END::CUSTOM:NOTIFY
         }
@@ -835,7 +934,6 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_text
-
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_text
 
           if (get_text() != p_Value) {
@@ -915,7 +1013,7 @@ namespace Low {
 
           if (get_color() != p_Value) {
             // Set dirty flags
-            mark_dirty();
+            mark_align_dirty();
 
             // Set new value
             TYPE_SOA(Text, color, Low::Math::Color) = p_Value;
@@ -955,7 +1053,7 @@ namespace Low {
 
           if (get_size() != p_Value) {
             // Set dirty flags
-            mark_dirty();
+            mark_format_dirty();
 
             // Set new value
             TYPE_SOA(Text, size, float) = p_Value;
@@ -988,15 +1086,32 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_content_fit_approach
 
-          // Set new value
-          TYPE_SOA(Text, content_fit_approach,
-                   TextContentFitOptions) = p_Value;
+          if (get_content_fit_approach() != p_Value) {
+            // Set dirty flags
+            mark_format_dirty();
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_content_fit_approach
+            // Set new value
+            TYPE_SOA(Text, content_fit_approach,
+                     TextContentFitOptions) = p_Value;
 
-          // LOW_CODEGEN::END::CUSTOM:SETTER_content_fit_approach
+            // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_content_fit_approach
 
-          broadcast_observable(N(content_fit_approach));
+            // LOW_CODEGEN::END::CUSTOM:SETTER_content_fit_approach
+
+            broadcast_observable(N(content_fit_approach));
+          }
+        }
+
+        Low::Util::List<Low::Util::String> &
+        Text::get_formatted_text_lines() const
+        {
+          _LOW_ASSERT(is_alive());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_formatted_text_lines
+          // LOW_CODEGEN::END::CUSTOM:GETTER_formatted_text_lines
+
+          return TYPE_SOA(Text, formatted_text_lines,
+                          Low::Util::List<Low::Util::String>);
         }
 
         Low::Core::UI::Element Text::get_element() const
@@ -1079,10 +1194,11 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_full_dirty
 
           // Set new value
-          TYPE_SOA(Text, full_dirty, bool) = p_Value;
 
           if (p_Value) {
             mark_full_dirty();
+          } else {
+            TYPE_SOA(Text, full_dirty, bool) = p_Value;
           }
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_full_dirty
@@ -1097,55 +1213,98 @@ namespace Low {
           if (!is_full_dirty()) {
             TYPE_SOA(Text, full_dirty, bool) = true;
             // LOW_CODEGEN:BEGIN:CUSTOM:MARK_full_dirty
-
+            ms_Dirty.insert(get_id());
             // LOW_CODEGEN::END::CUSTOM:MARK_full_dirty
           }
         }
 
-        bool Text::is_dirty() const
+        bool Text::is_align_dirty() const
         {
           _LOW_ASSERT(is_alive());
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dirty
+          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_align_dirty
+          // LOW_CODEGEN::END::CUSTOM:GETTER_align_dirty
 
-          // LOW_CODEGEN::END::CUSTOM:GETTER_dirty
-
-          return TYPE_SOA(Text, dirty, bool);
+          return TYPE_SOA(Text, align_dirty, bool);
         }
-        void Text::toggle_dirty()
+        void Text::toggle_align_dirty()
         {
-          set_dirty(!is_dirty());
+          set_align_dirty(!is_align_dirty());
         }
 
-        void Text::set_dirty(bool p_Value)
+        void Text::set_align_dirty(bool p_Value)
         {
           _LOW_ASSERT(is_alive());
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dirty
-
-          // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
+          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_align_dirty
+          // LOW_CODEGEN::END::CUSTOM:PRESETTER_align_dirty
 
           // Set new value
-          TYPE_SOA(Text, dirty, bool) = p_Value;
 
           if (p_Value) {
-            mark_dirty();
+            mark_align_dirty();
+          } else {
+            TYPE_SOA(Text, align_dirty, bool) = p_Value;
           }
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_align_dirty
+          // LOW_CODEGEN::END::CUSTOM:SETTER_align_dirty
 
-          // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
-
-          broadcast_observable(N(dirty));
+          broadcast_observable(N(align_dirty));
         }
 
-        void Text::mark_dirty()
+        void Text::mark_align_dirty()
         {
-          if (!is_dirty()) {
-            TYPE_SOA(Text, dirty, bool) = true;
-            // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+          if (!is_align_dirty()) {
+            TYPE_SOA(Text, align_dirty, bool) = true;
+            // LOW_CODEGEN:BEGIN:CUSTOM:MARK_align_dirty
+            ms_Dirty.insert(get_id());
+            // LOW_CODEGEN::END::CUSTOM:MARK_align_dirty
+          }
+        }
 
-            // LOW_CODEGEN::END::CUSTOM:MARK_dirty
+        bool Text::is_format_dirty() const
+        {
+          _LOW_ASSERT(is_alive());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_format_dirty
+          // LOW_CODEGEN::END::CUSTOM:GETTER_format_dirty
+
+          return TYPE_SOA(Text, format_dirty, bool);
+        }
+        void Text::toggle_format_dirty()
+        {
+          set_format_dirty(!is_format_dirty());
+        }
+
+        void Text::set_format_dirty(bool p_Value)
+        {
+          _LOW_ASSERT(is_alive());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_format_dirty
+          // LOW_CODEGEN::END::CUSTOM:PRESETTER_format_dirty
+
+          // Set new value
+
+          if (p_Value) {
+            mark_format_dirty();
+          } else {
+            TYPE_SOA(Text, format_dirty, bool) = p_Value;
+          }
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_format_dirty
+          // LOW_CODEGEN::END::CUSTOM:SETTER_format_dirty
+
+          broadcast_observable(N(format_dirty));
+        }
+
+        void Text::mark_format_dirty()
+        {
+          if (!is_format_dirty()) {
+            TYPE_SOA(Text, format_dirty, bool) = true;
+            // LOW_CODEGEN:BEGIN:CUSTOM:MARK_format_dirty
+            ms_Dirty.insert(get_id());
+            // LOW_CODEGEN::END::CUSTOM:MARK_format_dirty
           }
         }
 

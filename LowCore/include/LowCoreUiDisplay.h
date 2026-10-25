@@ -167,10 +167,6 @@ namespace Low {
 
           Low::Math::Matrix4x4 &get_world_matrix();
 
-          bool is_world_updated() const;
-          void set_world_updated(bool p_Value);
-          void toggle_world_updated();
-
           Low::Core::UI::Element get_element() const;
           void set_element(Low::Core::UI::Element p_Value);
 
@@ -180,11 +176,6 @@ namespace Low {
           void set_dirty(bool p_Value);
           void toggle_dirty();
           void mark_dirty();
-
-          bool is_world_dirty() const;
-          void set_world_dirty(bool p_Value);
-          void toggle_world_dirty();
-          void mark_world_dirty();
 
           void recalculate_world_transform();
           float get_absolute_layer_float();
@@ -214,7 +205,8 @@ namespace Low {
           void set_unique_id(Low::Util::UniqueId p_Value);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
-
+        public:
+          static Util::Set<Display> ms_Dirty;
           // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
         };
 
@@ -232,11 +224,9 @@ namespace Low {
           Low::Math::Vector2 absolute_pixel_scale;
           uint32_t absolute_layer;
           Low::Math::Matrix4x4 world_matrix;
-          bool world_updated;
           Low::Core::UI::Element element;
           Low::Util::UniqueId unique_id;
           bool dirty;
-          bool world_dirty;
 
           static size_t get_size()
           {
@@ -249,8 +239,8 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
       } // namespace Component
-    }   // namespace UI
-  }     // namespace Core
+    } // namespace UI
+  } // namespace Core
 } // namespace Low
 
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE

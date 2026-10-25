@@ -22,11 +22,12 @@ namespace Low {
       namespace Component {
         // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
 
+        LOW_ENUM(scripting)
         enum class TextContentFitOptions
         {
           None,
           WordWrap,
-          Fit
+          SizeFit
         };
         // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
@@ -43,10 +44,12 @@ namespace Low {
             Low::Math::Color color;
             float size;
             TextContentFitOptions content_fit_approach;
+            Low::Util::List<Low::Util::String> formatted_text_lines;
             Low::Core::UI::Element element;
             Low::Util::UniqueId unique_id;
             bool full_dirty;
-            bool dirty;
+            bool align_dirty;
+            bool format_dirty;
 
             static size_t get_size()
             {
@@ -182,6 +185,9 @@ namespace Low {
           void
           set_content_fit_approach(TextContentFitOptions p_Value);
 
+          Low::Util::List<Low::Util::String> &
+          get_formatted_text_lines() const;
+
           Low::Core::UI::Element get_element() const;
           void set_element(Low::Core::UI::Element p_Value);
 
@@ -192,10 +198,15 @@ namespace Low {
           void toggle_full_dirty();
           void mark_full_dirty();
 
-          bool is_dirty() const;
-          void set_dirty(bool p_Value);
-          void toggle_dirty();
-          void mark_dirty();
+          bool is_align_dirty() const;
+          void set_align_dirty(bool p_Value);
+          void toggle_align_dirty();
+          void mark_align_dirty();
+
+          bool is_format_dirty() const;
+          void set_format_dirty(bool p_Value);
+          void toggle_format_dirty();
+          void mark_format_dirty();
 
           static bool get_page_for_index(const u32 p_Index,
                                          u32 &p_PageIndex,
@@ -210,7 +221,8 @@ namespace Low {
           void set_unique_id(Low::Util::UniqueId p_Value);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
-
+        public:
+          static Util::Set<Text> ms_Dirty;
           // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
         };
 
@@ -226,3 +238,5 @@ namespace Low {
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE
 
 // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_HEADER_CODE
+
+#include "LowCoreUiText.gen.h"

@@ -2506,15 +2506,21 @@ function generate_source(p_Type) {
       }
 
       t += line("// Set new value");
-      t += line(
-        `TYPE_SOA(${p_Type.name}, ${i_Prop.name}, ${i_Prop.soa_type}) = p_Value;`,
-        n,
-      );
       if (i_Prop.is_dirty_flag) {
         t += empty();
         t += line("if (p_Value) {");
         t += line(`mark_${i_PropName}();`);
+        t += line("} else {");
+        t += line(
+          `TYPE_SOA(${p_Type.name}, ${i_Prop.name}, ${i_Prop.soa_type}) = p_Value;`,
+          n,
+        );
         t += line("}");
+      } else {
+        t += line(
+          `TYPE_SOA(${p_Type.name}, ${i_Prop.name}, ${i_Prop.soa_type}) = p_Value;`,
+          n,
+        );
       }
       if (i_Prop.editor_editable) {
         if (p_Type.component && p_Type.name !== "PrefabInstance") {

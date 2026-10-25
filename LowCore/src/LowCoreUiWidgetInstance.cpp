@@ -867,7 +867,6 @@ namespace Low {
           // members from.
           return;
         }
-
         Scripting::ClassInstance l_ClassInstance =
             l_ControllerInstance.get_value().script.instance;
 
@@ -1004,5 +1003,5 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace UI
-  }   // namespace Core
+  } // namespace Core
 } // namespace Low

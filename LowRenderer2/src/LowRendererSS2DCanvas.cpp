@@ -905,10 +905,11 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_z_dirty
 
       // Set new value
-      TYPE_SOA(SS2DCanvas, z_dirty, bool) = p_Value;
 
       if (p_Value) {
         mark_z_dirty();
+      } else {
+        TYPE_SOA(SS2DCanvas, z_dirty, bool) = p_Value;
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_z_dirty
@@ -952,10 +953,11 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_dimensions_dirty
 
       // Set new value
-      TYPE_SOA(SS2DCanvas, dimensions_dirty, bool) = p_Value;
 
       if (p_Value) {
         mark_dimensions_dirty();
+      } else {
+        TYPE_SOA(SS2DCanvas, dimensions_dirty, bool) = p_Value;
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dimensions_dirty

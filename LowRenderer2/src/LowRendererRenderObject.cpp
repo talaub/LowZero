@@ -1094,10 +1094,11 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
 
       // Set new value
-      TYPE_SOA(RenderObject, dirty, bool) = p_Value;
 
       if (p_Value) {
         mark_dirty();
+      } else {
+        TYPE_SOA(RenderObject, dirty, bool) = p_Value;
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty

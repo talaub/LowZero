@@ -759,6 +759,12 @@ function process_file(p_Path, p_FileName, p_Project = false) {
     for (let [i_PropName, i_Prop] of Object.entries(i_Type.properties)) {
       i_Prop.name = i_PropName;
 
+      if (i_Prop.transient) {
+        i_Prop.skip_serialization = true;
+        i_Prop.skip_deserialization = true;
+        i_Prop.skip_duplication = true;
+      }
+
       if (i_Prop.enum) {
         i_Prop.no_ref = true;
       }

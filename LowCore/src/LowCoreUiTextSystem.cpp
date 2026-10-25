@@ -44,21 +44,21 @@ namespace Low {
             p_Text.get_draw_commands().clear();
           }
 
-          static void setup_drawcommands(Component::Text p_Text)
+          static bool setup_drawcommands(Component::Text p_Text)
           {
             Renderer::Font l_Font = p_Text.get_font();
 
             if (!l_Font.get_texture().is_alive() ||
                 l_Font.get_texture().get_state() !=
                     Renderer::TextureState::LOADED) {
-              return;
+              return false;
             }
 
             UI::Element l_Element = p_Text.get_element();
             Renderer::UiCanvas l_Canvas = l_Element.get_canvas();
 
             if (!l_Canvas.is_alive()) {
-              return;
+              return false;
             }
 
             Renderer::Material l_Material =
@@ -79,12 +79,16 @@ namespace Low {
                   Renderer::UiDrawCommand::make_standalone(
                       l_Canvas, l_GpuSubmesh);
               p_Text.get_draw_commands().push_back(i_DrawCommand);
+              Util::String i_CS = "";
+              i_CS += i_Char;
               i_DrawCommand.set_texture(l_Font.get_texture());
               i_DrawCommand.set_material(l_Material);
               i_DrawCommand.set_color(p_Text.get_color());
               i_DrawCommand.set_uv_rect(
                   l_Font.find_glyph_uvrect(i_Char));
             }
+
+            return true;
           }
 
           static void align_text(Component::Text p_Text)
@@ -157,7 +161,8 @@ namespace Low {
                   static_cast<float>(i_Glyph.size.y) * l_TextSize;
 
               // Compute the glyph center relative to the text origin
-              // in Y-down UI coordinates, then rotate the full offset.
+              // in Y-down UI coordinates, then rotate the full
+              // offset.
               const float i_DistanceX =
                   l_PenX - l_Position.x +
                   static_cast<float>(i_Glyph.bearing.x) * l_TextSize +
@@ -166,9 +171,9 @@ namespace Low {
                   l_BaselineY - l_Position.y -
                   static_cast<float>(i_Glyph.bearing.y) * l_TextSize +
                   i_Height * 0.5f;
-              const Math::Vector2 i_Center =
-                  l_Position + i_DistanceX * l_Right +
-                  i_DistanceY * l_Down;
+              const Math::Vector2 i_Center = l_Position +
+                                             i_DistanceX * l_Right +
+                                             i_DistanceY * l_Down;
 
               i_DrawCommand.set_color(p_Text.get_color());
 
@@ -184,14 +189,28 @@ namespace Low {
             }
           }
 
+          static void calculate_format(Component::Text p_Text)
+          {
+            // p_Text.get_formatted_text_lines().clear();
+          }
+
+          enum class RescheduleType
+          {
+            Full,
+            Format,
+            Align
+          };
+          struct Reschedule
+          {
+            RescheduleType type;
+            Component::Text text;
+          };
+
           void tick(float p_Delta, Util::EngineState p_State)
           {
-            Component::Text *l_Texts =
-                Component::Text::living_instances();
+            Util::List<Reschedule> l_Reschedules;
 
-            for (uint32_t i = 0u; i < Component::Text::living_count();
-                 ++i) {
-              Component::Text i_Text = l_Texts[i];
+            for (Component::Text i_Text : Component::Text::ms_Dirty) {
               if (!i_Text.get_font().is_alive()) {
                 i_Text.set_font(
                     Renderer::Font::living_instances()[0]);
@@ -205,14 +224,36 @@ namespace Low {
                 if (!i_Text.get_draw_commands().empty()) {
                   clear_text(i_Text);
                 }
-                setup_drawcommands(i_Text);
+                if (!setup_drawcommands(i_Text)) {
+                  l_Reschedules.emplace_back(RescheduleType::Full,
+                                             i_Text);
+                }
                 i_Text.set_full_dirty(false);
-                i_Text.mark_dirty();
+                i_Text.mark_format_dirty();
               }
 
-              if (i_Text.is_dirty() || i_Display.is_world_dirty()) {
+              if (i_Text.is_format_dirty()) {
+                calculate_format(i_Text);
+                i_Text.set_format_dirty(false);
+                i_Text.mark_align_dirty();
+              }
+
+              if (i_Text.is_align_dirty()) {
                 align_text(i_Text);
-                i_Text.set_dirty(false);
+                i_Text.set_align_dirty(false);
+              }
+            }
+
+            Component::Text::ms_Dirty.clear();
+
+            for (Reschedule &i_Reschedule : l_Reschedules) {
+              if (i_Reschedule.type == RescheduleType::Full) {
+                i_Reschedule.text.mark_full_dirty();
+              } else if (i_Reschedule.type ==
+                         RescheduleType::Format) {
+                i_Reschedule.text.mark_format_dirty();
+              } else if (i_Reschedule.type == RescheduleType::Align) {
+                i_Reschedule.text.mark_align_dirty();
               }
             }
           }

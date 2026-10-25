@@ -20,20 +20,20 @@ namespace Low {
           {
             LOW_PROFILE_CPU("Core", "UiDisplaySystem::TICK");
 
-            Component::Display *l_Displays =
-                Component::Display::living_instances();
+            for (Component::Display i_Display :
+                 Component::Display::ms_Dirty) {
+              if (i_Display.is_alive()) {
+                if (i_Display.is_dirty()) {
+                  i_Display.recalculate_world_transform();
+                }
+              }
+            }
+            Component::Display::ms_Dirty.clear();
 
             Math::Vector2 l_MousePosition;
             Input::mouse_position(l_MousePosition);
 
             Component::Display l_HoveredDisplay = 0;
-
-            for (uint32_t i = 0u;
-                 i < Component::Display::living_count(); ++i) {
-              Component::Display i_Display = l_Displays[i];
-
-              i_Display.set_world_updated(false);
-            }
 
             if (l_HoveredDisplay.is_alive()) {
               set_hovered_element(l_HoveredDisplay.get_element());

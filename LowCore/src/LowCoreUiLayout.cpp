@@ -1531,10 +1531,11 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
 
           // Set new value
-          TYPE_SOA(Layout, dirty, bool) = p_Value;
 
           if (p_Value) {
             mark_dirty();
+          } else {
+            TYPE_SOA(Layout, dirty, bool) = p_Value;
           }
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
@@ -1600,10 +1601,11 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_dirty
 
           // Set new value
-          TYPE_SOA(Layout, world_dirty, bool) = p_Value;
 
           if (p_Value) {
             mark_world_dirty();
+          } else {
+            TYPE_SOA(Layout, world_dirty, bool) = p_Value;
           }
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_dirty

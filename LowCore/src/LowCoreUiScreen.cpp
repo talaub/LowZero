@@ -935,10 +935,11 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
 
         // Set new value
-        TYPE_SOA(Screen, dirty, bool) = p_Value;
 
         if (p_Value) {
           mark_dirty();
+        } else {
+          TYPE_SOA(Screen, dirty, bool) = p_Value;
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
@@ -952,6 +953,11 @@ namespace Low {
         if (!is_dirty()) {
           TYPE_SOA(Screen, dirty, bool) = true;
           // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+          for (Element i_Element : get_elements()) {
+            if (i_Element.is_alive()) {
+              i_Element.get_display().mark_dirty();
+            }
+          }
           // LOW_CODEGEN::END::CUSTOM:MARK_dirty
         }
       }
@@ -1081,5 +1087,5 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace UI
-  }   // namespace Core
+  } // namespace Core
 } // namespace Low

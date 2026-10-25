@@ -22,7 +22,7 @@ namespace Low {
     namespace UI {
       namespace Component {
         // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-
+        Util::Set<Display> Display::ms_Dirty;
         // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
         u16 Display::ms_TypeId = 0;
@@ -74,14 +74,10 @@ namespace Low {
           new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Display, world_matrix,
                                      Low::Math::Matrix4x4))
               Low::Math::Matrix4x4();
-          ACCESSOR_TYPE_SOA(l_Handle, Display, world_updated, bool) =
-              false;
           new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Display, element,
                                      Low::Core::UI::Element))
               Low::Core::UI::Element();
           ACCESSOR_TYPE_SOA(l_Handle, Display, dirty, bool) = false;
-          ACCESSOR_TYPE_SOA(l_Handle, Display, world_dirty, bool) =
-              false;
 
           l_Handle.set_element(p_Element);
           p_Element.add_component(l_Handle);
@@ -98,7 +94,7 @@ namespace Low {
                                         l_Handle.get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
-
+          l_Handle.mark_dirty();
           // LOW_CODEGEN::END::CUSTOM:MAKE
 
           return l_Handle;
@@ -560,40 +556,6 @@ namespace Low {
             // End property: world_matrix
           }
           {
-            // Property: world_updated
-            Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-            l_PropertyInfo.name = N(world_updated);
-            l_PropertyInfo.editorProperty = false;
-            l_PropertyInfo.dataOffset =
-                offsetof(Display::Data, world_updated);
-            l_PropertyInfo.size =
-                sizeof(Display::Data::world_updated);
-            l_PropertyInfo.containerType =
-                Low::Util::RTTI::ContainerType::NONE;
-            l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
-            l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get_return =
-                [](Low::Util::Handle p_Handle) -> void const * {
-              Display l_Handle = p_Handle.get_id();
-              l_Handle.is_world_updated();
-              return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Display,
-                                                world_updated, bool);
-            };
-            l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                    const void *p_Data) -> void {
-              Display l_Handle = p_Handle.get_id();
-              l_Handle.set_world_updated(*(bool *)p_Data);
-            };
-            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
-                                    void *p_Data) {
-              Display l_Handle = p_Handle.get_id();
-              *((bool *)p_Data) = l_Handle.is_world_updated();
-            };
-            l_TypeInfo.properties[l_PropertyInfo.name] =
-                l_PropertyInfo;
-            // End property: world_updated
-          }
-          {
             // Property: element
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(element);
@@ -693,39 +655,6 @@ namespace Low {
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
             // End property: dirty
-          }
-          {
-            // Property: world_dirty
-            Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-            l_PropertyInfo.name = N(world_dirty);
-            l_PropertyInfo.editorProperty = false;
-            l_PropertyInfo.dataOffset =
-                offsetof(Display::Data, world_dirty);
-            l_PropertyInfo.size = sizeof(Display::Data::world_dirty);
-            l_PropertyInfo.containerType =
-                Low::Util::RTTI::ContainerType::NONE;
-            l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
-            l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get_return =
-                [](Low::Util::Handle p_Handle) -> void const * {
-              Display l_Handle = p_Handle.get_id();
-              l_Handle.is_world_dirty();
-              return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Display,
-                                                world_dirty, bool);
-            };
-            l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                    const void *p_Data) -> void {
-              Display l_Handle = p_Handle.get_id();
-              l_Handle.set_world_dirty(*(bool *)p_Data);
-            };
-            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
-                                    void *p_Data) {
-              Display l_Handle = p_Handle.get_id();
-              *((bool *)p_Data) = l_Handle.is_world_dirty();
-            };
-            l_TypeInfo.properties[l_PropertyInfo.name] =
-                l_PropertyInfo;
-            // End property: world_dirty
           }
           {
             // Function: recalculate_world_transform
@@ -864,7 +793,6 @@ namespace Low {
           l_Handle.pixel_scale(pixel_scale());
           l_Handle.layer(layer());
           l_Handle.set_dirty(is_dirty());
-          l_Handle.set_world_dirty(is_world_dirty());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
 
@@ -1061,7 +989,6 @@ namespace Low {
           if (pixel_position() != p_Value) {
             // Set dirty flags
             mark_dirty();
-            mark_world_dirty();
 
             // Set new value
             TYPE_SOA(Display, pixel_position, Low::Math::Vector2) =
@@ -1096,7 +1023,6 @@ namespace Low {
           if (rotation() != p_Value) {
             // Set dirty flags
             mark_dirty();
-            mark_world_dirty();
 
             // Set new value
             TYPE_SOA(Display, rotation, float) = p_Value;
@@ -1150,7 +1076,6 @@ namespace Low {
           if (pixel_scale() != p_Value) {
             // Set dirty flags
             mark_dirty();
-            mark_world_dirty();
 
             // Set new value
             TYPE_SOA(Display, pixel_scale, Low::Math::Vector2) =
@@ -1185,7 +1110,6 @@ namespace Low {
           if (layer() != p_Value) {
             // Set dirty flags
             mark_dirty();
-            mark_world_dirty();
 
             // Set new value
             TYPE_SOA(Display, layer, uint32_t) = p_Value;
@@ -1232,7 +1156,6 @@ namespace Low {
           if (get_parent() != p_Value) {
             // Set dirty flags
             mark_dirty();
-            mark_world_dirty();
 
             // Set new value
             TYPE_SOA(Display, parent, Display) = p_Value;
@@ -1457,39 +1380,6 @@ namespace Low {
           broadcast_observable(N(world_matrix));
         }
 
-        bool Display::is_world_updated() const
-        {
-          _LOW_ASSERT(is_alive());
-
-          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_updated
-
-          // LOW_CODEGEN::END::CUSTOM:GETTER_world_updated
-
-          return TYPE_SOA(Display, world_updated, bool);
-        }
-        void Display::toggle_world_updated()
-        {
-          set_world_updated(!is_world_updated());
-        }
-
-        void Display::set_world_updated(bool p_Value)
-        {
-          _LOW_ASSERT(is_alive());
-
-          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_updated
-
-          // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_updated
-
-          // Set new value
-          TYPE_SOA(Display, world_updated, bool) = p_Value;
-
-          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_updated
-
-          // LOW_CODEGEN::END::CUSTOM:SETTER_world_updated
-
-          broadcast_observable(N(world_updated));
-        }
-
         Low::Core::UI::Element Display::get_element() const
         {
           _LOW_ASSERT(is_alive());
@@ -1571,10 +1461,11 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
 
           // Set new value
-          TYPE_SOA(Display, dirty, bool) = p_Value;
 
           if (p_Value) {
             mark_dirty();
+          } else {
+            TYPE_SOA(Display, dirty, bool) = p_Value;
           }
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
@@ -1589,72 +1480,14 @@ namespace Low {
           if (!is_dirty()) {
             TYPE_SOA(Display, dirty, bool) = true;
             // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
-
+            ms_Dirty.insert(get_id());
+            for (u64 i_ChildId : get_children()) {
+              Display i_Child = i_ChildId;
+              if (i_Child.is_alive()) {
+                i_Child.mark_dirty();
+              }
+            }
             // LOW_CODEGEN::END::CUSTOM:MARK_dirty
-          }
-        }
-
-        bool Display::is_world_dirty() const
-        {
-          _LOW_ASSERT(is_alive());
-
-          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_dirty
-
-          if (TYPE_SOA(Display, world_dirty, bool)) {
-            return TYPE_SOA(Display, world_dirty, bool);
-          }
-
-          Display l_Parent = get_parent();
-
-          if (l_Parent.is_alive()) {
-            return l_Parent.is_world_dirty() ||
-                   l_Parent.is_world_updated();
-          }
-          Element l_Element = get_element();
-          Screen l_Screen = l_Element.get_cached_screen();
-          if (l_Screen.is_alive()) {
-            return l_Screen.is_dirty();
-          }
-
-          return false;
-          // LOW_CODEGEN::END::CUSTOM:GETTER_world_dirty
-
-          return TYPE_SOA(Display, world_dirty, bool);
-        }
-        void Display::toggle_world_dirty()
-        {
-          set_world_dirty(!is_world_dirty());
-        }
-
-        void Display::set_world_dirty(bool p_Value)
-        {
-          _LOW_ASSERT(is_alive());
-
-          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_dirty
-
-          // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_dirty
-
-          // Set new value
-          TYPE_SOA(Display, world_dirty, bool) = p_Value;
-
-          if (p_Value) {
-            mark_world_dirty();
-          }
-
-          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_dirty
-
-          // LOW_CODEGEN::END::CUSTOM:SETTER_world_dirty
-
-          broadcast_observable(N(world_dirty));
-        }
-
-        void Display::mark_world_dirty()
-        {
-          if (!is_world_dirty()) {
-            TYPE_SOA(Display, world_dirty, bool) = true;
-            // LOW_CODEGEN:BEGIN:CUSTOM:MARK_world_dirty
-            broadcast_observable(N(world_dirty));
-            // LOW_CODEGEN::END::CUSTOM:MARK_world_dirty
           }
         }
 
@@ -1665,7 +1498,7 @@ namespace Low {
           LOW_ASSERT(is_alive(), "Cannot calculate world position of "
                                  "dead ui display");
 
-          if (!is_world_dirty() || is_world_updated()) {
+          if (!is_dirty()) {
             return;
           }
 
@@ -1675,20 +1508,27 @@ namespace Low {
           Math::Vector2 l_Scale = pixel_scale();
           uint32_t l_Layer = layer();
 
+          Screen l_Screen = l_Element.get_cached_screen();
+          if (l_Screen.is_alive()) {
+            // Local offsets and sizes use unzoomed pixels. Apply
+            // zoom once per element, before parent composition.
+            const float l_Zoom = l_Screen.zoom();
+            l_Position *= l_Zoom;
+            l_Scale *= l_Zoom;
+          }
+
           Display l_Parent = get_parent();
 
           Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
 
           if (l_Parent.is_alive()) {
-            if (l_Parent.is_world_dirty()) {
+            if (l_Parent.is_dirty()) {
               l_Parent.recalculate_world_transform();
             }
 
             Math::Vector2 l_ParentPosition =
                 l_Parent.get_absolute_pixel_position();
             float l_ParentRotation = l_Parent.get_absolute_rotation();
-            Math::Vector2 l_ParentScale =
-                l_Parent.get_absolute_pixel_scale();
             uint32_t l_ParentLayer = l_Parent.get_absolute_layer();
 
             const float l_ParentRadians =
@@ -1701,17 +1541,12 @@ namespace Low {
                     l_Cos * l_Position.x - l_Sin * l_Position.y,
                     l_Sin * l_Position.x + l_Cos * l_Position.y);
             l_Rotation += l_ParentRotation;
-            // Could lead to some unwanted stretching
-            // TODO: Introduce overall multiplier variable
-            // on display to scale everything while keeping
-            // dimensions l_Scale *= l_ParentScale;
+            // Parent pixel size is a layout extent, not a scale
+            // multiplier for the child's dimensions.
             l_Layer += l_ParentLayer;
           } else {
-            Screen l_Screen = l_Element.get_cached_screen();
             if (l_Screen.is_alive()) {
-              l_Position = l_Screen.pixel_position() +
-                           l_Position * l_Screen.zoom();
-              l_Scale *= l_Screen.zoom();
+              l_Position += l_Screen.pixel_position();
             }
           }
 
@@ -1732,8 +1567,7 @@ namespace Low {
 
           set_world_matrix(l_LocalMatrix);
 
-          set_world_dirty(false);
-          set_world_updated(true);
+          set_dirty(false);
           // LOW_CODEGEN::END::CUSTOM:FUNCTION_recalculate_world_transform
         }
 
