@@ -150,62 +150,79 @@ namespace Low {
             float l_BaselineY =
                 l_Position.y + l_AscenderNorm * l_TextSize;
 
-            for (u32 i = 0; i < l_String.size(); ++i) {
-              const char i_Char = l_String[i];
+            int l_CharCounter = 0;
 
-              if (i_Char == '\n') {
-                l_PenX = l_Position.x;
-                l_BaselineY += l_LineHeightNorm * l_TextSize;
-                continue;
-              }
+            for (const Util::String &i_Line :
+                 p_Text.get_formatted_text_lines()) {
+              for (u32 i = 0; i < i_Line.size(); ++i) {
+                const char i_Char = i_Line[i];
 
-              const Renderer::Glyph &i_Glyph =
-                  l_Font.find_glyph(i_Char);
+                if (i_Char == '\n') {
+                  /*
+                  l_PenX = l_Position.x;
+                  l_BaselineY += l_LineHeightNorm * l_TextSize;
+                  */
+                  l_CharCounter++;
+                  continue;
+                }
 
-              const float i_GlyphWidth =
-                  calculate_glyph_width(p_Text, i_Glyph);
+                const Renderer::Glyph &i_Glyph =
+                    l_Font.find_glyph(i_Char);
 
-              // Space has no visible quad, but still advances the
-              // pen.
-              if (i_Char == ' ') {
+                const float i_GlyphWidth =
+                    calculate_glyph_width(p_Text, i_Glyph);
+
+                // Space has no visible quad, but still advances the
+                // pen.
+                if (i_Char == ' ') {
+                  l_PenX += i_GlyphWidth;
+                  l_CharCounter++;
+                  continue;
+                }
+
+                Renderer::UiDrawCommand i_DrawCommand =
+                    p_Text.get_draw_commands()[l_CharCounter];
+
+                const float i_Width =
+                    static_cast<float>(i_Glyph.size.x) * l_TextSize;
+
+                const float i_Height =
+                    static_cast<float>(i_Glyph.size.y) * l_TextSize;
+
+                // Compute the glyph center relative to the text
+                // origin in Y-down UI coordinates, then rotate the
+                // full offset.
+                const float i_DistanceX =
+                    l_PenX - l_Position.x +
+                    static_cast<float>(i_Glyph.bearing.x) *
+                        l_TextSize +
+                    i_Width * 0.5f;
+                const float i_DistanceY =
+                    l_BaselineY - l_Position.y -
+                    static_cast<float>(i_Glyph.bearing.y) *
+                        l_TextSize +
+                    i_Height * 0.5f;
+                const Math::Vector2 i_Center = l_Position +
+                                               i_DistanceX * l_Right +
+                                               i_DistanceY * l_Down;
+
+                i_DrawCommand.set_color(p_Text.get_color());
+
+                i_DrawCommand.set_position(
+                    {i_Center.x, i_Center.y, 0});
+                i_DrawCommand.set_size({i_Width, i_Height});
+                i_DrawCommand.set_rotation2D(-l_RotationRadians);
+
+                i_DrawCommand.set_z_sorting(
+                    l_Display.get_absolute_layer());
+
                 l_PenX += i_GlyphWidth;
-                continue;
+
+                l_CharCounter++;
               }
 
-              Renderer::UiDrawCommand i_DrawCommand =
-                  p_Text.get_draw_commands()[i];
-
-              const float i_Width =
-                  static_cast<float>(i_Glyph.size.x) * l_TextSize;
-
-              const float i_Height =
-                  static_cast<float>(i_Glyph.size.y) * l_TextSize;
-
-              // Compute the glyph center relative to the text origin
-              // in Y-down UI coordinates, then rotate the full
-              // offset.
-              const float i_DistanceX =
-                  l_PenX - l_Position.x +
-                  static_cast<float>(i_Glyph.bearing.x) * l_TextSize +
-                  i_Width * 0.5f;
-              const float i_DistanceY =
-                  l_BaselineY - l_Position.y -
-                  static_cast<float>(i_Glyph.bearing.y) * l_TextSize +
-                  i_Height * 0.5f;
-              const Math::Vector2 i_Center = l_Position +
-                                             i_DistanceX * l_Right +
-                                             i_DistanceY * l_Down;
-
-              i_DrawCommand.set_color(p_Text.get_color());
-
-              i_DrawCommand.set_position({i_Center.x, i_Center.y, 0});
-              i_DrawCommand.set_size({i_Width, i_Height});
-              i_DrawCommand.set_rotation2D(-l_RotationRadians);
-
-              i_DrawCommand.set_z_sorting(
-                  l_Display.get_absolute_layer());
-
-              l_PenX += i_GlyphWidth;
+              l_PenX = l_Position.x;
+              l_BaselineY += l_LineHeightNorm * l_TextSize;
             }
           }
 
@@ -232,7 +249,7 @@ namespace Low {
               const float i_GlyphWidth =
                   calculate_glyph_width(p_Text, i_Char);
 
-              if (i_Char == ' ') {
+              if (i_Char == ' ' || i_Char == '\n') {
                 if (l_LineWidth + l_WordWidth > l_MaxWidth) {
                   // Start new line
                   p_Text.get_formatted_text_lines().push_back(
@@ -247,14 +264,35 @@ namespace Low {
                 l_LineBuilder.append(i_Char);
                 l_LineWidth += i_GlyphWidth;
 
+                if (i_Char == '\n') {
+                  p_Text.get_formatted_text_lines().push_back(
+                      l_LineBuilder.get());
+                  l_LineBuilder.reset();
+                  l_LineWidth = 0;
+                }
+
                 // Reset word builder
                 l_WordBuilder.reset();
                 l_WordWidth = 0;
+                continue;
               }
 
               l_WordBuilder.append(i_Char);
               l_WordWidth += i_GlyphWidth;
             }
+
+            if (l_LineWidth + l_WordWidth > l_MaxWidth) {
+              // Start new line
+              p_Text.get_formatted_text_lines().push_back(
+                  l_LineBuilder.get());
+              l_LineBuilder.reset();
+              l_LineWidth = 0;
+            }
+
+            // Add word to line
+            l_LineBuilder.append(l_WordBuilder.get());
+            p_Text.get_formatted_text_lines().push_back(
+                l_LineBuilder.get());
           }
 
           enum class RescheduleType
