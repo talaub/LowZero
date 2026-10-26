@@ -617,6 +617,8 @@ namespace Low {
       struct LOW_EDITOR_API NodeRenderer
           : public NodeGraphNodeRenderer
       {
+        float pin_names_min_zoom = 0.6f;
+        float default_editors_min_zoom = 0.6f;
         Graph *graph = nullptr;
         Math::Vector2 default_node_size =
             Math::Vector2(260.0f, 140.0f);

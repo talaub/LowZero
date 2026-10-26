@@ -1,10 +1,15 @@
 #pragma once
 
+#include "LowEditorApi.h"
 #include "LowMath.h"
 #include "LowUtilAssert.h"
 #include "LowUtilContainers.h"
 #include "LowUtilName.h"
 #include <imgui.h>
+
+namespace ImGuiEx {
+  struct Canvas;
+}
 
 namespace Low {
   namespace Editor {
@@ -945,6 +950,30 @@ namespace Low {
       ImVec2 canvas_origin = ImVec2(0.0f, 0.0f);
       ImVec2 canvas_min = ImVec2(0.0f, 0.0f);
       ImVec2 canvas_max = ImVec2(0.0f, 0.0f);
+      // Non-null while rendering in graph coordinates.
+      ImGuiEx::Canvas *drawing_canvas = nullptr;
+
+      LOW_EDITOR_API ImVec2 to_screen(const ImVec2 &p_Position) const;
+      // Actual view scale, even when canvas uses unscaled graph units.
+      LOW_EDITOR_API float get_view_zoom() const;
+    };
+
+    // Use around popup contents, after drawing their trigger in the
+    // graph. Popups use ordinary screen coordinates and font sizes.
+    struct LOW_EDITOR_API NodeGraphScreenSpaceScope
+    {
+      explicit NodeGraphScreenSpaceScope(
+          const NodeGraphEditorContext &p_Context);
+      ~NodeGraphScreenSpaceScope();
+      NodeGraphScreenSpaceScope(const NodeGraphScreenSpaceScope &) =
+          delete;
+      NodeGraphScreenSpaceScope &
+      operator=(const NodeGraphScreenSpaceScope &) = delete;
+
+    private:
+      ImGuiEx::Canvas *m_Canvas;
+      ImVec2 m_Cursor;
+      ImVec2 m_MouseDelta;
     };
 
     struct NodeGraphEditorState
@@ -1162,6 +1191,8 @@ namespace Low {
                   NodeGraphEditorRenderer &p_Renderer);
 
     private:
+      void render_contents(NodeGraphEditorContext &p_Context,
+                           NodeGraphEditorRenderer &p_Renderer);
       void handle_shortcuts(NodeGraphEditorContext &p_Context,
                             NodeGraphEditorRenderer &p_Renderer,
                             bool p_BlockCanvasInteraction);

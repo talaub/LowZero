@@ -16,6 +16,7 @@
 #include <cstring>
 #include <cstdio>
 #include <imgui.h>
+#include <imgui_internal.h>
 
 namespace Low {
   namespace Editor {
@@ -2678,34 +2679,31 @@ namespace Low {
         const bool l_Compact =
             l_NodeClass && l_NodeClass->is_compact(*graph, p_Node.id);
 
-        const float l_Zoom = p_Context.canvas.m_Zoom;
+        const float l_ViewZoom = p_Context.get_view_zoom();
+        const bool l_ShowPinNames = l_ViewZoom >= pin_names_min_zoom;
+        const bool l_ShowDefaultEditors =
+            l_ViewZoom >= default_editors_min_zoom;
+
         const float l_HeaderHeight =
-            l_Compact ? 8.0f * l_Zoom
-                      : title_height * l_Zoom + 24.0f * l_Zoom;
-        const float l_AccentHeight =
-            l_Compact ? 4.0f * l_Zoom : 7.0f * l_Zoom;
-        const float l_IconBoxSize = 36.0f * l_Zoom;
-        const float l_HeaderPaddingX =
-            l_Compact ? 8.0f * l_Zoom : 14.0f * l_Zoom;
-        const float l_HeaderPaddingY =
-            l_Compact ? 8.0f * l_Zoom : 14.0f * l_Zoom;
-        const float l_PinTextOffset = 18.0f * l_Zoom;
-        const float l_DefaultValueWidth = 78.0f * l_Zoom;
-        const float l_TitleFontSize = 18.0f * l_Zoom;
-        const float l_SubtitleFontSize = 13.0f * l_Zoom;
-        const float l_PinFontSize = 17.0f * l_Zoom;
-        const float l_DefaultFontSize = 15.0f * l_Zoom;
-        const float l_IconFontSize = 30.0f * l_Zoom;
-        ImFont *l_TitleFont =
-            Fonts::UI(18.0f * l_Zoom, Fonts::Weight::Medium);
+            l_Compact ? 8.0f : title_height + 24.0f;
+        const float l_AccentHeight = l_Compact ? 4.0f : 7.0f;
+        const float l_IconBoxSize = 36.0f;
+        const float l_HeaderPaddingX = l_Compact ? 8.0f : 14.0f;
+        const float l_HeaderPaddingY = l_Compact ? 8.0f : 14.0f;
+        const float l_PinTextOffset = 18.0f;
+        const float l_DefaultValueWidth = 78.0f;
+        const float l_TitleFontSize = 18.0f;
+        const float l_SubtitleFontSize = 13.0f;
+        const float l_PinFontSize = 17.0f;
+        const float l_DefaultFontSize = 15.0f;
+        const float l_IconFontSize = 30.0f;
+        ImFont *l_TitleFont = Fonts::UI(18.0f, Fonts::Weight::Medium);
         ImFont *l_SubtitleFont =
-            Fonts::UI(13.0f * l_Zoom, Fonts::Weight::Light);
-        ImFont *l_PinFont =
-            Fonts::UI(17.0f * l_Zoom, Fonts::Weight::Regular);
+            Fonts::UI(13.0f, Fonts::Weight::Light);
+        ImFont *l_PinFont = Fonts::UI(17.0f, Fonts::Weight::Regular);
         ImFont *l_DefaultFont =
-            Fonts::UI(15.0f * l_Zoom, Fonts::Weight::Regular);
-        ImFont *l_IconFont =
-            Fonts::UI(22.0f * l_Zoom, Fonts::Weight::Regular);
+            Fonts::UI(15.0f, Fonts::Weight::Regular);
+        ImFont *l_IconFont = Fonts::UI(22.0f, Fonts::Weight::Regular);
 
         Util::String l_TitleString =
             l_Metadata && !l_Metadata->title.empty()
@@ -2741,24 +2739,24 @@ namespace Low {
                   ? l_NodeClass->get_compact_title(*graph, p_Node.id)
                   : l_TitleString;
           ImFont *l_CompactFont =
-              Fonts::UI(19.0f * l_Zoom, Fonts::Weight::Medium);
-          const float l_CompactFontSize = 19.0f * l_Zoom;
+              Fonts::UI(19.0f, Fonts::Weight::Medium);
+          const float l_CompactFontSize = 19.0f;
           const ImVec2 l_CompactTextSize =
               calc_scaled_text_size(l_CompactFont, l_CompactFontSize,
                                     l_CompactText.c_str());
-          const float l_TagPaddingX = 7.0f * l_Zoom;
-          const float l_TagPaddingY = 3.0f * l_Zoom;
-          const float l_CompactTabInset = 7.0f * l_Zoom;
+          const float l_TagPaddingX = 7.0f;
+          const float l_TagPaddingY = 3.0f;
+          const float l_CompactTabInset = 7.0f;
           const ImVec2 l_CompactBadgeMin = ImVec2(
               p_ScreenMin.x + l_CompactTabInset,
               p_ScreenMin.y -
                   (l_CompactTextSize.y + l_TagPaddingY * 2.0f) +
-                  l_AccentHeight + 1.0f * l_Zoom);
+                  l_AccentHeight + 1.0f);
           const ImVec2 l_CompactBadgeMax =
               ImVec2(l_CompactBadgeMin.x + l_CompactTextSize.x +
                          l_TagPaddingX * 2.0f,
                      p_ScreenMin.y + l_AccentHeight - 2);
-          const float l_CompactBadgeRounding = 8.0f * l_Zoom;
+          const float l_CompactBadgeRounding = 8.0f;
           const ImU32 l_CompactBadgeBackground = l_NodeColor;
 
           p_Context.draw_list->AddRectFilled(
@@ -2771,10 +2769,8 @@ namespace Low {
               l_CompactBadgeRounding, 0, 1.0f);
               */
           p_Context.draw_list->AddLine(
-              ImVec2(l_CompactBadgeMin.x + 1.0f * l_Zoom,
-                     l_CompactBadgeMax.y),
-              ImVec2(l_CompactBadgeMax.x - 1.0f * l_Zoom,
-                     l_CompactBadgeMax.y),
+              ImVec2(l_CompactBadgeMin.x + 1.0f, l_CompactBadgeMax.y),
+              ImVec2(l_CompactBadgeMax.x - 1.0f, l_CompactBadgeMax.y),
               l_NodeColor, 2.0f);
           add_scaled_text(
               p_Context.draw_list, l_CompactFont, l_CompactFontSize,
@@ -2785,9 +2781,9 @@ namespace Low {
           p_Context.draw_list->AddRectFilled(p_ScreenMin, p_ScreenMax,
                                              l_BackgroundColor,
                                              border_rounding);
-          const ImVec2 l_IconBoxMin = ImVec2(
-              p_ScreenMin.x + l_HeaderPaddingX,
-              p_ScreenMin.y + l_HeaderPaddingY + 1.0f * l_Zoom);
+          const ImVec2 l_IconBoxMin =
+              ImVec2(p_ScreenMin.x + l_HeaderPaddingX,
+                     p_ScreenMin.y + l_HeaderPaddingY + 1.0f);
           p_Context.draw_list->AddRectFilled(
               p_ScreenMin,
               ImVec2(p_ScreenMax.x, p_ScreenMin.y + l_HeaderHeight),
@@ -2807,17 +2803,15 @@ namespace Low {
                                        0, l_Selected ? 2.0f : 1.0f);
           const ImVec2 l_HeaderTextPos = ImVec2(
               p_ScreenMin.x + l_HeaderPaddingX +
-                  (l_IconString.empty()
-                       ? 0.0f
-                       : (l_IconBoxSize + 10.0f * l_Zoom)),
-              p_ScreenMin.y + l_HeaderPaddingY + 1.0f * l_Zoom);
+                  (l_IconString.empty() ? 0.0f
+                                        : (l_IconBoxSize + 10.0f)),
+              p_ScreenMin.y + l_HeaderPaddingY + 1.0f);
 
           if (!l_IconString.empty()) {
-            add_scaled_text(p_Context.draw_list, l_IconFont,
-                            l_IconFontSize,
-                            ImVec2(l_IconBoxMin.x,
-                                   l_IconBoxMin.y + 1.0f * l_Zoom),
-                            l_TextColor, l_IconString.c_str());
+            add_scaled_text(
+                p_Context.draw_list, l_IconFont, l_IconFontSize,
+                ImVec2(l_IconBoxMin.x, l_IconBoxMin.y + 1.0f),
+                l_TextColor, l_IconString.c_str());
           }
 
           add_scaled_text(p_Context.draw_list, l_TitleFont,
@@ -2827,16 +2821,14 @@ namespace Low {
             add_scaled_text(
                 p_Context.draw_list, l_SubtitleFont,
                 l_SubtitleFontSize,
-                ImVec2(l_HeaderTextPos.x,
-                       l_HeaderTextPos.y + 22.0f * l_Zoom),
+                ImVec2(l_HeaderTextPos.x, l_HeaderTextPos.y + 22.0f),
                 l_SubTextColor, l_SubtitleString.c_str());
           }
         }
 
         if (graph && l_NodeClass) {
           const float l_AbovePinsHeight =
-              l_NodeClass->get_above_pins_height(*graph, p_Node.id) *
-              l_Zoom;
+              l_NodeClass->get_above_pins_height(*graph, p_Node.id);
           if (l_AbovePinsHeight > 0.0f) {
             l_NodeClass->render_above_pins(
                 *graph, p_Node.id, p_Context,
@@ -2863,7 +2855,7 @@ namespace Low {
           const bool l_PinHovered =
               p_Context.state &&
               p_Context.state->hovered_pin == i_Pin->id;
-          const float l_Radius = pin_radius * l_Zoom;
+          const float l_Radius = pin_radius;
 
           if (!i_Pin->connectable) {
             // Not rendered as a connector at all - this pin only
@@ -2897,13 +2889,14 @@ namespace Low {
                                l_LabelSize.x,
                            l_PinAnchor.y - l_LabelSize.y * 0.5f);
 
-          if (!l_Compact && !l_PinLabelString.empty()) {
+          if (l_ShowPinNames && !l_Compact &&
+              !l_PinLabelString.empty()) {
             add_scaled_text(p_Context.draw_list, l_PinFont,
                             l_PinFontSize, l_TextPos, l_TextColor,
                             l_PinLabelString.c_str());
           }
 
-          if (l_PinMetadata &&
+          if (l_ShowDefaultEditors && l_PinMetadata &&
               l_PinMetadata->show_default_value_when_unlinked &&
               i_Pin->direction == PinDirection::Input &&
               p_Context.graph.get_link_count(i_Pin->id) == 0 &&
@@ -2914,25 +2907,24 @@ namespace Low {
               l_PinMetadata->container_type ==
                   PinContainerType::None) {
             const float l_WidgetStartX =
-                l_Compact
-                    ? p_ScreenMin.x + 28.0f * l_Zoom
-                    : l_TextPos.x + l_LabelSize.x + 16.0f * l_Zoom;
-            const float l_WidgetEndX =
-                l_Compact ? p_ScreenMax.x - 22.0f * l_Zoom
-                          : p_ScreenMax.x - 16.0f * l_Zoom;
+                l_Compact ? p_ScreenMin.x + 28.0f
+                          : l_TextPos.x + l_LabelSize.x + 16.0f;
+            const float l_WidgetEndX = l_Compact
+                                           ? p_ScreenMax.x - 22.0f
+                                           : p_ScreenMax.x - 16.0f;
             const float l_WidgetWidth =
                 l_Compact
                     ? LOW_MATH_MAX(
-                          38.0f * l_Zoom,
-                          LOW_MATH_MIN(104.0f * l_Zoom,
+                          38.0f,
+                          LOW_MATH_MIN(104.0f,
                                        l_WidgetEndX - l_WidgetStartX))
-                    : LOW_MATH_MAX(44.0f * l_Zoom,
+                    : LOW_MATH_MAX(44.0f,
                                    l_WidgetEndX - l_WidgetStartX);
-            const ImVec2 l_ValueMin = ImVec2(
-                l_WidgetStartX, l_PinAnchor.y - 11.0f * l_Zoom);
+            const ImVec2 l_ValueMin =
+                ImVec2(l_WidgetStartX, l_PinAnchor.y - 11.0f);
             const ImVec2 l_ValueMax =
                 ImVec2(l_WidgetStartX + l_WidgetWidth,
-                       l_PinAnchor.y + 11.0f * l_Zoom);
+                       l_PinAnchor.y + 11.0f);
             bool l_RenderedWidget = false;
 
             ImGui::PushID((int)i_Pin->id.value);
@@ -3001,10 +2993,33 @@ namespace Low {
               ImGui::SetCursorScreenPos(
                   ImVec2(l_ValueMin.x, l_PinAnchor.y - 13.0f));
               ImGui::PushItemWidth(l_ValueMax.x - l_ValueMin.x);
-              if (ImGui::BeginCombo(
-                      "##defaultvalue",
-                      l_EnumInfo.entry_name(l_CurrentValue)
-                          .c_str())) {
+              // Draw the trigger with the node, then leave graph
+              // coordinates for the floating dropdown window.
+              const bool l_Open = ImGui::Button(
+                  "##defaultvalue",
+                  ImVec2(l_ValueMax.x - l_ValueMin.x, 0.0f));
+              const ImVec2 l_ButtonMin = ImGui::GetItemRectMin();
+              const ImVec2 l_ButtonMax = ImGui::GetItemRectMax();
+              ImGui::RenderTextClipped(
+                  ImVec2(l_ButtonMin.x + 4.0f, l_ButtonMin.y),
+                  ImVec2(l_ButtonMax.x - 18.0f, l_ButtonMax.y),
+                  l_EnumInfo.entry_name(l_CurrentValue).c_str(),
+                  nullptr, nullptr, ImVec2(0.0f, 0.5f));
+              ImGui::RenderArrow(
+                  ImGui::GetWindowDrawList(),
+                  ImVec2(l_ButtonMax.x - 16.0f, l_ButtonMin.y + 4.0f),
+                  ImGui::GetColorU32(ImGuiCol_Text), ImGuiDir_Down,
+                  0.7f);
+              const bool l_Interacting =
+                  ImGui::IsItemHovered() || ImGui::IsItemActive();
+              const ImVec2 l_PopupPosition = p_Context.to_screen(
+                  ImVec2(l_ButtonMin.x, l_ButtonMax.y));
+              NodeGraphScreenSpaceScope l_ScreenSpace(p_Context);
+              if (l_Open) {
+                ImGui::OpenPopup("defaultvalue_choices");
+              }
+              ImGui::SetNextWindowPos(l_PopupPosition);
+              if (ImGui::BeginPopup("defaultvalue_choices")) {
                 for (u32 i = 0; i < l_EnumInfo.entries.size(); ++i) {
                   const Util::RTTI::EnumEntryInfo &i_Entry =
                       l_EnumInfo.entries[i];
@@ -3015,10 +3030,11 @@ namespace Low {
                         Util::Variant((u32)i_Entry.value);
                   }
                 }
-                ImGui::EndCombo();
+                ImGui::EndPopup();
               }
               if (p_Context.state &&
-                  (ImGui::IsItemHovered() || ImGui::IsItemActive())) {
+                  (l_Interacting ||
+                   ImGui::IsPopupOpen("defaultvalue_choices"))) {
                 p_Context.state->interacting_with_widget = true;
               }
               ImGui::PopItemWidth();
@@ -3037,8 +3053,7 @@ namespace Low {
 
                 if (Gui::DragFloatWithButtons(
                         "defaultvalue", &l_Value, 1.0f, 0.0f, 0.0f,
-                        "%.3f",
-                        l_Compact ? l_Zoom * 0.82f : l_Zoom)) {
+                        "%.3f", l_Compact ? 0.82f : 1.0f)) {
                   l_PinMetadata->default_value = l_Value;
                 }
               } else {
@@ -3123,9 +3138,7 @@ namespace Low {
         }
 
         const float l_HeaderHeight =
-            l_Compact ? 8.0f * p_Context.canvas.m_Zoom
-                      : title_height * p_Context.canvas.m_Zoom +
-                            12.0f * p_Context.canvas.m_Zoom;
+            l_Compact ? 8.0f : title_height + 12.0f;
         const float l_AbovePinsHeight =
             l_NodeClass ? l_NodeClass->get_above_pins_height(
                               *graph, p_Node.id)
@@ -3147,8 +3160,7 @@ namespace Low {
           if (l_SideCount == 1) {
             l_Y = (l_ContentTop + l_ContentBottom) * 0.5f;
           } else {
-            const float l_CompactStep =
-                20.0f * p_Context.canvas.m_Zoom;
+            const float l_CompactStep = 20.0f;
             const float l_ClusterHeight =
                 l_CompactStep * (float)(l_SideCount - 1);
             const float l_ClusterTop =

@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <imgui.h>
 #include "imgui_internal.h"
+#include "imgui_canvas.h"
 
 namespace Low {
   namespace Editor {
@@ -230,6 +231,98 @@ namespace Low {
         NodeGraphEditorContext &p_Context,
         NodeGraphEditorRenderer &p_Renderer)
     {
+      // The existing node-editor canvas transforms drawing, clipping,
+      // and mouse positions. All graph content uses unscaled units.
+      ImGuiEx::Canvas l_DrawingCanvas;
+      l_DrawingCanvas.SetView(FROM_VEC2(p_Context.canvas.m_Scrolling),
+                              p_Context.canvas.m_Zoom);
+      ImGui::SetCursorScreenPos(p_Context.canvas_min);
+      const ImVec2 l_Size(
+          p_Context.canvas_max.x - p_Context.canvas_min.x,
+          p_Context.canvas_max.y - p_Context.canvas_min.y);
+      if (l_DrawingCanvas.Begin("##graph_coordinates", l_Size)) {
+        const ImVec2 l_MouseDelta = ImGui::GetIO().MouseDelta;
+        ImGui::GetIO().MouseDelta =
+            l_DrawingCanvas.ToLocalV(l_MouseDelta);
+
+        NodeGraphCanvas l_UnitCanvas;
+        NodeGraphEditorContext l_LocalContext{p_Context.graph,
+                                              l_UnitCanvas};
+        l_LocalContext.schema = p_Context.schema;
+        l_LocalContext.state = p_Context.state;
+        l_LocalContext.draw_list = p_Context.draw_list;
+        l_LocalContext.canvas_min = l_DrawingCanvas.ViewRect().Min;
+        l_LocalContext.canvas_max = l_DrawingCanvas.ViewRect().Max;
+        l_LocalContext.drawing_canvas = &l_DrawingCanvas;
+        render_contents(l_LocalContext, p_Renderer);
+
+        // IME candidate windows are positioned by the platform after
+        // rendering, so their anchor must leave graph coordinates
+        // too.
+        ImGuiContext &l_ImGui = *ImGui::GetCurrentContext();
+        if (l_ImGui.ActiveIdWindow == ImGui::GetCurrentWindow() &&
+            l_ImGui.PlatformImeData.WantVisible) {
+          l_ImGui.PlatformImeData.InputPos =
+              l_DrawingCanvas.FromLocal(
+                  l_ImGui.PlatformImeData.InputPos);
+          l_ImGui.PlatformImeData.InputLineHeight *=
+              p_Context.canvas.m_Zoom;
+        }
+
+        l_DrawingCanvas.End();
+        ImGui::GetIO().MouseDelta = l_MouseDelta;
+      }
+
+      handle_shortcuts(p_Context, p_Renderer,
+                       p_Context.state
+                           ? p_Context.state->interacting_with_widget
+                           : false);
+      render_create_node_popup(p_Context, p_Renderer);
+      render_context_menus(p_Context, p_Renderer);
+    }
+
+    ImVec2
+    NodeGraphEditorContext::to_screen(const ImVec2 &p_Position) const
+    {
+      return drawing_canvas ? drawing_canvas->FromLocal(p_Position)
+                            : p_Position;
+    }
+
+    float NodeGraphEditorContext::get_view_zoom() const
+    {
+      return drawing_canvas ? drawing_canvas->ViewScale()
+                            : canvas.m_Zoom;
+    }
+
+    NodeGraphScreenSpaceScope::NodeGraphScreenSpaceScope(
+        const NodeGraphEditorContext &p_Context)
+        : m_Canvas(p_Context.drawing_canvas)
+    {
+      if (m_Canvas) {
+        m_Cursor = ImGui::GetCursorScreenPos();
+        m_MouseDelta = ImGui::GetIO().MouseDelta;
+        const ImVec2 l_ScreenCursor = m_Canvas->FromLocal(m_Cursor);
+        const ImVec2 l_ScreenDelta =
+            m_Canvas->FromLocalV(m_MouseDelta);
+        m_Canvas->Suspend();
+        ImGui::GetIO().MouseDelta = l_ScreenDelta;
+        ImGui::SetCursorScreenPos(l_ScreenCursor);
+      }
+    }
+
+    NodeGraphScreenSpaceScope::~NodeGraphScreenSpaceScope()
+    {
+      if (m_Canvas) {
+        m_Canvas->Resume();
+        ImGui::GetIO().MouseDelta = m_MouseDelta;
+        ImGui::SetCursorScreenPos(m_Cursor);
+      }
+    }
+
+    void NodeGraphEditorController::render_contents(
+        NodeGraphEditorContext &p_Context,
+        NodeGraphEditorRenderer &p_Renderer)
+    {
       NodeGraphEditorState *l_State = p_Context.state;
       NodeId l_HoveredNodeId;
       NodeGraphNodeRenderer *l_HoveredNodeRenderer = nullptr;
@@ -243,7 +336,8 @@ namespace Low {
       float l_BestPinDistanceSquared = FLT_MAX;
 
       if (l_State) {
-        l_State->interacting_with_widget = false;
+        l_State->interacting_with_widget =
+            ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId);
       }
 
       for (auto it = p_Context.graph.nodes.rbegin();
@@ -370,6 +464,7 @@ namespace Low {
 
         if (!l_BlockCanvasInteraction && l_MouseInCanvas &&
             ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+          NodeGraphScreenSpaceScope l_ScreenSpace(p_Context);
           if (l_HoveredPinId.is_valid()) {
             l_State->context_menu_pin = l_HoveredPinId;
             l_State->context_menu_node = NodeId{};
@@ -547,12 +642,6 @@ namespace Low {
                                        0.0f, 0, 1.5f);
         }
       }
-
-      handle_shortcuts(p_Context, p_Renderer,
-                       l_State ? l_State->interacting_with_widget
-                               : false);
-      render_create_node_popup(p_Context, p_Renderer);
-      render_context_menus(p_Context, p_Renderer);
     }
 
     void NodeGraphEditorController::handle_shortcuts(
@@ -563,7 +652,8 @@ namespace Low {
       (void)p_Renderer;
 
       NodeGraphEditorState *l_State = p_Context.state;
-      if (!l_State || p_BlockCanvasInteraction) {
+      if (!l_State || p_BlockCanvasInteraction ||
+          ImGui::GetIO().WantTextInput) {
         return;
       }
 
