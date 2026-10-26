@@ -7,6 +7,7 @@
 #include "LowEditorGui.h"
 #include "LowEditorIcons.h"
 #include "LowEditorMetadata.h"
+#include "LowEditorPropertyEditors.h"
 #include "LowUtilHandle.h"
 #include "LowUtilHashing.h"
 #include "LowUtilLogger.h"
@@ -2985,57 +2986,16 @@ namespace Low {
 
             else if (l_PinMetadata->type == PinType::Enum &&
                      (u64)l_PinMetadata->handle_type != 0) {
-              Util::RTTI::EnumInfo &l_EnumInfo =
-                  Util::get_enum_info(l_PinMetadata->handle_type);
-              u8 l_CurrentValue =
-                  (u8)l_PinMetadata->default_value.as_u32();
-
+              int l_Value =
+                  (int)l_PinMetadata->default_value.as_u32();
               ImGui::SetCursorScreenPos(
                   ImVec2(l_ValueMin.x, l_PinAnchor.y - 13.0f));
               ImGui::PushItemWidth(l_ValueMax.x - l_ValueMin.x);
-              // Draw the trigger with the node, then leave graph
-              // coordinates for the floating dropdown window.
-              const bool l_Open = ImGui::Button(
-                  "##defaultvalue",
-                  ImVec2(l_ValueMax.x - l_ValueMin.x, 0.0f));
-              const ImVec2 l_ButtonMin = ImGui::GetItemRectMin();
-              const ImVec2 l_ButtonMax = ImGui::GetItemRectMax();
-              ImGui::RenderTextClipped(
-                  ImVec2(l_ButtonMin.x + 4.0f, l_ButtonMin.y),
-                  ImVec2(l_ButtonMax.x - 18.0f, l_ButtonMax.y),
-                  l_EnumInfo.entry_name(l_CurrentValue).c_str(),
-                  nullptr, nullptr, ImVec2(0.0f, 0.5f));
-              ImGui::RenderArrow(
-                  ImGui::GetWindowDrawList(),
-                  ImVec2(l_ButtonMax.x - 16.0f, l_ButtonMin.y + 4.0f),
-                  ImGui::GetColorU32(ImGuiCol_Text), ImGuiDir_Down,
-                  0.7f);
-              const bool l_Interacting =
-                  ImGui::IsItemHovered() || ImGui::IsItemActive();
-              const ImVec2 l_PopupPosition = p_Context.to_screen(
-                  ImVec2(l_ButtonMin.x, l_ButtonMax.y));
-              NodeGraphScreenSpaceScope l_ScreenSpace(p_Context);
-              if (l_Open) {
-                ImGui::OpenPopup("defaultvalue_choices");
-              }
-              ImGui::SetNextWindowPos(l_PopupPosition);
-              if (ImGui::BeginPopup("defaultvalue_choices")) {
-                for (u32 i = 0; i < l_EnumInfo.entries.size(); ++i) {
-                  const Util::RTTI::EnumEntryInfo &i_Entry =
-                      l_EnumInfo.entries[i];
-                  if (ImGui::Selectable(i_Entry.name.c_str(),
-                                        l_CurrentValue ==
-                                            i_Entry.value)) {
-                    l_PinMetadata->default_value =
-                        Util::Variant((u32)i_Entry.value);
-                  }
-                }
-                ImGui::EndPopup();
-              }
-              if (p_Context.state &&
-                  (l_Interacting ||
-                   ImGui::IsPopupOpen("defaultvalue_choices"))) {
-                p_Context.state->interacting_with_widget = true;
+              if (PropertyEditors::render_enum_selector(
+                      l_PinMetadata->handle_type, &l_Value,
+                      "defaultvalue", false, &p_Context)) {
+                l_PinMetadata->default_value =
+                    Util::Variant((u32)l_Value);
               }
               ImGui::PopItemWidth();
               l_RenderedWidget = true;
@@ -3057,10 +3017,11 @@ namespace Low {
                   l_PinMetadata->default_value = l_Value;
                 }
               } else {
-                int l_Value = l_PinMetadata->default_value.as_float();
+                int l_Value = (int32_t)l_PinMetadata->default_value;
 
-                if (Gui::DragIntWithButtons("defaultvalue", &l_Value,
-                                            1, 0, 2000)) {
+                if (Gui::DragIntWithButtons(
+                        "defaultvalue", &l_Value, 1, 0, 2000, "%d",
+                        l_Compact ? 0.82f : 1.0f)) {
                   l_PinMetadata->default_value = l_Value;
                 }
               }

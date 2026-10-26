@@ -20,8 +20,7 @@
 #include "LowRendererResourceManager.h"
 
 #include <algorithm>
-
-#define DRAG_BUTTON_WIDTH 27.0f
+#include <limits>
 
 namespace Low {
   namespace Editor {
@@ -685,67 +684,12 @@ namespace Low {
         return pressed;
       }
 
-      bool DragIntWithButtons(const char *label, int *value,
-                              int speed, int min, int max)
-      {
-        // Start a new horizontal group
-        ImGui::BeginGroup();
-
-        bool l_Edited = false;
-
-        float l_FullWidth = ImGui::GetContentRegionAvail().x;
-        float l_ButtonWidth = DRAG_BUTTON_WIDTH;
-        float l_DragWidth = l_FullWidth - (l_ButtonWidth * 3.0f);
-
-        ImVec2 l_CursorStart = ImGui::GetCursorPos();
-
-        // DragFloat for the main value control
-        ImGui::PushID(label);
-        ImGui::PushItemWidth(l_DragWidth + 3.0f);
-        if (ImGui::DragInt("##Drag", value, speed, min, max)) {
-          // Ensure value stays clamped to min/max bounds (if
-          // provided)
-          if (min < max) {
-            *value = ImClamp(*value, min, max);
-          }
-          l_Edited = true;
-        }
-        ImGui::PopItemWidth();
-
-        ImGui::SetCursorPos(l_CursorStart +
-                            ImVec2(l_DragWidth, 0.0f));
-
-        if (ButtonNoRounding(ICON_LC_PLUS)) {
-          *value += 1.0f; // Increase by 1.0
-          if (min < max) {
-            *value = ImClamp(*value, min, max);
-          }
-          l_Edited = true;
-        }
-
-        ImGui::SetCursorPos(
-            l_CursorStart +
-            ImVec2(l_DragWidth + l_ButtonWidth, 0.0f));
-
-        if (ButtonRounding(ICON_LC_MINUS,
-                           ImDrawFlags_RoundCornersRight)) {
-          *value -= 1.0f; // Decrease by 1.0
-          if (min < max) {
-            *value = ImClamp(*value, min, max);
-          }
-          l_Edited = true;
-        }
-
-        // End horizontal group
-        ImGui::PopID();
-        ImGui::EndGroup();
-
-        return l_Edited;
-      }
-
-      bool DragFloatWithButtons(const char *label, float *value,
-                                float speed, float min, float max,
-                                const char *format, float p_Scale)
+      template <typename T>
+      static bool
+      drag_scalar_with_buttons(const char *label,
+                               ImGuiDataType p_DataType, T *value,
+                               float speed, T min, T max,
+                               const char *format, float p_Scale)
       {
         Theme &l_Theme = theme_get_current();
         const float l_Scale = LOW_MATH_MAX(0.75f, p_Scale);
@@ -817,8 +761,8 @@ namespace Low {
         // --- Value drag ---
         ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
         ImGui::SetNextItemWidth(l_DragWidth);
-        if (ImGui::DragFloat("##Drag", value, speed, min, max,
-                             format)) {
+        if (ImGui::DragScalar("##Drag", p_DataType, value, speed,
+                              &min, &max, format)) {
           if (min < max)
             *value = ImClamp(*value, min, max);
           l_Edited = true;
@@ -834,7 +778,9 @@ namespace Low {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
         if (ImGui::Button(ICON_LC_PLUS,
                           ImVec2(l_ButtonWidth, 0.0f))) {
-          *value += 1.0f;
+          if (*value < (std::numeric_limits<T>::max)()) {
+            *value += T(1);
+          }
           if (min < max)
             *value = ImClamp(*value, min, max);
           l_Edited = true;
@@ -847,7 +793,9 @@ namespace Low {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
         if (ImGui::Button(ICON_LC_MINUS,
                           ImVec2(l_ButtonWidth, 0.0f))) {
-          *value -= 1.0f;
+          if (*value > (std::numeric_limits<T>::lowest)()) {
+            *value -= T(1);
+          }
           if (min < max)
             *value = ImClamp(*value, min, max);
           l_Edited = true;
@@ -871,6 +819,24 @@ namespace Low {
         ImGui::EndGroup();
 
         return l_Edited;
+      }
+
+      bool DragIntWithButtons(const char *label, int *value,
+                              int speed, int min, int max,
+                              const char *format, float p_Scale)
+      {
+        return drag_scalar_with_buttons(label, ImGuiDataType_S32,
+                                        value, (float)speed, min, max,
+                                        format, p_Scale);
+      }
+
+      bool DragFloatWithButtons(const char *label, float *value,
+                                float speed, float min, float max,
+                                const char *format, float p_Scale)
+      {
+        return drag_scalar_with_buttons(label, ImGuiDataType_Float,
+                                        value, speed, min, max,
+                                        format, p_Scale);
       }
 
       static bool color_input_internal(const char *p_Label,

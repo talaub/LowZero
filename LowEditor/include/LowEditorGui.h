@@ -73,11 +73,10 @@ namespace Low {
                                          Math::Color *value,
                                          float p_Scale = 1.0f);
 
-      bool LOW_EDITOR_API DragIntWithButtons(const char *label,
-                                             int *value,
-                                             int speed = 1,
-                                             int min = -50000,
-                                             int max = 50000);
+      bool LOW_EDITOR_API DragIntWithButtons(
+          const char *label, int *value, int speed = 1,
+          int min = -50000, int max = 50000,
+          const char *format = "%d", float p_Scale = 1.0f);
 
       bool LOW_EDITOR_API ButtonRounding(const char *p_Text,
                                          u32 p_Flags,

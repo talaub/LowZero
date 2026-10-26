@@ -1,4 +1,5 @@
 #include "LowEditorPropertyEditors.h"
+#include "LowEditorNodeGraph.h"
 
 #include "LowEditor.h"
 #include "LowEditorGui.h"
@@ -786,83 +787,109 @@ namespace Low {
         return l_Changed;
       }
 
-      bool render_enum_selector(u16 p_EnumId, int *p_Value,
-                                Util::String p_Label,
-                                bool p_RenderLabel,
-                                Util::List<int> p_FilterList)
+      static bool
+      render_enum_options(const Util::RTTI::EnumInfo &l_EnumInfo,
+                          u8 &l_CurrentValue,
+                          const Util::List<int> &p_FilterList)
       {
-        Util::String l_Label = "##";
-        l_Label += p_Label.c_str();
-
-        Util::RTTI::EnumInfo &l_EnumInfo =
-            Util::get_enum_info(p_EnumId);
-
-        Util::List<Util::RTTI::EnumEntryInfo> l_FilteredEntries;
-
-        for (u32 i = 0; i < l_EnumInfo.entries.size(); ++i) {
-          bool i_Filtered = false;
+        bool l_Result = false;
+        for (int i = 0; i < l_EnumInfo.entries.size(); i++) {
+          bool i_Disabled = false;
           for (u32 j = 0; j < p_FilterList.size(); ++j) {
             if (l_EnumInfo.entries[i].value == p_FilterList[j]) {
-              i_Filtered = true;
+              i_Disabled = true;
               break;
             }
           }
 
-          if (!i_Filtered) {
-            l_FilteredEntries.push_back(l_EnumInfo.entries[i]);
+          if (i_Disabled) {
+            ImGui::PushStyleVar(ImGuiStyleVar_Alpha,
+                                ImGui::GetStyle().Alpha * 0.5f);
+            ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+          }
+
+          if (ImGui::Selectable(l_EnumInfo.entries[i].name.c_str(),
+                                l_CurrentValue ==
+                                    l_EnumInfo.entries[i].value)) {
+            if (!i_Disabled) // Only allow selection if the item
+                             // is not disabled
+            {
+              l_CurrentValue = l_EnumInfo.entries[i].value;
+              l_Result = true;
+            }
+          }
+
+          if (i_Disabled) {
+            ImGui::PopItemFlag();
+            ImGui::PopStyleVar();
+          }
+
+          // Set the initial focus when opening the combo
+          // (scrolling
+          // + keyboard navigation focus)
+          if (l_CurrentValue == l_EnumInfo.entries[i].value) {
+            ImGui::SetItemDefaultFocus();
           }
         }
+        return l_Result;
+      }
 
+      bool render_enum_selector(
+          u16 p_EnumId, int *p_Value, Util::String p_Label,
+          bool p_RenderLabel, Util::List<int> p_FilterList,
+          const NodeGraphEditorContext *p_GraphContext)
+      {
+        Util::String l_Label = "##";
+        l_Label += p_Label.c_str();
+        Util::RTTI::EnumInfo &l_EnumInfo =
+            Util::get_enum_info(p_EnumId);
         u8 l_CurrentValue = *p_Value;
-
         bool l_Result = false;
 
-        if (ImGui::BeginCombo(
-                l_Label.c_str(),
-                l_EnumInfo.entry_name(l_CurrentValue).c_str())) {
-          for (int i = 0; i < l_EnumInfo.entries.size(); i++) {
-            bool i_Disabled = false;
-            for (u32 j = 0; j < p_FilterList.size(); ++j) {
-              if (l_EnumInfo.entries[i].value == p_FilterList[j]) {
-                i_Disabled = true;
-                break;
-              }
+        if (p_GraphContext) {
+          ImGuiContext &l_ImGui = *ImGui::GetCurrentContext();
+          const ImGuiNextWindowDataFlags l_NextWindowFlags =
+              l_ImGui.NextWindowData.HasFlags;
+          l_ImGui.NextWindowData.ClearFlags();
+          ImGuiID l_PopupId;
+          ImRect l_Frame;
+          const bool l_Open = ImGui::BeginComboFrame(
+              l_Label.c_str(),
+              l_EnumInfo.entry_name(l_CurrentValue).c_str(), 0,
+              &l_PopupId, &l_Frame);
+          if (p_GraphContext->state &&
+              (l_Open || ImGui::IsItemHovered() ||
+               ImGui::IsItemActive())) {
+            p_GraphContext->state->interacting_with_widget = true;
+          }
+          if (l_Open) {
+            const ImRect l_ScreenFrame(
+                p_GraphContext->to_screen(l_Frame.Min),
+                p_GraphContext->to_screen(l_Frame.Max));
+            ImGuiPopupData &l_Popup =
+                l_ImGui.OpenPopupStack[l_ImGui.BeginPopupStack.Size];
+            if (l_Popup.OpenFrameCount == l_ImGui.FrameCount) {
+              l_Popup.OpenPopupPos = l_ScreenFrame.GetBL();
+              l_Popup.OpenMousePos =
+                  p_GraphContext->to_screen(l_Popup.OpenMousePos);
             }
-
-            if (i_Disabled) {
-              ImGui::PushStyleVar(ImGuiStyleVar_Alpha,
-                                  ImGui::GetStyle().Alpha * 0.5f);
-              ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-            }
-
-            if (ImGui::Selectable(l_EnumInfo.entries[i].name.c_str(),
-                                  l_CurrentValue ==
-                                      l_EnumInfo.entries[i].value)) {
-              if (!i_Disabled) // Only allow selection if the item
-                               // is not disabled
-              {
-                l_CurrentValue = l_EnumInfo.entries[i].value;
-                l_Result = true;
-              }
-            }
-
-            if (i_Disabled) {
-              ImGui::PopItemFlag();
-              ImGui::PopStyleVar();
-            }
-
-            // Set the initial focus when opening the combo
-            // (scrolling
-            // + keyboard navigation focus)
-            if (l_CurrentValue == l_EnumInfo.entries[i].value) {
-              ImGui::SetItemDefaultFocus();
+            NodeGraphScreenSpaceScope l_ScreenSpace(*p_GraphContext);
+            l_ImGui.NextWindowData.HasFlags = l_NextWindowFlags;
+            if (ImGui::BeginComboPopup(l_PopupId, l_ScreenFrame, 0)) {
+              l_Result = render_enum_options(
+                  l_EnumInfo, l_CurrentValue, p_FilterList);
+              ImGui::EndCombo();
             }
           }
+        } else if (ImGui::BeginCombo(
+                       l_Label.c_str(),
+                       l_EnumInfo.entry_name(l_CurrentValue)
+                           .c_str())) {
+          l_Result = render_enum_options(l_EnumInfo, l_CurrentValue,
+                                         p_FilterList);
           ImGui::EndCombo();
         }
-
         *p_Value = l_CurrentValue;
-
         return l_Result;
       }
 
@@ -874,13 +901,14 @@ namespace Low {
                                     p_RenderLabel, Util::List<int>());
       }
 
-      bool render_enum_selector(Util::TypeIdentifier p_EnumIdentifier,
-                                int *p_Value, Util::String p_Label,
-                                bool p_RenderLabel)
+      bool render_enum_selector(
+          Util::TypeIdentifier p_EnumIdentifier, int *p_Value,
+          Util::String p_Label, bool p_RenderLabel,
+          const NodeGraphEditorContext *p_GraphContext)
       {
         return render_enum_selector(
             Util::get_enum_id(p_EnumIdentifier), p_Value, p_Label,
-            p_RenderLabel, Util::List<int>());
+            p_RenderLabel, Util::List<int>(), p_GraphContext);
       }
 
       bool render_enum_selector(PropertyMetadata &p_Metadata,

@@ -1905,10 +1905,23 @@ static float CalcMaxPopupHeightFromItemCount(int items_count)
 bool ImGui::BeginCombo(const char* label, const char* preview_value, ImGuiComboFlags flags)
 {
     ImGuiContext& g = *GImGui;
+    ImGuiNextWindowDataFlags backup_next_window_data_flags = g.NextWindowData.HasFlags;
+    g.NextWindowData.ClearFlags(); // Consume next-window settings even when closed.
+    ImGuiID popup_id;
+    ImRect frame_bb;
+    if (!BeginComboFrame(label, preview_value, flags, &popup_id, &frame_bb))
+        return false;
+    g.NextWindowData.HasFlags = backup_next_window_data_flags;
+    return BeginComboPopup(popup_id, frame_bb, flags);
+}
+
+// Draw the same combo frame without entering a popup window. Canvas
+// callers can switch to screen coordinates before BeginComboPopup().
+bool ImGui::BeginComboFrame(const char* label, const char* preview_value, ImGuiComboFlags flags, ImGuiID* out_popup_id, ImRect* out_frame_bb)
+{
+    ImGuiContext& g = *GImGui;
     ImGuiWindow* window = GetCurrentWindow();
 
-    ImGuiNextWindowDataFlags backup_next_window_data_flags = g.NextWindowData.HasFlags;
-    g.NextWindowData.ClearFlags(); // We behave like Begin() and need to consume those values
     if (window->SkipItems)
         return false;
 
@@ -1991,8 +2004,9 @@ bool ImGui::BeginCombo(const char* label, const char* preview_value, ImGuiComboF
     if (!popup_open)
         return false;
 
-    g.NextWindowData.HasFlags = backup_next_window_data_flags;
-    return BeginComboPopup(popup_id, bb, flags);
+    *out_popup_id = popup_id;
+    *out_frame_bb = bb;
+    return true;
 }
 
 bool ImGui::BeginComboPopup(ImGuiID popup_id, const ImRect& bb, ImGuiComboFlags flags)

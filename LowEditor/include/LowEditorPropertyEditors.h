@@ -11,6 +11,8 @@
 
 namespace Low {
   namespace Editor {
+    struct NodeGraphEditorContext;
+
     namespace PropertyEditors {
       struct ListEditorResult
       {
@@ -26,7 +28,8 @@ namespace Low {
 
       bool LOW_EDITOR_API render_enum_selector(
           u16 p_EnumId, int *p_Value, Util::String p_Label,
-          bool p_RenderLabel, Util::List<int> p_FilterList);
+          bool p_RenderLabel, Util::List<int> p_FilterList,
+          const NodeGraphEditorContext *p_GraphContext = nullptr);
 
       bool LOW_EDITOR_API render_handle_selector(
           Util::String p_Label, Util::RTTI::TypeInfo &p_TypeInfo,
@@ -42,7 +45,8 @@ namespace Low {
 
       bool LOW_EDITOR_API render_enum_selector(
           Util::TypeIdentifier p_EnumIdentifier, int *p_Value,
-          Util::String p_Label, bool p_RenderLabel);
+          Util::String p_Label, bool p_RenderLabel,
+          const NodeGraphEditorContext *p_GraphContext = nullptr);
 
       bool LOW_EDITOR_API render_enum_selector(
           PropertyMetadata &p_Metadata, Util::Handle p_Handle);
