@@ -480,6 +480,15 @@ namespace Low {
         Pin *find_pin_checked(PinId p_PinId);
         const Pin *find_pin_checked(PinId p_PinId) const;
 
+        Util::List<Pin *> get_node_pins(NodeId p_NodeId);
+        Util::List<const Pin *> get_node_pins(NodeId p_NodeId) const;
+
+        Util::List<Pin *> get_input_pins(NodeId p_NodeId);
+        Util::List<const Pin *> get_input_pins(NodeId p_NodeId) const;
+
+        Util::List<Pin *> get_output_pins(NodeId p_NodeId);
+        Util::List<const Pin *> get_output_pins(NodeId p_NodeId) const;
+
         Pin *find_input_pin(NodeId p_NodeId,
                             const Util::String &p_DisplayName);
         const Pin *

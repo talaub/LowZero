@@ -377,7 +377,8 @@ namespace Low {
             return;
           }
           case PinType::Quaternion: {
-            const Math::Quaternion l_Value = p_PinMetadata.default_value;
+            const Math::Quaternion l_Value =
+                p_PinMetadata.default_value;
             p_CompileContext.main_code.append("Quaternion(");
             p_CompileContext.main_code.append(l_Value.x);
             p_CompileContext.main_code.append(", ");
@@ -779,7 +780,8 @@ namespace Low {
           p_Context.main_code.append(l_TypeStr + " " +
                                      i_Variable.name);
 
-          if (!l_IsList && variable_has_default_expression(i_Variable)) {
+          if (!l_IsList &&
+              variable_has_default_expression(i_Variable)) {
             p_Context.main_code.append(" = ");
             Pin l_DefaultPin;
             l_DefaultPin.type = i_Variable.type;
@@ -1222,7 +1224,8 @@ namespace Low {
           p_Context.main_code.append(l_TypeStr + " " +
                                      i_Variable.name);
 
-          if (!l_IsList && variable_has_default_expression(i_Variable)) {
+          if (!l_IsList &&
+              variable_has_default_expression(i_Variable)) {
             p_Context.main_code.append(" = ");
             Pin l_DefaultPin;
             l_DefaultPin.type = i_Variable.type;
@@ -1559,6 +1562,87 @@ namespace Low {
         LOW_ASSERT(l_Pin,
                    "Could not find visual scripting pin by id");
         return l_Pin;
+      }
+
+      Util::List<Pin *> Graph::get_node_pins(NodeId p_NodeId)
+      {
+        Util::List<Pin *> l_Result;
+        for (Low::Editor::Pin *i_Pin :
+             graph.get_node_pins(p_NodeId)) {
+          Pin *l_PinMetadata = find_pin(i_Pin->id);
+          if (l_PinMetadata) {
+            l_Result.push_back(l_PinMetadata);
+          }
+        }
+        return l_Result;
+      }
+
+      Util::List<const Pin *>
+      Graph::get_node_pins(NodeId p_NodeId) const
+      {
+        Util::List<const Pin *> l_Result;
+        for (const Low::Editor::Pin *i_Pin :
+             graph.get_node_pins(p_NodeId)) {
+          const Pin *l_PinMetadata = find_pin(i_Pin->id);
+          if (l_PinMetadata) {
+            l_Result.push_back(l_PinMetadata);
+          }
+        }
+        return l_Result;
+      }
+
+      Util::List<Pin *> Graph::get_input_pins(NodeId p_NodeId)
+      {
+        Util::List<Pin *> l_Result;
+        for (Low::Editor::Pin *i_Pin :
+             graph.get_input_pins(p_NodeId)) {
+          Pin *l_PinMetadata = find_pin(i_Pin->id);
+          if (l_PinMetadata) {
+            l_Result.push_back(l_PinMetadata);
+          }
+        }
+        return l_Result;
+      }
+
+      Util::List<const Pin *>
+      Graph::get_input_pins(NodeId p_NodeId) const
+      {
+        Util::List<const Pin *> l_Result;
+        for (const Low::Editor::Pin *i_Pin :
+             graph.get_input_pins(p_NodeId)) {
+          const Pin *l_PinMetadata = find_pin(i_Pin->id);
+          if (l_PinMetadata) {
+            l_Result.push_back(l_PinMetadata);
+          }
+        }
+        return l_Result;
+      }
+
+      Util::List<Pin *> Graph::get_output_pins(NodeId p_NodeId)
+      {
+        Util::List<Pin *> l_Result;
+        for (Low::Editor::Pin *i_Pin :
+             graph.get_output_pins(p_NodeId)) {
+          Pin *l_PinMetadata = find_pin(i_Pin->id);
+          if (l_PinMetadata) {
+            l_Result.push_back(l_PinMetadata);
+          }
+        }
+        return l_Result;
+      }
+
+      Util::List<const Pin *>
+      Graph::get_output_pins(NodeId p_NodeId) const
+      {
+        Util::List<const Pin *> l_Result;
+        for (const Low::Editor::Pin *i_Pin :
+             graph.get_output_pins(p_NodeId)) {
+          const Pin *l_PinMetadata = find_pin(i_Pin->id);
+          if (l_PinMetadata) {
+            l_Result.push_back(l_PinMetadata);
+          }
+        }
+        return l_Result;
       }
 
       Pin *Graph::find_input_pin(NodeId p_NodeId,
@@ -2946,13 +3030,26 @@ namespace Low {
                   l_ValueMin.x,
                   l_PinAnchor.y - (l_Compact ? 10.0f : 13.0f)));
               ImGui::PushItemWidth(l_ValueMax.x - l_ValueMin.x);
-              float l_Value = l_PinMetadata->default_value.as_float();
+              if (l_PinMetadata->number_subtype ==
+                  NumberSubtype::Float) {
+                float l_Value =
+                    l_PinMetadata->default_value.as_float();
 
-              if (Gui::DragFloatWithButtons(
-                      "defaultvalue", &l_Value, 1.0f, 0.0f, 0.0f,
-                      "%.3f", l_Compact ? l_Zoom * 0.82f : l_Zoom)) {
-                l_PinMetadata->default_value = l_Value;
+                if (Gui::DragFloatWithButtons(
+                        "defaultvalue", &l_Value, 1.0f, 0.0f, 0.0f,
+                        "%.3f",
+                        l_Compact ? l_Zoom * 0.82f : l_Zoom)) {
+                  l_PinMetadata->default_value = l_Value;
+                }
+              } else {
+                int l_Value = l_PinMetadata->default_value.as_float();
+
+                if (Gui::DragIntWithButtons("defaultvalue", &l_Value,
+                                            1, 0, 2000)) {
+                  l_PinMetadata->default_value = l_Value;
+                }
               }
+
               if (p_Context.state &&
                   (ImGui::IsItemHovered() || ImGui::IsItemActive())) {
                 p_Context.state->interacting_with_widget = true;

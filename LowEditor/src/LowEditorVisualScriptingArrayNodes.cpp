@@ -3,6 +3,7 @@
 #include "LowEditorVisualScriptNodes.h"
 
 #include "LowEditorIcons.h"
+#include "LowEditorVisualScripting.h"
 
 namespace Low {
   namespace Editor {
@@ -23,20 +24,20 @@ namespace Low {
               return N(vs_syntax_add_to_array);
             }
 
-            virtual Util::String
-            get_title(const Graph &, NodeId) const override
+            virtual Util::String get_title(const Graph &,
+                                           NodeId) const override
             {
               return "Add To Array";
             }
 
-            virtual Util::String
-            get_subtitle(const Graph &, NodeId) const override
+            virtual Util::String get_subtitle(const Graph &,
+                                              NodeId) const override
             {
               return "Array";
             }
 
-            virtual Util::String
-            get_category(const Graph &, NodeId) const override
+            virtual Util::String get_category(const Graph &,
+                                              NodeId) const override
             {
               return "Array";
             }
@@ -86,6 +87,27 @@ namespace Low {
             }
 
             virtual void
+            on_pin_connected(Graph &p_Graph, NodeId p_NodeId,
+                             PinId p_PinId,
+                             PinId p_OtherPinId) const override
+            {
+              const Pin *l_OtherPin = p_Graph.find_pin(p_OtherPinId);
+              if (l_OtherPin->type == PinType::Execution) {
+                return;
+              }
+
+              auto l_Pins = p_Graph.get_input_pins(p_NodeId);
+              for (Pin *i_Pin : l_Pins) {
+                if (i_Pin->type == PinType::Dynamic) {
+                  i_Pin->type = l_OtherPin->type;
+                  i_Pin->number_subtype = l_OtherPin->number_subtype;
+                  i_Pin->string_subtype = l_OtherPin->string_subtype;
+                  i_Pin->handle_type = l_OtherPin->handle_type;
+                }
+              }
+            }
+
+            virtual void
             compile(Graph &p_Graph, NodeId p_NodeId,
                     CompileContext &p_CompileContext) const override
             {
@@ -95,7 +117,7 @@ namespace Low {
                   p_Graph.find_input_pin_checked(p_NodeId,
                                                  g_ElementPinName);
               LOW_ASSERT(l_ArrayPin && l_ElementPin,
-                        "Add to array node is missing pins");
+                         "Add to array node is missing pins");
 
               if (l_ArrayPin && l_ElementPin) {
                 p_Graph.compile_input_pin(l_ArrayPin->pin,
@@ -120,20 +142,20 @@ namespace Low {
               return N(vs_syntax_get_array_entry);
             }
 
-            virtual Util::String
-            get_title(const Graph &, NodeId) const override
+            virtual Util::String get_title(const Graph &,
+                                           NodeId) const override
             {
               return "Get Array Entry";
             }
 
-            virtual Util::String
-            get_subtitle(const Graph &, NodeId) const override
+            virtual Util::String get_subtitle(const Graph &,
+                                              NodeId) const override
             {
               return "Array";
             }
 
-            virtual Util::String
-            get_category(const Graph &, NodeId) const override
+            virtual Util::String get_category(const Graph &,
+                                              NodeId) const override
             {
               return "Array";
             }
@@ -167,26 +189,26 @@ namespace Low {
               p_Graph.add_pin(
                   l_IndexIn,
                   make_number_pin_metadata(g_IndexPinName,
-                                          NumberSubtype::Int32),
+                                           NumberSubtype::Int32),
                   p_Schema);
 
               Editor::Pin l_ValueOut =
                   make_output_pin(p_Graph, p_NodeId);
               Pin l_ValueMetadata =
                   make_dynamic_pin_metadata(g_ValuePinName);
-              l_ValueMetadata.show_default_value_when_unlinked = false;
+              l_ValueMetadata.show_default_value_when_unlinked =
+                  false;
               p_Graph.add_pin(l_ValueOut, l_ValueMetadata, p_Schema);
             }
 
             virtual void
             on_pin_connected(Graph &p_Graph, NodeId p_NodeId,
-                            PinId p_PinId,
-                            PinId p_OtherPinId) const override
+                             PinId p_PinId,
+                             PinId p_OtherPinId) const override
             {
-              const Pin *l_ThisPin = p_Graph.find_pin(p_PinId);
-              if (!l_ThisPin ||
-                  l_ThisPin->container_type !=
-                      PinContainerType::List) {
+              Pin *l_ThisPin = p_Graph.find_pin(p_PinId);
+              if (!l_ThisPin || l_ThisPin->container_type !=
+                                    PinContainerType::List) {
                 return;
               }
 
@@ -201,6 +223,11 @@ namespace Low {
               if (!l_ValuePin) {
                 return;
               }
+
+              l_ThisPin->type = l_OtherPin->type;
+              l_ThisPin->string_subtype = l_OtherPin->string_subtype;
+              l_ThisPin->number_subtype = l_OtherPin->number_subtype;
+              l_ThisPin->handle_type = l_OtherPin->handle_type;
 
               l_ValuePin->type = l_OtherPin->type;
               l_ValuePin->number_subtype = l_OtherPin->number_subtype;
@@ -218,7 +245,7 @@ namespace Low {
               const Pin *l_IndexPin = p_Graph.find_input_pin_checked(
                   p_NodeId, g_IndexPinName);
               LOW_ASSERT(l_ArrayPin && l_IndexPin,
-                        "Get array entry node is missing pins");
+                         "Get array entry node is missing pins");
               if (!l_ArrayPin || !l_IndexPin) {
                 return;
               }
@@ -239,20 +266,20 @@ namespace Low {
               return N(vs_syntax_get_array_length);
             }
 
-            virtual Util::String
-            get_title(const Graph &, NodeId) const override
+            virtual Util::String get_title(const Graph &,
+                                           NodeId) const override
             {
               return "Get Array Length";
             }
 
-            virtual Util::String
-            get_subtitle(const Graph &, NodeId) const override
+            virtual Util::String get_subtitle(const Graph &,
+                                              NodeId) const override
             {
               return "Array";
             }
 
-            virtual Util::String
-            get_category(const Graph &, NodeId) const override
+            virtual Util::String get_category(const Graph &,
+                                              NodeId) const override
             {
               return "Array";
             }
@@ -291,6 +318,32 @@ namespace Low {
                               p_Schema);
             }
 
+            virtual void
+            on_pin_connected(Graph &p_Graph, NodeId p_NodeId,
+                             PinId p_PinId,
+                             PinId p_OtherPinId) const override
+            {
+              Pin *l_ThisPin = p_Graph.find_pin(p_PinId);
+              const Pin *l_OtherPin = p_Graph.find_pin(p_OtherPinId);
+
+              if (!l_ThisPin || l_ThisPin->container_type !=
+                                    PinContainerType::List) {
+                return;
+              }
+
+              if (l_ThisPin->pin == p_PinId) {
+                if (l_OtherPin->container_type ==
+                    PinContainerType::List) {
+                  l_ThisPin->type = l_OtherPin->type;
+                  l_ThisPin->string_subtype =
+                      l_OtherPin->string_subtype;
+                  l_ThisPin->number_subtype =
+                      l_OtherPin->number_subtype;
+                  l_ThisPin->handle_type = l_OtherPin->handle_type;
+                }
+              }
+            }
+
             virtual void compile_output_pin(
                 Graph &p_Graph, NodeId p_NodeId, PinId p_PinId,
                 CompileContext &p_CompileContext) const override
@@ -298,8 +351,9 @@ namespace Low {
               (void)p_PinId;
               const Pin *l_ArrayPin = p_Graph.find_input_pin_checked(
                   p_NodeId, g_ArrayPinName);
-              LOW_ASSERT(l_ArrayPin,
-                        "Get array length node is missing array pin");
+              LOW_ASSERT(
+                  l_ArrayPin,
+                  "Get array length node is missing array pin");
               if (!l_ArrayPin) {
                 return;
               }
@@ -317,20 +371,20 @@ namespace Low {
               return N(vs_syntax_make_array);
             }
 
-            virtual Util::String
-            get_title(const Graph &, NodeId) const override
+            virtual Util::String get_title(const Graph &,
+                                           NodeId) const override
             {
               return "Make Array";
             }
 
-            virtual Util::String
-            get_subtitle(const Graph &, NodeId) const override
+            virtual Util::String get_subtitle(const Graph &,
+                                              NodeId) const override
             {
               return "Array";
             }
 
-            virtual Util::String
-            get_category(const Graph &, NodeId) const override
+            virtual Util::String get_category(const Graph &,
+                                              NodeId) const override
             {
               return "Array";
             }
@@ -361,7 +415,8 @@ namespace Low {
                   make_output_pin(p_Graph, p_NodeId);
               Pin l_ArrayMetadata = make_dynamic_pin_metadata(
                   "", PinContainerType::List);
-              l_ArrayMetadata.show_default_value_when_unlinked = false;
+              l_ArrayMetadata.show_default_value_when_unlinked =
+                  false;
               p_Graph.add_pin(l_ArrayOut, l_ArrayMetadata, p_Schema);
             }
 
@@ -377,20 +432,19 @@ namespace Low {
                   p_PinMetadata.container_type ==
                       PinContainerType::None) {
                 return p_OtherPinMetadata.container_type ==
-                      PinContainerType::None;
+                       PinContainerType::None;
               }
               return true;
             }
 
             virtual void
             on_pin_connected(Graph &p_Graph, NodeId p_NodeId,
-                            PinId p_PinId,
-                            PinId p_OtherPinId) const override
+                             PinId p_PinId,
+                             PinId p_OtherPinId) const override
             {
               const Pin *l_ThisPin = p_Graph.find_pin(p_PinId);
-              if (!l_ThisPin ||
-                  l_ThisPin->container_type !=
-                      PinContainerType::None) {
+              if (!l_ThisPin || l_ThisPin->container_type !=
+                                    PinContainerType::None) {
                 return;
               }
 
@@ -465,18 +519,17 @@ namespace Low {
               p_CompileContext.main_code.append("}");
             }
 
-            virtual float
-            get_below_pins_height(const Graph &,
-                                  NodeId) const override
+            virtual float get_below_pins_height(const Graph &,
+                                                NodeId) const override
             {
               return 26.0f;
             }
 
-            virtual void render_below_pins(
-                Graph &p_Graph, NodeId p_NodeId,
-                NodeGraphEditorContext &p_Context,
-                const ImVec2 &p_RectMin,
-                const ImVec2 &p_RectMax) const override
+            virtual void
+            render_below_pins(Graph &p_Graph, NodeId p_NodeId,
+                              NodeGraphEditorContext &p_Context,
+                              const ImVec2 &p_RectMin,
+                              const ImVec2 &p_RectMax) const override
             {
               (void)p_RectMax;
               Util::List<Editor::Pin *> l_ElementPins;
@@ -543,7 +596,8 @@ namespace Low {
           l_AddToArrayEntry.category = "Array";
           l_AddToArrayEntry.title = "Add To Array";
           l_AddToArrayEntry.subtitle = "Array";
-          l_AddToArrayEntry.search_text = "add to array insert append";
+          l_AddToArrayEntry.search_text =
+              "add to array insert append";
           l_AddToArrayEntry.node_class =
               g_AddToArrayNodeClass.get_name();
           p_Graph.register_spawn_entry(l_AddToArrayEntry);
@@ -564,7 +618,8 @@ namespace Low {
           l_GetArrayLengthEntry.category = "Array";
           l_GetArrayLengthEntry.title = "Get Array Length";
           l_GetArrayLengthEntry.subtitle = "Array";
-          l_GetArrayLengthEntry.search_text = "array length size count";
+          l_GetArrayLengthEntry.search_text =
+              "array length size count";
           l_GetArrayLengthEntry.node_class =
               g_GetArrayLengthNodeClass.get_name();
           p_Graph.register_spawn_entry(l_GetArrayLengthEntry);
@@ -575,7 +630,8 @@ namespace Low {
           l_MakeArrayEntry.title = "Make Array";
           l_MakeArrayEntry.subtitle = "Array";
           l_MakeArrayEntry.search_text = "make array construct list";
-          l_MakeArrayEntry.node_class = g_MakeArrayNodeClass.get_name();
+          l_MakeArrayEntry.node_class =
+              g_MakeArrayNodeClass.get_name();
           p_Graph.register_spawn_entry(l_MakeArrayEntry);
         }
       } // namespace ArrayNodes
