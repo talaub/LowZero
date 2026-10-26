@@ -2,6 +2,7 @@
 
 #include "LowEditorApi.h"
 #include "LowEditorNodeGraph.h"
+#include "LowEditorVisualScriptListDefault.h"
 
 #include "LowUtilAssert.h"
 #include "LowUtilContainers.h"
@@ -117,6 +118,7 @@ namespace Low {
         Util::TypeIdentifier handle_type;
         PinContainerType container_type = PinContainerType::None;
         Util::Variant default_value;
+        ListDefaultValue list_default_value;
 
         bool is_valid() const
         {
@@ -487,7 +489,8 @@ namespace Low {
         Util::List<const Pin *> get_input_pins(NodeId p_NodeId) const;
 
         Util::List<Pin *> get_output_pins(NodeId p_NodeId);
-        Util::List<const Pin *> get_output_pins(NodeId p_NodeId) const;
+        Util::List<const Pin *>
+        get_output_pins(NodeId p_NodeId) const;
 
         Pin *find_input_pin(NodeId p_NodeId,
                             const Util::String &p_DisplayName);
@@ -714,6 +717,17 @@ namespace Low {
       variant_type_to_pin_type(u8 p_VariantType);
 
       LOW_EDITOR_API u8 pin_to_variant_type(const Pin &p_Pin);
+
+      // Returns the element type; container and concrete type IDs stay separate.
+      LOW_EDITOR_API Util::RTTI::PropertyType::Enum
+      pin_type_to_property_type(PinType p_Type,
+                                NumberSubtype p_NumberSubtype,
+                                StringSubtype p_StringSubtype);
+
+      LOW_EDITOR_API ListDefaultValue make_variable_list_default(
+          PinType p_Type, NumberSubtype p_NumberSubtype,
+          StringSubtype p_StringSubtype,
+          Util::TypeIdentifier p_ReferencedType = {});
 
       LOW_EDITOR_API Util::Variant
       default_value_for_pin(const Pin &p_Pin);

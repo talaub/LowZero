@@ -1062,6 +1062,16 @@ namespace Low {
         return false;
       }
 
+      bool render_int_editor(Util::String &p_Label, int &p_Value,
+                             bool p_RenderLabel)
+      {
+        Util::String l_Label = "##";
+        l_Label += p_Label.c_str();
+
+        return Gui::DragIntWithButtons(l_Label.c_str(), &p_Value, 1,
+                                       LOW_INT_MIN, LOW_INT_MAX);
+      }
+
       // bool render_enum_selector(Util::String p_Label, )
 
       bool render_handle_selector(Util::String p_Label,
@@ -2028,9 +2038,9 @@ namespace Low {
           l_Result =
               render_uint32_editor(l_Label, l_Val, l_RenderLabel);
         } else if (p_SingleType == Util::RTTI::PropertyType::INT) {
-          u32 &l_Val = *(u32 *)p_Value;
+          int &l_Val = *(int *)p_Value;
           l_Result =
-              render_uint32_editor(l_Label, l_Val, l_RenderLabel);
+              render_int_editor(l_Label, l_Val, l_RenderLabel);
         } else if (p_SingleType == Util::RTTI::PropertyType::SHAPE) {
           l_Result = render_shape_editor(
               l_Label, (Math::Shape *)p_Value, l_RenderLabel);
@@ -2480,6 +2490,8 @@ namespace Low {
           return render_float_editor(
               l_Label, *reinterpret_cast<float *>(p_FieldPtr), true);
         case Util::RTTI::PropertyType::INT:
+          return render_int_editor(
+              l_Label, *reinterpret_cast<int *>(p_FieldPtr), true);
         case Util::RTTI::PropertyType::UINT32: {
           u32 l_Value = *reinterpret_cast<u32 *>(p_FieldPtr);
           if (render_uint32_editor(l_Label, l_Value, true)) {

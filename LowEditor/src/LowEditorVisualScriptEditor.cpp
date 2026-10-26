@@ -11,9 +11,11 @@
 #include "LowEditorThemes.h"
 #include "LowEditorVisualScriptBuilder.h"
 #include "LowEditorVisualScriptNodes.h"
+#include "LowEditorVisualScripting.h"
 #include "LowMath.h"
 #include "LowUtil.h"
 #include "LowUtilFileIO.h"
+#include "LowUtilHandle.h"
 #include "LowUtilLogger.h"
 #include "LowUtilSerialization.h"
 
@@ -610,8 +612,14 @@ namespace Low {
         static bool
         render_variable_default_editor(Variable &p_Variable)
         {
+          const u32 l_PropertyType = pin_type_to_property_type(
+              p_Variable.type, p_Variable.number_subtype,
+              p_Variable.string_subtype);
+
           if (p_Variable.container_type == PinContainerType::List) {
-            ImGui::TextDisabled("No default editor");
+            PropertyEditors::render_list_editor(
+                p_Variable.list_default_value.get(), l_PropertyType,
+                p_Variable.handle_type);
             return false;
           }
 
@@ -849,8 +857,21 @@ namespace Low {
               l_Variable.type, l_Variable.number_subtype,
               l_Variable.string_subtype, l_Variable.handle_type);
 
-          if (p_Editor.document->graph.add_variable(l_Variable)) {
-            p_Editor.new_variable_name[0] = '\0';
+          bool l_VariableCreate = true;
+
+          if (l_Variable.container_type == PinContainerType::List) {
+            l_Variable.list_default_value = make_variable_list_default(
+                l_Variable.type, l_Variable.number_subtype,
+                l_Variable.string_subtype, l_Variable.handle_type);
+            l_VariableCreate = (bool)l_Variable.list_default_value;
+          }
+
+          if (l_VariableCreate) {
+            if (p_Editor.document->graph.add_variable(l_Variable)) {
+              p_Editor.new_variable_name[0] = '\0';
+            }
+          } else {
+            LOW_LOG_ERROR << "Cannot create variable." << LOW_LOG_END;
           }
         }
 
@@ -1012,7 +1033,7 @@ namespace Low {
             // Variable name
             Util::String l_DisplayName = i_Variable.name;
             if (i_Variable.container_type == PinContainerType::List) {
-              l_DisplayName += "[]";
+              l_DisplayName += (" " ICON_LC_LIST);
             }
             const ImVec2 l_NamePos(l_IconPos.x + l_IconW + 5.0f,
                                    l_MidY);

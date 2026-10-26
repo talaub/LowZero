@@ -23,6 +23,49 @@ namespace Low {
   namespace Editor {
     namespace VisualScript {
       namespace {
+        struct HandleListDefaultSerialization
+        {
+          static void serialize(Util::Serial::Node &p_Node,
+                                const u64 &p_Value,
+                                Util::TypeIdentifier)
+          {
+            Util::Serial::serialize_handle(p_Node,
+                                           Util::Handle(p_Value));
+          }
+
+          static u64 deserialize(Util::Serial::Node &p_Node,
+                                 Util::TypeIdentifier)
+          {
+            return Util::Serial::deserialize_handle(p_Node).get_id();
+          }
+        };
+
+        struct EnumListDefaultSerialization
+        {
+          static void serialize(Util::Serial::Node &p_Node,
+                                const int &p_Value,
+                                Util::TypeIdentifier p_Type)
+          {
+            if (p_Value < 0 || p_Value > 255) {
+              throw std::runtime_error(
+                  "Enum list default is out of range");
+            }
+            Util::Serial::serialize_enum(
+                p_Node, Util::get_enum_id(p_Type), (u8)p_Value);
+          }
+
+          static int deserialize(Util::Serial::Node &p_Node,
+                                 Util::TypeIdentifier p_Type)
+          {
+            // deserialize_enum needs an identifier to resolve the
+            // enum.
+            if (!p_Node["enum_identifier"]) {
+              p_Node["enum_identifier"] = (Util::String)p_Type;
+            }
+            return (int)Util::Serial::deserialize_enum(p_Node);
+          }
+        };
+
         static bool pin_type_is_execution(PinType p_PinType)
         {
           return p_PinType == PinType::Execution;
@@ -321,6 +364,31 @@ namespace Low {
             }
             return;
           }
+          case PinType::Handle: {
+            const Util::String l_Type = pin_type_to_script_type_string(
+                p_PinMetadata.type, p_PinMetadata.number_subtype,
+                p_PinMetadata.string_subtype, p_PinMetadata.handle_type);
+            const Util::Handle l_Handle(
+                p_PinMetadata.default_value.as_u64());
+            Util::Serial::Node l_Reference;
+            Util::Serial::serialize_handle(l_Reference, l_Handle);
+            if (l_Reference.is_dict() && l_Reference["uniqueid"]) {
+              p_CompileContext.main_code.append(
+                  l_Type + "(::find_handle_id_by_unique_id(");
+              p_CompileContext.main_code.append(
+                  l_Reference["uniqueid"].as<u64>());
+              p_CompileContext.main_code.append("))");
+            } else if (l_Reference.is_dict() && l_Reference["name"]) {
+              p_CompileContext.main_code.append(
+                  l_Type + "::find_by_name(Low::Util::Name::from_string(\"");
+              p_CompileContext.main_code.append(escape_script_string(
+                  l_Reference["name"].as<Util::String>()));
+              p_CompileContext.main_code.append("\"))");
+            } else {
+              p_CompileContext.main_code.append(l_Type + "()");
+            }
+            return;
+          }
           case PinType::Enum:
             if ((u64)p_PinMetadata.handle_type != 0) {
               const Core::Scripting::EnumInfo &l_ScriptingEnumInfo =
@@ -399,6 +467,33 @@ namespace Low {
             p_CompileContext.main_code.append("0");
             return;
           }
+        }
+
+        static void append_list_default_expression(
+            const Variable &p_Variable, CompileContext &p_Context)
+        {
+          Pin l_Element;
+          l_Element.type = p_Variable.type;
+          l_Element.number_subtype = p_Variable.number_subtype;
+          l_Element.string_subtype = p_Variable.string_subtype;
+          l_Element.handle_type = p_Variable.handle_type;
+
+          p_Context.main_code.append("{");
+          bool l_First = true;
+          p_Variable.list_default_value.for_each(
+              [&](const Util::Variant &p_Value) {
+                if (!l_First) {
+                  p_Context.main_code.append(", ");
+                }
+                l_First = false;
+                // Enum list storage is int; scalar enum defaults use UInt32.
+                l_Element.default_value =
+                    p_Variable.type == PinType::Enum
+                        ? Util::Variant((u32)(i32)p_Value)
+                        : p_Value;
+                append_default_value_expression(l_Element, p_Context);
+              });
+          p_Context.main_code.append("}");
         }
 
         static bool variable_is_supported(const Variable &p_Variable)
@@ -593,6 +688,11 @@ namespace Low {
           }
           Util::Serial::serialize_variant(p_Node["default_value"],
                                           p_Variable.default_value);
+
+          if (p_Variable.container_type == PinContainerType::List) {
+            p_Variable.list_default_value.serialize(
+                p_Node["list_default_value"]);
+          }
         }
 
         static void deserialize_variable(Util::Serial::Node &p_Node,
@@ -636,6 +736,20 @@ namespace Low {
                 Util::Serial::deserialize_variant(
                     p_Node["default_value"]);
           }
+          p_Variable.list_default_value.reset();
+          if (p_Variable.container_type == PinContainerType::List) {
+            p_Variable.list_default_value =
+                make_variable_list_default(p_Variable.type,
+                                           p_Variable.number_subtype,
+                                           p_Variable.string_subtype,
+                                           p_Variable.handle_type);
+            if (p_Variable.list_default_value) {
+              // Missing defaults in older documents load as empty
+              // lists.
+              p_Variable.list_default_value.deserialize(
+                  p_Node["list_default_value"]);
+            }
+          }
         }
       } // namespace
 
@@ -677,6 +791,80 @@ namespace Low {
         main_code.append("\n");
       }
 
+      static PinId find_execution_output_pin(Graph &p_Graph,
+                                             NodeId p_Node)
+      {
+        for (const Low::Editor::Pin *i_Pin :
+             p_Graph.graph.get_node_pins(p_Node)) {
+          const Pin *l_Metadata = p_Graph.find_pin(i_Pin->id);
+          if (l_Metadata && l_Metadata->type == PinType::Execution &&
+              i_Pin->direction == PinDirection::Output) {
+            return i_Pin->id;
+          }
+        }
+        return {};
+      }
+
+      static void
+      emit_compiled_entry_point(Graph &p_Graph,
+                                const CompileEntryPoint &p_Entry,
+                                CompileContext &p_Context)
+      {
+        if (!p_Entry.is_valid()) {
+          return;
+        }
+
+        Util::String l_Signature = p_Entry.function_signature;
+        if (l_Signature.empty()) {
+          l_Signature =
+              Util::String("void ") + p_Entry.function_name + "()";
+        }
+
+        p_Context.begin_block(l_Signature);
+        p_Graph.continue_compilation(p_Entry.execution_output_pin,
+                                     p_Context);
+        p_Context.end_block();
+        p_Context.main_code.append("\n");
+      }
+
+      static void serialize_class_name(const Util::String &p_Name,
+                                       Util::Serial::Node &p_Node)
+      {
+        p_Node["class_name"] = p_Name;
+      }
+
+      static void
+      deserialize_class_name(const Util::Serial::Node &p_Node,
+                             Util::String &p_Name)
+      {
+        if (p_Node["class_name"]) {
+          p_Name = p_Node["class_name"].as<Util::String>();
+        }
+      }
+
+      template <typename Settings>
+      static Util::String
+      get_compile_class_name(const Document &p_Document,
+                             const char *p_Fallback)
+      {
+        const Settings *l_Settings =
+            p_Document.get_compile_settings<Settings>();
+        return l_Settings && !l_Settings->class_name.empty()
+                   ? l_Settings->class_name
+                   : Util::String(p_Fallback);
+      }
+
+      static void begin_script_class(const Util::String &p_Name,
+                                     const char *p_Fallback,
+                                     const char *p_BaseClass,
+                                     CompileContext &p_Context)
+      {
+        const Util::String l_ClassName =
+            make_script_identifier(p_Name, p_Fallback);
+        p_Context.begin_block(Util::String("class ") + l_ClassName +
+                              ": " + p_BaseClass);
+      }
+
       static void compile_user_functions(Document &p_Document,
                                          CompileContext &p_Context)
       {
@@ -697,18 +885,10 @@ namespace Low {
                 l_Meta->node_class != N(vs_function_entry)) {
               continue;
             }
-            Util::List<Low::Editor::Pin *> l_Pins =
-                i_Func.graph.graph.get_node_pins(i_Node.id);
-            for (const Low::Editor::Pin *i_Pin : l_Pins) {
-              const Pin *l_PinMeta = i_Func.graph.find_pin(i_Pin->id);
-              if (!l_PinMeta ||
-                  l_PinMeta->type != PinType::Execution ||
-                  i_Pin->direction != PinDirection::Output) {
-                continue;
-              }
-              i_Func.graph.continue_compilation(l_PinMeta->pin,
-                                                p_Context);
-              break;
+            const PinId l_Output =
+                find_execution_output_pin(i_Func.graph, i_Node.id);
+            if (l_Output.is_valid()) {
+              i_Func.graph.continue_compilation(l_Output, p_Context);
             }
             break;
           }
@@ -718,18 +898,23 @@ namespace Low {
         }
       }
 
+      static void finish_script_class(Document &p_Document,
+                                      CompileContext &p_Context)
+      {
+        compile_user_functions(p_Document, p_Context);
+        p_Context.end_block(";");
+      }
+
       void UiControllerCompileProfileSettings::serialize(
           Util::Serial::Node &p_Node) const
       {
-        p_Node["class_name"] = class_name;
+        serialize_class_name(class_name, p_Node);
       }
 
       void UiControllerCompileProfileSettings::deserialize(
           const Util::Serial::Node &p_Node)
       {
-        if (p_Node["class_name"]) {
-          class_name = p_Node["class_name"].as<Util::String>();
-        }
+        deserialize_class_name(p_Node, class_name);
       }
 
       std::unique_ptr<CompileProfileSettings>
@@ -741,14 +926,9 @@ namespace Low {
       Util::String UiControllerCompileProfile::get_class_name(
           const Document &p_Document) const
       {
-        const UiControllerCompileProfileSettings *l_Settings =
-            p_Document.get_compile_settings<
-                UiControllerCompileProfileSettings>();
-        if (l_Settings && !l_Settings->class_name.empty()) {
-          return l_Settings->class_name;
-        }
-
-        return "VisualScriptUiController";
+        return get_compile_class_name<
+            UiControllerCompileProfileSettings>(
+            p_Document, "VisualScriptUiController");
       }
 
       void UiControllerCompileProfile::emit_prelude(
@@ -756,8 +936,8 @@ namespace Low {
       {
       }
 
-      void UiControllerCompileProfile::emit_members(
-          Graph &p_Graph, CompileContext &p_Context) const
+      static void emit_variable_members(Graph &p_Graph,
+                                        CompileContext &p_Context)
       {
         for (const Variable &i_Variable : p_Graph.variables) {
           if (!i_Variable.is_valid()) {
@@ -782,8 +962,10 @@ namespace Low {
           p_Context.main_code.append(l_TypeStr + " " +
                                      i_Variable.name);
 
-          if (!l_IsList &&
-              variable_has_default_expression(i_Variable)) {
+          if (l_IsList) {
+            p_Context.main_code.append(" = ");
+            append_list_default_expression(i_Variable, p_Context);
+          } else if (variable_has_default_expression(i_Variable)) {
             p_Context.main_code.append(" = ");
             Pin l_DefaultPin;
             l_DefaultPin.type = i_Variable.type;
@@ -796,6 +978,12 @@ namespace Low {
 
           p_Context.main_code.append(";\n");
         }
+      }
+
+      void UiControllerCompileProfile::emit_members(
+          Graph &p_Graph, CompileContext &p_Context) const
+      {
+        emit_variable_members(p_Graph, p_Context);
       }
 
       void UiControllerCompileProfile::collect_entry_points(
@@ -816,20 +1004,8 @@ namespace Low {
               p_Graph.get_node_user_data<
                   UiControllerNodes::ElementEventNodeData>(i_Node.id);
 
-          PinId l_ExecutionOutputPin;
-          Util::List<Low::Editor::Pin *> l_NodePins =
-              p_Graph.graph.get_node_pins(i_Node.id);
-          for (const Low::Editor::Pin *i_Pin : l_NodePins) {
-            const Pin *l_PinMetadata = p_Graph.find_pin(i_Pin->id);
-            if (!l_PinMetadata ||
-                l_PinMetadata->type != PinType::Execution ||
-                i_Pin->direction != PinDirection::Output) {
-              continue;
-            }
-
-            l_ExecutionOutputPin = i_Pin->id;
-            break;
-          }
+          const PinId l_ExecutionOutputPin =
+              find_execution_output_pin(p_Graph, i_Node.id);
 
           if (!l_ExecutionOutputPin.is_valid()) {
             continue;
@@ -883,21 +1059,7 @@ namespace Low {
           Graph &p_Graph, const CompileEntryPoint &p_Entry,
           CompileContext &p_Context) const
       {
-        if (!p_Entry.is_valid()) {
-          return;
-        }
-
-        Util::String l_Signature = p_Entry.function_signature;
-        if (l_Signature.empty()) {
-          l_Signature =
-              Util::String("void ") + p_Entry.function_name + "()";
-        }
-
-        p_Context.begin_block(l_Signature);
-        p_Graph.continue_compilation(p_Entry.execution_output_pin,
-                                     p_Context);
-        p_Context.end_block();
-        p_Context.main_code.append("\n");
+        emit_compiled_entry_point(p_Graph, p_Entry, p_Context);
       }
 
       void UiControllerCompileProfile::compile(
@@ -906,10 +1068,8 @@ namespace Low {
         Graph &p_Graph = p_Document.graph;
         emit_prelude(p_Graph, p_Context);
 
-        const Util::String l_ClassName = make_script_identifier(
-            get_class_name(p_Document), "VisualScript");
-        p_Context.begin_block(Util::String("class ") + l_ClassName +
-                              Util::String(": UiController"));
+        begin_script_class(get_class_name(p_Document), "VisualScript",
+                           "UiController", p_Context);
         emit_members(p_Graph, p_Context);
 
         Util::List<CompileEntryPoint> l_EntryPoints;
@@ -969,9 +1129,7 @@ namespace Low {
             "on_mouse_exit",
             UiControllerNodes::InteractionType::MouseExit);
 
-        compile_user_functions(p_Document, p_Context);
-
-        p_Context.end_block(";");
+        finish_script_class(p_Document, p_Context);
       }
 
       Util::Name DefaultCompileProfile::get_name() const
@@ -1051,26 +1209,10 @@ namespace Low {
         collect_entry_points(p_Graph, l_EntryPoints);
 
         for (const CompileEntryPoint &i_Entry : l_EntryPoints) {
-          if (!i_Entry.is_valid()) {
-            continue;
-          }
-
-          Util::String l_Signature = i_Entry.function_signature;
-          if (l_Signature.empty()) {
-            l_Signature =
-                Util::String("void ") + i_Entry.function_name + "()";
-          }
-
-          p_Context.begin_block(l_Signature);
-          p_Graph.continue_compilation(i_Entry.execution_output_pin,
-                                       p_Context);
-          p_Context.end_block();
-          p_Context.main_code.append("\n");
+          emit_compiled_entry_point(p_Graph, i_Entry, p_Context);
         }
 
-        compile_user_functions(p_Document, p_Context);
-
-        p_Context.end_block(";");
+        finish_script_class(p_Document, p_Context);
       }
 
       void CompileProfileRegistry::register_profile(
@@ -1102,15 +1244,13 @@ namespace Low {
       void GameplaySystemCompileProfileSettings::serialize(
           Util::Serial::Node &p_Node) const
       {
-        p_Node["class_name"] = class_name;
+        serialize_class_name(class_name, p_Node);
       }
 
       void GameplaySystemCompileProfileSettings::deserialize(
           const Util::Serial::Node &p_Node)
       {
-        if (p_Node["class_name"]) {
-          class_name = p_Node["class_name"].as<Util::String>();
-        }
+        deserialize_class_name(p_Node, class_name);
       }
 
       std::unique_ptr<CompileProfileSettings>
@@ -1123,17 +1263,13 @@ namespace Low {
       Util::String GameplaySystemCompileProfile::get_class_name(
           const Document &p_Document) const
       {
-        const GameplaySystemCompileProfileSettings *l_Settings =
-            p_Document.get_compile_settings<
-                GameplaySystemCompileProfileSettings>();
-        if (l_Settings && !l_Settings->class_name.empty()) {
-          return l_Settings->class_name;
-        }
-        return "VisualScriptGameplaySystem";
+        return get_compile_class_name<
+            GameplaySystemCompileProfileSettings>(
+            p_Document, "VisualScriptGameplaySystem");
       }
 
       Util::String pin_type_to_script_type_string(
-          PinType p_Type, NumberSubtype,
+          PinType p_Type, NumberSubtype p_NumberSubtype,
           StringSubtype p_StringSubtype,
           Util::TypeIdentifier p_HandleType)
       {
@@ -1141,7 +1277,17 @@ namespace Low {
         case PinType::Bool:
           return "bool";
         case PinType::Number:
-          return "float";
+          switch (p_NumberSubtype) {
+          case NumberSubtype::Int32:
+            return "int";
+          case NumberSubtype::UInt32:
+            return "uint";
+          case NumberSubtype::UInt64:
+            return "uint64";
+          case NumberSubtype::Float:
+          default:
+            return "float";
+          }
         case PinType::String:
           return p_StringSubtype == StringSubtype::Name ? "Name"
                                                         : "string";
@@ -1203,43 +1349,7 @@ namespace Low {
       void GameplaySystemCompileProfile::emit_members(
           Graph &p_Graph, CompileContext &p_Context) const
       {
-        for (const Variable &i_Variable : p_Graph.variables) {
-          if (!i_Variable.is_valid()) {
-            continue;
-          }
-
-          Util::String l_TypeStr = pin_type_to_script_type_string(
-              i_Variable.type, i_Variable.number_subtype,
-              i_Variable.string_subtype, i_Variable.handle_type);
-
-          if (l_TypeStr.empty()) {
-            continue;
-          }
-
-          const bool l_IsList =
-              i_Variable.container_type == PinContainerType::List;
-          if (l_IsList) {
-            l_TypeStr = "array<" + l_TypeStr + ">";
-          }
-
-          p_Context.append_indent();
-          p_Context.main_code.append(l_TypeStr + " " +
-                                     i_Variable.name);
-
-          if (!l_IsList &&
-              variable_has_default_expression(i_Variable)) {
-            p_Context.main_code.append(" = ");
-            Pin l_DefaultPin;
-            l_DefaultPin.type = i_Variable.type;
-            l_DefaultPin.string_subtype = i_Variable.string_subtype;
-            l_DefaultPin.number_subtype = i_Variable.number_subtype;
-            l_DefaultPin.handle_type = i_Variable.handle_type;
-            l_DefaultPin.default_value = i_Variable.default_value;
-            append_default_value_expression(l_DefaultPin, p_Context);
-          }
-
-          p_Context.main_code.append(";\n");
-        }
+        emit_variable_members(p_Graph, p_Context);
       }
 
       void GameplaySystemCompileProfile::collect_entry_points(
@@ -1267,19 +1377,8 @@ namespace Low {
             continue;
           }
 
-          Util::List<Low::Editor::Pin *> l_NodePins =
-              p_Graph.graph.get_node_pins(i_Node.id);
-          PinId l_ExecutionOutputPin;
-          for (const Low::Editor::Pin *i_Pin : l_NodePins) {
-            const Pin *l_PinMetadata = p_Graph.find_pin(i_Pin->id);
-            if (!l_PinMetadata ||
-                l_PinMetadata->type != PinType::Execution ||
-                i_Pin->direction != PinDirection::Output) {
-              continue;
-            }
-            l_ExecutionOutputPin = i_Pin->id;
-            break;
-          }
+          const PinId l_ExecutionOutputPin =
+              find_execution_output_pin(p_Graph, i_Node.id);
 
           if (!l_ExecutionOutputPin.is_valid()) {
             continue;
@@ -1299,10 +1398,9 @@ namespace Low {
       {
         Graph &p_Graph = p_Document.graph;
 
-        const Util::String l_ClassName = make_script_identifier(
-            get_class_name(p_Document), "VisualScriptGameplaySystem");
-        p_Context.begin_block(Util::String("class ") + l_ClassName +
-                              Util::String(": GameplaySystem"));
+        begin_script_class(get_class_name(p_Document),
+                           "VisualScriptGameplaySystem",
+                           "GameplaySystem", p_Context);
         emit_members(p_Graph, p_Context);
 
         Util::List<CompileEntryPoint> l_EntryPoints;
@@ -1322,17 +1420,7 @@ namespace Low {
             l_HasTick = true;
           }
 
-          Util::String l_Signature = i_Entry.function_signature;
-          if (l_Signature.empty()) {
-            l_Signature =
-                Util::String("void ") + i_Entry.function_name + "()";
-          }
-
-          p_Context.begin_block(l_Signature);
-          p_Graph.continue_compilation(i_Entry.execution_output_pin,
-                                       p_Context);
-          p_Context.end_block();
-          p_Context.main_code.append("\n");
+          emit_compiled_entry_point(p_Graph, i_Entry, p_Context);
         }
 
         if (!l_HasBeginPlay) {
@@ -1346,9 +1434,7 @@ namespace Low {
           p_Context.main_code.append("\n");
         }
 
-        compile_user_functions(p_Document, p_Context);
-
-        p_Context.end_block(";");
+        finish_script_class(p_Document, p_Context);
       }
 
       void register_builtin_compile_profiles(
@@ -3466,6 +3552,112 @@ namespace Low {
         default:
           return PinType::Dynamic;
         }
+      }
+
+      Util::RTTI::PropertyType::Enum
+      pin_type_to_property_type(PinType p_Type,
+                                NumberSubtype p_NumberSubtype,
+                                StringSubtype p_StringSubtype)
+      {
+        namespace PropertyType = Util::RTTI::PropertyType;
+
+        switch (p_Type) {
+        case PinType::Bool:
+          return PropertyType::BOOL;
+        case PinType::Number:
+          switch (p_NumberSubtype) {
+          case NumberSubtype::Float:
+            return PropertyType::FLOAT;
+          case NumberSubtype::Int32:
+            return PropertyType::INT;
+          case NumberSubtype::UInt32:
+            return PropertyType::UINT32;
+          case NumberSubtype::UInt64:
+            return PropertyType::UINT64;
+          }
+          return PropertyType::UNKNOWN;
+        case PinType::String:
+          switch (p_StringSubtype) {
+          case StringSubtype::String:
+            return PropertyType::STRING;
+          case StringSubtype::Name:
+            return PropertyType::NAME;
+          }
+          return PropertyType::UNKNOWN;
+        case PinType::Vector2:
+          return PropertyType::VECTOR2;
+        case PinType::Vector3:
+          return PropertyType::VECTOR3;
+        case PinType::Vector4:
+          return PropertyType::VECTOR4;
+        case PinType::Quaternion:
+          return PropertyType::QUATERNION;
+        case PinType::Handle:
+          return PropertyType::HANDLE;
+        case PinType::Struct:
+          return PropertyType::STRUCT;
+        case PinType::Enum:
+          return PropertyType::ENUM;
+        default:
+          return PropertyType::UNKNOWN;
+        }
+      }
+
+      ListDefaultValue make_variable_list_default(
+          PinType p_Type, NumberSubtype p_NumberSubtype,
+          StringSubtype p_StringSubtype,
+          Util::TypeIdentifier p_ReferencedType)
+      {
+        ListDefaultValue l_Default;
+        // The only mapping from variable metadata to concrete list
+        // storage.
+        switch (pin_type_to_property_type(p_Type, p_NumberSubtype,
+                                          p_StringSubtype)) {
+        case Util::RTTI::PropertyType::BOOL:
+          l_Default.create<bool>();
+          break;
+        case Util::RTTI::PropertyType::FLOAT:
+          l_Default.create<float>();
+          break;
+        case Util::RTTI::PropertyType::INT:
+          l_Default.create<int>();
+          break;
+        case Util::RTTI::PropertyType::UINT32:
+          l_Default.create<u32>();
+          break;
+        case Util::RTTI::PropertyType::UINT64:
+          l_Default.create<u64>();
+          break;
+        case Util::RTTI::PropertyType::STRING:
+          l_Default.create<Util::String>();
+          break;
+        case Util::RTTI::PropertyType::NAME:
+          l_Default.create<Util::Name>();
+          break;
+        case Util::RTTI::PropertyType::VECTOR2:
+          l_Default.create<Math::Vector2>();
+          break;
+        case Util::RTTI::PropertyType::VECTOR3:
+          l_Default.create<Math::Vector3>();
+          break;
+        case Util::RTTI::PropertyType::VECTOR4:
+          l_Default.create<Math::Vector4>();
+          break;
+        case Util::RTTI::PropertyType::QUATERNION:
+          l_Default.create<Math::Quaternion>();
+          break;
+        case Util::RTTI::PropertyType::HANDLE:
+          l_Default.create<u64, HandleListDefaultSerialization>(
+              p_ReferencedType);
+          break;
+        case Util::RTTI::PropertyType::ENUM:
+          l_Default.create<int, EnumListDefaultSerialization>(
+              p_ReferencedType);
+          break;
+        default:
+          break;
+        }
+        return l_Default;
       }
 
       u8 pin_to_variant_type(const Pin &p_Pin)

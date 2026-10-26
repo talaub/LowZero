@@ -214,6 +214,11 @@ namespace Low {
         return p_Handle.get_id();
       }
 
+      static u64 find_handle_id_by_unique_id(u64 p_UniqueId)
+      {
+        return Util::find_handle_by_unique_id(p_UniqueId).get_id();
+      }
+
       static u32 handle_get_index(const Low::Util::Handle &p_Handle)
       {
         return p_Handle.get_index();
@@ -238,6 +243,11 @@ namespace Low {
       static void expose_handle(asIScriptEngine *p_Engine)
       {
         int r = 0;
+
+        r = p_Engine->RegisterGlobalFunction(
+            "u64 find_handle_id_by_unique_id(u64 unique_id)",
+            asFUNCTION(find_handle_id_by_unique_id), asCALL_CDECL);
+        LOW_ASSERT(r >= 0, "Failed to register handle reference lookup");
 
         r = p_Engine->RegisterObjectType(
             "Handle", sizeof(Low::Util::Handle),

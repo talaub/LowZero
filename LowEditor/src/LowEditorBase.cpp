@@ -3,6 +3,7 @@
 #include "imgui.h"
 
 #include "LowEditorGui.h"
+#include "LowEditorPropertyEditors.h"
 
 namespace Low {
   namespace Editor {
@@ -100,19 +101,19 @@ namespace Low {
       bool VariantEdit(const char *p_Label, Util::Variant &p_Variant,
                        bool p_Concise)
       {
+        Util::String l_Label = p_Label;
         switch (p_Variant.m_Type) {
         case (Util::VariantType::Float): {
-          if (p_Concise) {
-            return ConciseFloatEdit(p_Label, &p_Variant.m_Float);
-          } else {
-            return FloatEdit(p_Label, &p_Variant.m_Float);
-          }
+          return PropertyEditors::render_float_editor(
+              l_Label, p_Variant.m_Float, false);
         }
         case (Util::VariantType::Int32): {
-          return IntEdit(p_Label, &p_Variant.m_Int32);
+          return PropertyEditors::render_int_editor(
+              l_Label, p_Variant.m_Int32, false);
         }
         case (Util::VariantType::UInt32): {
-          return UInt32Edit(p_Label, &p_Variant.m_Uint32);
+          return PropertyEditors::render_uint32_editor(
+              l_Label, p_Variant.m_Uint32, false);
         }
         case (Util::VariantType::Bool):
           return BoolEdit(p_Label, &p_Variant.m_Bool);

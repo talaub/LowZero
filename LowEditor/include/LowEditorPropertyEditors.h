@@ -81,6 +81,18 @@ namespace Low {
                                                bool p_Multiline,
                                                bool p_RenderLabel);
 
+      bool LOW_EDITOR_API render_float_editor(Util::String &p_Label,
+                                              float &p_Value,
+                                              bool p_RenderLabel);
+
+      bool LOW_EDITOR_API render_int_editor(Util::String &p_Label,
+                                            int &p_Value,
+                                            bool p_RenderLabel);
+
+      bool LOW_EDITOR_API render_uint32_editor(Util::String &p_Label,
+                                               u32 &p_Value,
+                                               bool p_RenderLabel);
+
       void
       render_editor(Util::String p_Label, Util::Handle p_Handle,
                     Util::RTTI::PropertyInfoBase p_PropertyInfoBase,
@@ -101,6 +113,14 @@ namespace Low {
       bool LOW_EDITOR_API render_struct_editor(
           Util::String p_Label, Util::TypeIdentifier p_StructType,
           void *p_StructPtr);
+
+      bool render_detail_editor(
+          const u32 p_Type, const u32 p_ContainerType,
+          const Util::TypeIdentifier p_HandleType, void *p_Value);
+
+      ListEditorResult render_list_editor(
+          void *p_Value, const u32 p_ElementType,
+          const Util::TypeIdentifier p_ElementHandleType);
 
       template <typename T>
       bool
