@@ -36,6 +36,7 @@
 #include "LowCoreUiText.h"
 #include "LowCoreCamera.h"
 #include "LowCoreConvexHullCollider.h"
+#include "LowCoreGameMode.h"
 
 #include "LowEditorMainWindow.h"
 #include "LowEditorThemes.h"
@@ -55,6 +56,7 @@
 #include "LowEditorVisualScriptEditor.h"
 #include "LowEditorConvexHullColliderTypeEditor.h"
 #include "LowEditorEditingLayerHelpers.h"
+#include "LowEditorGameModeTypeEditor.h"
 
 #include "imgui.h"
 
@@ -1660,6 +1662,8 @@ namespace Low {
             Renderer::Skeleton::type_id());
         TypeEditor::register_type<UiWidgetEditor>(
             Core::UI::WidgetAsset::type_id());
+        TypeEditor::register_type<GameModeTypeEditor>(
+            Core::GameMode::type_id());
         TypeEditor::register_type<ConvexHullColliderTypeEditor>(
             Core::Component::ConvexHullCollider::type_id());
       }
@@ -1683,8 +1687,7 @@ namespace Low {
                  Util::Name p_Name) -> Util::Handle {
             using namespace VisualScript;
 
-            GameplaySystemContextDefinition l_CtxDef;
-            ScriptAssetBuilder l_Builder(l_CtxDef);
+            ScriptAssetBuilder l_Builder(N(vs_context_gameplay_system));
 
             const Util::String l_Name = p_Name.c_str();
             const Util::String l_Path =
@@ -1705,7 +1708,7 @@ namespace Low {
               l_Settings->class_name = l_ClassName;
             }
 
-            l_CtxDef.build_default_template(l_Builder.get_document());
+            l_Builder.build_default_template();
 
             Core::Scripting::Module l_Module =
                 Core::Scripting::Module::find_by_name(

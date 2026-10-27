@@ -9,7 +9,7 @@ namespace Low {
         namespace {
           static ImU32 g_FunctionColor = IM_COL32(100, 160, 220, 255);
 
-          struct FunctionEntryNodeClass : public NodeClass
+          struct FunctionEntryNode : public Node
           {
             virtual Util::Name get_name() const override
             {
@@ -17,186 +17,154 @@ namespace Low {
             }
 
             virtual Util::String
-            get_title(const Graph &p_Graph,
-                      NodeId p_NodeId) const override
+            get_title(const Graph &p_Graph) const override
             {
-              const Node *l_Meta = p_Graph.find_node(p_NodeId);
-              if (l_Meta && !l_Meta->title.empty()) {
-                return l_Meta->title;
-              }
               return "Function Entry";
             }
 
-            virtual Util::String get_subtitle(const Graph &,
-                                              NodeId) const override
+            virtual Util::String
+            get_subtitle(const Graph &) const override
             {
               return "Function";
             }
 
-            virtual Util::String get_category(const Graph &,
-                                              NodeId) const override
+            virtual Util::String
+            get_category(const Graph &) const override
             {
               return "Function";
             }
 
-            virtual Util::String get_icon(const Graph &,
-                                          NodeId) const override
+            virtual Util::String
+            get_icon(const Graph &) const override
             {
               return ICON_LC_PLAY;
             }
 
-            virtual ImU32 get_color(const Graph &,
-                                    NodeId) const override
+            virtual ImU32 get_color(const Graph &) const override
             {
               return g_FunctionColor;
             }
 
-            virtual bool is_deletable(const Graph &,
-                                      NodeId) const override
+            virtual bool is_deletable(const Graph &) const override
             {
               return false;
             }
 
             virtual void setup_default_pins(
-                Graph &p_Graph, NodeId p_NodeId,
+                Graph &p_Graph,
                 const NodeGraphSchema *p_Schema) const override
             {
-              Editor::Pin l_ExecOut =
-                  make_output_pin(p_Graph, p_NodeId);
-              Pin l_ExecMeta = make_execution_pin_metadata("Then");
-              p_Graph.add_pin(l_ExecOut, l_ExecMeta, p_Schema);
+
+              Pin l_ExecMeta = make_execution_pin("Then");
+              p_Graph.add_pin(
+                  make_output_pin(p_Graph, id, l_ExecMeta), p_Schema);
             }
 
             virtual void
-            compile(Graph &p_Graph, NodeId p_NodeId,
+            compile(Graph &p_Graph,
                     CompileContext &p_CompileContext) const override
             {
               const Pin *l_ThenPin =
-                  p_Graph.find_output_pin_checked(p_NodeId, "Then");
-              p_Graph.continue_compilation(l_ThenPin->pin,
+                  p_Graph.find_output_pin_checked(id, "Then");
+              p_Graph.continue_compilation(l_ThenPin->id,
                                            p_CompileContext);
             }
           };
 
-          struct CallFunctionNodeClass : public NodeClass
-          {
-            virtual Util::Name get_name() const override
-            {
-              return N(vs_function_call);
-            }
+        } // namespace
 
-            virtual Util::SharedPtr<NodeUserData>
-            create_user_data() const override
-            {
-              return Util::make_shared<CallFunctionNodeData>();
-            }
+        Util::Name CallFunctionNode::get_name() const
+        {
+          return N(vs_function_call);
+        }
 
-            virtual Util::String
-            get_title(const Graph &p_Graph,
-                      NodeId p_NodeId) const override
-            {
-              const CallFunctionNodeData *l_Data =
-                  p_Graph.get_node_user_data<CallFunctionNodeData>(
-                      p_NodeId);
-              if (l_Data && !l_Data->function_name.empty()) {
-                return l_Data->function_name;
-              }
-              return "Call Function";
-            }
+        Util::String
+        CallFunctionNode::get_title(const Graph &p_Graph) const
+        {
+          if (!function_name.empty()) {
+            return function_name;
+          }
+          return "Call Function";
+        }
 
-            virtual Util::String get_subtitle(const Graph &,
-                                              NodeId) const override
-            {
-              return "Function";
-            }
+        Util::String
+        CallFunctionNode::get_subtitle(const Graph &) const
+        {
+          return "Function";
+        }
 
-            virtual Util::String get_category(const Graph &,
-                                              NodeId) const override
-            {
-              return "Function";
-            }
+        Util::String
+        CallFunctionNode::get_category(const Graph &) const
+        {
+          return "Function";
+        }
 
-            virtual ImU32 get_color(const Graph &,
-                                    NodeId) const override
-            {
-              return g_FunctionColor;
-            }
+        Util::String CallFunctionNode::get_icon(const Graph &) const
+        {
+          return ICON_CI_SYMBOL_METHOD;
+        }
 
-            virtual void setup_default_pins(
-                Graph &p_Graph, NodeId p_NodeId,
-                const NodeGraphSchema *p_Schema) const override
-            {
-              Editor::Pin l_ExecIn =
-                  make_input_pin(p_Graph, p_NodeId);
-              Pin l_ExecInMeta =
-                  make_execution_pin_metadata("");
-              p_Graph.add_pin(l_ExecIn, l_ExecInMeta, p_Schema);
+        ImU32 CallFunctionNode::get_color(const Graph &) const
+        {
+          return g_FunctionColor;
+        }
 
-              Editor::Pin l_ExecOut =
-                  make_output_pin(p_Graph, p_NodeId);
-              Pin l_ExecOutMeta =
-                  make_execution_pin_metadata("Then");
-              p_Graph.add_pin(l_ExecOut, l_ExecOutMeta, p_Schema);
-            }
+        void CallFunctionNode::setup_default_pins(
+            Graph &p_Graph, const NodeGraphSchema *p_Schema) const
+        {
 
-            virtual void
-            compile(Graph &p_Graph, NodeId p_NodeId,
-                    CompileContext &p_CompileContext) const override
-            {
-              const CallFunctionNodeData *l_Data =
-                  p_Graph.get_node_user_data<CallFunctionNodeData>(
-                      p_NodeId);
-              if (l_Data && !l_Data->function_name.empty()) {
-                const Util::String l_FuncId =
-                    make_vs_identifier(l_Data->function_name,
-                                       "function");
-                p_CompileContext.main_code.append(l_FuncId.c_str());
-                p_CompileContext.main_code.append("();").endl();
-              }
+          Pin l_ExecInMeta = make_execution_pin("");
+          p_Graph.add_pin(make_input_pin(p_Graph, id, l_ExecInMeta),
+                          p_Schema);
 
-              const Pin *l_ThenPin =
-                  p_Graph.find_output_pin_checked(p_NodeId, "Then");
-              p_Graph.continue_compilation(l_ThenPin->pin,
-                                           p_CompileContext);
-            }
+          Pin l_ExecOutMeta = make_execution_pin("Then");
+          p_Graph.add_pin(make_output_pin(p_Graph, id, l_ExecOutMeta),
+                          p_Schema);
+        }
 
-            virtual void serialize(
-                Graph &p_Graph, NodeId p_NodeId,
-                Util::Serial::Node &p_Data) const override
-            {
-              const CallFunctionNodeData *l_Data =
-                  p_Graph.get_node_user_data<CallFunctionNodeData>(
-                      p_NodeId);
-              if (l_Data) {
-                p_Data["function_name"] = l_Data->function_name;
-              }
-            }
+        void CallFunctionNode::compile(
+            Graph &p_Graph, CompileContext &p_CompileContext) const
+        {
+          if (!function_name.empty()) {
+            const Util::String l_FuncId =
+                make_vs_identifier(function_name, "function");
+            p_CompileContext.main_code.append(l_FuncId.c_str());
+            p_CompileContext.main_code.append("();").endl();
+          }
 
-            virtual void deserialize(
-                Graph &p_Graph, NodeId p_NodeId,
-                Util::Serial::Node &p_Data) const override
-            {
-              CallFunctionNodeData *l_Data =
-                  p_Graph.get_node_user_data<CallFunctionNodeData>(
-                      p_NodeId);
-              if (l_Data && p_Data["function_name"]) {
-                l_Data->function_name =
-                    p_Data["function_name"].as<Util::String>();
-              }
-              p_Graph.refresh_node_display_metadata(p_NodeId);
-            }
-          };
+          const Pin *l_ThenPin =
+              p_Graph.find_output_pin_checked(id, "Then");
+          p_Graph.continue_compilation(l_ThenPin->id,
+                                       p_CompileContext);
+        }
 
-          static FunctionEntryNodeClass g_FunctionEntryNodeClass;
-          static CallFunctionNodeClass g_CallFunctionNodeClass;
+        void
+        CallFunctionNode::serialize(Util::Serial::Node &p_Data) const
+        {
+          p_Data["function_name"] = function_name;
+        }
+
+        void CallFunctionNode::deserialize(
+            const Util::Serial::Node &p_Data)
+        {
+          if (p_Data["function_name"]) {
+            function_name =
+                p_Data["function_name"].as<Util::String>();
+          }
+        }
+
+        namespace {
+
         } // namespace
 
         void register_nodes(Graph &p_Graph)
         {
-          p_Graph.register_node_class(g_FunctionEntryNodeClass);
-          p_Graph.register_node_class(g_CallFunctionNodeClass);
+          const Util::Name l_FunctionEntryNodeType =
+              p_Graph.register_node_type<FunctionEntryNode>();
+          const Util::Name l_CallFunctionNodeType =
+              p_Graph.register_node_type<CallFunctionNode>();
         }
       } // namespace FunctionNodes
-    } // namespace VisualScript
-  } // namespace Editor
+    }   // namespace VisualScript
+  }     // namespace Editor
 } // namespace Low

@@ -14,8 +14,7 @@ namespace Low {
       template <typename T> struct ListDefaultElementSerialization
       {
         static void serialize(Util::Serial::Node &p_Node,
-                              const T &p_Value,
-                              Util::TypeIdentifier)
+                              const T &p_Value, Util::TypeIdentifier)
         {
           p_Node = p_Value;
         }
@@ -27,11 +26,13 @@ namespace Low {
         }
       };
 
-      // Owns a concrete List<T> while preserving independent value copies.
+      // Owns a concrete List<T> while preserving independent value
+      // copies.
       class ListDefaultValue
       {
       public:
-        using ElementVisitor = Util::Function<void(const Util::Variant &)>;
+        using ElementVisitor =
+            Util::Function<void(const Util::Variant &)>;
 
         ListDefaultValue() = default;
 
@@ -67,7 +68,8 @@ namespace Low {
           swap(p_Other);
         }
 
-        ListDefaultValue &operator=(ListDefaultValue &&p_Other) noexcept
+        ListDefaultValue &
+        operator=(ListDefaultValue &&p_Other) noexcept
         {
           if (this != &p_Other) {
             reset();
@@ -76,9 +78,8 @@ namespace Low {
           return *this;
         }
 
-        template <typename T,
-                  typename Serialization =
-                      ListDefaultElementSerialization<T>>
+        template <typename T, typename Serialization =
+                                  ListDefaultElementSerialization<T>>
         void create(Util::TypeIdentifier p_ReferencedType = {})
         {
           ListDefaultValue l_New;
@@ -92,15 +93,15 @@ namespace Low {
           };
           l_New.m_ReferencedType = p_ReferencedType;
           l_New.m_ForEach = [](const void *p_Value,
-                              const ElementVisitor &p_Visitor) {
+                               const ElementVisitor &p_Visitor) {
             for (const T &i_Value :
                  *static_cast<const Util::List<T> *>(p_Value)) {
               p_Visitor(Util::Variant(i_Value));
             }
           };
           l_New.m_Serialize = [](const void *p_Value,
-                                Util::Serial::Node &p_Node,
-                                Util::TypeIdentifier p_Type) {
+                                 Util::Serial::Node &p_Node,
+                                 Util::TypeIdentifier p_Type) {
             const auto &l_List =
                 *static_cast<const Util::List<T> *>(p_Value);
             p_Node = Util::Serial::Node::sequence({});
@@ -111,8 +112,8 @@ namespace Low {
             }
           };
           l_New.m_Deserialize = [](void *p_Value,
-                                  Util::Serial::Node &p_Node,
-                                  Util::TypeIdentifier p_Type) {
+                                   Util::Serial::Node &p_Node,
+                                   Util::TypeIdentifier p_Type) {
             Util::List<T> l_List;
             if (!p_Node.is_null()) {
               if (!p_Node.is_seq()) {
@@ -149,8 +150,8 @@ namespace Low {
         void deserialize(Util::Serial::Node &p_Node)
         {
           if (!m_Value) {
-            throw std::logic_error(
-                "Create a typed list before deserializing its default");
+            throw std::logic_error("Create a typed list before "
+                                   "deserializing its default");
           }
           m_Deserialize(m_Value, p_Node, m_ReferencedType);
         }
@@ -204,8 +205,9 @@ namespace Low {
         void (*m_Deserialize)(void *, Util::Serial::Node &,
                               Util::TypeIdentifier) = nullptr;
         Util::TypeIdentifier m_ReferencedType;
-        void (*m_ForEach)(const void *, const ElementVisitor &) = nullptr;
+        void (*m_ForEach)(const void *,
+                          const ElementVisitor &) = nullptr;
       };
     } // namespace VisualScript
-  } // namespace Editor
+  }   // namespace Editor
 } // namespace Low

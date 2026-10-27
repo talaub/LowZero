@@ -12,7 +12,7 @@ namespace Low {
           static ImU32 g_EnumColor = IM_COL32(150, 100, 200, 255);
           static const char *g_ValuePinName = "Value";
 
-          struct EnumLiteralNodeClass : public NodeClass
+          struct EnumLiteralNode : public TypedNode
           {
             virtual Util::Name get_name() const override
             {
@@ -20,10 +20,9 @@ namespace Low {
             }
 
             virtual Util::String
-            get_title(const Graph &p_Graph,
-                      NodeId p_NodeId) const override
+            get_title(const Graph &p_Graph) const override
             {
-              const Node *l_Node = p_Graph.find_node(p_NodeId);
+              const auto *l_Node = this;
               if (!l_Node || (u64)l_Node->handle_type == 0) {
                 return "Enum literal";
               }
@@ -34,16 +33,15 @@ namespace Low {
             }
 
             virtual Util::String
-            get_subtitle(const Graph &, NodeId) const override
+            get_subtitle(const Graph &) const override
             {
               return "Enum";
             }
 
             virtual Util::String
-            get_category(const Graph &p_Graph,
-                        NodeId p_NodeId) const override
+            get_category(const Graph &p_Graph) const override
             {
-              const Node *l_Node = p_Graph.find_node(p_NodeId);
+              const auto *l_Node = this;
               if (!l_Node || (u64)l_Node->handle_type == 0) {
                 return "Enum";
               }
@@ -52,15 +50,14 @@ namespace Low {
                       l_Node->handle_type)
                       .visual_script_info;
               return l_VsInfo.category.is_valid()
-                        ? Util::String(l_VsInfo.category.c_str())
-                        : get_title(p_Graph, p_NodeId);
+                         ? Util::String(l_VsInfo.category.c_str())
+                         : get_title(p_Graph);
             }
 
             virtual Util::String
-            get_icon(const Graph &p_Graph,
-                    NodeId p_NodeId) const override
+            get_icon(const Graph &p_Graph) const override
             {
-              const Node *l_Node = p_Graph.find_node(p_NodeId);
+              const auto *l_Node = this;
               if (!l_Node || (u64)l_Node->handle_type == 0) {
                 return ICON_LC_LIST;
               }
@@ -69,65 +66,65 @@ namespace Low {
                       l_Node->handle_type)
                       .visual_script_info;
               return l_VsInfo.icon_name.is_valid()
-                        ? get_icon_by_name(l_VsInfo.icon_name)
-                        : ICON_LC_LIST;
+                         ? get_icon_by_name(l_VsInfo.icon_name)
+                         : ICON_LC_LIST;
             }
 
-            virtual ImU32 get_color(const Graph &,
-                                    NodeId) const override
+            virtual ImU32 get_color(const Graph &) const override
             {
               return g_EnumColor;
             }
 
             virtual void setup_default_pins(
-                Graph &p_Graph, NodeId p_NodeId,
+                Graph &p_Graph,
                 const NodeGraphSchema *p_Schema) const override
             {
-              const Node *l_Node = p_Graph.find_node(p_NodeId);
+              const auto *l_Node = this;
               if (!l_Node || (u64)l_Node->handle_type == 0) {
                 return;
               }
 
-              Editor::Pin l_ValueIn =
-                  make_input_pin(p_Graph, p_NodeId);
-              l_ValueIn.connectable = false;
-              Pin l_ValueMetadata = make_enum_pin_metadata(
-                  g_ValuePinName, l_Node->handle_type);
-              p_Graph.add_pin(l_ValueIn, l_ValueMetadata, p_Schema);
+              Pin l_ValueMetadata =
+                  make_enum_pin(g_ValuePinName, l_Node->handle_type);
+              l_ValueMetadata.connectable = false;
+              p_Graph.add_pin(
+                  make_input_pin(p_Graph, id, l_ValueMetadata),
+                  p_Schema);
 
-              Editor::Pin l_ValueOut =
-                  make_output_pin(p_Graph, p_NodeId);
               Pin l_OutputMetadata =
-                  make_enum_pin_metadata("", l_Node->handle_type);
+                  make_enum_pin("", l_Node->handle_type);
               l_OutputMetadata.show_default_value_when_unlinked =
                   false;
-              p_Graph.add_pin(l_ValueOut, l_OutputMetadata, p_Schema);
+              p_Graph.add_pin(
+                  make_output_pin(p_Graph, id, l_OutputMetadata),
+                  p_Schema);
             }
 
             virtual void compile_output_pin(
-                Graph &p_Graph, NodeId p_NodeId, PinId p_PinId,
+                Graph &p_Graph, PinId p_PinId,
                 CompileContext &p_CompileContext) const override
             {
               (void)p_PinId;
-              const Pin *l_ValuePin = p_Graph.find_input_pin_checked(
-                  p_NodeId, g_ValuePinName);
-              LOW_ASSERT(l_ValuePin,
-                        "Enum literal node is missing its value pin");
+              const Pin *l_ValuePin =
+                  p_Graph.find_input_pin_checked(id, g_ValuePinName);
+              LOW_ASSERT(
+                  l_ValuePin,
+                  "Enum literal node is missing its value pin");
               if (!l_ValuePin) {
                 return;
               }
 
-              p_Graph.compile_input_pin(l_ValuePin->pin,
+              p_Graph.compile_input_pin(l_ValuePin->id,
                                         p_CompileContext);
             }
           };
 
-          static EnumLiteralNodeClass g_EnumLiteralNodeClass;
         } // namespace
 
         void register_nodes(Graph &p_Graph)
         {
-          p_Graph.register_node_class(g_EnumLiteralNodeClass);
+          const Util::Name l_EnumLiteralNodeType =
+              p_Graph.register_node_type<EnumLiteralNode>();
 
           for (const Core::Scripting::EnumInfo &i_Enum :
                Core::Scripting::get_registered_enums()) {
@@ -153,20 +150,20 @@ namespace Low {
             i_SpawnEntry.title = l_EnumFriendlyName;
             i_SpawnEntry.subtitle = "Enum";
             i_SpawnEntry.search_text = l_EnumFriendlyName;
-            i_SpawnEntry.node_class =
-                g_EnumLiteralNodeClass.get_name();
+            i_SpawnEntry.node_type = l_EnumLiteralNodeType;
 
             const Util::TypeIdentifier l_Identifier =
                 i_Enum.identifier;
-            i_SpawnEntry.initialize_node = [l_Identifier](Graph &,
-                                                          Node &p_Node) {
-              p_Node.handle_type = l_Identifier;
-            };
+            i_SpawnEntry.initialize_node =
+                [l_Identifier](Graph &, Node &p_Node) {
+                  static_cast<TypedNode &>(p_Node).handle_type =
+                      l_Identifier;
+                };
 
             p_Graph.register_spawn_entry(i_SpawnEntry);
           }
         }
       } // namespace EnumNodes
-    } // namespace VisualScript
-  } // namespace Editor
+    }   // namespace VisualScript
+  }     // namespace Editor
 } // namespace Low

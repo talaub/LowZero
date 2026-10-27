@@ -9,8 +9,7 @@ namespace Low {
         : m_Path(p_Path)
     {
       m_Document.load_from_path(
-          p_Path,
-          VisualScript::get_context_registry(),
+          p_Path, VisualScript::get_script_context_registry(),
           VisualScript::get_compile_profile_registry());
 
       m_Editor.load_document(m_Document);

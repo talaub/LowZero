@@ -1,13 +1,14 @@
 #pragma once
 
 #include "LowEditorVisualScripting.h"
+#include "LowUtilContainers.h"
 #include <memory>
 
 namespace Low {
   namespace Editor {
     namespace VisualScript {
-      struct ContextDefinition;
-      struct ContextRegistry;
+      struct EditorContextDefinition;
+      struct EditorContextRegistry;
 
       struct CanvasDropAction
       {
@@ -57,18 +58,20 @@ namespace Low {
           renderer.set_graph(graph);
         }
 
-        void apply_context(const ContextDefinition &p_Context);
+        void apply_context(Util::Name p_ContextName);
+        void apply_context(const ScriptContextDefinition &p_Context);
         void apply_context(
-            const ContextDefinition &p_Context,
+            const ScriptContextDefinition &p_Context,
             const CompileProfileRegistry &p_ProfileRegistry);
         bool initialize_compile_settings(
             const CompileProfileRegistry &p_ProfileRegistry);
         bool load_from_path(const Util::String &p_Path);
-        bool load_from_path(const Util::String &p_Path,
-                            const ContextRegistry &p_ContextRegistry);
         bool load_from_path(
             const Util::String &p_Path,
-            const ContextRegistry &p_ContextRegistry,
+            const ScriptContextRegistry &p_ContextRegistry);
+        bool load_from_path(
+            const Util::String &p_Path,
+            const ScriptContextRegistry &p_ContextRegistry,
             const CompileProfileRegistry &p_ProfileRegistry);
         bool save();
         bool save_as(const Util::String &p_Path);
@@ -90,14 +93,11 @@ namespace Low {
         }
       };
 
-      struct LOW_EDITOR_API ContextDefinition
+      struct LOW_EDITOR_API EditorContextDefinition
       {
-        virtual ~ContextDefinition() = default;
+        virtual ~EditorContextDefinition() = default;
 
         virtual Util::Name get_name() const = 0;
-        virtual Util::Name get_default_compile_profile() const = 0;
-        virtual void
-        register_node_libraries(Graph &p_Graph) const = 0;
         virtual void
         build_default_template(Document &p_Document) const
         {
@@ -121,36 +121,42 @@ namespace Low {
           (void)p_CanvasPosition;
           (void)p_Actions;
         }
+
+        virtual void render_variable_header(Graph &p_Graph,
+                                            Variable &p_Variable,
+                                            ImDrawList *p_DrawList,
+                                            const ImVec2 &p_Start,
+                                            const ImVec2 &p_End) const
+        {
+          (void)p_Graph;
+          (void)p_Variable;
+          (void)p_DrawList;
+          (void)p_Start;
+          (void)p_End;
+        }
       };
 
-      struct LOW_EDITOR_API ContextRegistry
+      struct LOW_EDITOR_API EditorContextRegistry
       {
-        Util::Map<Util::Name, ContextDefinition *> contexts;
+        Util::Map<Util::Name, EditorContextDefinition *> contexts;
 
-        void register_context(ContextDefinition &p_Context);
-        ContextDefinition *find_context(Util::Name p_ContextName);
-        const ContextDefinition *
+        void register_context(EditorContextDefinition &p_Context);
+        EditorContextDefinition *
+        find_context(Util::Name p_ContextName);
+        const EditorContextDefinition *
         find_context(Util::Name p_ContextName) const;
       };
 
-      struct LOW_EDITOR_API DefaultContextDefinition
-          : public ContextDefinition
+      struct LOW_EDITOR_API DefaultEditorContextDefinition
+          : public EditorContextDefinition
       {
         virtual Util::Name get_name() const override;
-        virtual Util::Name
-        get_default_compile_profile() const override;
-        virtual void
-        register_node_libraries(Graph &p_Graph) const override;
       };
 
-      struct LOW_EDITOR_API UiControllerContextDefinition
-          : public ContextDefinition
+      struct LOW_EDITOR_API UiControllerEditorContextDefinition
+          : public EditorContextDefinition
       {
         virtual Util::Name get_name() const override;
-        virtual Util::Name
-        get_default_compile_profile() const override;
-        virtual void
-        register_node_libraries(Graph &p_Graph) const override;
         virtual void
         build_default_template(Document &p_Document) const override;
         virtual void get_canvas_drop_payload_types(
@@ -159,28 +165,27 @@ namespace Low {
             Document &p_Document, const char *p_PayloadType,
             const void *p_Data, u32 p_DataSize,
             const Math::Vector2 &p_CanvasPosition,
-            Util::List<CanvasDropAction> &p_Actions) const
-            override;
+            Util::List<CanvasDropAction> &p_Actions) const override;
       };
 
-      struct LOW_EDITOR_API GameplaySystemContextDefinition
-          : public ContextDefinition
+      struct LOW_EDITOR_API GameplaySystemEditorContextDefinition
+          : public EditorContextDefinition
       {
         virtual Util::Name get_name() const override;
-        virtual Util::Name
-        get_default_compile_profile() const override;
-        virtual void
-        register_node_libraries(Graph &p_Graph) const override;
         virtual void
         build_default_template(Document &p_Document) const override;
+        virtual void
+        render_variable_header(Graph &p_Graph, Variable &p_Variable,
+                               ImDrawList *p_DrawList,
+                               const ImVec2 &p_Start,
+                               const ImVec2 &p_End) const override;
       };
 
-      LOW_EDITOR_API void
-      register_builtin_contexts(ContextRegistry &p_ContextRegistry);
+      LOW_EDITOR_API void register_builtin_editor_contexts(
+          EditorContextRegistry &p_ContextRegistry);
 
-      LOW_EDITOR_API ContextRegistry &get_context_registry();
-      LOW_EDITOR_API CompileProfileRegistry &
-      get_compile_profile_registry();
+      LOW_EDITOR_API EditorContextRegistry &
+      get_editor_context_registry();
 
       struct Editor
       {
@@ -328,5 +333,5 @@ namespace Low {
             const Math::Vector2 &p_Size = Math::Vector2(0.0f, 0.0f));
       };
     } // namespace VisualScript
-  } // namespace Editor
+  }   // namespace Editor
 } // namespace Low

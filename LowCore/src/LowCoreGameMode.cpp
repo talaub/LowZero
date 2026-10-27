@@ -53,6 +53,10 @@ namespace Low {
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = GameMode::ms_TypeId;
 
+      new (ACCESSOR_TYPE_SOA_PTR(
+          l_Handle, GameMode, systems,
+          Low::Util::List<GameModeSystemStorage>))
+          Low::Util::List<GameModeSystemStorage>();
       ACCESSOR_TYPE_SOA(l_Handle, GameMode, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -159,38 +163,33 @@ namespace Low {
       l_TypeInfo.component = false;
       l_TypeInfo.uiComponent = false;
       {
-        // Property: tick_function_name
+        // Property: systems
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(tick_function_name);
-        l_PropertyInfo.editorProperty = true;
-        l_PropertyInfo.dataOffset =
-            offsetof(GameMode::Data, tick_function_name);
-        l_PropertyInfo.size =
-            sizeof(GameMode::Data::tick_function_name);
+        l_PropertyInfo.name = N(systems);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(GameMode::Data, systems);
+        l_PropertyInfo.size = sizeof(GameMode::Data::systems);
         l_PropertyInfo.containerType =
-            Low::Util::RTTI::ContainerType::NONE;
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
+            Low::Util::RTTI::ContainerType::LIST;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GameMode l_Handle = p_Handle.get_id();
-          l_Handle.get_tick_function_name();
+          l_Handle.get_systems();
           return (void *)&ACCESSOR_TYPE_SOA(
-              p_Handle, GameMode, tick_function_name, Util::String);
+              p_Handle, GameMode, systems,
+              Low::Util::List<GameModeSystemStorage>);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          GameMode l_Handle = p_Handle.get_id();
-          l_Handle.set_tick_function_name(*(Util::String *)p_Data);
-        };
+                                const void *p_Data) -> void {};
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GameMode l_Handle = p_Handle.get_id();
-          *((Util::String *)p_Data) =
-              l_Handle.get_tick_function_name();
+          *((void **)p_Data) = &l_Handle.get_systems();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-        // End property: tick_function_name
+        // End property: systems
       }
       {
         // Property: unique_id
@@ -364,7 +363,6 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       GameMode l_Handle = make(p_Name);
-      l_Handle.set_tick_function_name(get_tick_function_name());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
 
@@ -390,12 +388,26 @@ namespace Low {
     {
       _LOW_ASSERT(is_alive());
 
-      p_Node["tick_function_name"] = get_tick_function_name().c_str();
       p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+      for (const GameModeSystemStorage &i_Storage : get_systems()) {
+        if (!i_Storage.system.is_alive()) {
+          continue;
+        }
 
+        Util::Serial::Node i_StorageNode;
+
+        i_StorageNode["system_name"] = i_Storage.system.get_name();
+
+        for (auto &it : i_Storage.values) {
+          Util::Serial::serialize_variant(
+              i_StorageNode["values"][it.first.c_str()], it.second);
+        }
+
+        p_Node["systems"].push_back(i_StorageNode);
+      }
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
@@ -421,10 +433,6 @@ namespace Low {
       GameMode l_Handle =
           GameMode::make(N(GameMode), l_HandleUniqueId);
 
-      if (p_Node["tick_function_name"]) {
-        l_Handle.set_tick_function_name(
-            p_Node["tick_function_name"].as<Low::Util::String>());
-      }
       if (p_Node["unique_id"]) {
         l_Handle.set_unique_id(
             p_Node["unique_id"].as<Low::Util::UniqueId>());
@@ -435,6 +443,34 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
 
+      if (p_Node["systems"]) {
+        for (int i = 0; i < p_Node["systems"].size(); ++i) {
+          Util::Serial::Node &i_StorageNode = p_Node["systems"][i];
+          if (!i_StorageNode["system_name"]) {
+            continue;
+          }
+
+          GameModeSystemStorage i_Storage;
+          const Util::Name i_SystemName =
+              i_StorageNode["system_name"].as<Util::Name>();
+          i_Storage.system =
+              GameplaySystem::find_by_name(i_SystemName);
+
+          if (!i_Storage.system.is_alive()) {
+            LOW_LOG_WARN
+                << "Failed to find system by name: " << i_SystemName
+                << LOW_LOG_END;
+            continue;
+          }
+
+          if (i_StorageNode["values"]) {
+            for (auto [key, value] : i_StorageNode["values"]) {
+              i_Storage.values[LOW_NAME(key->c_str())] =
+                  Util::Serial::deserialize_variant(value);
+            }
+          }
+        }
+      }
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
       return l_Handle;
@@ -488,38 +524,16 @@ namespace Low {
       l_GameMode.notify(p_Observed, p_Observable);
     }
 
-    Util::String GameMode::get_tick_function_name() const
+    Low::Util::List<GameModeSystemStorage> &
+    GameMode::get_systems() const
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_tick_function_name
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_systems
+      // LOW_CODEGEN::END::CUSTOM:GETTER_systems
 
-      // LOW_CODEGEN::END::CUSTOM:GETTER_tick_function_name
-
-      return TYPE_SOA(GameMode, tick_function_name, Util::String);
-    }
-    void GameMode::set_tick_function_name(const char *p_Value)
-    {
-      Low::Util::String l_Val(p_Value);
-      set_tick_function_name(l_Val);
-    }
-
-    void GameMode::set_tick_function_name(Util::String p_Value)
-    {
-      _LOW_ASSERT(is_alive());
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_tick_function_name
-
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_tick_function_name
-
-      // Set new value
-      TYPE_SOA(GameMode, tick_function_name, Util::String) = p_Value;
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_tick_function_name
-
-      // LOW_CODEGEN::END::CUSTOM:SETTER_tick_function_name
-
-      broadcast_observable(N(tick_function_name));
+      return TYPE_SOA(GameMode, systems,
+                      Low::Util::List<GameModeSystemStorage>);
     }
 
     Low::Util::UniqueId GameMode::get_unique_id() const

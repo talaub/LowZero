@@ -45,6 +45,7 @@
 #include "LowUtilJobManager.h"
 #include "LowUtilProfiler.h"
 #include "LowUtil.h"
+#include "LowUtilFileIO.h"
 
 #include "LowRenderer.h"
 
@@ -69,6 +70,25 @@ namespace Low {
 
       // FIX: Remove test code
       Low::Renderer::UiRenderObject g_FontRenderObject;
+
+      static void load_gamemodes()
+      {
+        Util::String l_Path =
+            Util::get_project().dataPath + "/assets/gamemode";
+
+        Util::List<Util::String> l_FilePaths;
+
+        Util::FileIO::list_directory(l_Path.c_str(), l_FilePaths);
+        Util::String l_Ending = ".gamemode.yaml";
+
+        for (Util::String &i_Path : l_FilePaths) {
+          if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
+            Util::Serial::Node i_Node =
+                Util::Serial::load_yaml_file(i_Path.c_str());
+            GameMode::deserialize(i_Node, 0);
+          }
+        }
+      }
 
       static void execute_ticks(float p_Delta)
       {
@@ -108,6 +128,8 @@ namespace Low {
         if (l_FirstRun) {
           ScriptAsset::initialize();
           Scripting::initialize_as();
+
+          load_gamemodes();
         }
 
         Renderer::prepare_tick(p_Delta);

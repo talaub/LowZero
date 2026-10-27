@@ -1,5 +1,7 @@
 #include "LowEditorVisualScriptNodes.h"
 
+#include "LowEditorIcons.h"
+
 namespace Low {
   namespace Editor {
     namespace VisualScript {
@@ -8,85 +10,87 @@ namespace Low {
           static const ImU32 g_OperatorColor =
               IM_COL32(65, 145, 146, 255);
 
-          struct ComparisonNodeClassBase : public NodeClass
+          struct ComparisonNodeBase : public Node
           {
-            Util::String m_Title;
-            const char *m_Operator;
+            Util::String get_icon(const Graph &) const override
+            {
+              return ICON_CI_SYMBOL_OPERATOR;
+            }
 
-            ComparisonNodeClassBase(Util::String p_Title,
-                                    const char *p_Operator)
-                : m_Title(p_Title), m_Operator(p_Operator)
+            const char *const m_Operator;
+
+            ComparisonNodeBase(const char *p_Operator)
+                : m_Operator(p_Operator)
             {
             }
 
-            Util::String get_title(const Graph &,
-                                   NodeId) const override
-            {
-              return m_Title;
-            }
+            Util::String get_title(const Graph &) const override = 0;
 
-            Util::String get_category(const Graph &,
-                                      NodeId) const override
+            Util::String get_category(const Graph &) const override
             {
               return "Bool";
             }
 
-            bool is_compact(const Graph &, NodeId) const override
+            bool is_compact(const Graph &) const override
             {
               return true;
             }
 
-            ImU32 get_color(const Graph &, NodeId) const override
+            ImU32 get_color(const Graph &) const override
             {
               return g_OperatorColor;
             }
 
             void setup_default_pins(
-                Graph &p_Graph, NodeId p_NodeId,
+                Graph &p_Graph,
                 const NodeGraphSchema *p_Schema) const override
             {
-              p_Graph.add_pin(make_input_pin(p_Graph, p_NodeId),
-                              make_number_pin_metadata("A"),
-                              p_Schema);
-              p_Graph.add_pin(make_input_pin(p_Graph, p_NodeId),
-                              make_number_pin_metadata("B"),
-                              p_Schema);
-              Editor::Pin l_Output =
-                  make_output_pin(p_Graph, p_NodeId);
-              Pin l_OutputMetadata = make_bool_pin_metadata("Result");
+              p_Graph.add_pin(
+                  make_input_pin(p_Graph, id, make_number_pin("A")),
+                  p_Schema);
+              p_Graph.add_pin(
+                  make_input_pin(p_Graph, id, make_number_pin("B")),
+                  p_Schema);
+
+              Pin l_OutputMetadata = make_bool_pin("Result");
               l_OutputMetadata.show_default_value_when_unlinked =
                   false;
-              p_Graph.add_pin(l_Output, l_OutputMetadata, p_Schema);
+              p_Graph.add_pin(
+                  make_output_pin(p_Graph, id, l_OutputMetadata),
+                  p_Schema);
             }
 
             void compile_output_pin(
-                Graph &p_Graph, NodeId p_NodeId, PinId,
+                Graph &p_Graph, PinId,
                 CompileContext &p_CompileContext) const override
             {
               p_CompileContext.main_code.append("(");
               compile_input_pin(
-                  p_Graph, p_NodeId,
-                  p_Graph.find_input_pin_checked(p_NodeId, "A")->pin,
+                  p_Graph,
+                  p_Graph.find_input_pin_checked(id, "A")->id,
                   p_CompileContext);
               p_CompileContext.main_code.append(m_Operator);
               compile_input_pin(
-                  p_Graph, p_NodeId,
-                  p_Graph.find_input_pin_checked(p_NodeId, "B")->pin,
+                  p_Graph,
+                  p_Graph.find_input_pin_checked(id, "B")->id,
                   p_CompileContext);
               p_CompileContext.main_code.append(")");
             }
           };
 
-          struct GreaterEqualsNodeClass
-              : public ComparisonNodeClassBase
+          struct GreaterEqualsNode : public ComparisonNodeBase
           {
-            GreaterEqualsNodeClass()
-                : ComparisonNodeClassBase("Greater equals", " >= ")
+            Util::String get_title(const Graph &) const override
+            {
+              return "Greater equals";
+            }
+
+            GreaterEqualsNode() : ComparisonNodeBase(" >= ")
             {
             }
 
-            Util::String get_compact_title(const Graph &,
-                                           NodeId) const override
+            Util::String
+            get_compact_title(const Graph &p_Graph) const override
             {
               return ">=";
             }
@@ -97,15 +101,19 @@ namespace Low {
             }
           };
 
-          struct LessEqualsNodeClass : public ComparisonNodeClassBase
+          struct LessEqualsNode : public ComparisonNodeBase
           {
-            LessEqualsNodeClass()
-                : ComparisonNodeClassBase("Less equals", " <= ")
+            Util::String get_title(const Graph &) const override
+            {
+              return "Less equals";
+            }
+
+            LessEqualsNode() : ComparisonNodeBase(" <= ")
             {
             }
 
-            Util::String get_compact_title(const Graph &,
-                                           NodeId) const override
+            Util::String
+            get_compact_title(const Graph &p_Graph) const override
             {
               return "<=";
             }
@@ -116,14 +124,19 @@ namespace Low {
             }
           };
 
-          struct LessNodeClass : public ComparisonNodeClassBase
+          struct LessNode : public ComparisonNodeBase
           {
-            LessNodeClass() : ComparisonNodeClassBase("Less", " < ")
+            Util::String get_title(const Graph &) const override
+            {
+              return "Less";
+            }
+
+            LessNode() : ComparisonNodeBase(" < ")
             {
             }
 
-            Util::String get_compact_title(const Graph &,
-                                           NodeId) const override
+            Util::String
+            get_compact_title(const Graph &p_Graph) const override
             {
               return "<";
             }
@@ -134,15 +147,19 @@ namespace Low {
             }
           };
 
-          struct GreaterNodeClass : public ComparisonNodeClassBase
+          struct GreaterNode : public ComparisonNodeBase
           {
-            GreaterNodeClass()
-                : ComparisonNodeClassBase("Greater", " > ")
+            Util::String get_title(const Graph &) const override
+            {
+              return "Greater";
+            }
+
+            GreaterNode() : ComparisonNodeBase(" > ")
             {
             }
 
-            Util::String get_compact_title(const Graph &,
-                                           NodeId) const override
+            Util::String
+            get_compact_title(const Graph &p_Graph) const override
             {
               return ">";
             }
@@ -153,18 +170,18 @@ namespace Low {
             }
           };
 
-          static GreaterEqualsNodeClass g_GreaterEqualsNodeClass;
-          static LessEqualsNodeClass g_LessEqualsNodeClass;
-          static LessNodeClass g_LessNodeClass;
-          static GreaterNodeClass g_GreaterNodeClass;
         } // namespace
 
         void register_nodes(Graph &p_Graph)
         {
-          p_Graph.register_node_class(g_GreaterEqualsNodeClass);
-          p_Graph.register_node_class(g_LessEqualsNodeClass);
-          p_Graph.register_node_class(g_LessNodeClass);
-          p_Graph.register_node_class(g_GreaterNodeClass);
+          const Util::Name l_GreaterEqualsNodeType =
+              p_Graph.register_node_type<GreaterEqualsNode>();
+          const Util::Name l_LessEqualsNodeType =
+              p_Graph.register_node_type<LessEqualsNode>();
+          const Util::Name l_LessNodeType =
+              p_Graph.register_node_type<LessNode>();
+          const Util::Name l_GreaterNodeType =
+              p_Graph.register_node_type<GreaterNode>();
 
           NodeSpawnEntry l_GreaterEqualsEntry;
           l_GreaterEqualsEntry.id =
@@ -172,8 +189,7 @@ namespace Low {
           l_GreaterEqualsEntry.category = "Bool";
           l_GreaterEqualsEntry.title = "Greater equals";
           l_GreaterEqualsEntry.search_text = "greater equals compare";
-          l_GreaterEqualsEntry.node_class =
-              g_GreaterEqualsNodeClass.get_name();
+          l_GreaterEqualsEntry.node_type = l_GreaterEqualsNodeType;
           p_Graph.register_spawn_entry(l_GreaterEqualsEntry);
 
           NodeSpawnEntry l_LessEqualsEntry;
@@ -181,8 +197,7 @@ namespace Low {
           l_LessEqualsEntry.category = "Bool";
           l_LessEqualsEntry.title = "Less equals";
           l_LessEqualsEntry.search_text = "less equals compare";
-          l_LessEqualsEntry.node_class =
-              g_LessEqualsNodeClass.get_name();
+          l_LessEqualsEntry.node_type = l_LessEqualsNodeType;
           p_Graph.register_spawn_entry(l_LessEqualsEntry);
 
           NodeSpawnEntry l_LessEntry;
@@ -190,7 +205,7 @@ namespace Low {
           l_LessEntry.category = "Bool";
           l_LessEntry.title = "Less";
           l_LessEntry.search_text = "less compare";
-          l_LessEntry.node_class = g_LessNodeClass.get_name();
+          l_LessEntry.node_type = l_LessNodeType;
           p_Graph.register_spawn_entry(l_LessEntry);
 
           NodeSpawnEntry l_GreaterEntry;
@@ -198,10 +213,10 @@ namespace Low {
           l_GreaterEntry.category = "Bool";
           l_GreaterEntry.title = "Greater";
           l_GreaterEntry.search_text = "greater compare";
-          l_GreaterEntry.node_class = g_GreaterNodeClass.get_name();
+          l_GreaterEntry.node_type = l_GreaterNodeType;
           p_Graph.register_spawn_entry(l_GreaterEntry);
         }
       } // namespace OperatorNodes
-    } // namespace VisualScript
-  } // namespace Editor
+    }   // namespace VisualScript
+  }     // namespace Editor
 } // namespace Low

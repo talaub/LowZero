@@ -6,6 +6,8 @@
 #include "LowUtilContainers.h"
 #include "LowUtilName.h"
 #include <imgui.h>
+#include <memory>
+#include <utility>
 
 namespace ImGuiEx {
   struct Canvas;
@@ -129,6 +131,14 @@ namespace Low {
 
     struct Node
     {
+      virtual ~Node() = default;
+      // Derived data objects preserve their type when added or
+      // copied.
+      virtual std::unique_ptr<Node> clone() const
+      {
+        return std::make_unique<Node>(*this);
+      }
+
       NodeId id;
       Math::Vector2 position = Math::Vector2(0.0f, 0.0f);
 
@@ -150,6 +160,14 @@ namespace Low {
 
     struct Pin
     {
+      virtual ~Pin() = default;
+      // Derived data objects preserve their type when added or
+      // copied.
+      virtual std::unique_ptr<Pin> clone() const
+      {
+        return std::make_unique<Pin>(*this);
+      }
+
       PinId id;
       NodeId node;
       PinDirection direction = PinDirection::Input;
@@ -186,9 +204,34 @@ namespace Low {
 
     struct NodeGraph
     {
-      Util::List<Node> nodes;
-      Util::List<Pin> pins;
+      NodeGraph() = default;
+      NodeGraph(NodeGraph &&) = default;
+      NodeGraph &operator=(NodeGraph &&) = default;
+      NodeGraph(const NodeGraph &p_Other) : links(p_Other.links)
+      {
+        for (const auto &i_Node : p_Other.nodes) {
+          nodes.push_back(i_Node->clone());
+        }
+        for (const auto &i_Pin : p_Other.pins) {
+          pins.push_back(i_Pin->clone());
+        }
+      }
+      NodeGraph &operator=(const NodeGraph &p_Other)
+      {
+        if (this != &p_Other) {
+          NodeGraph l_Copy(p_Other);
+          *this = std::move(l_Copy);
+        }
+        return *this;
+      }
+
+      Util::List<std::unique_ptr<Node>> nodes;
+      Util::List<std::unique_ptr<Pin>> pins;
       Util::List<Link> links;
+
+      NodeGraphMutationResult<Node>
+      add_node(std::unique_ptr<Node> p_Node,
+               const NodeGraphSchema *p_Schema = nullptr);
 
       NodeGraphMutationResult<Node>
       add_node(const Node &p_Node,
@@ -204,7 +247,8 @@ namespace Low {
 
       Node *find_node(NodeId p_Id)
       {
-        for (Node &i_Node : nodes) {
+        for (auto &l_Object : nodes) {
+          Node &i_Node = *l_Object;
           if (i_Node.id == p_Id) {
             return &i_Node;
           }
@@ -214,7 +258,8 @@ namespace Low {
 
       const Node *find_node(NodeId p_Id) const
       {
-        for (const Node &i_Node : nodes) {
+        for (auto &l_Object : nodes) {
+          const Node &i_Node = *l_Object;
           if (i_Node.id == p_Id) {
             return &i_Node;
           }
@@ -238,7 +283,8 @@ namespace Low {
 
       Pin *find_pin(PinId p_Id)
       {
-        for (Pin &i_Pin : pins) {
+        for (auto &l_Object : pins) {
+          Pin &i_Pin = *l_Object;
           if (i_Pin.id == p_Id) {
             return &i_Pin;
           }
@@ -248,7 +294,8 @@ namespace Low {
 
       const Pin *find_pin(PinId p_Id) const
       {
-        for (const Pin &i_Pin : pins) {
+        for (auto &l_Object : pins) {
+          const Pin &i_Pin = *l_Object;
           if (i_Pin.id == p_Id) {
             return &i_Pin;
           }
@@ -308,7 +355,8 @@ namespace Low {
       {
         Util::List<Pin *> l_Result;
 
-        for (Pin &i_Pin : pins) {
+        for (auto &l_Object : pins) {
+          Pin &i_Pin = *l_Object;
           if (i_Pin.node == p_NodeId) {
             l_Result.push_back(&i_Pin);
           }
@@ -321,7 +369,8 @@ namespace Low {
       {
         Util::List<const Pin *> l_Result;
 
-        for (const Pin &i_Pin : pins) {
+        for (auto &l_Object : pins) {
+          const Pin &i_Pin = *l_Object;
           if (i_Pin.node == p_NodeId) {
             l_Result.push_back(&i_Pin);
           }
@@ -334,7 +383,8 @@ namespace Low {
       {
         Util::List<Pin *> l_Result;
 
-        for (Pin &i_Pin : pins) {
+        for (auto &l_Object : pins) {
+          Pin &i_Pin = *l_Object;
           if (i_Pin.node == p_NodeId &&
               i_Pin.direction == PinDirection::Input) {
             l_Result.push_back(&i_Pin);
@@ -348,7 +398,8 @@ namespace Low {
       {
         Util::List<const Pin *> l_Result;
 
-        for (const Pin &i_Pin : pins) {
+        for (auto &l_Object : pins) {
+          const Pin &i_Pin = *l_Object;
           if (i_Pin.node == p_NodeId &&
               i_Pin.direction == PinDirection::Input) {
             l_Result.push_back(&i_Pin);
@@ -362,7 +413,8 @@ namespace Low {
       {
         Util::List<Pin *> l_Result;
 
-        for (Pin &i_Pin : pins) {
+        for (auto &l_Object : pins) {
+          Pin &i_Pin = *l_Object;
           if (i_Pin.node == p_NodeId &&
               i_Pin.direction == PinDirection::Output) {
             l_Result.push_back(&i_Pin);
@@ -376,7 +428,8 @@ namespace Low {
       {
         Util::List<const Pin *> l_Result;
 
-        for (const Pin &i_Pin : pins) {
+        for (auto &l_Object : pins) {
+          const Pin &i_Pin = *l_Object;
           if (i_Pin.node == p_NodeId &&
               i_Pin.direction == PinDirection::Output) {
             l_Result.push_back(&i_Pin);
@@ -436,7 +489,8 @@ namespace Low {
       {
         Util::List<PinId> l_PinIdsToRemove;
 
-        for (const Pin &i_Pin : pins) {
+        for (auto &l_Object : pins) {
+          const Pin &i_Pin = *l_Object;
           if (i_Pin.node == p_Id) {
             l_PinIdsToRemove.push_back(i_Pin.id);
           }
@@ -447,7 +501,7 @@ namespace Low {
         }
 
         for (auto it = nodes.begin(); it != nodes.end(); ++it) {
-          if (it->id == p_Id) {
+          if ((*it)->id == p_Id) {
             nodes.erase(it);
             return true;
           }
@@ -467,7 +521,7 @@ namespace Low {
         }
 
         for (auto it = pins.begin(); it != pins.end(); ++it) {
-          if (it->id == p_Id) {
+          if ((*it)->id == p_Id) {
             pins.erase(it);
             return true;
           }
@@ -647,9 +701,21 @@ namespace Low {
     NodeGraph::add_node(const Node &p_Node,
                         const NodeGraphSchema *p_Schema)
     {
-      NodeGraphMutationResult<Node> l_Result;
+      return add_node(p_Node.clone(), p_Schema);
+    }
 
-      if (find_node(p_Node.id)) {
+    inline NodeGraphMutationResult<Node>
+    NodeGraph::add_node(std::unique_ptr<Node> p_Node,
+                        const NodeGraphSchema *p_Schema)
+    {
+      NodeGraphMutationResult<Node> l_Result;
+      if (!p_Node) {
+        l_Result.validation_result =
+            NodeGraphValidationResult::InvalidNode;
+        return l_Result;
+      }
+
+      if (find_node(p_Node->id)) {
         l_Result.validation_result =
             NodeGraphValidationResult::DuplicateNode;
         return l_Result;
@@ -657,19 +723,19 @@ namespace Low {
 
       if (p_Schema) {
         l_Result.validation_result =
-            p_Schema->can_create_node(*this, p_Node);
+            p_Schema->can_create_node(*this, *p_Node);
         if (l_Result.validation_result !=
             NodeGraphValidationResult::Allowed) {
           return l_Result;
         }
-      } else if (!p_Node.is_valid()) {
+      } else if (!p_Node->is_valid()) {
         l_Result.validation_result =
             NodeGraphValidationResult::InvalidNode;
         return l_Result;
       }
 
-      nodes.push_back(p_Node);
-      l_Result.value = &nodes.back();
+      nodes.push_back(std::move(p_Node));
+      l_Result.value = nodes.back().get();
       return l_Result;
     }
 
@@ -706,8 +772,8 @@ namespace Low {
         }
       }
 
-      pins.push_back(p_Pin);
-      l_Result.value = &pins.back();
+      pins.push_back(p_Pin.clone());
+      l_Result.value = pins.back().get();
       return l_Result;
     }
 
@@ -954,7 +1020,8 @@ namespace Low {
       ImGuiEx::Canvas *drawing_canvas = nullptr;
 
       LOW_EDITOR_API ImVec2 to_screen(const ImVec2 &p_Position) const;
-      // Actual view scale, even when canvas uses unscaled graph units.
+      // Actual view scale, even when canvas uses unscaled graph
+      // units.
       LOW_EDITOR_API float get_view_zoom() const;
     };
 

@@ -8,6 +8,7 @@
 #include "LowEditorIcons.h"
 #include "LowEditorMetadata.h"
 #include "LowEditorPropertyEditors.h"
+#include "LowUtilContainers.h"
 #include "LowUtilHandle.h"
 #include "LowUtilHashing.h"
 #include "LowUtilLogger.h"
@@ -23,6 +24,7 @@ namespace Low {
   namespace Editor {
     namespace VisualScript {
       namespace {
+
         struct HandleListDefaultSerialization
         {
           static void serialize(Util::Serial::Node &p_Node,
@@ -364,31 +366,6 @@ namespace Low {
             }
             return;
           }
-          case PinType::Handle: {
-            const Util::String l_Type = pin_type_to_script_type_string(
-                p_PinMetadata.type, p_PinMetadata.number_subtype,
-                p_PinMetadata.string_subtype, p_PinMetadata.handle_type);
-            const Util::Handle l_Handle(
-                p_PinMetadata.default_value.as_u64());
-            Util::Serial::Node l_Reference;
-            Util::Serial::serialize_handle(l_Reference, l_Handle);
-            if (l_Reference.is_dict() && l_Reference["uniqueid"]) {
-              p_CompileContext.main_code.append(
-                  l_Type + "(::find_handle_id_by_unique_id(");
-              p_CompileContext.main_code.append(
-                  l_Reference["uniqueid"].as<u64>());
-              p_CompileContext.main_code.append("))");
-            } else if (l_Reference.is_dict() && l_Reference["name"]) {
-              p_CompileContext.main_code.append(
-                  l_Type + "::find_by_name(Low::Util::Name::from_string(\"");
-              p_CompileContext.main_code.append(escape_script_string(
-                  l_Reference["name"].as<Util::String>()));
-              p_CompileContext.main_code.append("\"))");
-            } else {
-              p_CompileContext.main_code.append(l_Type + "()");
-            }
-            return;
-          }
           case PinType::Enum:
             if ((u64)p_PinMetadata.handle_type != 0) {
               const Core::Scripting::EnumInfo &l_ScriptingEnumInfo =
@@ -469,33 +446,6 @@ namespace Low {
           }
         }
 
-        static void append_list_default_expression(
-            const Variable &p_Variable, CompileContext &p_Context)
-        {
-          Pin l_Element;
-          l_Element.type = p_Variable.type;
-          l_Element.number_subtype = p_Variable.number_subtype;
-          l_Element.string_subtype = p_Variable.string_subtype;
-          l_Element.handle_type = p_Variable.handle_type;
-
-          p_Context.main_code.append("{");
-          bool l_First = true;
-          p_Variable.list_default_value.for_each(
-              [&](const Util::Variant &p_Value) {
-                if (!l_First) {
-                  p_Context.main_code.append(", ");
-                }
-                l_First = false;
-                // Enum list storage is int; scalar enum defaults use UInt32.
-                l_Element.default_value =
-                    p_Variable.type == PinType::Enum
-                        ? Util::Variant((u32)(i32)p_Value)
-                        : p_Value;
-                append_default_value_expression(l_Element, p_Context);
-              });
-          p_Context.main_code.append("}");
-        }
-
         static bool variable_is_supported(const Variable &p_Variable)
         {
           return p_Variable.is_valid();
@@ -555,8 +505,8 @@ namespace Low {
           return Util::String(l_Value + strlen(p_Prefix));
         }
 
-        static void serialize_pin_metadata(const Pin &p_Pin,
-                                           Util::Serial::Node &p_Node)
+        static void serialize_pin(const Pin &p_Pin,
+                                  Util::Serial::Node &p_Node)
         {
           p_Node["display_name"] = p_Pin.display_name;
           p_Node["type"] = pin_type_to_string(p_Pin.type);
@@ -597,9 +547,8 @@ namespace Low {
                                           p_Pin.default_value);
         }
 
-        static void
-        deserialize_pin_metadata(Util::Serial::Node &p_Node,
-                                 Pin &p_Pin)
+        static void deserialize_pin(Util::Serial::Node &p_Node,
+                                    Pin &p_Pin)
         {
           if (p_Node["display_name"]) {
             p_Pin.display_name =
@@ -693,6 +642,10 @@ namespace Low {
             p_Variable.list_default_value.serialize(
                 p_Node["list_default_value"]);
           }
+
+          if (p_Variable.user_data) {
+            p_Variable.user_data->serialize(p_Node["user_data"]);
+          }
         }
 
         static void deserialize_variable(Util::Serial::Node &p_Node,
@@ -750,8 +703,113 @@ namespace Low {
                   p_Node["list_default_value"]);
             }
           }
+
+          if (p_Node["user_data"]) {
+            if (p_Variable.user_data) {
+              p_Variable.user_data->deserialize(p_Node["user_data"]);
+            }
+          }
         }
       } // namespace
+
+      void register_common_node_libraries(Graph &p_Graph)
+      {
+        BoolNodes::register_nodes(p_Graph);
+        CastNodes::register_nodes(p_Graph);
+        DebugNodes::register_nodes(p_Graph);
+        HandleNodes::register_nodes(p_Graph);
+        MathNodes::register_nodes(p_Graph);
+        OperatorNodes::register_nodes(p_Graph);
+        SyntaxNodes::register_nodes(p_Graph);
+        FunctionNodes::register_nodes(p_Graph);
+        EnumNodes::register_nodes(p_Graph);
+        StructNodes::register_nodes(p_Graph);
+        ArrayNodes::register_nodes(p_Graph);
+        SignalNodes::register_nodes(p_Graph);
+      }
+
+      ScriptContextRegistry &get_script_context_registry()
+      {
+        static ScriptContextRegistry l_Registry = [] {
+          ScriptContextRegistry l_Result;
+          l_Result.register_context({N(vs_context_default),
+                                     N(vs_compile_default),
+                                     register_common_node_libraries,
+                                     {}});
+          l_Result.register_context(
+              {N(vs_context_ui_controller),
+               N(cp_ui_controller),
+               [](Graph &p_Graph) {
+                 register_common_node_libraries(p_Graph);
+                 UiControllerNodes::register_nodes(p_Graph);
+               },
+               {}});
+          l_Result.register_context(
+              {N(vs_context_gameplay_system), N(cp_gameplay_system),
+               [](Graph &p_Graph) {
+                 register_common_node_libraries(p_Graph);
+                 GameplaySystemNodes::register_nodes(p_Graph);
+               },
+               []() -> Util::SharedPtr<VariableUserData> {
+                 return Util::make_shared<
+                     GameplaySystemVariableUserData>();
+               }});
+          return l_Result;
+        }();
+        return l_Registry;
+      }
+
+      void ScriptContextRegistry::register_context(
+          const ScriptContextDefinition &p_Context)
+      {
+        contexts[p_Context.name] = p_Context;
+      }
+
+      const ScriptContextDefinition *
+      ScriptContextRegistry::find_context(
+          Util::Name p_ContextName) const
+      {
+        auto it = contexts.find(p_ContextName);
+        return it != contexts.end() ? &it->second : nullptr;
+      }
+
+      CompileProfileRegistry &get_compile_profile_registry()
+      {
+        static CompileProfileRegistry l_Registry = [] {
+          CompileProfileRegistry l_Result;
+          register_builtin_compile_profiles(l_Result);
+          return l_Result;
+        }();
+        return l_Registry;
+      }
+
+      void
+      Graph::apply_context(const ScriptContextDefinition &p_Context)
+      {
+        variable_user_data_factory =
+            p_Context.create_variable_user_data;
+        if (p_Context.register_node_libraries) {
+          p_Context.register_node_libraries(*this);
+        }
+        for (Variable &i_Variable : variables) {
+          if (!i_Variable.user_data && variable_user_data_factory) {
+            i_Variable.user_data = variable_user_data_factory();
+          }
+        }
+      }
+
+      void GameplaySystemVariableUserData::serialize(
+          Util::Serial::Node &p_Node) const
+      {
+        p_Node["gamemode_exposed"] = gamemode_exposed;
+      }
+      void GameplaySystemVariableUserData::deserialize(
+          const Util::Serial::Node &p_Node)
+      {
+        if (p_Node["gamemode_exposed"]) {
+          gamemode_exposed = p_Node["gamemode_exposed"].as<bool>();
+        }
+      }
 
       void CompileContext::append_indent()
       {
@@ -878,11 +936,11 @@ namespace Low {
           p_Context.begin_block(Util::String("void ") + l_FuncName +
                                 "()");
 
-          for (const Low::Editor::Node &i_Node :
-               i_Func.graph.graph.nodes) {
+          for (auto &l_NodeObject : i_Func.graph.graph.nodes) {
+            const Low::Editor::Node &i_Node = *l_NodeObject;
             const Node *l_Meta = i_Func.graph.find_node(i_Node.id);
             if (!l_Meta ||
-                l_Meta->node_class != N(vs_function_entry)) {
+                l_Meta->get_name() != N(vs_function_entry)) {
               continue;
             }
             const PinId l_Output =
@@ -936,47 +994,51 @@ namespace Low {
       {
       }
 
+      static void emit_variable_member(const Variable &p_Variable,
+                                       CompileContext &p_Context)
+      {
+        if (!p_Variable.is_valid()) {
+          return;
+        }
+
+        Util::String l_TypeStr = pin_type_to_script_type_string(
+            p_Variable.type, p_Variable.number_subtype,
+            p_Variable.string_subtype, p_Variable.handle_type);
+
+        if (l_TypeStr.empty()) {
+          return;
+        }
+
+        const bool l_IsList =
+            p_Variable.container_type == PinContainerType::List;
+        if (l_IsList) {
+          l_TypeStr = "array<" + l_TypeStr + ">";
+        }
+
+        p_Context.append_indent();
+        p_Context.main_code.append(l_TypeStr + " " + p_Variable.name);
+
+        if (!l_IsList &&
+            variable_has_default_expression(p_Variable)) {
+          p_Context.main_code.append(" = ");
+          Pin l_DefaultPin;
+          l_DefaultPin.type = p_Variable.type;
+          l_DefaultPin.string_subtype = p_Variable.string_subtype;
+          l_DefaultPin.number_subtype = p_Variable.number_subtype;
+          l_DefaultPin.handle_type = p_Variable.handle_type;
+          l_DefaultPin.default_value = p_Variable.default_value;
+          append_default_value_expression(l_DefaultPin, p_Context);
+        } else if (l_IsList) {
+        }
+
+        p_Context.main_code.append(";\n");
+      }
+
       static void emit_variable_members(Graph &p_Graph,
                                         CompileContext &p_Context)
       {
         for (const Variable &i_Variable : p_Graph.variables) {
-          if (!i_Variable.is_valid()) {
-            continue;
-          }
-
-          Util::String l_TypeStr = pin_type_to_script_type_string(
-              i_Variable.type, i_Variable.number_subtype,
-              i_Variable.string_subtype, i_Variable.handle_type);
-
-          if (l_TypeStr.empty()) {
-            continue;
-          }
-
-          const bool l_IsList =
-              i_Variable.container_type == PinContainerType::List;
-          if (l_IsList) {
-            l_TypeStr = "array<" + l_TypeStr + ">";
-          }
-
-          p_Context.append_indent();
-          p_Context.main_code.append(l_TypeStr + " " +
-                                     i_Variable.name);
-
-          if (l_IsList) {
-            p_Context.main_code.append(" = ");
-            append_list_default_expression(i_Variable, p_Context);
-          } else if (variable_has_default_expression(i_Variable)) {
-            p_Context.main_code.append(" = ");
-            Pin l_DefaultPin;
-            l_DefaultPin.type = i_Variable.type;
-            l_DefaultPin.string_subtype = i_Variable.string_subtype;
-            l_DefaultPin.number_subtype = i_Variable.number_subtype;
-            l_DefaultPin.handle_type = i_Variable.handle_type;
-            l_DefaultPin.default_value = i_Variable.default_value;
-            append_default_value_expression(l_DefaultPin, p_Context);
-          }
-
-          p_Context.main_code.append(";\n");
+          emit_variable_member(i_Variable, p_Context);
         }
       }
 
@@ -992,17 +1054,19 @@ namespace Low {
       {
         u32 l_EntryIndex = 0;
 
-        for (const Low::Editor::Node &i_Node : p_Graph.graph.nodes) {
+        for (auto &l_NodeObject : p_Graph.graph.nodes) {
+          const Low::Editor::Node &i_Node = *l_NodeObject;
           const Node *l_NodeMetadata = p_Graph.find_node(i_Node.id);
           if (!l_NodeMetadata ||
-              l_NodeMetadata->node_class !=
+              l_NodeMetadata->get_name() !=
                   N(vs_uicontroller_element_event)) {
             continue;
           }
 
-          const UiControllerNodes::ElementEventNodeData *l_Data =
-              p_Graph.get_node_user_data<
-                  UiControllerNodes::ElementEventNodeData>(i_Node.id);
+          const UiControllerNodes::ElementEventNode *l_Data =
+              p_Graph
+                  .find_node_as<UiControllerNodes::ElementEventNode>(
+                      i_Node.id);
 
           const PinId l_ExecutionOutputPin =
               find_execution_output_pin(p_Graph, i_Node.id);
@@ -1094,9 +1158,9 @@ namespace Low {
                                     "(UI::Element element)");
 
               for (const CompileEntryPoint &i_Entry : l_EntryPoints) {
-                const UiControllerNodes::ElementEventNodeData
-                    *l_Data = p_Graph.get_node_user_data<
-                        UiControllerNodes::ElementEventNodeData>(
+                const UiControllerNodes::ElementEventNode *l_Data =
+                    p_Graph.find_node_as<
+                        UiControllerNodes::ElementEventNode>(
                         i_Entry.node);
                 if (!l_Data ||
                     l_Data->interaction_type != p_InteractionType) {
@@ -1149,7 +1213,8 @@ namespace Low {
       {
         u32 l_EntryIndex = 0;
 
-        for (const Low::Editor::Node &i_Node : p_Graph.graph.nodes) {
+        for (auto &l_NodeObject : p_Graph.graph.nodes) {
+          const Low::Editor::Node &i_Node = *l_NodeObject;
           Util::List<Low::Editor::Pin *> l_NodePins =
               p_Graph.graph.get_node_pins(i_Node.id);
 
@@ -1177,9 +1242,10 @@ namespace Low {
 
           const Node *l_NodeMetadata = p_Graph.find_node(i_Node.id);
           Util::String l_FunctionName = "Entry";
-          if (l_NodeMetadata && !l_NodeMetadata->title.empty()) {
+          if (l_NodeMetadata) {
             l_FunctionName = make_script_identifier(
-                l_NodeMetadata->title, Util::String("Entry"));
+                l_NodeMetadata->get_title(p_Graph),
+                Util::String("Entry"));
           }
 
           if (l_EntryIndex > 0) {
@@ -1269,7 +1335,7 @@ namespace Low {
       }
 
       Util::String pin_type_to_script_type_string(
-          PinType p_Type, NumberSubtype p_NumberSubtype,
+          PinType p_Type, NumberSubtype,
           StringSubtype p_StringSubtype,
           Util::TypeIdentifier p_HandleType)
       {
@@ -1277,17 +1343,7 @@ namespace Low {
         case PinType::Bool:
           return "bool";
         case PinType::Number:
-          switch (p_NumberSubtype) {
-          case NumberSubtype::Int32:
-            return "int";
-          case NumberSubtype::UInt32:
-            return "uint";
-          case NumberSubtype::UInt64:
-            return "uint64";
-          case NumberSubtype::Float:
-          default:
-            return "float";
-          }
+          return "float";
         case PinType::String:
           return p_StringSubtype == StringSubtype::Name ? "Name"
                                                         : "string";
@@ -1349,14 +1405,23 @@ namespace Low {
       void GameplaySystemCompileProfile::emit_members(
           Graph &p_Graph, CompileContext &p_Context) const
       {
-        emit_variable_members(p_Graph, p_Context);
+        for (const Variable &i_Variable : p_Graph.variables) {
+          const GameplaySystemVariableUserData *i_UserData =
+              (GameplaySystemVariableUserData *)
+                  i_Variable.user_data.get();
+          if (i_UserData->gamemode_exposed) {
+            p_Context.append_line("[GameModeExposed]");
+          }
+          emit_variable_member(i_Variable, p_Context);
+        }
       }
 
       void GameplaySystemCompileProfile::collect_entry_points(
           Graph &p_Graph,
           Util::List<CompileEntryPoint> &p_EntryPoints) const
       {
-        for (const Low::Editor::Node &i_Node : p_Graph.graph.nodes) {
+        for (auto &l_NodeObject : p_Graph.graph.nodes) {
+          const Low::Editor::Node &i_Node = *l_NodeObject;
           const Node *l_NodeMetadata = p_Graph.find_node(i_Node.id);
           if (!l_NodeMetadata) {
             continue;
@@ -1365,11 +1430,11 @@ namespace Low {
           Util::String l_FunctionName;
           Util::String l_FunctionSignature;
 
-          if (l_NodeMetadata->node_class ==
+          if (l_NodeMetadata->get_name() ==
               N(vs_gameplay_system_begin_play)) {
             l_FunctionName = "begin_play";
             l_FunctionSignature = "void begin_play()";
-          } else if (l_NodeMetadata->node_class ==
+          } else if (l_NodeMetadata->get_name() ==
                      N(vs_gameplay_system_tick)) {
             l_FunctionName = "tick";
             l_FunctionSignature = "void tick(float p_Delta)";
@@ -1452,62 +1517,84 @@ namespace Low {
             g_GameplaySystemCompileProfile);
       }
 
-      NodeGraphMutationResult<Low::Editor::Node>
-      Graph::add_node(const Low::Editor::Node &p_Node,
-                      const Node &p_Metadata,
-                      const NodeGraphSchema *p_Schema)
+      std::unique_ptr<Low::Editor::Node> Node::clone() const
       {
-        NodeGraphMutationResult<Low::Editor::Node> l_Result =
-            graph.add_node(p_Node, p_Schema);
-
-        if (l_Result.succeeded()) {
-          node_metadata[p_Node.id] = p_Metadata;
-          node_metadata[p_Node.id].node = p_Node.id;
-
-          const NodeClass *l_NodeClass =
-              find_node_class(node_metadata[p_Node.id].node_class);
-          if (l_NodeClass) {
-            if (node_metadata[p_Node.id].title.empty()) {
-              node_metadata[p_Node.id].title =
-                  l_NodeClass->get_title(*this, p_Node.id);
-            }
-            if (node_metadata[p_Node.id].subtitle.empty()) {
-              node_metadata[p_Node.id].subtitle =
-                  l_NodeClass->get_subtitle(*this, p_Node.id);
-            }
-            if (node_metadata[p_Node.id].category.empty()) {
-              node_metadata[p_Node.id].category =
-                  l_NodeClass->get_category(*this, p_Node.id);
-            }
-          }
-        }
-
-        return l_Result;
+        LOW_ASSERT(m_Factory,
+                   "Node is missing its registered factory");
+        auto l_Copy = m_Factory();
+        l_Copy->m_Factory = m_Factory;
+        l_Copy->id = id;
+        l_Copy->position = position;
+        l_Copy->spawn_entry = spawn_entry;
+        Util::Serial::Node l_Data;
+        serialize(l_Data);
+        l_Copy->deserialize(l_Data);
+        return l_Copy;
       }
 
-      NodeGraphMutationResult<Low::Editor::Pin>
-      Graph::add_pin(const Low::Editor::Pin &p_Pin,
-                     const Pin &p_Metadata,
+      void TypedNode::serialize(Util::Serial::Node &p_Data) const
+      {
+        if ((u64)handle_type != 0) {
+          p_Data["handle_type"] = (Util::String)handle_type;
+        }
+        if (member_name.is_valid()) {
+          p_Data["member_name"] = member_name;
+        }
+      }
+      void TypedNode::deserialize(const Util::Serial::Node &p_Data)
+      {
+        if (p_Data["handle_type"]) {
+          handle_type = Util::TypeIdentifier::from_string(
+              p_Data["handle_type"].as<Util::String>());
+        }
+        if (p_Data["member_name"]) {
+          member_name = p_Data["member_name"].as<Util::Name>();
+        }
+      }
+      void VariableNode::serialize(Util::Serial::Node &p_Data) const
+      {
+        p_Data["variable_name"] = variable_name;
+      }
+      void VariableNode::deserialize(const Util::Serial::Node &p_Data)
+      {
+        if (p_Data["variable_name"]) {
+          variable_name = p_Data["variable_name"].as<Util::String>();
+        }
+      }
+
+      NodeGraphMutationResult<Node>
+      Graph::add_node(std::unique_ptr<Node> p_Node,
+                      const NodeGraphSchema *p_Schema)
+      {
+        NodeGraphMutationResult<Node> l_Result;
+        const auto *l_Type =
+            p_Node ? find_node_type(p_Node->get_name()) : nullptr;
+        if (!l_Type) {
+          l_Result.validation_result =
+              NodeGraphValidationResult::InvalidNode;
+          return l_Result;
+        }
+        p_Node->m_Factory = l_Type->create;
+        auto l_Base = graph.add_node(std::move(p_Node), p_Schema);
+        return {l_Base.validation_result,
+                static_cast<Node *>(l_Base.value)};
+      }
+
+      NodeGraphMutationResult<Pin>
+      Graph::add_pin(const Pin &p_Pin,
                      const NodeGraphSchema *p_Schema)
       {
-        NodeGraphMutationResult<Low::Editor::Pin> l_Result =
-            graph.add_pin(p_Pin, p_Schema);
-
-        if (l_Result.succeeded()) {
-          pin_metadata[p_Pin.id] = p_Metadata;
-          pin_metadata[p_Pin.id].pin = p_Pin.id;
-
-          if (pin_metadata[p_Pin.id].type != PinType::Execution &&
-              pin_metadata[p_Pin.id].type != PinType::Dynamic &&
-              pin_metadata[p_Pin.id].type != PinType::Signal &&
-              pin_metadata[p_Pin.id].default_value.m_Type !=
-                  pin_to_variant_type(pin_metadata[p_Pin.id])) {
-            pin_metadata[p_Pin.id].default_value =
-                default_value_for_pin(pin_metadata[p_Pin.id]);
-          }
+        Pin l_Pin = p_Pin;
+        if (l_Pin.type != PinType::Execution &&
+            l_Pin.type != PinType::Dynamic &&
+            l_Pin.type != PinType::Signal &&
+            l_Pin.default_value.m_Type !=
+                pin_to_variant_type(l_Pin)) {
+          l_Pin.default_value = default_value_for_pin(l_Pin);
         }
-
-        return l_Result;
+        auto l_BaseResult = graph.add_pin(l_Pin, p_Schema);
+        return {l_BaseResult.validation_result,
+                static_cast<Pin *>(l_BaseResult.value)};
       }
 
       NodeGraphMutationResult<Low::Editor::Link>
@@ -1528,27 +1615,19 @@ namespace Low {
 
         if (l_StartPin) {
           const Node *l_NodeMetadata = find_node(l_StartPin->node);
-          const NodeClass *l_NodeClass =
-              l_NodeMetadata
-                  ? find_node_class(l_NodeMetadata->node_class)
-                  : nullptr;
-          if (l_NodeClass) {
-            l_NodeClass->on_pin_connected(*this, l_StartPin->node,
-                                          l_StartPin->id,
-                                          p_Link.end_pin);
+          const Node *l_NodeInstance = l_NodeMetadata;
+          if (l_NodeInstance) {
+            l_NodeInstance->on_pin_connected(*this, l_StartPin->id,
+                                             p_Link.end_pin);
           }
         }
 
         if (l_EndPin) {
           const Node *l_NodeMetadata = find_node(l_EndPin->node);
-          const NodeClass *l_NodeClass =
-              l_NodeMetadata
-                  ? find_node_class(l_NodeMetadata->node_class)
-                  : nullptr;
-          if (l_NodeClass) {
-            l_NodeClass->on_pin_connected(*this, l_EndPin->node,
-                                          l_EndPin->id,
-                                          p_Link.start_pin);
+          const Node *l_NodeInstance = l_NodeMetadata;
+          if (l_NodeInstance) {
+            l_NodeInstance->on_pin_connected(*this, l_EndPin->id,
+                                             p_Link.start_pin);
           }
         }
 
@@ -1559,35 +1638,18 @@ namespace Low {
       {
         const Node *l_NodeMeta = find_node(p_NodeId);
         if (l_NodeMeta) {
-          const NodeClass *l_NodeClass =
-              find_node_class(l_NodeMeta->node_class);
-          if (l_NodeClass &&
-              !l_NodeClass->is_deletable(*this, p_NodeId)) {
+          const Node *l_NodeInstance = l_NodeMeta;
+          if (l_NodeInstance &&
+              !l_NodeInstance->is_deletable(*this)) {
             return false;
           }
         }
 
-        Util::List<PinId> l_PinIdsToRemove;
-
-        for (auto it = pin_metadata.begin(); it != pin_metadata.end();
-             ++it) {
-          const Low::Editor::Pin *l_Pin = graph.find_pin(it->first);
-          if (l_Pin && l_Pin->node == p_NodeId) {
-            l_PinIdsToRemove.push_back(it->first);
-          }
-        }
-
-        for (PinId i_PinId : l_PinIdsToRemove) {
-          remove_pin(i_PinId);
-        }
-
-        node_metadata.erase(p_NodeId);
         return graph.remove_node(p_NodeId);
       }
 
       bool Graph::remove_pin(PinId p_PinId)
       {
-        pin_metadata.erase(p_PinId);
         return graph.remove_pin(p_PinId);
       }
 
@@ -1598,14 +1660,12 @@ namespace Low {
 
       Node *Graph::find_node(NodeId p_NodeId)
       {
-        auto it = node_metadata.find(p_NodeId);
-        return it != node_metadata.end() ? &it->second : nullptr;
+        return dynamic_cast<Node *>(graph.find_node(p_NodeId));
       }
 
       const Node *Graph::find_node(NodeId p_NodeId) const
       {
-        auto it = node_metadata.find(p_NodeId);
-        return it != node_metadata.end() ? &it->second : nullptr;
+        return dynamic_cast<const Node *>(graph.find_node(p_NodeId));
       }
 
       Node *Graph::find_node_checked(NodeId p_NodeId)
@@ -1626,14 +1686,12 @@ namespace Low {
 
       Pin *Graph::find_pin(PinId p_PinId)
       {
-        auto it = pin_metadata.find(p_PinId);
-        return it != pin_metadata.end() ? &it->second : nullptr;
+        return dynamic_cast<Pin *>(graph.find_pin(p_PinId));
       }
 
       const Pin *Graph::find_pin(PinId p_PinId) const
       {
-        auto it = pin_metadata.find(p_PinId);
-        return it != pin_metadata.end() ? &it->second : nullptr;
+        return dynamic_cast<const Pin *>(graph.find_pin(p_PinId));
       }
 
       Pin *Graph::find_pin_checked(PinId p_PinId)
@@ -1657,7 +1715,7 @@ namespace Low {
         Util::List<Pin *> l_Result;
         for (Low::Editor::Pin *i_Pin :
              graph.get_node_pins(p_NodeId)) {
-          Pin *l_PinMetadata = find_pin(i_Pin->id);
+          Pin *l_PinMetadata = dynamic_cast<Pin *>(i_Pin);
           if (l_PinMetadata) {
             l_Result.push_back(l_PinMetadata);
           }
@@ -1671,7 +1729,7 @@ namespace Low {
         Util::List<const Pin *> l_Result;
         for (const Low::Editor::Pin *i_Pin :
              graph.get_node_pins(p_NodeId)) {
-          const Pin *l_PinMetadata = find_pin(i_Pin->id);
+          const Pin *l_PinMetadata = dynamic_cast<const Pin *>(i_Pin);
           if (l_PinMetadata) {
             l_Result.push_back(l_PinMetadata);
           }
@@ -1684,7 +1742,7 @@ namespace Low {
         Util::List<Pin *> l_Result;
         for (Low::Editor::Pin *i_Pin :
              graph.get_input_pins(p_NodeId)) {
-          Pin *l_PinMetadata = find_pin(i_Pin->id);
+          Pin *l_PinMetadata = dynamic_cast<Pin *>(i_Pin);
           if (l_PinMetadata) {
             l_Result.push_back(l_PinMetadata);
           }
@@ -1698,7 +1756,7 @@ namespace Low {
         Util::List<const Pin *> l_Result;
         for (const Low::Editor::Pin *i_Pin :
              graph.get_input_pins(p_NodeId)) {
-          const Pin *l_PinMetadata = find_pin(i_Pin->id);
+          const Pin *l_PinMetadata = dynamic_cast<const Pin *>(i_Pin);
           if (l_PinMetadata) {
             l_Result.push_back(l_PinMetadata);
           }
@@ -1711,7 +1769,7 @@ namespace Low {
         Util::List<Pin *> l_Result;
         for (Low::Editor::Pin *i_Pin :
              graph.get_output_pins(p_NodeId)) {
-          Pin *l_PinMetadata = find_pin(i_Pin->id);
+          Pin *l_PinMetadata = dynamic_cast<Pin *>(i_Pin);
           if (l_PinMetadata) {
             l_Result.push_back(l_PinMetadata);
           }
@@ -1725,7 +1783,7 @@ namespace Low {
         Util::List<const Pin *> l_Result;
         for (const Low::Editor::Pin *i_Pin :
              graph.get_output_pins(p_NodeId)) {
-          const Pin *l_PinMetadata = find_pin(i_Pin->id);
+          const Pin *l_PinMetadata = dynamic_cast<const Pin *>(i_Pin);
           if (l_PinMetadata) {
             l_Result.push_back(l_PinMetadata);
           }
@@ -1738,7 +1796,7 @@ namespace Low {
       {
         for (Low::Editor::Pin *i_Pin :
              graph.get_input_pins(p_NodeId)) {
-          Pin *l_PinMetadata = find_pin(i_Pin->id);
+          Pin *l_PinMetadata = dynamic_cast<Pin *>(i_Pin);
           if (l_PinMetadata &&
               l_PinMetadata->display_name == p_DisplayName) {
             return l_PinMetadata;
@@ -1754,7 +1812,7 @@ namespace Low {
       {
         for (const Low::Editor::Pin *i_Pin :
              graph.get_input_pins(p_NodeId)) {
-          const Pin *l_PinMetadata = find_pin(i_Pin->id);
+          const Pin *l_PinMetadata = dynamic_cast<const Pin *>(i_Pin);
           if (l_PinMetadata &&
               l_PinMetadata->display_name == p_DisplayName) {
             return l_PinMetadata;
@@ -1769,7 +1827,7 @@ namespace Low {
       {
         for (Low::Editor::Pin *i_Pin :
              graph.get_output_pins(p_NodeId)) {
-          Pin *l_PinMetadata = find_pin(i_Pin->id);
+          Pin *l_PinMetadata = dynamic_cast<Pin *>(i_Pin);
           if (l_PinMetadata &&
               l_PinMetadata->display_name == p_DisplayName) {
             return l_PinMetadata;
@@ -1785,7 +1843,7 @@ namespace Low {
       {
         for (const Low::Editor::Pin *i_Pin :
              graph.get_output_pins(p_NodeId)) {
-          const Pin *l_PinMetadata = find_pin(i_Pin->id);
+          const Pin *l_PinMetadata = dynamic_cast<const Pin *>(i_Pin);
           if (l_PinMetadata &&
               l_PinMetadata->display_name == p_DisplayName) {
             return l_PinMetadata;
@@ -1839,7 +1897,11 @@ namespace Low {
           return false;
         }
 
-        variables.push_back(p_Variable);
+        Variable l_Variable = p_Variable;
+        if (!l_Variable.user_data && variable_user_data_factory) {
+          l_Variable.user_data = variable_user_data_factory();
+        }
+        variables.push_back(l_Variable);
         return true;
       }
 
@@ -1879,28 +1941,17 @@ namespace Low {
         return nullptr;
       }
 
-      void Graph::register_node_class(NodeClass &p_NodeClass)
-      {
-        node_classes[p_NodeClass.get_name()] = &p_NodeClass;
-      }
-
       void
       Graph::register_spawn_entry(const NodeSpawnEntry &p_SpawnEntry)
       {
         spawn_entries[p_SpawnEntry.id] = p_SpawnEntry;
       }
 
-      NodeClass *Graph::find_node_class(Util::Name p_NodeClass)
+      const NodeTypeDefinition *
+      Graph::find_node_type(Util::Name p_Name) const
       {
-        auto it = node_classes.find(p_NodeClass);
-        return it != node_classes.end() ? it->second : nullptr;
-      }
-
-      const NodeClass *
-      Graph::find_node_class(Util::Name p_NodeClass) const
-      {
-        auto it = node_classes.find(p_NodeClass);
-        return it != node_classes.end() ? it->second : nullptr;
+        auto it = node_types.find(p_Name);
+        return it != node_types.end() ? &it->second : nullptr;
       }
 
       NodeSpawnEntry *
@@ -1930,119 +1981,48 @@ namespace Low {
         return l_Entries;
       }
 
-      NodeGraphMutationResult<Low::Editor::Node>
-      Graph::create_node(Util::Name p_NodeClass,
-                         const Math::Vector2 &p_Position,
-                         const NodeGraphSchema *p_Schema)
+      NodeGraphMutationResult<Node> Graph::create_node(
+          Util::Name p_NodeType, const Math::Vector2 &p_Position,
+          const NodeGraphSchema *p_Schema,
+          const std::function<void(Node &)> &p_Initialize)
       {
-        NodeGraphMutationResult<Low::Editor::Node> l_Result;
-        const NodeClass *l_NodeClass = find_node_class(p_NodeClass);
-
-        if (!l_NodeClass) {
+        NodeGraphMutationResult<Node> l_Result;
+        const auto *l_Type = find_node_type(p_NodeType);
+        if (!l_Type || !l_Type->create) {
           l_Result.validation_result =
               NodeGraphValidationResult::InvalidNode;
           return l_Result;
         }
-
-        Low::Editor::Node l_Node;
-        l_Node.id = allocate_node_id();
-        l_Node.position = p_Position;
-
-        Node l_Metadata;
-        l_Metadata.node = l_Node.id;
-        l_Metadata.node_class = p_NodeClass;
-        l_Metadata.user_data = l_NodeClass->create_user_data();
-        l_Metadata.title = l_NodeClass->get_title(*this, l_Node.id);
-        l_Metadata.subtitle =
-            l_NodeClass->get_subtitle(*this, l_Node.id);
-        l_Metadata.category =
-            l_NodeClass->get_category(*this, l_Node.id);
-
-        l_Result = add_node(l_Node, l_Metadata, p_Schema);
-        if (l_Result.succeeded()) {
-          l_NodeClass->setup_default_pins(*this, l_Node.id, p_Schema);
+        auto l_Node = l_Type->create();
+        l_Node->id = allocate_node_id();
+        l_Node->position = p_Position;
+        if (p_Initialize) {
+          p_Initialize(*l_Node);
         }
-
+        l_Result = add_node(std::move(l_Node), p_Schema);
+        if (l_Result.succeeded()) {
+          l_Result.value->setup_default_pins(*this, p_Schema);
+        }
         return l_Result;
       }
 
-      NodeGraphMutationResult<Low::Editor::Node>
+      NodeGraphMutationResult<Node>
       Graph::create_node_from_spawn_entry(
           Util::Name p_SpawnEntryId, const Math::Vector2 &p_Position,
           const NodeGraphSchema *p_Schema)
       {
-        NodeGraphMutationResult<Low::Editor::Node> l_Result;
-        const NodeSpawnEntry *l_SpawnEntry =
-            find_spawn_entry(p_SpawnEntryId);
-
-        if (!l_SpawnEntry || !l_SpawnEntry->is_valid()) {
-          l_Result.validation_result =
-              NodeGraphValidationResult::InvalidNode;
-          return l_Result;
+        const auto *l_Entry = find_spawn_entry(p_SpawnEntryId);
+        if (!l_Entry || !l_Entry->is_valid()) {
+          return {NodeGraphValidationResult::InvalidNode, nullptr};
         }
-
-        const NodeClass *l_NodeClass =
-            find_node_class(l_SpawnEntry->node_class);
-
-        if (!l_NodeClass) {
-          l_Result.validation_result =
-              NodeGraphValidationResult::InvalidNode;
-          return l_Result;
-        }
-
-        Low::Editor::Node l_Node;
-        l_Node.id = allocate_node_id();
-        l_Node.position = p_Position;
-
-        Node l_Metadata;
-        l_Metadata.node = l_Node.id;
-        l_Metadata.node_class = l_SpawnEntry->node_class;
-        l_Metadata.user_data = l_NodeClass->create_user_data();
-        l_Metadata.spawn_entry = l_SpawnEntry->id;
-        l_Metadata.title =
-            !l_SpawnEntry->title.empty()
-                ? l_SpawnEntry->title
-                : l_NodeClass->get_title(*this, l_Node.id);
-        l_Metadata.subtitle =
-            !l_SpawnEntry->subtitle.empty()
-                ? l_SpawnEntry->subtitle
-                : l_NodeClass->get_subtitle(*this, l_Node.id);
-        l_Metadata.category =
-            !l_SpawnEntry->category.empty()
-                ? l_SpawnEntry->category
-                : l_NodeClass->get_category(*this, l_Node.id);
-
-        if (l_SpawnEntry->initialize_node) {
-          l_SpawnEntry->initialize_node(*this, l_Metadata);
-        }
-
-        l_Result = add_node(l_Node, l_Metadata, p_Schema);
-        if (l_Result.succeeded()) {
-          l_NodeClass->setup_default_pins(*this, l_Node.id, p_Schema);
-        }
-
-        return l_Result;
-      }
-
-      void Graph::refresh_node_display_metadata(NodeId p_NodeId)
-      {
-        Node *l_NodeMetadata = find_node(p_NodeId);
-        if (!l_NodeMetadata) {
-          return;
-        }
-
-        const NodeClass *l_NodeClass =
-            find_node_class(l_NodeMetadata->node_class);
-        if (!l_NodeClass) {
-          return;
-        }
-
-        l_NodeMetadata->title =
-            l_NodeClass->get_title(*this, p_NodeId);
-        l_NodeMetadata->subtitle =
-            l_NodeClass->get_subtitle(*this, p_NodeId);
-        l_NodeMetadata->category =
-            l_NodeClass->get_category(*this, p_NodeId);
+        return create_node(l_Entry->node_type, p_Position, p_Schema,
+                           [this, l_Entry](Node &p_Node) {
+                             p_Node.spawn_entry = l_Entry->id;
+                             if (l_Entry->initialize_node) {
+                               l_Entry->initialize_node(*this,
+                                                        p_Node);
+                             }
+                           });
       }
 
       bool Graph::is_pin_connected(PinId p_PinId) const
@@ -2094,14 +2074,13 @@ namespace Low {
           return;
         }
 
-        const NodeClass *l_NodeClass =
-            find_node_class(l_NodeMetadata->node_class);
-        if (!l_NodeClass) {
+        const Node *l_NodeInstance = l_NodeMetadata;
+        if (!l_NodeInstance) {
           return;
         }
 
-        l_NodeClass->compile(*const_cast<Graph *>(this), p_NodeId,
-                             p_CompileContext);
+        l_NodeInstance->compile(*const_cast<Graph *>(this),
+                                p_CompileContext);
       }
 
       void Graph::continue_compilation(
@@ -2164,9 +2143,9 @@ namespace Low {
             return;
           }
 
-          const NodeClass *l_ConnectedNodeClass =
-              find_node_class(l_ConnectedNodeMetadata->node_class);
-          if (!l_ConnectedNodeClass) {
+          const Node *l_ConnectedNodeInstance =
+              l_ConnectedNodeMetadata;
+          if (!l_ConnectedNodeInstance) {
             append_default_value_expression(*l_InputPinMetadata,
                                             p_CompileContext);
             return;
@@ -2184,9 +2163,9 @@ namespace Low {
                 l_ConnectedPinMetadata->string_subtype ==
                     StringSubtype::Name) {
               p_CompileContext.main_code.append("Low::Util::String(");
-              l_ConnectedNodeClass->compile_output_pin(
-                  *const_cast<Graph *>(this), l_ConnectedPin->node,
-                  l_ConnectedPinId, p_CompileContext);
+              l_ConnectedNodeInstance->compile_output_pin(
+                  *const_cast<Graph *>(this), l_ConnectedPinId,
+                  p_CompileContext);
               p_CompileContext.main_code.append(".c_str())");
               return;
             }
@@ -2197,17 +2176,17 @@ namespace Low {
                     StringSubtype::String) {
               p_CompileContext.main_code.append(
                   "Low::Util::Name::from_string(");
-              l_ConnectedNodeClass->compile_output_pin(
-                  *const_cast<Graph *>(this), l_ConnectedPin->node,
-                  l_ConnectedPinId, p_CompileContext);
+              l_ConnectedNodeInstance->compile_output_pin(
+                  *const_cast<Graph *>(this), l_ConnectedPinId,
+                  p_CompileContext);
               p_CompileContext.main_code.append(")");
               return;
             }
           }
 
-          l_ConnectedNodeClass->compile_output_pin(
-              *const_cast<Graph *>(this), l_ConnectedPin->node,
-              l_ConnectedPinId, p_CompileContext);
+          l_ConnectedNodeInstance->compile_output_pin(
+              *const_cast<Graph *>(this), l_ConnectedPinId,
+              p_CompileContext);
           return;
         }
 
@@ -2225,7 +2204,8 @@ namespace Low {
           p_Node["variables"].push_back(i_VariableNode);
         }
 
-        for (const Low::Editor::Node &i_Node : graph.nodes) {
+        for (auto &l_NodeObject : graph.nodes) {
+          const Low::Editor::Node &i_Node = *l_NodeObject;
           const Node *l_NodeMetadata = find_node(i_Node.id);
           if (!l_NodeMetadata) {
             continue;
@@ -2234,43 +2214,12 @@ namespace Low {
           Util::Serial::Node i_NodeNode;
           i_NodeNode["id"] = Util::U64Id{i_Node.id.value};
           i_NodeNode["position"] = i_Node.position;
-          i_NodeNode["node_class"] = l_NodeMetadata->node_class;
+          i_NodeNode["node_class"] = l_NodeMetadata->get_name();
 
           if (l_NodeMetadata->spawn_entry.is_valid()) {
             i_NodeNode["spawn_entry"] = l_NodeMetadata->spawn_entry;
           }
-          if (!l_NodeMetadata->title.empty()) {
-            i_NodeNode["title"] = l_NodeMetadata->title;
-          }
-          if (!l_NodeMetadata->subtitle.empty()) {
-            i_NodeNode["subtitle"] = l_NodeMetadata->subtitle;
-          }
-          if (!l_NodeMetadata->category.empty()) {
-            i_NodeNode["category"] = l_NodeMetadata->category;
-          }
-          if (!l_NodeMetadata->variable_name.empty()) {
-            i_NodeNode["variable_name"] =
-                l_NodeMetadata->variable_name;
-          }
-          if (!l_NodeMetadata->function_name.empty()) {
-            i_NodeNode["function_name"] =
-                l_NodeMetadata->function_name;
-          }
-          if ((u64)l_NodeMetadata->handle_type != 0) {
-            i_NodeNode["handle_type"] =
-                (Util::String)l_NodeMetadata->handle_type;
-          }
-          if (l_NodeMetadata->member_name.is_valid()) {
-            i_NodeNode["member_name"] = l_NodeMetadata->member_name;
-          }
-
-          const NodeClass *l_NodeClass =
-              find_node_class(l_NodeMetadata->node_class);
-          if (l_NodeClass) {
-            l_NodeClass->serialize(*const_cast<Graph *>(this),
-                                   i_Node.id,
-                                   i_NodeNode["node_data"]);
-          }
+          l_NodeMetadata->serialize(i_NodeNode["node_data"]);
 
           for (const Low::Editor::Pin *i_Pin :
                graph.get_node_pins(i_Node.id)) {
@@ -2284,7 +2233,7 @@ namespace Low {
             i_PinNode["direction"] =
                 i_Pin->direction == PinDirection::Input ? "Input"
                                                         : "Output";
-            serialize_pin_metadata(*l_PinMetadata, i_PinNode);
+            serialize_pin(*l_PinMetadata, i_PinNode);
             i_NodeNode["pins"].push_back(i_PinNode);
           }
 
@@ -2306,8 +2255,6 @@ namespace Low {
         graph.nodes.clear();
         graph.pins.clear();
         graph.links.clear();
-        node_metadata.clear();
-        pin_metadata.clear();
         variables.clear();
 
         id_counter = p_Node["id_counter"]
@@ -2317,7 +2264,11 @@ namespace Low {
         if (p_Node["variables"]) {
           for (auto [_, i_VariableNode] : p_Node["variables"]) {
             Variable i_Variable;
+            if (variable_user_data_factory) {
+              i_Variable.user_data = variable_user_data_factory();
+            }
             deserialize_variable(i_VariableNode, i_Variable);
+
             add_variable(i_Variable);
           }
         }
@@ -2366,86 +2317,50 @@ namespace Low {
 
         if (p_Node["nodes"]) {
           for (auto [_, i_NodeNode] : p_Node["nodes"]) {
-            const Util::Name l_NodeClassName =
+            const Util::Name l_NodeTypeName =
                 i_NodeNode["node_class"].as<Util::Name>();
-            const NodeClass *l_NodeClass =
-                find_node_class(l_NodeClassName);
-            LOW_ASSERT(
-                l_NodeClass,
-                "Could not find node class during VisualScript "
-                "graph deserialization");
-            if (!l_NodeClass) {
+            const auto *l_Type = find_node_type(l_NodeTypeName);
+            LOW_ASSERT(l_Type && l_Type->create,
+                       "Could not find node type during VisualScript "
+                       "deserialization");
+            if (!l_Type || !l_Type->create) {
               continue;
             }
-
-            Low::Editor::Node l_Node;
-            l_Node.id =
+            auto l_Instance = l_Type->create();
+            l_Instance->id =
                 NodeId{(u64)i_NodeNode["id"].as<Util::U64Id>()};
-            l_Node.position =
+            l_Instance->position =
                 i_NodeNode["position"].as<Math::Vector2>();
-            l_MaxId = LOW_MATH_MAX(l_MaxId, l_Node.id.value);
-
-            Node l_Metadata;
-            l_Metadata.node = l_Node.id;
-            l_Metadata.node_class = l_NodeClassName;
-            l_Metadata.user_data = l_NodeClass->create_user_data();
             if (i_NodeNode["spawn_entry"]) {
-              l_Metadata.spawn_entry =
+              l_Instance->spawn_entry =
                   i_NodeNode["spawn_entry"].as<Util::Name>();
             }
-            if (i_NodeNode["title"]) {
-              l_Metadata.title =
-                  i_NodeNode["title"].as<Util::String>();
+            // Older files stored these selections beside structural
+            // fields.
+            Util::Serial::Node l_Data = i_NodeNode["node_data"];
+            for (const char *i_Key :
+                 {"variable_name", "function_name", "handle_type",
+                  "member_name"}) {
+              if (i_NodeNode[i_Key] && !l_Data[i_Key]) {
+                l_Data[i_Key] = i_NodeNode[i_Key];
+              }
             }
-            if (i_NodeNode["subtitle"]) {
-              l_Metadata.subtitle =
-                  i_NodeNode["subtitle"].as<Util::String>();
-            }
-            if (i_NodeNode["category"]) {
-              l_Metadata.category =
-                  i_NodeNode["category"].as<Util::String>();
-            }
-            if (i_NodeNode["variable_name"]) {
-              l_Metadata.variable_name =
-                  i_NodeNode["variable_name"].as<Util::String>();
-            }
-            if (i_NodeNode["function_name"]) {
-              l_Metadata.function_name =
-                  i_NodeNode["function_name"].as<Util::String>();
-            }
-            if (i_NodeNode["handle_type"]) {
-              l_Metadata.handle_type =
-                  Util::TypeIdentifier::from_string(
-                      i_NodeNode["handle_type"].as<Util::String>());
-            }
-            if (i_NodeNode["member_name"]) {
-              l_Metadata.member_name =
-                  i_NodeNode["member_name"].as<Util::Name>();
-            }
-            NodeGraphMutationResult<Low::Editor::Node>
-                l_AddNodeResult =
-                    add_node(l_Node, l_Metadata, nullptr);
+            l_Instance->deserialize(l_Data);
+            Node *l_NodePointer = l_Instance.get();
+            auto l_AddNodeResult =
+                add_node(std::move(l_Instance), nullptr);
             if (!l_AddNodeResult.succeeded()) {
               LOW_LOG_ERROR
-                  << "[VisualScript::deserialize] Failed to add node "
-                  << "id=" << Util::hash_to_string(l_Node.id.value)
-                  << " class="
-                  << Util::String(l_NodeClassName.c_str())
-                  << " validation="
-                  << node_graph_validation_result_to_string(
-                         l_AddNodeResult.validation_result)
-                  << LOW_LOG_END;
+                  << "Failed to restore visual script node: "
+                  << l_NodeTypeName << LOW_LOG_END;
               continue;
             }
-
-            if (i_NodeNode["node_data"]) {
-              l_NodeClass->deserialize(*this, l_Node.id,
-                                       i_NodeNode["node_data"]);
-            }
+            Node &l_Node = *l_NodePointer;
+            l_MaxId = LOW_MATH_MAX(l_MaxId, l_Node.id.value);
 
             if (i_NodeNode["pins"] && i_NodeNode["pins"].size() > 0) {
               for (auto [_, i_PinNode] : i_NodeNode["pins"]) {
-                Low::Editor::Pin l_Pin;
+                Pin l_Pin;
                 l_Pin.id =
                     PinId{(u64)i_PinNode["id"].as<Util::U64Id>()};
                 l_Pin.node = l_Node.id;
@@ -2455,12 +2370,10 @@ namespace Low {
                         ? PinDirection::Input
                         : PinDirection::Output;
 
-                Pin l_PinMetadata;
-                deserialize_pin_metadata(i_PinNode, l_PinMetadata);
+                deserialize_pin(i_PinNode, l_Pin);
 
-                NodeGraphMutationResult<Low::Editor::Pin>
-                    l_AddPinResult =
-                        add_pin(l_Pin, l_PinMetadata, nullptr);
+                NodeGraphMutationResult<Pin> l_AddPinResult =
+                    add_pin(l_Pin, nullptr);
                 LOW_ASSERT(l_AddPinResult.succeeded(),
                            "Could not add serialized pin during "
                            "VisualScript "
@@ -2481,8 +2394,7 @@ namespace Low {
                 l_MaxId = LOW_MATH_MAX(l_MaxId, l_Pin.id.value);
               }
             } else {
-              l_NodeClass->setup_default_pins(*this, l_Node.id,
-                                              nullptr);
+              l_Node.setup_default_pins(*this, nullptr);
             }
           }
         }
@@ -2515,51 +2427,40 @@ namespace Low {
         return PinId{id_counter++};
       }
 
-      Util::String NodeClass::get_title(const Graph &p_Graph,
-                                        NodeId p_NodeId) const
+      Util::String Node::get_title(const Graph &p_Graph) const
       {
         (void)p_Graph;
-        (void)p_NodeId;
         return Util::StringHelper::prettify_name(get_name());
       }
 
-      Util::String NodeClass::get_subtitle(const Graph &p_Graph,
-                                           NodeId p_NodeId) const
+      Util::String Node::get_subtitle(const Graph &p_Graph) const
       {
         (void)p_Graph;
-        (void)p_NodeId;
         return "";
       }
 
-      Util::String NodeClass::get_category(const Graph &p_Graph,
-                                           NodeId p_NodeId) const
+      Util::String Node::get_category(const Graph &p_Graph) const
       {
         (void)p_Graph;
-        (void)p_NodeId;
         return "";
       }
 
-      Util::String NodeClass::get_icon(const Graph &p_Graph,
-                                       NodeId p_NodeId) const
+      Util::String Node::get_icon(const Graph &p_Graph) const
       {
         (void)p_Graph;
-        (void)p_NodeId;
         return LOW_EDITOR_ICON_ELEMENT;
       }
 
-      ImU32 NodeClass::get_color(const Graph &p_Graph,
-                                 NodeId p_NodeId) const
+      ImU32 Node::get_color(const Graph &p_Graph) const
       {
         (void)p_Graph;
-        (void)p_NodeId;
         return IM_COL32(92, 96, 112, 255);
       }
 
-      void NodeClass::compile_input_pin(
-          Graph &p_Graph, NodeId p_NodeId, PinId p_PinId,
-          CompileContext &p_CompileContext) const
+      void
+      Node::compile_input_pin(Graph &p_Graph, PinId p_PinId,
+                              CompileContext &p_CompileContext) const
       {
-        (void)p_NodeId;
         p_Graph.compile_input_pin(p_PinId, p_CompileContext);
       }
 
@@ -2608,28 +2509,20 @@ namespace Low {
             l_Graph->find_node(p_StartPin.node);
         const Node *l_EndNodeMetadata =
             l_Graph->find_node(p_EndPin.node);
-        const NodeClass *l_StartNodeClass =
-            l_StartNodeMetadata ? l_Graph->find_node_class(
-                                      l_StartNodeMetadata->node_class)
-                                : nullptr;
-        const NodeClass *l_EndNodeClass =
-            l_EndNodeMetadata ? l_Graph->find_node_class(
-                                    l_EndNodeMetadata->node_class)
-                              : nullptr;
+        const Node *l_StartNodeInstance = l_StartNodeMetadata;
+        const Node *l_EndNodeInstance = l_EndNodeMetadata;
 
-        if (l_StartNodeClass &&
-            !l_StartNodeClass->can_connect_pin(
-                *const_cast<Graph *>(l_Graph), p_StartPin.node,
-                p_StartPin.id, *l_StartPinMetadata,
-                *l_EndPinMetadata)) {
+        if (l_StartNodeInstance &&
+            !l_StartNodeInstance->can_connect_pin(
+                *const_cast<Graph *>(l_Graph), p_StartPin.id,
+                *l_StartPinMetadata, *l_EndPinMetadata)) {
           return NodeGraphValidationResult::CustomRejected;
         }
 
-        if (l_EndNodeClass &&
-            !l_EndNodeClass->can_connect_pin(
-                *const_cast<Graph *>(l_Graph), p_EndPin.node,
-                p_EndPin.id, *l_EndPinMetadata,
-                *l_StartPinMetadata)) {
+        if (l_EndNodeInstance &&
+            !l_EndNodeInstance->can_connect_pin(
+                *const_cast<Graph *>(l_Graph), p_EndPin.id,
+                *l_EndPinMetadata, *l_StartPinMetadata)) {
           return NodeGraphValidationResult::CustomRejected;
         }
 
@@ -2666,16 +2559,6 @@ namespace Low {
         return &graph->graph == &p_Graph ? graph : nullptr;
       }
 
-      const Pin *
-      Schema::get_pin_metadata(const Low::Editor::Pin &p_Pin) const
-      {
-        if (!graph) {
-          return nullptr;
-        }
-
-        return graph->find_pin(p_Pin.id);
-      }
-
       Math::Vector2 NodeRenderer::get_node_size(
           const NodeGraphEditorContext &p_Context,
           const Low::Editor::Node &p_Node) const
@@ -2703,19 +2586,13 @@ namespace Low {
             LOW_MATH_MAX(l_InputCount, l_OutputCount);
         const Node *l_Metadata =
             graph ? graph->find_node(p_Node.id) : nullptr;
-        const NodeClass *l_NodeClass =
-            graph && l_Metadata
-                ? graph->find_node_class(l_Metadata->node_class)
-                : nullptr;
+        const Node *l_NodeInstance = l_Metadata;
         const float l_ExtraContentHeight =
-            l_NodeClass
-                ? l_NodeClass->get_above_pins_height(*graph,
-                                                     p_Node.id) +
-                      l_NodeClass->get_below_pins_height(*graph,
-                                                         p_Node.id)
+            l_NodeInstance
+                ? l_NodeInstance->get_above_pins_height(*graph) +
+                      l_NodeInstance->get_below_pins_height(*graph)
                 : 0.0f;
-        if (l_NodeClass &&
-            l_NodeClass->is_compact(*graph, p_Node.id)) {
+        if (l_NodeInstance && l_NodeInstance->is_compact(*graph)) {
           return Math::Vector2(
               196.0f, LOW_MATH_MAX(60.0f, 10.0f + l_MaxPins * 34.0f) +
                           l_ExtraContentHeight);
@@ -2738,10 +2615,7 @@ namespace Low {
 
         const Node *l_Metadata =
             graph ? graph->find_node(p_Node.id) : nullptr;
-        const NodeClass *l_NodeClass =
-            graph && l_Metadata
-                ? graph->find_node_class(l_Metadata->node_class)
-                : nullptr;
+        const Node *l_NodeInstance = l_Metadata;
         const bool l_Selected =
             p_Context.state &&
             p_Context.state->is_node_selected(p_Node.id);
@@ -2749,8 +2623,8 @@ namespace Low {
             p_Context.state &&
             p_Context.state->hovered_node == p_Node.id;
         const ImU32 l_NodeColor =
-            l_NodeClass ? l_NodeClass->get_color(*graph, p_Node.id)
-                        : IM_COL32(92, 96, 112, 255);
+            l_NodeInstance ? l_NodeInstance->get_color(*graph)
+                           : IM_COL32(92, 96, 112, 255);
         const ImU32 l_BackgroundColor = IM_COL32(34, 35, 41, 255);
         const ImU32 l_HeaderBackgroundColor =
             IM_COL32(38, 39, 46, 255);
@@ -2764,7 +2638,7 @@ namespace Low {
         const ImU32 l_ValueBackgroundColor =
             IM_COL32(52, 49, 80, 255);
         const bool l_Compact =
-            l_NodeClass && l_NodeClass->is_compact(*graph, p_Node.id);
+            l_NodeInstance && l_NodeInstance->is_compact(*graph);
 
         const float l_ViewZoom = p_Context.get_view_zoom();
         const bool l_ShowPinNames = l_ViewZoom >= pin_names_min_zoom;
@@ -2793,20 +2667,14 @@ namespace Low {
         ImFont *l_IconFont = Fonts::UI(22.0f, Fonts::Weight::Regular);
 
         Util::String l_TitleString =
-            l_Metadata && !l_Metadata->title.empty()
-                ? l_Metadata->title
-                : (l_NodeClass
-                       ? l_NodeClass->get_title(*graph, p_Node.id)
-                       : Util::String("Visual Script Node"));
+            l_Metadata ? l_Metadata->get_title(*graph)
+                       : Util::String("Visual Script Node");
         Util::String l_SubtitleString =
-            l_Metadata && !l_Metadata->subtitle.empty()
-                ? l_Metadata->subtitle
-                : (l_NodeClass
-                       ? l_NodeClass->get_subtitle(*graph, p_Node.id)
-                       : Util::String(""));
+            l_Metadata ? l_Metadata->get_subtitle(*graph)
+                       : Util::String("");
         Util::String l_IconString =
-            l_NodeClass ? l_NodeClass->get_icon(*graph, p_Node.id)
-                        : Util::String("");
+            l_NodeInstance ? l_NodeInstance->get_icon(*graph)
+                           : Util::String("");
 
         if (l_Compact) {
           p_Context.draw_list->AddRectFilled(p_ScreenMin, p_ScreenMax,
@@ -2822,8 +2690,8 @@ namespace Low {
                                        0, l_Selected ? 2.0f : 1.0f);
 
           const Util::String l_CompactText =
-              l_NodeClass
-                  ? l_NodeClass->get_compact_title(*graph, p_Node.id)
+              l_NodeInstance
+                  ? l_NodeInstance->get_compact_title(*graph)
                   : l_TitleString;
           ImFont *l_CompactFont =
               Fonts::UI(19.0f, Fonts::Weight::Medium);
@@ -2913,12 +2781,12 @@ namespace Low {
           }
         }
 
-        if (graph && l_NodeClass) {
+        if (graph && l_NodeInstance) {
           const float l_AbovePinsHeight =
-              l_NodeClass->get_above_pins_height(*graph, p_Node.id);
+              l_NodeInstance->get_above_pins_height(*graph);
           if (l_AbovePinsHeight > 0.0f) {
-            l_NodeClass->render_above_pins(
-                *graph, p_Node.id, p_Context,
+            l_NodeInstance->render_above_pins(
+                *graph, p_Context,
                 ImVec2(p_ScreenMin.x, p_ScreenMin.y + l_HeaderHeight),
                 ImVec2(p_ScreenMax.x, p_ScreenMin.y + l_HeaderHeight +
                                           l_AbovePinsHeight));
@@ -3123,14 +2991,14 @@ namespace Low {
           }
         }
 
-        if (graph && l_NodeClass) {
+        if (graph && l_NodeInstance) {
           const float l_BelowPinsHeight =
-              l_NodeClass->get_below_pins_height(*graph, p_Node.id);
+              l_NodeInstance->get_below_pins_height(*graph);
           if (l_BelowPinsHeight > 0.0f) {
             const float l_ContentBottom =
                 p_ScreenMax.y - (l_Compact ? 14.0f : 14.0f);
-            l_NodeClass->render_below_pins(
-                *graph, p_Node.id, p_Context,
+            l_NodeInstance->render_below_pins(
+                *graph, p_Context,
                 ImVec2(p_ScreenMin.x,
                        l_ContentBottom - l_BelowPinsHeight),
                 ImVec2(p_ScreenMax.x, l_ContentBottom));
@@ -3150,12 +3018,9 @@ namespace Low {
 
         const Node *l_Metadata =
             graph ? graph->find_node(p_Node.id) : nullptr;
-        const NodeClass *l_NodeClass =
-            graph && l_Metadata
-                ? graph->find_node_class(l_Metadata->node_class)
-                : nullptr;
+        const Node *l_NodeInstance = l_Metadata;
         const bool l_Compact =
-            l_NodeClass && l_NodeClass->is_compact(*graph, p_Node.id);
+            l_NodeInstance && l_NodeInstance->is_compact(*graph);
 
         Util::List<Low::Editor::Pin *> l_NodePins =
             graph->graph.get_node_pins(p_Pin.node);
@@ -3187,13 +3052,13 @@ namespace Low {
         const float l_HeaderHeight =
             l_Compact ? 8.0f : title_height + 12.0f;
         const float l_AbovePinsHeight =
-            l_NodeClass ? l_NodeClass->get_above_pins_height(
-                              *graph, p_Node.id)
-                        : 0.0f;
+            l_NodeInstance
+                ? l_NodeInstance->get_above_pins_height(*graph)
+                : 0.0f;
         const float l_BelowPinsHeight =
-            l_NodeClass ? l_NodeClass->get_below_pins_height(
-                              *graph, p_Node.id)
-                        : 0.0f;
+            l_NodeInstance
+                ? l_NodeInstance->get_below_pins_height(*graph)
+                : 0.0f;
         const float l_ContentTop = p_ScreenMin.y + l_HeaderHeight +
                                    (l_Compact ? 14.0f : 4.0f) +
                                    l_AbovePinsHeight;
@@ -3283,7 +3148,7 @@ namespace Low {
           l_Entries.push_back(l_Entry);
         }
 
-        if (graph->find_node_class(N(vs_syntax_get_variable))) {
+        if (graph->find_node_type(N(vs_syntax_get_variable))) {
           for (const Variable &i_Variable : graph->variables) {
             if (!i_Variable.is_valid()) {
               continue;
@@ -3303,7 +3168,7 @@ namespace Low {
           }
         }
 
-        if (graph->find_node_class(N(vs_syntax_set_variable))) {
+        if (graph->find_node_type(N(vs_syntax_set_variable))) {
           for (const Variable &i_Variable : graph->variables) {
             if (!i_Variable.is_valid()) {
               continue;
@@ -3338,62 +3203,28 @@ namespace Low {
             get_variable_name_from_spawn_id(p_EntryId,
                                             g_GetVariableSpawnPrefix);
         if (!l_GetVariableName.empty()) {
-          Low::Editor::Node l_Node;
-          l_Node.id = graph->allocate_node_id();
-          l_Node.position = p_Position;
-
-          Node l_Metadata;
-          l_Metadata.node = l_Node.id;
-          l_Metadata.node_class = N(vs_syntax_get_variable);
-          l_Metadata.variable_name = l_GetVariableName;
-          l_Metadata.title = Util::String("Get ") + l_GetVariableName;
-          l_Metadata.subtitle = "Variable";
-          l_Metadata.category = "Syntax";
-
-          NodeGraphMutationResult<Low::Editor::Node> l_Result =
-              graph->add_node(l_Node, l_Metadata, p_Context.schema);
-          if (!l_Result.succeeded()) {
-            return false;
-          }
-
-          const NodeClass *l_NodeClass =
-              graph->find_node_class(N(vs_syntax_get_variable));
-          if (l_NodeClass) {
-            l_NodeClass->setup_default_pins(*graph, l_Node.id,
-                                            p_Context.schema);
-          }
-          return true;
+          return graph
+              ->create_node(N(vs_syntax_get_variable), p_Position,
+                            p_Context.schema,
+                            [&l_GetVariableName](Node &p_Node) {
+                              static_cast<VariableNode &>(p_Node)
+                                  .variable_name = l_GetVariableName;
+                            })
+              .succeeded();
         }
 
         Util::String l_SetVariableName =
             get_variable_name_from_spawn_id(p_EntryId,
                                             g_SetVariableSpawnPrefix);
         if (!l_SetVariableName.empty()) {
-          Low::Editor::Node l_Node;
-          l_Node.id = graph->allocate_node_id();
-          l_Node.position = p_Position;
-
-          Node l_Metadata;
-          l_Metadata.node = l_Node.id;
-          l_Metadata.node_class = N(vs_syntax_set_variable);
-          l_Metadata.variable_name = l_SetVariableName;
-          l_Metadata.title = Util::String("Set ") + l_SetVariableName;
-          l_Metadata.subtitle = "Variable";
-          l_Metadata.category = "Syntax";
-
-          NodeGraphMutationResult<Low::Editor::Node> l_Result =
-              graph->add_node(l_Node, l_Metadata, p_Context.schema);
-          if (!l_Result.succeeded()) {
-            return false;
-          }
-
-          const NodeClass *l_NodeClass =
-              graph->find_node_class(N(vs_syntax_set_variable));
-          if (l_NodeClass) {
-            l_NodeClass->setup_default_pins(*graph, l_Node.id,
-                                            p_Context.schema);
-          }
-          return true;
+          return graph
+              ->create_node(N(vs_syntax_set_variable), p_Position,
+                            p_Context.schema,
+                            [&l_SetVariableName](Node &p_Node) {
+                              static_cast<VariableNode &>(p_Node)
+                                  .variable_name = l_SetVariableName;
+                            })
+              .succeeded();
         }
 
         return graph
@@ -3410,10 +3241,9 @@ namespace Low {
 
         const Node *l_NodeMetadata =
             graph ? graph->find_node(p_Node.id) : nullptr;
-        Util::String l_Title =
-            l_NodeMetadata && !l_NodeMetadata->title.empty()
-                ? l_NodeMetadata->title
-                : Util::String("Node");
+        Util::String l_Title = l_NodeMetadata
+                                   ? l_NodeMetadata->get_title(*graph)
+                                   : Util::String("Node");
 
         ImGui::TextDisabled("%s", l_Title.c_str());
         ImGui::Separator();
@@ -3749,26 +3579,23 @@ namespace Low {
         return Util::Variant(Util::String(""));
       }
 
-      Low::Editor::Pin make_input_pin(Graph &p_Graph, NodeId p_NodeId)
+      Pin make_input_pin(Graph &p_Graph, NodeId p_NodeId, Pin l_Pin)
       {
-        Low::Editor::Pin l_Pin;
         l_Pin.id = p_Graph.allocate_pin_id();
         l_Pin.node = p_NodeId;
         l_Pin.direction = PinDirection::Input;
         return l_Pin;
       }
 
-      Low::Editor::Pin make_output_pin(Graph &p_Graph,
-                                       NodeId p_NodeId)
+      Pin make_output_pin(Graph &p_Graph, NodeId p_NodeId, Pin l_Pin)
       {
-        Low::Editor::Pin l_Pin;
         l_Pin.id = p_Graph.allocate_pin_id();
         l_Pin.node = p_NodeId;
         l_Pin.direction = PinDirection::Output;
         return l_Pin;
       }
 
-      Pin make_execution_pin_metadata(Util::String p_DisplayName)
+      Pin make_execution_pin(Util::String p_DisplayName)
       {
         Pin l_Pin;
         l_Pin.display_name = p_DisplayName;
@@ -3779,8 +3606,8 @@ namespace Low {
         return l_Pin;
       }
 
-      Pin make_bool_pin_metadata(Util::String p_DisplayName,
-                                 bool p_DefaultValue)
+      Pin make_bool_pin(Util::String p_DisplayName,
+                        bool p_DefaultValue)
       {
         Pin l_Pin;
         l_Pin.display_name = p_DisplayName;
@@ -3789,9 +3616,9 @@ namespace Low {
         return l_Pin;
       }
 
-      Pin make_number_pin_metadata(Util::String p_DisplayName,
-                                   NumberSubtype p_NumberSubtype,
-                                   PinContainerType p_ContainerType)
+      Pin make_number_pin(Util::String p_DisplayName,
+                          NumberSubtype p_NumberSubtype,
+                          PinContainerType p_ContainerType)
       {
         Pin l_Pin;
         l_Pin.display_name = p_DisplayName;
@@ -3802,9 +3629,9 @@ namespace Low {
         return l_Pin;
       }
 
-      Pin make_string_pin_metadata(Util::String p_DisplayName,
-                                   StringSubtype p_StringSubtype,
-                                   PinContainerType p_ContainerType)
+      Pin make_string_pin(Util::String p_DisplayName,
+                          StringSubtype p_StringSubtype,
+                          PinContainerType p_ContainerType)
       {
         Pin l_Pin;
         l_Pin.display_name = p_DisplayName;
@@ -3815,9 +3642,9 @@ namespace Low {
         return l_Pin;
       }
 
-      Pin make_handle_pin_metadata(Util::String p_DisplayName,
-                                   Util::TypeIdentifier p_HandleType,
-                                   PinContainerType p_ContainerType)
+      Pin make_handle_pin(Util::String p_DisplayName,
+                          Util::TypeIdentifier p_HandleType,
+                          PinContainerType p_ContainerType)
       {
         Pin l_Pin;
         l_Pin.display_name = p_DisplayName;
@@ -3828,9 +3655,9 @@ namespace Low {
         return l_Pin;
       }
 
-      Pin make_struct_pin_metadata(Util::String p_DisplayName,
-                                   Util::TypeIdentifier p_StructType,
-                                   PinContainerType p_ContainerType)
+      Pin make_struct_pin(Util::String p_DisplayName,
+                          Util::TypeIdentifier p_StructType,
+                          PinContainerType p_ContainerType)
       {
         Pin l_Pin;
         l_Pin.display_name = p_DisplayName;
@@ -3841,9 +3668,9 @@ namespace Low {
         return l_Pin;
       }
 
-      Pin make_enum_pin_metadata(Util::String p_DisplayName,
-                                 Util::TypeIdentifier p_EnumType,
-                                 PinContainerType p_ContainerType)
+      Pin make_enum_pin(Util::String p_DisplayName,
+                        Util::TypeIdentifier p_EnumType,
+                        PinContainerType p_ContainerType)
       {
         Pin l_Pin;
         l_Pin.display_name = p_DisplayName;
@@ -3854,8 +3681,8 @@ namespace Low {
         return l_Pin;
       }
 
-      Pin make_vector2_pin_metadata(Util::String p_DisplayName,
-                                    PinContainerType p_ContainerType)
+      Pin make_vector2_pin(Util::String p_DisplayName,
+                           PinContainerType p_ContainerType)
       {
         Pin l_Pin;
         l_Pin.display_name = p_DisplayName;
@@ -3865,8 +3692,8 @@ namespace Low {
         return l_Pin;
       }
 
-      Pin make_vector3_pin_metadata(Util::String p_DisplayName,
-                                    PinContainerType p_ContainerType)
+      Pin make_vector3_pin(Util::String p_DisplayName,
+                           PinContainerType p_ContainerType)
       {
         Pin l_Pin;
         l_Pin.display_name = p_DisplayName;
@@ -3876,8 +3703,8 @@ namespace Low {
         return l_Pin;
       }
 
-      Pin make_dynamic_pin_metadata(Util::String p_DisplayName,
-                                    PinContainerType p_ContainerType)
+      Pin make_dynamic_pin(Util::String p_DisplayName,
+                           PinContainerType p_ContainerType)
       {
         Pin l_Pin;
         l_Pin.display_name = p_DisplayName;

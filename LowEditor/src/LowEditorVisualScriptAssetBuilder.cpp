@@ -16,20 +16,42 @@ namespace Low {
             &VisualScript::get_compile_profile_registry();
       }
 
+      ScriptAssetBuilder::ScriptAssetBuilder(Util::Name p_ContextName)
+          : ScriptAssetBuilder()
+      {
+        const auto *l_Context =
+            get_script_context_registry().find_context(p_ContextName);
+        LOW_ASSERT(l_Context,
+                   "Visual script context is not registered");
+        if (l_Context) {
+          apply_context(*l_Context);
+        }
+      }
+
       ScriptAssetBuilder::ScriptAssetBuilder(
-          const ContextDefinition &p_Context)
+          const ScriptContextDefinition &p_Context)
           : ScriptAssetBuilder()
       {
         apply_context(p_Context);
       }
 
       void ScriptAssetBuilder::apply_context(
-          const ContextDefinition &p_Context)
+          const ScriptContextDefinition &p_Context)
       {
         _LOW_ASSERT(compile_profile_registry);
         document.apply_context(p_Context, *compile_profile_registry);
         graph_builder.set_graph(document.graph)
             .set_schema(&document.schema);
+      }
+
+      void ScriptAssetBuilder::build_default_template()
+      {
+        const auto *l_EditorContext =
+            get_editor_context_registry().find_context(
+                document.context);
+        if (l_EditorContext) {
+          l_EditorContext->build_default_template(document);
+        }
       }
 
       bool ScriptAssetBuilder::create_script_asset(
@@ -52,7 +74,8 @@ namespace Low {
         script_asset.set_source_path(
             Util::to_project_relative_path(p_SourcePath));
 
-        script_asset_sidecar_path = Util::get_project().assetCachePath;
+        script_asset_sidecar_path =
+            Util::get_project().assetCachePath;
         script_asset_sidecar_path += "/";
         script_asset_sidecar_path +=
             Util::hash_to_string(script_asset.get_unique_id());
@@ -111,5 +134,5 @@ namespace Low {
         return true;
       }
     } // namespace VisualScript
-  } // namespace Editor
+  }   // namespace Editor
 } // namespace Low

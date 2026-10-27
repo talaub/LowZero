@@ -21,6 +21,8 @@ namespace Low {
     namespace VisualScript {
       struct Document;
       struct Graph;
+      struct CompileProfileRegistry;
+      struct CompileContext;
 
       enum class PinType
       {
@@ -65,9 +67,12 @@ namespace Low {
         DefaultValue
       };
 
-      struct LOW_EDITOR_API Pin
+      struct LOW_EDITOR_API Pin : public Low::Editor::Pin
       {
-        PinId pin;
+        std::unique_ptr<Low::Editor::Pin> clone() const override
+        {
+          return std::make_unique<Pin>(*this);
+        }
         Util::String display_name;
         PinType type = PinType::Dynamic;
         StringSubtype string_subtype = StringSubtype::String;
@@ -80,33 +85,157 @@ namespace Low {
 
         bool is_valid() const
         {
-          return pin.is_valid();
+          return Low::Editor::Pin::is_valid();
         }
       };
 
-      struct LOW_EDITOR_API NodeUserData
+      struct LOW_EDITOR_API Node : public Low::Editor::Node
       {
-        virtual ~NodeUserData() = default;
+        virtual ~Node() = default;
+        Util::Name spawn_entry;
+
+        // Clone authored state through node_data; graph structure is
+        // copied here.
+        std::unique_ptr<Low::Editor::Node> clone() const final;
+
+        virtual Util::Name get_name() const = 0;
+
+        virtual Util::String get_title(const Graph &p_Graph) const;
+
+        virtual Util::String get_subtitle(const Graph &p_Graph) const;
+
+        virtual Util::String get_category(const Graph &p_Graph) const;
+
+        virtual Util::String get_icon(const Graph &p_Graph) const;
+
+        virtual ImU32 get_color(const Graph &p_Graph) const;
+
+        virtual bool is_compact(const Graph &p_Graph) const
+        {
+          (void)p_Graph;
+          return false;
+        }
+
+        virtual bool is_deletable(const Graph &p_Graph) const
+        {
+          (void)p_Graph;
+          return true;
+        }
+
+        virtual Util::String
+        get_compact_title(const Graph &p_Graph) const
+        {
+          return get_title(p_Graph);
+        }
+
+        virtual void
+        setup_default_pins(Graph &p_Graph,
+                           const NodeGraphSchema *p_Schema) const
+        {
+          (void)p_Graph;
+          (void)p_Schema;
+        }
+
+        virtual float get_above_pins_height(const Graph &) const
+        {
+          return 0.0f;
+        }
+
+        virtual float get_below_pins_height(const Graph &) const
+        {
+          return 0.0f;
+        }
+
+        virtual void render_above_pins(Graph &,
+                                       NodeGraphEditorContext &,
+                                       const ImVec2 &,
+                                       const ImVec2 &) const
+        {
+        }
+
+        virtual void render_below_pins(Graph &,
+                                       NodeGraphEditorContext &,
+                                       const ImVec2 &,
+                                       const ImVec2 &) const
+        {
+        }
+
+        virtual void compile(Graph &p_Graph,
+                             CompileContext &p_CompileContext) const
+        {
+        }
+
+        virtual void
+        compile_input_pin(Graph &p_Graph, PinId p_PinId,
+                          CompileContext &p_CompileContext) const;
+
+        virtual void
+        compile_output_pin(Graph &p_Graph, PinId p_PinId,
+                           CompileContext &p_CompileContext) const
+        {
+        }
+
+        virtual bool
+        can_connect_pin(Graph &p_Graph, PinId p_PinId,
+                        const Pin &p_PinMetadata,
+                        const Pin &p_OtherPinMetadata) const
+        {
+          (void)p_Graph;
+          (void)p_PinId;
+          (void)p_PinMetadata;
+          (void)p_OtherPinMetadata;
+          return true;
+        }
+
+        virtual void on_pin_connected(Graph &p_Graph, PinId p_PinId,
+                                      PinId p_OtherPinId) const
+        {
+          (void)p_Graph;
+          (void)p_PinId;
+          (void)p_OtherPinId;
+        }
+
+        virtual void serialize(Util::Serial::Node &p_Data) const
+        {
+        }
+
+        virtual void deserialize(const Util::Serial::Node &p_Data)
+        {
+        }
+
+      private:
+        friend struct Graph;
+        std::unique_ptr<Node> (*m_Factory)() = nullptr;
       };
 
-      struct LOW_EDITOR_API Node
+      struct LOW_EDITOR_API TypedNode : public Node
       {
-        NodeId node;
-        Util::Name node_class;
-        Util::Name spawn_entry;
-        Util::String title;
-        Util::String subtitle;
-        Util::String category;
-        Util::String variable_name;
-        Util::String function_name;
-        Util::SharedPtr<NodeUserData> user_data;
         Util::TypeIdentifier handle_type;
         Util::Name member_name;
+        void serialize(Util::Serial::Node &p_Data) const override;
+        void deserialize(const Util::Serial::Node &p_Data) override;
+      };
 
-        bool is_valid() const
-        {
-          return node.is_valid();
-        }
+      struct LOW_EDITOR_API VariableNode : public Node
+      {
+        Util::String variable_name;
+        void serialize(Util::Serial::Node &p_Data) const override;
+        void deserialize(const Util::Serial::Node &p_Data) override;
+      };
+
+      struct NodeTypeDefinition
+      {
+        Util::Name name;
+        std::unique_ptr<Node> (*create)() = nullptr;
+      };
+
+      struct LOW_EDITOR_API VariableUserData
+      {
+        virtual ~VariableUserData() = default;
+
+        virtual void serialize(Util::Serial::Node &p_Node) const = 0;
+        virtual void
+        deserialize(const Util::Serial::Node &p_Node) = 0;
       };
 
       struct LOW_EDITOR_API Variable
@@ -120,11 +249,64 @@ namespace Low {
         Util::Variant default_value;
         ListDefaultValue list_default_value;
 
+        Util::SharedPtr<VariableUserData> user_data;
+
+        template <typename T> T *get_user_data()
+        {
+          return dynamic_cast<T *>(user_data.get());
+        }
+
+        template <typename T> const T *get_user_data() const
+        {
+          return dynamic_cast<const T *>(user_data.get());
+        }
+
         bool is_valid() const
         {
           return !name.empty() && type != PinType::Execution &&
                  type != PinType::Dynamic;
         }
+      };
+
+      // Asset-level scripting configuration. Editor extensions use
+      // the same ID.
+      using VariableUserDataFactory =
+          std::function<Util::SharedPtr<VariableUserData>()>;
+
+      struct LOW_EDITOR_API ScriptContextDefinition
+      {
+        Util::Name name;
+        Util::Name default_compile_profile;
+        std::function<void(Graph &)> register_node_libraries;
+        VariableUserDataFactory create_variable_user_data;
+      };
+
+      struct LOW_EDITOR_API ScriptContextRegistry
+      {
+        Util::Map<Util::Name, ScriptContextDefinition> contexts;
+
+        void
+        register_context(const ScriptContextDefinition &p_Context);
+        const ScriptContextDefinition *
+        find_context(Util::Name p_ContextName) const;
+      };
+
+      LOW_EDITOR_API ScriptContextRegistry &
+      get_script_context_registry();
+      LOW_EDITOR_API CompileProfileRegistry &
+      get_compile_profile_registry();
+      LOW_EDITOR_API void
+      register_common_node_libraries(Graph &p_Graph);
+
+      struct LOW_EDITOR_API GameplaySystemVariableUserData
+          : VariableUserData
+      {
+        bool gamemode_exposed = false;
+
+        virtual void
+        serialize(Util::Serial::Node &p_Node) const override;
+        virtual void
+        deserialize(const Util::Serial::Node &p_Node) override;
       };
 
       struct LOW_EDITOR_API NodeSpawnEntry
@@ -134,12 +316,12 @@ namespace Low {
         Util::String title;
         Util::String subtitle;
         Util::String search_text;
-        Util::Name node_class;
+        Util::Name node_type;
         std::function<void(Graph &, Node &)> initialize_node;
 
         bool is_valid() const
         {
-          return id.is_valid() && node_class.is_valid();
+          return id.is_valid() && node_type.is_valid();
         }
       };
 
@@ -312,160 +494,27 @@ namespace Low {
       LOW_EDITOR_API void register_builtin_compile_profiles(
           CompileProfileRegistry &p_ProfileRegistry);
 
-      struct LOW_EDITOR_API NodeClass
-      {
-        virtual ~NodeClass() = default;
-
-        virtual Util::Name get_name() const = 0;
-
-        virtual Util::String get_title(const Graph &p_Graph,
-                                       NodeId p_NodeId) const;
-
-        virtual Util::String get_subtitle(const Graph &p_Graph,
-                                          NodeId p_NodeId) const;
-
-        virtual Util::String get_category(const Graph &p_Graph,
-                                          NodeId p_NodeId) const;
-
-        virtual Util::SharedPtr<NodeUserData> create_user_data() const
-        {
-          return nullptr;
-        }
-
-        virtual Util::String get_icon(const Graph &p_Graph,
-                                      NodeId p_NodeId) const;
-
-        virtual ImU32 get_color(const Graph &p_Graph,
-                                NodeId p_NodeId) const;
-
-        virtual bool is_compact(const Graph &p_Graph,
-                                NodeId p_NodeId) const
-        {
-          (void)p_Graph;
-          (void)p_NodeId;
-          return false;
-        }
-
-        virtual bool is_deletable(const Graph &p_Graph,
-                                  NodeId p_NodeId) const
-        {
-          (void)p_Graph;
-          (void)p_NodeId;
-          return true;
-        }
-
-        virtual Util::String get_compact_title(const Graph &p_Graph,
-                                               NodeId p_NodeId) const
-        {
-          return get_title(p_Graph, p_NodeId);
-        }
-
-        virtual void
-        setup_default_pins(Graph &p_Graph, NodeId p_NodeId,
-                           const NodeGraphSchema *p_Schema) const
-        {
-          (void)p_Graph;
-          (void)p_NodeId;
-          (void)p_Schema;
-        }
-
-        virtual float get_above_pins_height(const Graph &,
-                                            NodeId) const
-        {
-          return 0.0f;
-        }
-
-        virtual float get_below_pins_height(const Graph &,
-                                            NodeId) const
-        {
-          return 0.0f;
-        }
-
-        virtual void render_above_pins(Graph &, NodeId,
-                                       NodeGraphEditorContext &,
-                                       const ImVec2 &,
-                                       const ImVec2 &) const
-        {
-        }
-
-        virtual void render_below_pins(Graph &, NodeId,
-                                       NodeGraphEditorContext &,
-                                       const ImVec2 &,
-                                       const ImVec2 &) const
-        {
-        }
-
-        virtual void compile(Graph &p_Graph, NodeId p_NodeId,
-                             CompileContext &p_CompileContext) const
-        {
-        }
-
-        virtual void
-        compile_input_pin(Graph &p_Graph, NodeId p_NodeId,
-                          PinId p_PinId,
-                          CompileContext &p_CompileContext) const;
-
-        virtual void
-        compile_output_pin(Graph &p_Graph, NodeId p_NodeId,
-                           PinId p_PinId,
-                           CompileContext &p_CompileContext) const
-        {
-        }
-
-        virtual bool
-        can_connect_pin(Graph &p_Graph, NodeId p_NodeId,
-                        PinId p_PinId, const Pin &p_PinMetadata,
-                        const Pin &p_OtherPinMetadata) const
-        {
-          (void)p_Graph;
-          (void)p_NodeId;
-          (void)p_PinId;
-          (void)p_PinMetadata;
-          (void)p_OtherPinMetadata;
-          return true;
-        }
-
-        virtual void on_pin_connected(Graph &p_Graph, NodeId p_NodeId,
-                                      PinId p_PinId,
-                                      PinId p_OtherPinId) const
-        {
-          (void)p_Graph;
-          (void)p_NodeId;
-          (void)p_PinId;
-          (void)p_OtherPinId;
-        }
-
-        virtual void serialize(Graph &p_Graph, NodeId p_NodeId,
-                               Util::Serial::Node &p_Data) const
-        {
-        }
-
-        virtual void deserialize(Graph &p_Graph, NodeId p_NodeId,
-                                 Util::Serial::Node &p_Data) const
-        {
-        }
-      };
-
       struct LOW_EDITOR_API Graph
       {
         NodeGraph graph;
-        Util::Map<NodeId, Node> node_metadata;
-        Util::Map<PinId, Pin> pin_metadata;
-        Util::Map<Util::Name, NodeClass *> node_classes;
+        Util::Map<Util::Name, NodeTypeDefinition> node_types;
         Util::Map<Util::Name, NodeSpawnEntry> spawn_entries;
         Util::List<Variable> variables;
+        VariableUserDataFactory variable_user_data_factory;
+
+        void apply_context(const ScriptContextDefinition &p_Context);
         u64 id_counter = 1;
 
-        NodeGraphMutationResult<Editor::Node>
-        add_node(const Editor::Node &p_Node, const Node &p_Metadata,
+        NodeGraphMutationResult<Node>
+        add_node(std::unique_ptr<Node> p_Node,
                  const NodeGraphSchema *p_Schema = nullptr);
 
-        NodeGraphMutationResult<Editor::Pin>
-        add_pin(const Editor::Pin &p_Pin, const Pin &p_Metadata,
+        NodeGraphMutationResult<Pin>
+        add_pin(const Pin &p_Pin,
                 const NodeGraphSchema *p_Schema = nullptr);
 
-        NodeGraphMutationResult<Editor::Link>
-        add_link(const Editor::Link &p_Link,
+        NodeGraphMutationResult<Low::Editor::Link>
+        add_link(const Low::Editor::Link &p_Link,
                  const NodeGraphSchema *p_Schema = nullptr);
 
         bool remove_node(NodeId p_NodeId);
@@ -514,25 +563,13 @@ namespace Low {
         const Pin *find_output_pin_checked(
             NodeId p_NodeId, const Util::String &p_DisplayName) const;
 
-        template <typename T> T *get_node_user_data(NodeId p_NodeId)
+        template <typename T> T *find_node_as(NodeId p_Id)
         {
-          Node *l_Node = find_node(p_NodeId);
-          if (!l_Node || !l_Node->user_data) {
-            return nullptr;
-          }
-
-          return dynamic_cast<T *>(l_Node->user_data.get());
+          return dynamic_cast<T *>(find_node(p_Id));
         }
-
-        template <typename T>
-        const T *get_node_user_data(NodeId p_NodeId) const
+        template <typename T> const T *find_node_as(NodeId p_Id) const
         {
-          const Node *l_Node = find_node(p_NodeId);
-          if (!l_Node || !l_Node->user_data) {
-            return nullptr;
-          }
-
-          return dynamic_cast<const T *>(l_Node->user_data.get());
+          return dynamic_cast<const T *>(find_node(p_Id));
         }
 
         bool add_variable(const Variable &p_Variable);
@@ -541,10 +578,18 @@ namespace Low {
         const Variable *
         find_variable(const Util::String &p_Name) const;
 
-        void register_node_class(NodeClass &p_NodeClass);
-        NodeClass *find_node_class(Util::Name p_NodeClass);
-        const NodeClass *
-        find_node_class(Util::Name p_NodeClass) const;
+        template <typename T> Util::Name register_node_type()
+        {
+          T l_Default;
+          const Util::Name l_Name = l_Default.get_name();
+          node_types[l_Name] = {l_Name,
+                                []() -> std::unique_ptr<Node> {
+                                  return std::make_unique<T>();
+                                }};
+          return l_Name;
+        }
+        const NodeTypeDefinition *
+        find_node_type(Util::Name p_Name) const;
 
         void register_spawn_entry(const NodeSpawnEntry &p_SpawnEntry);
         NodeSpawnEntry *find_spawn_entry(Util::Name p_SpawnEntryId);
@@ -552,18 +597,15 @@ namespace Low {
         find_spawn_entry(Util::Name p_SpawnEntryId) const;
         Util::List<const NodeSpawnEntry *> get_spawn_entries() const;
 
-        NodeGraphMutationResult<Editor::Node>
-        create_node(Util::Name p_NodeClass,
-                    const Math::Vector2 &p_Position,
-                    const NodeGraphSchema *p_Schema = nullptr);
+        NodeGraphMutationResult<Node> create_node(
+            Util::Name p_NodeType, const Math::Vector2 &p_Position,
+            const NodeGraphSchema *p_Schema = nullptr,
+            const std::function<void(Node &)> &p_Initialize = {});
 
-        NodeGraphMutationResult<Editor::Node>
-        create_node_from_spawn_entry(
+        NodeGraphMutationResult<Node> create_node_from_spawn_entry(
             Util::Name p_SpawnEntryId,
             const Math::Vector2 &p_Position,
             const NodeGraphSchema *p_Schema = nullptr);
-
-        void refresh_node_display_metadata(NodeId p_NodeId);
 
         bool is_pin_connected(PinId p_PinId) const;
         PinId get_connected_pin(PinId p_PinId) const;
@@ -601,20 +643,19 @@ namespace Low {
 
         virtual NodeGraphValidationResult
         can_create_pin(const NodeGraph &p_Graph,
-                       const Editor::Pin &p_Pin) const override;
+                       const Low::Editor::Pin &p_Pin) const override;
 
-        virtual NodeGraphValidationResult
-        validate_link(const NodeGraph &p_Graph,
-                      const Editor::Pin &p_StartPin,
-                      const Editor::Pin &p_EndPin) const override;
+        virtual NodeGraphValidationResult validate_link(
+            const NodeGraph &p_Graph,
+            const Low::Editor::Pin &p_StartPin,
+            const Low::Editor::Pin &p_EndPin) const override;
 
         virtual bool allows_multiple_links_per_pin(
             const NodeGraph &p_Graph,
-            const Editor::Pin &p_Pin) const override;
+            const Low::Editor::Pin &p_Pin) const override;
 
       private:
         const Graph *get_graph(const NodeGraph &p_Graph) const;
-        const Pin *get_pin_metadata(const Editor::Pin &p_Pin) const;
       };
 
       struct LOW_EDITOR_API NodeRenderer
@@ -641,18 +682,20 @@ namespace Low {
 
         virtual Math::Vector2
         get_node_size(const NodeGraphEditorContext &p_Context,
-                      const Editor::Node &p_Node) const override;
+                      const Low::Editor::Node &p_Node) const override;
 
         virtual void render_node(NodeGraphEditorContext &p_Context,
-                                 Editor::Node &p_Node,
+                                 Low::Editor::Node &p_Node,
                                  const ImVec2 &p_ScreenMin,
                                  const ImVec2 &p_ScreenMax) override;
 
-        virtual bool get_pin_anchor(
-            const NodeGraphEditorContext &p_Context,
-            const Editor::Node &p_Node, const Editor::Pin &p_Pin,
-            const ImVec2 &p_ScreenMin, const ImVec2 &p_ScreenMax,
-            ImVec2 &p_Anchor) const override;
+        virtual bool
+        get_pin_anchor(const NodeGraphEditorContext &p_Context,
+                       const Low::Editor::Node &p_Node,
+                       const Low::Editor::Pin &p_Pin,
+                       const ImVec2 &p_ScreenMin,
+                       const ImVec2 &p_ScreenMax,
+                       ImVec2 &p_Anchor) const override;
       };
 
       struct LOW_EDITOR_API GraphRenderer
@@ -691,22 +734,22 @@ namespace Low {
 
         virtual NodeGraphNodeRenderer *
         get_node_renderer(NodeGraphEditorContext &p_Context,
-                          Editor::Node &p_Node) override;
+                          Low::Editor::Node &p_Node) override;
 
         virtual NodeGraphSpawner *
         get_spawner(NodeGraphEditorContext &p_Context) override;
 
-        virtual NodeGraphMutationResult<Editor::Link>
+        virtual NodeGraphMutationResult<Low::Editor::Link>
         create_link(NodeGraphEditorContext &p_Context,
-                    const Editor::Link &p_Link) override;
+                    const Low::Editor::Link &p_Link) override;
 
         virtual void
         render_pin_context_menu(NodeGraphEditorContext &p_Context,
-                                Editor::Pin &p_Pin) override;
+                                Low::Editor::Pin &p_Pin) override;
 
         virtual void
         render_node_context_menu(NodeGraphEditorContext &p_Context,
-                                 Editor::Node &p_Node) override;
+                                 Low::Editor::Node &p_Node) override;
       };
 
       LOW_EDITOR_API const char *pin_type_to_string(PinType p_Type);
@@ -718,7 +761,8 @@ namespace Low {
 
       LOW_EDITOR_API u8 pin_to_variant_type(const Pin &p_Pin);
 
-      // Returns the element type; container and concrete type IDs stay separate.
+      // Returns the element type; container and concrete type IDs
+      // stay separate.
       LOW_EDITOR_API Util::RTTI::PropertyType::Enum
       pin_type_to_property_type(PinType p_Type,
                                 NumberSubtype p_NumberSubtype,
@@ -732,52 +776,54 @@ namespace Low {
       LOW_EDITOR_API Util::Variant
       default_value_for_pin(const Pin &p_Pin);
 
-      LOW_EDITOR_API Editor::Pin make_input_pin(Graph &p_Graph,
-                                                NodeId p_NodeId);
+      LOW_EDITOR_API Pin make_input_pin(Graph &p_Graph,
+                                        NodeId p_NodeId,
+                                        Pin p_Pin = {});
 
-      LOW_EDITOR_API Editor::Pin make_output_pin(Graph &p_Graph,
-                                                 NodeId p_NodeId);
+      LOW_EDITOR_API Pin make_output_pin(Graph &p_Graph,
+                                         NodeId p_NodeId,
+                                         Pin p_Pin = {});
 
       LOW_EDITOR_API Pin
-      make_execution_pin_metadata(Util::String p_DisplayName);
+      make_execution_pin(Util::String p_DisplayName);
 
-      LOW_EDITOR_API Pin make_bool_pin_metadata(
-          Util::String p_DisplayName, bool p_DefaultValue = false);
+      LOW_EDITOR_API Pin make_bool_pin(Util::String p_DisplayName,
+                                       bool p_DefaultValue = false);
 
-      LOW_EDITOR_API Pin make_number_pin_metadata(
+      LOW_EDITOR_API Pin make_number_pin(
           Util::String p_DisplayName,
           NumberSubtype p_NumberSubtype = NumberSubtype::Float,
           PinContainerType p_ContainerType = PinContainerType::None);
 
-      LOW_EDITOR_API Pin make_string_pin_metadata(
+      LOW_EDITOR_API Pin make_string_pin(
           Util::String p_DisplayName,
           StringSubtype p_StringSubtype = StringSubtype::String,
           PinContainerType p_ContainerType = PinContainerType::None);
 
-      LOW_EDITOR_API Pin make_handle_pin_metadata(
+      LOW_EDITOR_API Pin make_handle_pin(
           Util::String p_DisplayName,
           Util::TypeIdentifier p_HandleType = Util::TypeIdentifier(),
           PinContainerType p_ContainerType = PinContainerType::None);
 
-      LOW_EDITOR_API Pin make_struct_pin_metadata(
+      LOW_EDITOR_API Pin make_struct_pin(
           Util::String p_DisplayName,
           Util::TypeIdentifier p_StructType = Util::TypeIdentifier(),
           PinContainerType p_ContainerType = PinContainerType::None);
 
-      LOW_EDITOR_API Pin make_enum_pin_metadata(
+      LOW_EDITOR_API Pin make_enum_pin(
           Util::String p_DisplayName,
           Util::TypeIdentifier p_EnumType = Util::TypeIdentifier(),
           PinContainerType p_ContainerType = PinContainerType::None);
 
-      LOW_EDITOR_API Pin make_vector2_pin_metadata(
+      LOW_EDITOR_API Pin make_vector2_pin(
           Util::String p_DisplayName,
           PinContainerType p_ContainerType = PinContainerType::None);
 
-      LOW_EDITOR_API Pin make_vector3_pin_metadata(
+      LOW_EDITOR_API Pin make_vector3_pin(
           Util::String p_DisplayName,
           PinContainerType p_ContainerType = PinContainerType::None);
 
-      LOW_EDITOR_API Pin make_dynamic_pin_metadata(
+      LOW_EDITOR_API Pin make_dynamic_pin(
           Util::String p_DisplayName,
           PinContainerType p_ContainerType = PinContainerType::None);
 
@@ -790,5 +836,5 @@ namespace Low {
           StringSubtype p_StringSubtype,
           Util::TypeIdentifier p_HandleType);
     } // namespace VisualScript
-  } // namespace Editor
+  }   // namespace Editor
 } // namespace Low

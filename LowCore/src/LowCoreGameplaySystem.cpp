@@ -54,6 +54,10 @@ namespace Low {
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, GameplaySystem, type,
                                  GameplaySystemType))
           GameplaySystemType();
+      new (ACCESSOR_TYPE_SOA_PTR(
+          l_Handle, GameplaySystem, exposed_variables,
+          SINGLE_ARG(Low::Util::Map<Util::Name, Util::VariantType>)))
+          Low::Util::Map<Util::Name, Util::VariantType>();
       ACCESSOR_TYPE_SOA(l_Handle, GameplaySystem, name,
                         Low::Util::Name) = Low::Util::Name(0u);
 
@@ -205,6 +209,39 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: type
+      }
+      {
+        // Property: exposed_variables
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(exposed_variables);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(GameplaySystem::Data, exposed_variables);
+        l_PropertyInfo.size =
+            sizeof(GameplaySystem::Data::exposed_variables);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          GameplaySystem l_Handle = p_Handle.get_id();
+          l_Handle.get_exposed_variables();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, GameplaySystem, exposed_variables,
+              SINGLE_ARG(
+                  Low::Util::Map<Util::Name, Util::VariantType>));
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          GameplaySystem l_Handle = p_Handle.get_id();
+          *((Low::Util::Map<Util::Name, Util::VariantType> *)p_Data) =
+              l_Handle.get_exposed_variables();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: exposed_variables
       }
       {
         // Property: name
@@ -583,6 +620,19 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_type
 
       broadcast_observable(N(type));
+    }
+
+    Low::Util::Map<Util::Name, Util::VariantType> &
+    GameplaySystem::get_exposed_variables() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_exposed_variables
+      // LOW_CODEGEN::END::CUSTOM:GETTER_exposed_variables
+
+      return TYPE_SOA(
+          GameplaySystem, exposed_variables,
+          SINGLE_ARG(Low::Util::Map<Util::Name, Util::VariantType>));
     }
 
     Low::Util::Name GameplaySystem::get_name() const

@@ -18,7 +18,8 @@ namespace Low {
         return graph ? graph->find_node(id) : nullptr;
       }
 
-      Pin *NodeHandle::find_input_pin(const Util::String &p_DisplayName)
+      Pin *
+      NodeHandle::find_input_pin(const Util::String &p_DisplayName)
       {
         return graph ? graph->find_input_pin(id, p_DisplayName)
                      : nullptr;
@@ -79,9 +80,10 @@ namespace Low {
         return add_variable(l_Variable);
       }
 
-      bool GraphBuilder::add_number_variable(
-          const Util::String &p_Name, float p_DefaultValue,
-          NumberSubtype p_NumberSubtype)
+      bool
+      GraphBuilder::add_number_variable(const Util::String &p_Name,
+                                        float p_DefaultValue,
+                                        NumberSubtype p_NumberSubtype)
       {
         Variable l_Variable;
         l_Variable.name = p_Name;
@@ -98,8 +100,8 @@ namespace Low {
               Util::Variant((u32)LOW_MATH_MAX(0.0f, p_DefaultValue));
           break;
         case NumberSubtype::UInt64:
-          l_Variable.default_value = Util::Variant(
-              (u64)LOW_MATH_MAX(0.0f, p_DefaultValue));
+          l_Variable.default_value =
+              Util::Variant((u64)LOW_MATH_MAX(0.0f, p_DefaultValue));
           break;
         case NumberSubtype::Float:
         default:
@@ -141,8 +143,9 @@ namespace Low {
         return add_variable(l_Variable);
       }
 
-      NodeHandle GraphBuilder::add_node(
-          Util::Name p_NodeClass, const Math::Vector2 &p_Position)
+      NodeHandle
+      GraphBuilder::add_node(Util::Name p_NodeType,
+                             const Math::Vector2 &p_Position)
       {
         NodeHandle l_Handle;
         l_Handle.graph = graph;
@@ -151,8 +154,8 @@ namespace Low {
           return l_Handle;
         }
 
-        NodeGraphMutationResult<Editor::Node> l_Result =
-            graph->create_node(p_NodeClass, p_Position, schema);
+        NodeGraphMutationResult<Node> l_Result =
+            graph->create_node(p_NodeType, p_Position, schema);
         if (l_Result.succeeded()) {
           l_Handle.id = l_Result.value->id;
         }
@@ -160,8 +163,9 @@ namespace Low {
         return l_Handle;
       }
 
-      NodeHandle GraphBuilder::add_spawn_node(
-          Util::Name p_SpawnEntryId, const Math::Vector2 &p_Position)
+      NodeHandle
+      GraphBuilder::add_spawn_node(Util::Name p_SpawnEntryId,
+                                   const Math::Vector2 &p_Position)
       {
         NodeHandle l_Handle;
         l_Handle.graph = graph;
@@ -170,7 +174,7 @@ namespace Low {
           return l_Handle;
         }
 
-        NodeGraphMutationResult<Editor::Node> l_Result =
+        NodeGraphMutationResult<Node> l_Result =
             graph->create_node_from_spawn_entry(p_SpawnEntryId,
                                                 p_Position, schema);
         if (l_Result.succeeded()) {
@@ -182,11 +186,12 @@ namespace Low {
 
       bool GraphBuilder::connect(PinId p_StartPinId, PinId p_EndPinId)
       {
-        if (!graph || !p_StartPinId.is_valid() || !p_EndPinId.is_valid()) {
+        if (!graph || !p_StartPinId.is_valid() ||
+            !p_EndPinId.is_valid()) {
           return false;
         }
 
-        Editor::Link l_Link;
+        Low::Editor::Link l_Link;
         l_Link.id = allocate_link_id();
         l_Link.start_pin = p_StartPinId;
         l_Link.end_pin = p_EndPinId;
@@ -211,21 +216,23 @@ namespace Low {
           return false;
         }
 
-        return connect(l_StartPin->pin, l_EndPin->pin);
+        return connect(l_StartPin->id, l_EndPin->id);
       }
 
-      bool GraphBuilder::connect_exec(
-          const NodeHandle &p_StartNode, const NodeHandle &p_EndNode,
-          const Util::String &p_StartPinName,
-          const Util::String &p_EndPinName)
+      bool
+      GraphBuilder::connect_exec(const NodeHandle &p_StartNode,
+                                 const NodeHandle &p_EndNode,
+                                 const Util::String &p_StartPinName,
+                                 const Util::String &p_EndPinName)
       {
         return connect(p_StartNode, p_StartPinName, p_EndNode,
                        p_EndPinName);
       }
 
-      bool GraphBuilder::set_input_default(
-          const NodeHandle &p_NodeHandle, const Util::String &p_PinName,
-          const Util::Variant &p_Value)
+      bool
+      GraphBuilder::set_input_default(const NodeHandle &p_NodeHandle,
+                                      const Util::String &p_PinName,
+                                      const Util::Variant &p_Value)
       {
         if (!p_NodeHandle.graph || !p_NodeHandle.id.is_valid()) {
           return false;
@@ -246,5 +253,5 @@ namespace Low {
         return graph ? LinkId{graph->id_counter++} : LinkId{};
       }
     } // namespace VisualScript
-  } // namespace Editor
+  }   // namespace Editor
 } // namespace Low

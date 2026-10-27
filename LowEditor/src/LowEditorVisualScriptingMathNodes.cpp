@@ -12,64 +12,60 @@ namespace Low {
           static const ImU32 g_RandomColor =
               IM_COL32(200, 100, 100, 255);
 
-          struct BinaryNumberNodeClassBase : public NodeClass
+          struct BinaryNumberNodeBase : public Node
           {
-            Util::String m_Title;
-            const char *m_Operator;
-            bool m_StartDynamic = false;
+            const char *const m_Operator;
+            const bool m_StartDynamic;
 
-            BinaryNumberNodeClassBase(Util::String p_Title,
-                                      const char *p_Operator,
-                                      bool p_StartDynamic = false)
-                : m_Title(p_Title), m_Operator(p_Operator),
+            BinaryNumberNodeBase(const char *p_Operator,
+                                 bool p_StartDynamic = false)
+                : m_Operator(p_Operator),
                   m_StartDynamic(p_StartDynamic)
             {
             }
 
-            Util::String get_title(const Graph &,
-                                   NodeId) const override
-            {
-              return m_Title;
-            }
+            Util::String get_title(const Graph &) const override = 0;
 
-            Util::String get_category(const Graph &,
-                                      NodeId) const override
+            Util::String get_category(const Graph &) const override
             {
               return "Math";
             }
 
-            ImU32 get_color(const Graph &, NodeId) const override
+            ImU32 get_color(const Graph &) const override
             {
               return g_MathColor;
             }
 
             void setup_default_pins(
-                Graph &p_Graph, NodeId p_NodeId,
+                Graph &p_Graph,
                 const NodeGraphSchema *p_Schema) const override
             {
-              const Pin l_InputMetadata =
-                  m_StartDynamic ? make_dynamic_pin_metadata("A")
-                                 : make_number_pin_metadata("A");
-              Pin l_InputBMetadata =
-                  m_StartDynamic ? make_dynamic_pin_metadata("B")
-                                 : make_number_pin_metadata("B");
-              Pin l_OutputMetadata =
-                  m_StartDynamic ? make_dynamic_pin_metadata("Result")
-                                 : make_number_pin_metadata("Result");
+              const Pin l_InputMetadata = m_StartDynamic
+                                              ? make_dynamic_pin("A")
+                                              : make_number_pin("A");
+              Pin l_InputBMetadata = m_StartDynamic
+                                         ? make_dynamic_pin("B")
+                                         : make_number_pin("B");
+              Pin l_OutputMetadata = m_StartDynamic
+                                         ? make_dynamic_pin("Result")
+                                         : make_number_pin("Result");
               l_OutputMetadata.show_default_value_when_unlinked =
                   false;
 
-              p_Graph.add_pin(make_input_pin(p_Graph, p_NodeId),
-                              l_InputMetadata, p_Schema);
-              p_Graph.add_pin(make_input_pin(p_Graph, p_NodeId),
-                              l_InputBMetadata, p_Schema);
-              Editor::Pin l_Output =
-                  make_output_pin(p_Graph, p_NodeId);
-              p_Graph.add_pin(l_Output, l_OutputMetadata, p_Schema);
+              p_Graph.add_pin(
+                  make_input_pin(p_Graph, id, l_InputMetadata),
+                  p_Schema);
+              p_Graph.add_pin(
+                  make_input_pin(p_Graph, id, l_InputBMetadata),
+                  p_Schema);
+
+              p_Graph.add_pin(
+                  make_output_pin(p_Graph, id, l_OutputMetadata),
+                  p_Schema);
             }
 
             bool can_connect_pin(
-                Graph &, NodeId, PinId, const Pin &p_PinMetadata,
+                Graph &, PinId, const Pin &p_PinMetadata,
                 const Pin &p_OtherPinMetadata) const override
             {
               if (m_StartDynamic &&
@@ -80,8 +76,7 @@ namespace Low {
               return true;
             }
 
-            void on_pin_connected(Graph &p_Graph, NodeId p_NodeId,
-                                  PinId,
+            void on_pin_connected(Graph &p_Graph, PinId,
                                   PinId p_OtherPinId) const override
             {
               if (!m_StartDynamic) {
@@ -94,8 +89,8 @@ namespace Low {
                 return;
               }
 
-              for (Editor::Pin *i_Pin :
-                   p_Graph.graph.get_node_pins(p_NodeId)) {
+              for (Low::Editor::Pin *i_Pin :
+                   p_Graph.graph.get_node_pins(id)) {
                 Pin *l_PinMetadata = p_Graph.find_pin(i_Pin->id);
                 if (!l_PinMetadata) {
                   continue;
@@ -115,27 +110,36 @@ namespace Low {
             }
 
             void compile_output_pin(
-                Graph &p_Graph, NodeId p_NodeId, PinId,
+                Graph &p_Graph, PinId,
                 CompileContext &p_CompileContext) const override
             {
               p_CompileContext.main_code.append("(");
               compile_input_pin(
-                  p_Graph, p_NodeId,
-                  p_Graph.find_input_pin_checked(p_NodeId, "A")->pin,
+                  p_Graph,
+                  p_Graph.find_input_pin_checked(id, "A")->id,
                   p_CompileContext);
               p_CompileContext.main_code.append(m_Operator);
               compile_input_pin(
-                  p_Graph, p_NodeId,
-                  p_Graph.find_input_pin_checked(p_NodeId, "B")->pin,
+                  p_Graph,
+                  p_Graph.find_input_pin_checked(id, "B")->id,
                   p_CompileContext);
               p_CompileContext.main_code.append(")");
             }
           };
 
-          struct AddNodeClass : public BinaryNumberNodeClassBase
+          struct AddNode : public BinaryNumberNodeBase
           {
-            AddNodeClass()
-                : BinaryNumberNodeClassBase("Add", " + ", true)
+            Util::String get_icon(const Graph &) const override
+            {
+              return ICON_LC_PLUS;
+            }
+
+            Util::String get_title(const Graph &) const override
+            {
+              return "Add";
+            }
+
+            AddNode() : BinaryNumberNodeBase(" + ", true)
             {
             }
 
@@ -144,22 +148,31 @@ namespace Low {
               return N(vs_math_add);
             }
 
-            bool is_compact(const Graph &, NodeId) const override
+            bool is_compact(const Graph &) const override
             {
               return true;
             }
 
-            Util::String get_compact_title(const Graph &,
-                                           NodeId) const override
+            Util::String
+            get_compact_title(const Graph &p_Graph) const override
             {
               return ICON_LC_PLUS;
             }
           };
 
-          struct SubtractNodeClass : public BinaryNumberNodeClassBase
+          struct SubtractNode : public BinaryNumberNodeBase
           {
-            SubtractNodeClass()
-                : BinaryNumberNodeClassBase("Subtract", " - ", true)
+            Util::String get_icon(const Graph &) const override
+            {
+              return ICON_LC_MINUS;
+            }
+
+            Util::String get_title(const Graph &) const override
+            {
+              return "Subtract";
+            }
+
+            SubtractNode() : BinaryNumberNodeBase(" - ", true)
             {
             }
 
@@ -168,22 +181,31 @@ namespace Low {
               return N(vs_math_subtract);
             }
 
-            bool is_compact(const Graph &, NodeId) const override
+            bool is_compact(const Graph &) const override
             {
               return true;
             }
 
-            Util::String get_compact_title(const Graph &,
-                                           NodeId) const override
+            Util::String
+            get_compact_title(const Graph &p_Graph) const override
             {
               return ICON_LC_MINUS;
             }
           };
 
-          struct MultiplyNodeClass : public BinaryNumberNodeClassBase
+          struct MultiplyNode : public BinaryNumberNodeBase
           {
-            MultiplyNodeClass()
-                : BinaryNumberNodeClassBase("Multiply", " * ")
+            Util::String get_icon(const Graph &) const override
+            {
+              return ICON_LC_X;
+            }
+
+            Util::String get_title(const Graph &) const override
+            {
+              return "Multiply";
+            }
+
+            MultiplyNode() : BinaryNumberNodeBase(" * ")
             {
             }
 
@@ -192,22 +214,31 @@ namespace Low {
               return N(vs_math_multiply);
             }
 
-            bool is_compact(const Graph &, NodeId) const override
+            bool is_compact(const Graph &) const override
             {
               return true;
             }
 
-            Util::String get_compact_title(const Graph &,
-                                           NodeId) const override
+            Util::String
+            get_compact_title(const Graph &p_Graph) const override
             {
               return ICON_LC_X;
             }
           };
 
-          struct DivideNodeClass : public BinaryNumberNodeClassBase
+          struct DivideNode : public BinaryNumberNodeBase
           {
-            DivideNodeClass()
-                : BinaryNumberNodeClassBase("Divide", " / ")
+            Util::String get_icon(const Graph &) const override
+            {
+              return ICON_LC_DIVIDE;
+            }
+
+            Util::String get_title(const Graph &) const override
+            {
+              return "Divide";
+            }
+
+            DivideNode() : BinaryNumberNodeBase(" / ")
             {
             }
 
@@ -216,94 +247,97 @@ namespace Low {
               return N(vs_math_divide);
             }
 
-            bool is_compact(const Graph &, NodeId) const override
+            bool is_compact(const Graph &) const override
             {
               return true;
             }
 
-            Util::String get_compact_title(const Graph &,
-                                           NodeId) const override
+            Util::String
+            get_compact_title(const Graph &p_Graph) const override
             {
               return ICON_LC_DIVIDE;
             }
           };
 
-          struct PercentChanceNodeClass : public NodeClass
+          struct PercentChanceNode : public Node
           {
+            Util::String get_icon(const Graph &) const override
+            {
+              return ICON_LC_DICES;
+            }
+
             Util::Name get_name() const override
             {
               return N(vs_random_percent_chance);
             }
 
-            Util::String get_title(const Graph &,
-                                   NodeId) const override
+            Util::String get_title(const Graph &) const override
             {
               return "Percent chance";
             }
 
-            Util::String get_category(const Graph &,
-                                      NodeId) const override
+            Util::String get_category(const Graph &) const override
             {
               return "Random";
             }
 
-            ImU32 get_color(const Graph &, NodeId) const override
+            ImU32 get_color(const Graph &) const override
             {
               return g_RandomColor;
             }
 
             void setup_default_pins(
-                Graph &p_Graph, NodeId p_NodeId,
+                Graph &p_Graph,
                 const NodeGraphSchema *p_Schema) const override
             {
-              p_Graph.add_pin(make_input_pin(p_Graph, p_NodeId),
-                              make_number_pin_metadata("Percent"),
-                              p_Schema);
-              Editor::Pin l_Output =
-                  make_output_pin(p_Graph, p_NodeId);
-              Pin l_OutputMetadata =
-                  make_bool_pin_metadata("Success");
+              p_Graph.add_pin(
+                  make_input_pin(p_Graph, id,
+                                 make_number_pin("Percent")),
+                  p_Schema);
+
+              Pin l_OutputMetadata = make_bool_pin("Success");
               l_OutputMetadata.show_default_value_when_unlinked =
                   false;
-              p_Graph.add_pin(l_Output, l_OutputMetadata, p_Schema);
+              p_Graph.add_pin(
+                  make_output_pin(p_Graph, id, l_OutputMetadata),
+                  p_Schema);
             }
 
             void compile_output_pin(
-                Graph &p_Graph, NodeId p_NodeId, PinId,
+                Graph &p_Graph, PinId,
                 CompileContext &p_CompileContext) const override
             {
               p_CompileContext.main_code.append(
                   "Low::Math::Util::random_percent((uint8_t)");
               compile_input_pin(
-                  p_Graph, p_NodeId,
-                  p_Graph.find_input_pin_checked(p_NodeId, "Percent")
-                      ->pin,
+                  p_Graph,
+                  p_Graph.find_input_pin_checked(id, "Percent")->id,
                   p_CompileContext);
               p_CompileContext.main_code.append(")");
             }
           };
 
-          static AddNodeClass g_AddNodeClass;
-          static SubtractNodeClass g_SubtractNodeClass;
-          static MultiplyNodeClass g_MultiplyNodeClass;
-          static DivideNodeClass g_DivideNodeClass;
-          static PercentChanceNodeClass g_PercentChanceNodeClass;
         } // namespace
 
         void register_nodes(Graph &p_Graph)
         {
-          p_Graph.register_node_class(g_AddNodeClass);
-          p_Graph.register_node_class(g_SubtractNodeClass);
-          p_Graph.register_node_class(g_MultiplyNodeClass);
-          p_Graph.register_node_class(g_DivideNodeClass);
-          p_Graph.register_node_class(g_PercentChanceNodeClass);
+          const Util::Name l_AddNodeType =
+              p_Graph.register_node_type<AddNode>();
+          const Util::Name l_SubtractNodeType =
+              p_Graph.register_node_type<SubtractNode>();
+          const Util::Name l_MultiplyNodeType =
+              p_Graph.register_node_type<MultiplyNode>();
+          const Util::Name l_DivideNodeType =
+              p_Graph.register_node_type<DivideNode>();
+          const Util::Name l_PercentChanceNodeType =
+              p_Graph.register_node_type<PercentChanceNode>();
 
           NodeSpawnEntry l_AddEntry;
           l_AddEntry.id = N(vs_spawn_math_add);
           l_AddEntry.category = "Math";
           l_AddEntry.title = "Add";
           l_AddEntry.search_text = "math add plus";
-          l_AddEntry.node_class = g_AddNodeClass.get_name();
+          l_AddEntry.node_type = l_AddNodeType;
           p_Graph.register_spawn_entry(l_AddEntry);
 
           NodeSpawnEntry l_SubtractEntry;
@@ -311,7 +345,7 @@ namespace Low {
           l_SubtractEntry.category = "Math";
           l_SubtractEntry.title = "Subtract";
           l_SubtractEntry.search_text = "math subtract minus";
-          l_SubtractEntry.node_class = g_SubtractNodeClass.get_name();
+          l_SubtractEntry.node_type = l_SubtractNodeType;
           p_Graph.register_spawn_entry(l_SubtractEntry);
 
           NodeSpawnEntry l_MultiplyEntry;
@@ -319,7 +353,7 @@ namespace Low {
           l_MultiplyEntry.category = "Math";
           l_MultiplyEntry.title = "Multiply";
           l_MultiplyEntry.search_text = "math multiply times";
-          l_MultiplyEntry.node_class = g_MultiplyNodeClass.get_name();
+          l_MultiplyEntry.node_type = l_MultiplyNodeType;
           p_Graph.register_spawn_entry(l_MultiplyEntry);
 
           NodeSpawnEntry l_DivideEntry;
@@ -327,7 +361,7 @@ namespace Low {
           l_DivideEntry.category = "Math";
           l_DivideEntry.title = "Divide";
           l_DivideEntry.search_text = "math divide";
-          l_DivideEntry.node_class = g_DivideNodeClass.get_name();
+          l_DivideEntry.node_type = l_DivideNodeType;
           p_Graph.register_spawn_entry(l_DivideEntry);
 
           NodeSpawnEntry l_PercentChanceEntry;
@@ -335,11 +369,10 @@ namespace Low {
           l_PercentChanceEntry.category = "Random";
           l_PercentChanceEntry.title = "Percent chance";
           l_PercentChanceEntry.search_text = "random percent chance";
-          l_PercentChanceEntry.node_class =
-              g_PercentChanceNodeClass.get_name();
+          l_PercentChanceEntry.node_type = l_PercentChanceNodeType;
           p_Graph.register_spawn_entry(l_PercentChanceEntry);
         }
       } // namespace MathNodes
-    } // namespace VisualScript
-  } // namespace Editor
+    }   // namespace VisualScript
+  }     // namespace Editor
 } // namespace Low

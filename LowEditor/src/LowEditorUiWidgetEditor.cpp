@@ -345,8 +345,8 @@ namespace Low {
     {
       Core::UI::WidgetAsset l_Asset = m_Handle.get_id();
 
-      VisualScript::UiControllerContextDefinition l_Context;
-      VisualScript::ScriptAssetBuilder l_Builder(l_Context);
+      VisualScript::ScriptAssetBuilder l_Builder(
+          N(vs_context_ui_controller));
 
       const u64 l_CustomControllerId = Util::generate_unique_id();
       const Util::String l_FileName =
@@ -368,7 +368,7 @@ namespace Low {
         l_Settings->class_name = l_ClassName;
       }
 
-      l_Context.build_default_template(l_Builder.get_document());
+      l_Builder.build_default_template();
       if (l_Builder.get_document().graph.graph.nodes.empty()) {
         LOW_LOG_ERROR
             << "Failed to create ui controller visual script."

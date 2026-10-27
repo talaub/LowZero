@@ -8,13 +8,17 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-
+#include "LowCoreGameplaySystem.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
   namespace Core {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-
+    struct GameModeSystemStorage
+    {
+      GameplaySystem system;
+      Util::Map<Util::Name, Util::Variant> values;
+    };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     struct LOW_CORE_API GameMode : public Low::Util::Handle
@@ -23,7 +27,7 @@ namespace Low {
       struct Data
       {
       public:
-        Util::String tick_function_name;
+        Low::Util::List<GameModeSystemStorage> systems;
         Low::Util::UniqueId unique_id;
         Low::Util::Name name;
 
@@ -139,9 +143,7 @@ namespace Low {
         l_GameMode.destroy();
       }
 
-      Util::String get_tick_function_name() const;
-      void set_tick_function_name(Util::String p_Value);
-      void set_tick_function_name(const char *p_Value);
+      Low::Util::List<GameModeSystemStorage> &get_systems() const;
 
       Low::Util::UniqueId get_unique_id() const;
 

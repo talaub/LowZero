@@ -8,6 +8,7 @@
 #include "LowEditorNotifications.h"
 #include "LowEditorThemes.h"
 
+#include "LowUtilLogger.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "IconsFontAwesome5.h"

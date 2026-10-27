@@ -194,10 +194,12 @@ types:
     name_editable: true
     editor:
       manager: true
+      saveable: true
+      manager_widget_path: Gameplay/Game Modes
     properties:
-      tick_function_name:
-        type: Util::String
-        editor_editable: true
+      systems:
+        type: Low::Util::List<GameModeSystemStorage>
+        no_setter: true
 
   GameplaySystem:
     no_auto_serialize: true
@@ -211,6 +213,9 @@ types:
         type: GameplaySystemType
         private_setter: true
         no_ref: true
+      exposed_variables:
+        type: Low::Util::Map<Util::Name, Util::VariantType>
+        no_setter: true
     functions:
       make_code:
         static: true

@@ -301,25 +301,6 @@ namespace Low {
       load_prefabs();
     }
 
-    static void load_gamemodes()
-    {
-      Util::String l_Path =
-          Util::get_project().dataPath + "/assets/gamemodes";
-
-      Util::List<Util::String> l_FilePaths;
-
-      Util::FileIO::list_directory(l_Path.c_str(), l_FilePaths);
-      Util::String l_Ending = ".gamemode.yaml";
-
-      for (Util::String &i_Path : l_FilePaths) {
-        if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
-          Util::Serial::Node i_Node =
-              Util::Serial::load_yaml_file(i_Path.c_str());
-          GameMode::deserialize(i_Node, 0);
-        }
-      }
-    }
-
     static void initialize_globals()
     {
       Util::Globals::set(N(LOW_SCREEN_OFFSET),
@@ -344,8 +325,6 @@ namespace Low {
 
       // load_regions();
       // load_scenes();
-
-      load_gamemodes();
     }
 
     static void cleanup_asset_types()

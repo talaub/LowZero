@@ -14,6 +14,7 @@
 #include "LowEditorVisualScripting.h"
 #include "LowMath.h"
 #include "LowUtil.h"
+#include "LowUtilContainers.h"
 #include "LowUtilFileIO.h"
 #include "LowUtilHandle.h"
 #include "LowUtilLogger.h"
@@ -51,38 +52,52 @@ namespace Low {
                               IM_COL32(180, 185, 200, 32), "FLODE");
         }
 
-        static void register_common_node_libraries(Graph &p_Graph)
+        static void apply_function_context(
+            Graph &p_Graph, const ScriptContextDefinition *p_Context)
         {
-          BoolNodes::register_nodes(p_Graph);
-          CastNodes::register_nodes(p_Graph);
-          DebugNodes::register_nodes(p_Graph);
-          HandleNodes::register_nodes(p_Graph);
-          MathNodes::register_nodes(p_Graph);
-          OperatorNodes::register_nodes(p_Graph);
-          SyntaxNodes::register_nodes(p_Graph);
-          FunctionNodes::register_nodes(p_Graph);
-          EnumNodes::register_nodes(p_Graph);
-          StructNodes::register_nodes(p_Graph);
-          ArrayNodes::register_nodes(p_Graph);
-          SignalNodes::register_nodes(p_Graph);
+          ScriptContextDefinition l_Context;
+          if (p_Context) {
+            l_Context = *p_Context;
+          }
+          // Function graphs share variable rules, but keep their
+          // existing common node library rather than exposing asset
+          // event nodes.
+          l_Context.register_node_libraries =
+              register_common_node_libraries;
+          p_Graph.apply_context(l_Context);
         }
 
-        static ContextRegistry *g_ContextRegistry = nullptr;
+        static EditorContextRegistry *g_ContextRegistry = nullptr;
       } // namespace
 
-      void Document::apply_context(const ContextDefinition &p_Context)
+      void Document::apply_context(Util::Name p_ContextName)
       {
-        initialize();
-        context = p_Context.get_name();
-        compile_profile = p_Context.get_default_compile_profile();
-        p_Context.register_node_libraries(graph);
+        const auto *l_Context =
+            get_script_context_registry().find_context(p_ContextName);
+        LOW_ASSERT(l_Context,
+                   "Visual script context is not registered");
+        if (l_Context) {
+          apply_context(*l_Context);
+        }
       }
 
       void Document::apply_context(
-          const ContextDefinition &p_Context,
+          const ScriptContextDefinition &p_Context)
+      {
+        apply_context(p_Context, get_compile_profile_registry());
+      }
+
+      void Document::apply_context(
+          const ScriptContextDefinition &p_Context,
           const CompileProfileRegistry &p_ProfileRegistry)
       {
-        apply_context(p_Context);
+        initialize();
+        context = p_Context.name;
+        compile_profile = p_Context.default_compile_profile;
+        graph.apply_context(p_Context);
+        for (FunctionGraph &i_Function : functions) {
+          apply_function_context(i_Function.graph, &p_Context);
+        }
         initialize_compile_settings(p_ProfileRegistry);
       }
 
@@ -109,13 +124,13 @@ namespace Low {
 
       bool Document::load_from_path(const Util::String &p_Path)
       {
-        return load_from_path(p_Path, get_context_registry(),
+        return load_from_path(p_Path, get_script_context_registry(),
                               get_compile_profile_registry());
       }
 
       bool Document::load_from_path(
           const Util::String &p_Path,
-          const ContextRegistry &p_ContextRegistry)
+          const ScriptContextRegistry &p_ContextRegistry)
       {
         return load_from_path(p_Path, p_ContextRegistry,
                               get_compile_profile_registry());
@@ -123,7 +138,7 @@ namespace Low {
 
       bool Document::load_from_path(
           const Util::String &p_Path,
-          const ContextRegistry &p_ContextRegistry,
+          const ScriptContextRegistry &p_ContextRegistry,
           const CompileProfileRegistry &p_ProfileRegistry)
       {
         if (p_Path.empty()) {
@@ -142,17 +157,18 @@ namespace Low {
 
         Util::Serial::Node l_Root =
             Util::Serial::load_yaml_file(p_Path.c_str());
-        if (l_Root["context"]) {
-          const Util::Name l_ContextName =
-              l_Root["context"].as<Util::Name>();
-          const ContextDefinition *l_Context =
-              p_ContextRegistry.find_context(l_ContextName);
-          if (l_Context) {
-            apply_context(*l_Context, p_ProfileRegistry);
-          } else {
-            context = l_ContextName;
-          }
+        const Util::Name l_ContextName =
+            l_Root["context"] ? l_Root["context"].as<Util::Name>()
+                              : N(vs_context_default);
+        const ScriptContextDefinition *l_ScriptContext =
+            p_ContextRegistry.find_context(l_ContextName);
+        if (!l_ScriptContext) {
+          LOW_LOG_WARN << "Could not load visual script. Context was "
+                          "not registered: "
+                       << l_ContextName << LOW_LOG_END;
+          return false;
         }
+        apply_context(*l_ScriptContext, p_ProfileRegistry);
         if (l_Root["output_path"]) {
           output_path = Util::from_project_relative_path(
               l_Root["output_path"].as<Util::String>());
@@ -190,8 +206,9 @@ namespace Low {
             if (i_FuncNode["name"]) {
               l_Func.name = i_FuncNode["name"].as<Util::String>();
             }
-            register_common_node_libraries(l_Func.graph);
-            FunctionNodes::register_nodes(l_Func.graph);
+            const auto *l_Context =
+                p_ContextRegistry.find_context(context);
+            apply_function_context(l_Func.graph, l_Context);
             if (i_FuncNode["graph"]) {
               l_Func.graph.deserialize(i_FuncNode["graph"]);
             }
@@ -312,14 +329,14 @@ namespace Low {
         return true;
       }
 
-      void
-      ContextRegistry::register_context(ContextDefinition &p_Context)
+      void EditorContextRegistry::register_context(
+          EditorContextDefinition &p_Context)
       {
         contexts[p_Context.get_name()] = &p_Context;
       }
 
-      ContextDefinition *
-      ContextRegistry::find_context(Util::Name p_ContextName)
+      EditorContextDefinition *
+      EditorContextRegistry::find_context(Util::Name p_ContextName)
       {
         auto it = contexts.find(p_ContextName);
         if (it == contexts.end()) {
@@ -328,8 +345,9 @@ namespace Low {
         return it->second;
       }
 
-      const ContextDefinition *
-      ContextRegistry::find_context(Util::Name p_ContextName) const
+      const EditorContextDefinition *
+      EditorContextRegistry::find_context(
+          Util::Name p_ContextName) const
       {
         auto it = contexts.find(p_ContextName);
         if (it == contexts.end()) {
@@ -338,56 +356,32 @@ namespace Low {
         return it->second;
       }
 
-      Util::Name DefaultContextDefinition::get_name() const
+      Util::Name DefaultEditorContextDefinition::get_name() const
       {
         return N(vs_context_default);
       }
 
-      Util::Name
-      DefaultContextDefinition::get_default_compile_profile() const
-      {
-        return N(vs_compile_default);
-      }
-
-      void DefaultContextDefinition::register_node_libraries(
-          Graph &p_Graph) const
-      {
-        register_common_node_libraries(p_Graph);
-      }
-
-      Util::Name UiControllerContextDefinition::get_name() const
+      Util::Name UiControllerEditorContextDefinition::get_name() const
       {
         return N(vs_context_ui_controller);
       }
 
-      Util::Name
-      UiControllerContextDefinition::get_default_compile_profile()
-          const
-      {
-        return N(cp_ui_controller);
-      }
-
-      void UiControllerContextDefinition::register_node_libraries(
-          Graph &p_Graph) const
-      {
-        register_common_node_libraries(p_Graph);
-        UiControllerNodes::register_nodes(p_Graph);
-      }
-
-      void UiControllerContextDefinition::build_default_template(
+      void
+      UiControllerEditorContextDefinition::build_default_template(
           Document &p_Document) const
       {
         GraphBuilder l_Builder(p_Document.graph, &p_Document.schema);
       }
 
-      void
-      UiControllerContextDefinition::get_canvas_drop_payload_types(
-          Util::List<Util::String> &p_Types) const
+      void UiControllerEditorContextDefinition::
+          get_canvas_drop_payload_types(
+              Util::List<Util::String> &p_Types) const
       {
         p_Types.push_back("UI_ELEMENT");
       }
 
-      void UiControllerContextDefinition::get_canvas_drop_actions(
+      void
+      UiControllerEditorContextDefinition::get_canvas_drop_actions(
           Document &p_Document, const char *p_PayloadType,
           const void *p_Data, u32 p_DataSize,
           const Math::Vector2 &p_CanvasPosition,
@@ -411,7 +405,7 @@ namespace Low {
              p_CanvasPosition](Core::UI::Element p_Element,
                                UiControllerNodes::InteractionType
                                    p_InteractionType) {
-              NodeGraphMutationResult<Low::Editor::Node> l_Result =
+              NodeGraphMutationResult<Node> l_Result =
                   p_Document.graph.create_node(
                       N(vs_uicontroller_element_event),
                       p_CanvasPosition, &p_Document.schema);
@@ -419,9 +413,9 @@ namespace Low {
                 return;
               }
 
-              UiControllerNodes::ElementEventNodeData *l_Data =
-                  p_Document.graph.get_node_user_data<
-                      UiControllerNodes::ElementEventNodeData>(
+              UiControllerNodes::ElementEventNode *l_Data =
+                  p_Document.graph.find_node_as<
+                      UiControllerNodes::ElementEventNode>(
                       l_Result.value->id);
               if (!l_Data) {
                 return;
@@ -430,8 +424,6 @@ namespace Low {
               l_Data->element_name = p_Element.get_name();
               l_Data->element_local_id = p_Element.get_local_id();
               l_Data->interaction_type = p_InteractionType;
-              p_Document.graph.refresh_node_display_metadata(
-                  l_Result.value->id);
             };
 
         auto l_AddElementAction =
@@ -458,26 +450,14 @@ namespace Low {
             UiControllerNodes::InteractionType::MouseExit);
       }
 
-      Util::Name GameplaySystemContextDefinition::get_name() const
+      Util::Name
+      GameplaySystemEditorContextDefinition::get_name() const
       {
         return N(vs_context_gameplay_system);
       }
 
-      Util::Name
-      GameplaySystemContextDefinition::get_default_compile_profile()
-          const
-      {
-        return N(cp_gameplay_system);
-      }
-
-      void GameplaySystemContextDefinition::register_node_libraries(
-          Graph &p_Graph) const
-      {
-        register_common_node_libraries(p_Graph);
-        GameplaySystemNodes::register_nodes(p_Graph);
-      }
-
-      void GameplaySystemContextDefinition::build_default_template(
+      void
+      GameplaySystemEditorContextDefinition::build_default_template(
           Document &p_Document) const
       {
         GraphBuilder l_Builder(p_Document.graph, &p_Document.schema);
@@ -486,11 +466,51 @@ namespace Low {
       }
 
       void
-      register_builtin_contexts(ContextRegistry &p_ContextRegistry)
+      GameplaySystemEditorContextDefinition::render_variable_header(
+          Graph &p_Graph, Variable &p_Variable,
+          ImDrawList *p_DrawList, const ImVec2 &p_Start,
+          const ImVec2 &p_End) const
       {
-        static DefaultContextDefinition g_DefaultContext;
-        static UiControllerContextDefinition g_UiControllerContext;
-        static GameplaySystemContextDefinition
+        const ImVec2 l_SavedScreenPosition =
+            ImGui::GetCursorScreenPos();
+
+        GameplaySystemVariableUserData *l_UserData =
+            (GameplaySystemVariableUserData*)
+            p_Variable.user_data.get();
+
+        const ImVec2 l_DrawPos(p_End.x - 48.0f, p_Start.y + 8.0f);
+
+        ImGui::SetCursorScreenPos(l_DrawPos);
+
+        const bool l_Clicked =
+            ImGui::InvisibleButton("##vareyebutton", ImVec2(20, 20));
+        const bool l_Hovered = ImGui::IsItemHovered();
+
+        const ImU32 l_Color = l_Hovered
+                                  ? IM_COL32(180, 180, 180, 255)
+                                  : IM_COL32(120, 120, 120, 255);
+
+        const char *l_Icon = l_UserData->gamemode_exposed
+                                 ? ICON_LC_EYE
+                                 : ICON_LC_EYE_CLOSED;
+
+        p_DrawList->AddText(l_DrawPos, l_Color, l_Icon);
+
+        ImGui::SetCursorScreenPos(l_SavedScreenPosition);
+
+        if (l_Clicked) {
+          l_UserData->gamemode_exposed =
+              !l_UserData->gamemode_exposed;
+        }
+      }
+
+      void register_builtin_editor_contexts(
+          EditorContextRegistry &p_ContextRegistry)
+      {
+        static DefaultEditorContextDefinition g_DefaultContext;
+        static UiControllerEditorContextDefinition
+            g_UiControllerContext;
+        static GameplaySystemEditorContextDefinition
             g_GameplaySystemContext;
 
         p_ContextRegistry.register_context(g_DefaultContext);
@@ -498,25 +518,13 @@ namespace Low {
         p_ContextRegistry.register_context(g_GameplaySystemContext);
       }
 
-      ContextRegistry &get_context_registry()
+      EditorContextRegistry &get_editor_context_registry()
       {
         if (!g_ContextRegistry) {
-          g_ContextRegistry = new ContextRegistry();
-          register_builtin_contexts(*g_ContextRegistry);
+          g_ContextRegistry = new EditorContextRegistry();
+          register_builtin_editor_contexts(*g_ContextRegistry);
         }
         return *g_ContextRegistry;
-      }
-
-      CompileProfileRegistry &get_compile_profile_registry()
-      {
-        static CompileProfileRegistry *g_CompileProfileRegistry =
-            nullptr;
-        if (!g_CompileProfileRegistry) {
-          g_CompileProfileRegistry = new CompileProfileRegistry();
-          register_builtin_compile_profiles(
-              *g_CompileProfileRegistry);
-        }
-        return *g_CompileProfileRegistry;
       }
 
       namespace {
@@ -550,8 +558,7 @@ namespace Low {
           }
         }
 
-        static Pin
-        make_variable_pin_metadata(const Variable &p_Variable)
+        static Pin make_variable_pin(const Variable &p_Variable)
         {
           Pin l_Pin;
           l_Pin.display_name = p_Variable.name;
@@ -571,19 +578,19 @@ namespace Low {
         {
           switch (p_Type) {
           case PinType::Bool:
-            return default_value_for_pin(make_bool_pin_metadata(""));
+            return default_value_for_pin(make_bool_pin(""));
           case PinType::Number:
             return default_value_for_pin(
-                make_number_pin_metadata("", p_NumberSubtype));
+                make_number_pin("", p_NumberSubtype));
           case PinType::String:
             return default_value_for_pin(
-                make_string_pin_metadata("", p_StringSubtype));
+                make_string_pin("", p_StringSubtype));
           case PinType::Handle:
             return default_value_for_pin(
-                make_handle_pin_metadata("", p_HandleType));
+                make_handle_pin("", p_HandleType));
           case PinType::Enum:
             return default_value_for_pin(
-                make_enum_pin_metadata("", p_HandleType));
+                make_enum_pin("", p_HandleType));
           case PinType::Vector2: {
             Pin l_Pin;
             l_Pin.type = PinType::Vector2;
@@ -860,9 +867,11 @@ namespace Low {
           bool l_VariableCreate = true;
 
           if (l_Variable.container_type == PinContainerType::List) {
-            l_Variable.list_default_value = make_variable_list_default(
-                l_Variable.type, l_Variable.number_subtype,
-                l_Variable.string_subtype, l_Variable.handle_type);
+            l_Variable.list_default_value =
+                make_variable_list_default(l_Variable.type,
+                                           l_Variable.number_subtype,
+                                           l_Variable.string_subtype,
+                                           l_Variable.handle_type);
             l_VariableCreate = (bool)l_Variable.list_default_value;
           }
 
@@ -938,6 +947,12 @@ namespace Low {
             return;
           }
 
+          const EditorContextDefinition *l_Context =
+              p_Editor.document->context.is_valid()
+                  ? get_editor_context_registry().find_context(
+                        p_Editor.document->context)
+                  : nullptr;
+
           ImGui::TextUnformatted("Variables");
           ImGui::Separator();
           ImGui::Dummy(ImVec2(0.0f, 6.0f));
@@ -966,29 +981,26 @@ namespace Low {
             bool *l_IsOpen = ImGui::GetStateStorage()->GetBoolRef(
                 ImGui::GetID("##varopen"), false);
 
-            const bool l_HdrClicked = ImGui::InvisibleButton(
-                "##varhdr", ImVec2(l_AvailW - l_DeleteW, l_HdrH));
-            const bool l_HdrHovered = ImGui::IsItemHovered();
-            if (l_HdrClicked) {
-              *l_IsOpen = !*l_IsOpen;
-            }
+            const bool l_HdrHovered =
+                ImGui::IsMouseHoveringRect(l_Start, l_End);
 
-            if (ImGui::BeginDragDropSource(
-                    ImGuiDragDropFlags_SourceAllowNullID)) {
-              ImGui::SetDragDropPayload(g_VariableDragDropPayloadType,
-                                        i_Variable.name.c_str(),
-                                        i_Variable.name.size() + 1);
-              ImGui::Text("Variable: %s", i_Variable.name.c_str());
-              ImGui::EndDragDropSource();
-            }
+            const ImVec2 l_StoredPosition =
+                ImGui::GetCursorScreenPos();
 
-            ImGui::SameLine(0.0f, 0.0f);
+            const ImVec2 l_DelCached = ImGui::GetCursorScreenPos();
+
+            ImGui::SetCursorScreenPos(
+                ImVec2(l_End.x - l_DeleteW, l_Start.y));
+
             const bool l_DelClicked = ImGui::InvisibleButton(
                 "##vardel", ImVec2(l_DeleteW, l_HdrH));
             const bool l_DelHovered = ImGui::IsItemHovered();
             if (l_DelClicked) {
               l_DeleteVariable = i_Variable.name;
             }
+
+            ImGui::SetCursorScreenPos(l_DelCached +
+                                      ImVec2(0, l_HdrH));
 
             ImDrawList *l_DrawList = ImGui::GetWindowDrawList();
             const Theme &l_Theme = theme_get_current();
@@ -1053,6 +1065,33 @@ namespace Low {
                              : IM_COL32(180, 80, 80, 140);
             l_DrawList->AddText(ImVec2(l_TrashX, l_MidY),
                                 l_TrashColor, ICON_LC_TRASH_2);
+
+            if (l_Context) {
+              l_Context->render_variable_header(
+                  p_Editor.get_active_graph(), i_Variable, l_DrawList,
+                  l_Start, l_End);
+            }
+
+            {
+              const ImVec2 l_Cached = ImGui::GetCursorScreenPos();
+
+              ImGui::SetCursorScreenPos(l_StoredPosition);
+              const bool l_HdrClicked = ImGui::InvisibleButton(
+                  "##varhdr", ImVec2(l_AvailW - l_DeleteW, l_HdrH));
+              if (l_HdrClicked) {
+                *l_IsOpen = !*l_IsOpen;
+              }
+              // Drag sources attach to the last submitted item.
+              if (ImGui::BeginDragDropSource()) {
+                ImGui::SetDragDropPayload(
+                    g_VariableDragDropPayloadType,
+                    i_Variable.name.c_str(),
+                    i_Variable.name.size() + 1);
+                ImGui::Text("Variable: %s", i_Variable.name.c_str());
+                ImGui::EndDragDropSource();
+              }
+              ImGui::SetCursorScreenPos(l_Cached);
+            }
 
             // Expanded default value editor
             if (*l_IsOpen) {
@@ -1130,40 +1169,18 @@ namespace Low {
 
           auto l_SpawnVariableNode =
               [&p_Editor, l_VariableName,
-               p_CanvasPosition](Util::Name p_NodeClass,
+               p_CanvasPosition](Util::Name p_NodeType,
                                  const Util::String &p_Title) {
-                Low::Editor::Node l_Node;
-                l_Node.id =
-                    p_Editor.document->graph.allocate_node_id();
-                l_Node.position = p_CanvasPosition;
-
-                Node l_Metadata;
-                l_Metadata.node = l_Node.id;
-                l_Metadata.node_class = p_NodeClass;
-                l_Metadata.variable_name = l_VariableName;
-                l_Metadata.title = p_Title;
-                l_Metadata.subtitle = "Variable";
-                l_Metadata.category = "Syntax";
-
-                NodeGraphMutationResult<Low::Editor::Node> l_Result =
-                    p_Editor.document->graph.add_node(
-                        l_Node, l_Metadata,
-                        &p_Editor.document->schema);
-                if (!l_Result.succeeded()) {
-                  return;
-                }
-
-                const NodeClass *l_NodeClass =
-                    p_Editor.document->graph.find_node_class(
-                        p_NodeClass);
-                if (l_NodeClass) {
-                  l_NodeClass->setup_default_pins(
-                      p_Editor.document->graph, l_Node.id,
-                      &p_Editor.document->schema);
-                }
+                p_Editor.document->graph.create_node(
+                    p_NodeType, p_CanvasPosition,
+                    &p_Editor.document->schema,
+                    [&l_VariableName](Node &p_Node) {
+                      static_cast<VariableNode &>(p_Node)
+                          .variable_name = l_VariableName;
+                    });
               };
 
-          if (p_Editor.document->graph.find_node_class(
+          if (p_Editor.document->graph.find_node_type(
                   N(vs_syntax_get_variable))) {
             CanvasDropAction l_Action;
             l_Action.label = Util::String("Get ") + l_VariableName;
@@ -1176,7 +1193,7 @@ namespace Low {
             p_Actions.push_back(l_Action);
           }
 
-          if (p_Editor.document->graph.find_node_class(
+          if (p_Editor.document->graph.find_node_type(
                   N(vs_syntax_set_variable))) {
             CanvasDropAction l_Action;
             l_Action.label = Util::String("Set ") + l_VariableName;
@@ -1204,7 +1221,7 @@ namespace Low {
           const char *l_FuncName = static_cast<const char *>(p_Data);
 
           Graph &l_ActiveGraph = p_Editor.get_active_graph();
-          if (!l_ActiveGraph.find_node_class(N(vs_function_call))) {
+          if (!l_ActiveGraph.find_node_type(N(vs_function_call))) {
             return;
           }
 
@@ -1213,47 +1230,43 @@ namespace Low {
           l_Action.label = Util::String("Call ") + l_FuncNameStr;
           l_Action.execute = [&p_Editor, &l_ActiveGraph,
                               l_FuncNameStr, p_CanvasPosition]() {
-            NodeGraphMutationResult<Low::Editor::Node> l_Result =
+            NodeGraphMutationResult<Node> l_Result =
                 l_ActiveGraph.create_node(N(vs_function_call),
                                           p_CanvasPosition,
                                           &p_Editor.document->schema);
             if (!l_Result.succeeded() || !l_Result.value) {
               return;
             }
-            FunctionNodes::CallFunctionNodeData *l_Data =
-                l_ActiveGraph.get_node_user_data<
-                    FunctionNodes::CallFunctionNodeData>(
-                    l_Result.value->id);
+            FunctionNodes::CallFunctionNode *l_Data =
+                l_ActiveGraph
+                    .find_node_as<FunctionNodes::CallFunctionNode>(
+                        l_Result.value->id);
             if (l_Data) {
               l_Data->function_name = l_FuncNameStr;
-              l_ActiveGraph.refresh_node_display_metadata(
-                  l_Result.value->id);
             }
           };
           p_Actions.push_back(l_Action);
 
-          if (l_ActiveGraph.find_node_class(N(vs_signal_make))) {
+          if (l_ActiveGraph.find_node_type(N(vs_signal_make))) {
             CanvasDropAction l_SignalAction;
             l_SignalAction.label =
                 Util::String("Make Signal from ") + l_FuncNameStr;
             l_SignalAction.execute = [&p_Editor, &l_ActiveGraph,
                                       l_FuncNameStr,
                                       p_CanvasPosition]() {
-              NodeGraphMutationResult<Low::Editor::Node> l_Result =
+              NodeGraphMutationResult<Node> l_Result =
                   l_ActiveGraph.create_node(
                       N(vs_signal_make), p_CanvasPosition,
                       &p_Editor.document->schema);
               if (!l_Result.succeeded() || !l_Result.value) {
                 return;
               }
-              SignalNodes::MakeSignalNodeData *l_Data =
-                  l_ActiveGraph.get_node_user_data<
-                      SignalNodes::MakeSignalNodeData>(
-                      l_Result.value->id);
+              SignalNodes::MakeSignalNode *l_Data =
+                  l_ActiveGraph
+                      .find_node_as<SignalNodes::MakeSignalNode>(
+                          l_Result.value->id);
               if (l_Data) {
                 l_Data->function_name = l_FuncNameStr;
-                l_ActiveGraph.refresh_node_display_metadata(
-                    l_Result.value->id);
               }
             };
             p_Actions.push_back(l_SignalAction);
@@ -1282,9 +1295,9 @@ namespace Low {
                                          p_CanvasPosition, p_Actions);
           }
 
-          const ContextDefinition *l_Context =
+          const EditorContextDefinition *l_Context =
               p_Editor.document->context.is_valid()
-                  ? get_context_registry().find_context(
+                  ? get_editor_context_registry().find_context(
                         p_Editor.document->context)
                   : nullptr;
           if (l_Context) {
@@ -1434,8 +1447,10 @@ namespace Low {
             FunctionGraph l_Func;
             l_Func.id = Util::Name(p_Editor.new_function_name);
             l_Func.name = p_Editor.new_function_name;
-            register_common_node_libraries(l_Func.graph);
-            FunctionNodes::register_nodes(l_Func.graph);
+            const auto *l_Context =
+                get_script_context_registry().find_context(
+                    p_Editor.document->context);
+            apply_function_context(l_Func.graph, l_Context);
 
             p_Editor.document->functions.push_back(l_Func);
             p_Editor.refresh_active_graph_ptrs();
@@ -1630,9 +1645,9 @@ namespace Low {
           l_PayloadTypes.push_back(g_VariableDragDropPayloadType);
           l_PayloadTypes.push_back(g_FunctionDragDropPayloadType);
 
-          const ContextDefinition *l_Context =
+          const EditorContextDefinition *l_Context =
               document->context.is_valid()
-                  ? get_context_registry().find_context(
+                  ? get_editor_context_registry().find_context(
                         document->context)
                   : nullptr;
           if (l_Context) {

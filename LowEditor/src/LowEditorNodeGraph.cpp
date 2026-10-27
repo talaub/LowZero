@@ -342,7 +342,7 @@ namespace Low {
 
       for (auto it = p_Context.graph.nodes.rbegin();
            it != p_Context.graph.nodes.rend(); ++it) {
-        Node &i_Node = *it;
+        Node &i_Node = **it;
         NodeGraphNodeRenderer *l_NodeRenderer =
             p_Renderer.get_node_renderer(p_Context, i_Node);
 
@@ -374,7 +374,7 @@ namespace Low {
       if (l_MouseInCanvas) {
         for (auto it = p_Context.graph.nodes.rbegin();
              it != p_Context.graph.nodes.rend(); ++it) {
-          Node &i_Node = *it;
+          Node &i_Node = **it;
           NodeGraphNodeRenderer *l_NodeRenderer =
               p_Renderer.get_node_renderer(p_Context, i_Node);
 
@@ -434,7 +434,8 @@ namespace Low {
       p_Renderer.render_background(p_Context);
       p_Renderer.render_links(p_Context);
 
-      for (Node &i_Node : p_Context.graph.nodes) {
+      for (auto &l_NodeObject : p_Context.graph.nodes) {
+        Node &i_Node = *l_NodeObject;
         NodeGraphNodeRenderer *l_NodeRenderer =
             p_Renderer.get_node_renderer(p_Context, i_Node);
 
@@ -554,7 +555,8 @@ namespace Low {
             l_State->clear_selection();
           }
 
-          for (Node &i_Node : p_Context.graph.nodes) {
+          for (auto &l_NodeObject : p_Context.graph.nodes) {
+            Node &i_Node = *l_NodeObject;
             NodeGraphNodeRenderer *l_NodeRenderer =
                 p_Renderer.get_node_renderer(p_Context, i_Node);
 
@@ -793,7 +795,8 @@ namespace Low {
         NodeGraphEditorContext &p_Context, float p_PaddingScreen)
     {
       Util::List<NodeId> l_NodeIds;
-      for (const Node &i_Node : p_Context.graph.nodes) {
+      for (auto &l_NodeObject : p_Context.graph.nodes) {
+        const Node &i_Node = *l_NodeObject;
         l_NodeIds.push_back(i_Node.id);
       }
 

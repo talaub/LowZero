@@ -16,9 +16,11 @@ namespace Low {
         Util::String script_asset_sidecar_path;
 
         ScriptAssetBuilder();
-        ScriptAssetBuilder(const ContextDefinition &p_Context);
+        ScriptAssetBuilder(Util::Name p_ContextName);
+        ScriptAssetBuilder(const ScriptContextDefinition &p_Context);
 
-        void apply_context(const ContextDefinition &p_Context);
+        void apply_context(const ScriptContextDefinition &p_Context);
+        void build_default_template();
 
         Document &get_document()
         {
@@ -71,5 +73,5 @@ namespace Low {
             const Util::String &p_VisualScriptPath);
       };
     } // namespace VisualScript
-  } // namespace Editor
+  }   // namespace Editor
 } // namespace Low

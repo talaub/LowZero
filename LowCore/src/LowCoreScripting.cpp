@@ -786,7 +786,7 @@ namespace Low {
 
         p_Module.set_reload_index(p_Module.get_reload_index() + 1);
 
-        LOW_LOG_INFO << "Created AngelScript module '"
+        LOW_LOG_DEBUG << "Created AngelScript module '"
                      << p_Module.get_name() << "'." << LOW_LOG_END;
 
         fill_ticking_functions(p_Module, l_Builder);

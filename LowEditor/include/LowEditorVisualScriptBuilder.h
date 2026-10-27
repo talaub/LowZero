@@ -47,12 +47,11 @@ namespace Low {
             const Util::String &p_Name,
             const Util::String &p_DefaultValue = "",
             StringSubtype p_StringSubtype = StringSubtype::String);
-        bool add_handle_variable(
-            const Util::String &p_Name,
-            Util::TypeIdentifier p_HandleType =
-                Util::TypeIdentifier());
+        bool add_handle_variable(const Util::String &p_Name,
+                                 Util::TypeIdentifier p_HandleType =
+                                     Util::TypeIdentifier());
 
-        NodeHandle add_node(Util::Name p_NodeClass,
+        NodeHandle add_node(Util::Name p_NodeType,
                             const Math::Vector2 &p_Position);
         NodeHandle add_spawn_node(Util::Name p_SpawnEntryId,
                                   const Math::Vector2 &p_Position);
@@ -62,10 +61,10 @@ namespace Low {
                      const Util::String &p_StartPinName,
                      const NodeHandle &p_EndNode,
                      const Util::String &p_EndPinName);
-        bool connect_exec(
-            const NodeHandle &p_StartNode, const NodeHandle &p_EndNode,
-            const Util::String &p_StartPinName = "Exec",
-            const Util::String &p_EndPinName = "Exec");
+        bool connect_exec(const NodeHandle &p_StartNode,
+                          const NodeHandle &p_EndNode,
+                          const Util::String &p_StartPinName = "Exec",
+                          const Util::String &p_EndPinName = "Exec");
 
         bool set_input_default(const NodeHandle &p_Node,
                                const Util::String &p_PinName,
@@ -75,5 +74,5 @@ namespace Low {
         LinkId allocate_link_id();
       };
     } // namespace VisualScript
-  } // namespace Editor
+  }   // namespace Editor
 } // namespace Low
