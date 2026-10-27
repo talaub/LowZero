@@ -5,13 +5,17 @@
 #include "LowCoreScriptModule.h"
 #include "LowCoreScriptClassInstance.h"
 #include "LowCoreScriptAsset.h"
+#include "LowCoreScriptClass.h"
 #include "LowMath.h"
+#include "LowUtilContainers.h"
 #include "LowUtilHandle.h"
 #include "LowUtilVariant.h"
 
 #include <utility>
 
 class asIScriptEngine;
+class CScriptBuilder;
+class asITypeInfo;
 
 namespace Low {
   namespace Core {
@@ -135,6 +139,18 @@ namespace Low {
 
       void LOW_CORE_API build_module(Module p_Module);
       bool LOW_CORE_API fill_member_fields(ClassInstance p_Instance);
+
+      struct ClassInterfaceDefinition
+      {
+        Util::Name interface_name = (u32)0;
+        Util::Function<void(asIScriptEngine *)> register_types =
+            nullptr;
+        Util::Function<void(ScriptClass p_Class, asITypeInfo *p_Type)>
+            class_handler = nullptr;
+      };
+
+      void register_class_interface_definition(
+          const ClassInterfaceDefinition &p_Definition);
 
       struct Function
       {

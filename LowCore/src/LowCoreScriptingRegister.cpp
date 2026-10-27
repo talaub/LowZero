@@ -247,7 +247,8 @@ namespace Low {
         r = p_Engine->RegisterGlobalFunction(
             "u64 find_handle_id_by_unique_id(u64 unique_id)",
             asFUNCTION(find_handle_id_by_unique_id), asCALL_CDECL);
-        LOW_ASSERT(r >= 0, "Failed to register handle reference lookup");
+        LOW_ASSERT(r >= 0,
+                   "Failed to register handle reference lookup");
 
         r = p_Engine->RegisterObjectType(
             "Handle", sizeof(Low::Util::Handle),
@@ -1635,23 +1636,6 @@ namespace Low {
         LOW_ASSERT(r >= 0,
                    "Failed to register UiController::on_click");
       }
-      static void
-      register_gameplay_system_interface(asIScriptEngine *p_Engine)
-      {
-        int r = 0;
-
-        r = p_Engine->RegisterInterface("GameplaySystem");
-        LOW_ASSERT(r >= 0,
-                   "Failed to register interface GameplaySystem");
-
-        r = p_Engine->RegisterInterfaceMethod(
-            "GameplaySystem", "void tick(float p_Delta)");
-        LOW_ASSERT(r >= 0, "Failed to register GameplaySystem::tick");
-        r = p_Engine->RegisterInterfaceMethod("GameplaySystem",
-                                              "void begin_play()");
-        LOW_ASSERT(r >= 0,
-                   "Failed to register GameplaySystem::begin_play");
-      }
       // END REGISTER INTERFACES
 
       static void register_base_types(asIScriptEngine *p_Engine)
@@ -1682,7 +1666,6 @@ namespace Low {
       void register_interfaces(asIScriptEngine *p_Engine)
       {
         register_ui_controller_interface(p_Engine);
-        register_gameplay_system_interface(p_Engine);
       }
     } // namespace Scripting
   } // namespace Core

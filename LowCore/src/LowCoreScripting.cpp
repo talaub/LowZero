@@ -30,6 +30,15 @@ namespace Low {
     void expose_types(asIScriptEngine *p_Engine);
     void register_types(asIScriptEngine *p_Engine);
     namespace Scripting {
+      Util::List<ClassInterfaceDefinition>
+          g_ClassInterfaceDefinitions;
+
+      void register_class_interface_definition(
+          const ClassInterfaceDefinition &p_Definition)
+      {
+        g_ClassInterfaceDefinitions.push_back(p_Definition);
+      }
+
       using FunctionPtr = void (*)(int);
 
       static asIScriptEngine *g_Engine = nullptr;
@@ -486,12 +495,28 @@ namespace Low {
         return true;
       }
 
-      static void handle_class(ScriptClass p_Class)
+      static void manage_properties_for(
+          const ClassInterfaceDefinition &p_Definition,
+          ScriptClass p_Class, asITypeInfo *p_Type,
+          CScriptBuilder &p_Builder)
+      {
+        const asUINT l_PropertyCount = p_Type->GetPropertyCount();
+        for (asUINT i = 0; i < l_PropertyCount; ++i) {
+          auto i_PropMetadata = p_Builder.GetMetadataForTypeProperty(
+              p_Type->GetTypeId(), i);
+          Util::List<Util::String> i_MetadataList;
+          for (const auto &i_Metadata : i_PropMetadata) {
+            i_MetadataList.push_back(i_Metadata.c_str());
+          }
+        }
+      }
+
+      static void handle_class(ScriptClass p_Class,
+                               asITypeInfo *p_Type,
+                               CScriptBuilder &p_Builder)
       {
         asITypeInfo *l_UiControllerInterface =
             g_Engine->GetTypeInfoByName("UiController");
-        asITypeInfo *l_GameplaySystemInterface =
-            g_Engine->GetTypeInfoByName("GameplaySystem");
 
         asITypeInfo *l_Type = (asITypeInfo *)p_Class.as_class();
 
@@ -503,14 +528,19 @@ namespace Low {
                 p_Class.get_name(), p_Class);
           }
         }
-        if (l_Type->Implements(l_GameplaySystemInterface)) {
-          GameplaySystem l_System =
-              GameplaySystem::find_by_scriptclass(p_Class);
-          if (!l_System.is_alive()) {
-            l_System = GameplaySystem::make_script(p_Class.get_name(),
-                                                   p_Class);
+
+        for (ClassInterfaceDefinition &i_Definition :
+             g_ClassInterfaceDefinitions) {
+          asITypeInfo *i_Interface = g_Engine->GetTypeInfoByName(
+              i_Definition.interface_name.c_str());
+
+          if (!l_Type->Implements(i_Interface)) {
+            continue;
           }
-          l_System.update_instances();
+
+          if (i_Definition.class_handler) {
+            i_Definition.class_handler(p_Class, l_Type);
+          }
         }
       }
 
@@ -632,9 +662,17 @@ namespace Low {
                 (u32)property_type_from_declaration(
                     i_Type->GetPropertyDeclaration(j));
 
+            ClassMemberField i_Field{j, LOW_NAME(i_PropNameString),
+                                     i_PropertyType};
+
+            auto i_Metadata = p_Builder.GetMetadataForTypeProperty(
+                i_Type->GetTypeId(), j);
+            for (const auto &i_MetadataEntry : i_Metadata) {
+              i_Field.annotations.push_back(i_MetadataEntry.c_str());
+            }
+
             i_Class.get_members()[LOW_NAME(i_PropNameString)] =
-                ClassMemberField{j, LOW_NAME(i_PropNameString),
-                                 i_PropertyType};
+                i_Field;
           }
 
           for (asUINT j = 0; j < i_Type->GetMethodCount(); ++j) {
@@ -668,7 +706,7 @@ namespace Low {
           }
 
           collect_member_field_metadata(i_Class, i_Type, p_Builder);
-          handle_class(i_Class);
+          handle_class(i_Class, i_Type, p_Builder);
         }
 
         // Remove 'dead' classes
@@ -750,7 +788,7 @@ namespace Low {
           const bool l_Success = load_script_to_file(
               i_Script.get_full_path().c_str(), i_SourceCode);
 
-          if (!l_Success){
+          if (!l_Success) {
             LOW_LOG_WARN << "Could not load script source file '"
                          << i_Script.get_full_path()
                          << ". Most likely the file was empty."
@@ -787,7 +825,7 @@ namespace Low {
         p_Module.set_reload_index(p_Module.get_reload_index() + 1);
 
         LOW_LOG_DEBUG << "Created AngelScript module '"
-                     << p_Module.get_name() << "'." << LOW_LOG_END;
+                      << p_Module.get_name() << "'." << LOW_LOG_END;
 
         fill_ticking_functions(p_Module, l_Builder);
         fill_classes(p_Module, l_Builder);
@@ -869,6 +907,12 @@ namespace Low {
         register_lowcore_scripting();
         for (const auto &i_Callback : g_ScriptingCallbacks) {
           i_Callback();
+        }
+        for (const ClassInterfaceDefinition &i_Definition :
+             g_ClassInterfaceDefinitions) {
+          if (i_Definition.register_types) {
+            i_Definition.register_types(g_Engine);
+          }
         }
         expose_types(g_Engine);
         expose_late(g_Engine);

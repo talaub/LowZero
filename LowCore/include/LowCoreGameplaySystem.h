@@ -51,8 +51,7 @@ namespace Low {
       public:
         GameplaySystemValue value;
         GameplaySystemType type;
-        Low::Util::Map<Util::Name, Util::VariantType>
-            exposed_variables;
+        Low::Util::Map<Util::Name, u32> exposed_variables;
         Low::Util::Name name;
 
         static size_t get_size()
@@ -173,8 +172,7 @@ namespace Low {
 
       GameplaySystemType get_type() const;
 
-      Low::Util::Map<Util::Name, Util::VariantType> &
-      get_exposed_variables() const;
+      Low::Util::Map<Util::Name, u32> &get_exposed_variables() const;
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

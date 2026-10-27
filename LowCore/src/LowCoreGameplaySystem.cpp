@@ -56,8 +56,8 @@ namespace Low {
           GameplaySystemType();
       new (ACCESSOR_TYPE_SOA_PTR(
           l_Handle, GameplaySystem, exposed_variables,
-          SINGLE_ARG(Low::Util::Map<Util::Name, Util::VariantType>)))
-          Low::Util::Map<Util::Name, Util::VariantType>();
+          SINGLE_ARG(Low::Util::Map<Util::Name, u32>)))
+          Low::Util::Map<Util::Name, u32>();
       ACCESSOR_TYPE_SOA(l_Handle, GameplaySystem, name,
                         Low::Util::Name) = Low::Util::Name(0u);
 
@@ -229,15 +229,14 @@ namespace Low {
           l_Handle.get_exposed_variables();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, GameplaySystem, exposed_variables,
-              SINGLE_ARG(
-                  Low::Util::Map<Util::Name, Util::VariantType>));
+              SINGLE_ARG(Low::Util::Map<Util::Name, u32>));
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GameplaySystem l_Handle = p_Handle.get_id();
-          *((Low::Util::Map<Util::Name, Util::VariantType> *)p_Data) =
+          *((Low::Util::Map<Util::Name, u32> *)p_Data) =
               l_Handle.get_exposed_variables();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -622,7 +621,7 @@ namespace Low {
       broadcast_observable(N(type));
     }
 
-    Low::Util::Map<Util::Name, Util::VariantType> &
+    Low::Util::Map<Util::Name, u32> &
     GameplaySystem::get_exposed_variables() const
     {
       _LOW_ASSERT(is_alive());
@@ -630,9 +629,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_exposed_variables
       // LOW_CODEGEN::END::CUSTOM:GETTER_exposed_variables
 
-      return TYPE_SOA(
-          GameplaySystem, exposed_variables,
-          SINGLE_ARG(Low::Util::Map<Util::Name, Util::VariantType>));
+      return TYPE_SOA(GameplaySystem, exposed_variables,
+                      SINGLE_ARG(Low::Util::Map<Util::Name, u32>));
     }
 
     Low::Util::Name GameplaySystem::get_name() const

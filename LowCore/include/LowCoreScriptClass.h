@@ -22,6 +22,17 @@ namespace Low {
         int index;
         Util::Name name;
         u32 property_type;
+        Util::List<Util::String> annotations;
+
+        bool has_annotation(const Util::String &p_Annotation) const
+        {
+          for (const Util::String &i_Annotation : annotations) {
+            if (p_Annotation == i_Annotation) {
+              return true;
+            }
+          }
+          return false;
+        }
       };
       struct InputParameter
       {

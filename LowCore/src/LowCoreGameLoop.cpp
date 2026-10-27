@@ -16,6 +16,7 @@
 #include "LowCoreGameplaySystemInstance.h"
 #include "LowCoreNavigation.h"
 #include "LowCoreEventManager.h"
+#include "LowCoreGameplaySystemScripting.h"
 
 #include "LowCoreInput.h"
 #include "LowCoreScriptAsset.h"
@@ -126,6 +127,8 @@ namespace Low {
         }
 
         if (l_FirstRun) {
+          GameplaySystemScripting::initialize();
+
           ScriptAsset::initialize();
           Scripting::initialize_as();
 

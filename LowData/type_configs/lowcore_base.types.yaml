@@ -214,7 +214,7 @@ types:
         private_setter: true
         no_ref: true
       exposed_variables:
-        type: Low::Util::Map<Util::Name, Util::VariantType>
+        type: Low::Util::Map<Util::Name, u32>
         no_setter: true
     functions:
       make_code:
