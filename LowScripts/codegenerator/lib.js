@@ -1333,6 +1333,12 @@ function get_full_type_description(p_Desc, p_ContextNamespace, db) {
   if (l_IsHandle) {
     l_Desc.full_string = db.types[l_Desc.handle_id].full_string;
     l_Desc.scripting = db.types[l_Desc.handle_id].full_scripting_string;
+  } else if (!l_Desc.container && l_Desc.reference_type === "enum") {
+    const l_Enum = db.enums[l_Desc.reference_id];
+    l_Desc.full_string = l_Enum.full_string;
+    l_Desc.scripting = l_Enum.scripting_namespace_string
+      ? `${l_Enum.scripting_namespace_string}::${l_Enum.scripting_name}`
+      : l_Enum.scripting_name;
   } else {
     l_Desc.full_string = l_Desc.parsed.string;
     l_Desc.scripting = get_scripting_type(l_Name);

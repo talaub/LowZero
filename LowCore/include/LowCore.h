@@ -16,7 +16,6 @@ namespace Low {
     LOW_CORE_API void cleanup();
 
     LOW_CORE_API Util::EngineState get_engine_state();
-    LOW_CORE_API GameMode get_current_gamemode();
     LOW_CORE_API
     void begin_playmode();
     LOW_CORE_API void exit_playmode();

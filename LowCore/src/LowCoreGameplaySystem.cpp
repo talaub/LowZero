@@ -77,6 +77,9 @@ namespace Low {
 
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        if (is_script()) {
+          get_value().script.sclass.destroy();
+        }
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 
@@ -354,15 +357,6 @@ namespace Low {
         l_FunctionInfo.handleType = 0;
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: is_script
-      }
-      {
-        // Function: update_instances
-        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
-        l_FunctionInfo.name = N(update_instances);
-        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
-        l_FunctionInfo.handleType = 0;
-        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
-        // End function: update_instances
       }
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
@@ -725,39 +719,6 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_is_script
       return get_type() == GameplaySystemType::Script;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_is_script
-    }
-
-    void GameplaySystem::update_instances()
-    {
-      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_instances
-      if (!is_script()) {
-        return;
-      }
-
-      Low::Util::List<GameplaySystemInstance> l_Instances =
-          GameplaySystemInstance::ms_LivingInstances;
-
-      for (GameplaySystemInstance i_Instance : l_Instances) {
-        if (!i_Instance.is_alive() ||
-            i_Instance.get_gameplay_system() != get_id()) {
-          continue;
-        }
-
-        Scripting::ClassInstance l_OldClassInstance =
-            i_Instance.get_value().script.instance;
-        if (l_OldClassInstance.is_alive()) {
-          l_OldClassInstance.destroy();
-        }
-
-        i_Instance.get_value().script.instance =
-            get_value().script.sclass.spawn_instance(
-                i_Instance.get_name());
-
-        if (get_engine_state() == Util::EngineState::PLAYING) {
-          i_Instance.begin_play();
-        }
-      }
-      // LOW_CODEGEN::END::CUSTOM:FUNCTION_update_instances
     }
 
     uint32_t GameplaySystem::create_instance(u32 &p_PageIndex,

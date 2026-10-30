@@ -1,4 +1,5 @@
 #include "LowCore.h"
+#include "LowCoreRuntime.h"
 
 void register_lowcore();
 
@@ -22,6 +23,7 @@ void register_lowcore();
 #include "LowCorePrefabInstance.h"
 #include "LowCoreNavmeshAgent.h"
 #include "LowCoreGameMode.h"
+#include "LowCoreGameModeInstance.h"
 #include "LowCoreCamera.h"
 #include "LowCoreInput.h"
 #include "LowCoreAnimator.h"
@@ -90,10 +92,11 @@ void *operator new[](size_t size, size_t alignment,
 namespace Low {
   namespace Core {
     Util::EngineState g_CurrentEngineState;
-    Util::Stack<GameMode> g_GameModes;
 
     FileSystemWatchers g_FilesystemWatchers;
     Util::Map<uint16_t, Util::FileSystem::WatchHandle> g_WatchHandles;
+
+    void clear_gamemodes();
 
     static void initialize_filesystem_watchers()
     {
@@ -167,6 +170,7 @@ namespace Low {
       Scene::initialize();
       Entity::initialize();
       GameMode::initialize();
+      GameModeInstance::initialize();
       Tween::initialize();
       GameplaySystem::initialize();
       GameplaySystemInstance::initialize();
@@ -358,6 +362,7 @@ namespace Low {
       GameplaySystemInstance::cleanup();
       GameplaySystem::cleanup();
       Tween::cleanup();
+      GameModeInstance::cleanup();
       GameMode::cleanup();
       Entity::cleanup();
       Region::cleanup();
@@ -450,8 +455,6 @@ namespace Low {
     {
       g_StoredData.scene = Scene::get_loaded_scene();
 
-      g_GameModes.push(GameMode::find_by_name(N(DefaultGamemode)));
-
       g_StoredData.regions.clear();
       g_StoredData.regions.resize(
           g_StoredData.scene.get_regions().size());
@@ -467,23 +470,17 @@ namespace Low {
 
       g_CurrentEngineState = Util::EngineState::PLAYING;
 
+      // TEMP
+      push_gamemode(GameMode::find_by_name(N(Exploration)));
+
       EventManager::dispatch_event(N(LOW_PLAYMODE_BEGIN));
-
-      for (u32 i = 0; i < GameplaySystem::living_count(); ++i) {
-        GameplaySystem i_System =
-            GameplaySystem::living_instances()[i];
-
-        i_System.spawn_instance().begin_play();
-      }
     }
 
     void exit_playmode()
     {
       g_CurrentEngineState = Util::EngineState::EDITING;
 
-      while (!g_GameModes.empty()) {
-        g_GameModes.pop();
-      }
+      clear_gamemodes();
 
       Renderer::get_editor_renderview().set_camera_position(
           g_StoredData.cameraPosition);
@@ -519,18 +516,6 @@ namespace Low {
       }
 
       return 0;
-    }
-
-    GameMode get_current_gamemode()
-    {
-      LOW_ASSERT(!g_GameModes.empty(),
-                 "Cannot fetch current gamemode. No gamemodes have "
-                 "been pushed");
-      if (g_GameModes.empty()) {
-        return 0;
-      }
-
-      return g_GameModes.top();
     }
 
     float get_delta_time()

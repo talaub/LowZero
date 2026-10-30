@@ -212,9 +212,13 @@ namespace Low {
         }
 
       } else {
-        l_Open = Gui::CollapsibleHeader(t, l_Icon.c_str(),
-                                        theme_get_current().debug,
-                                        m_DefaultOpen);
+        if (m_Collapsible) {
+          l_Open = Gui::CollapsibleHeader(t, l_Icon.c_str(),
+                                          theme_get_current().debug,
+                                          m_DefaultOpen);
+        } else {
+          l_Open = true;
+        }
       }
       if (l_Open) {
 

@@ -1431,13 +1431,25 @@ namespace Low {
           Util::String l_FunctionSignature;
 
           if (l_NodeMetadata->get_name() ==
-              N(vs_gameplay_system_begin_play)) {
-            l_FunctionName = "begin_play";
-            l_FunctionSignature = "void begin_play()";
+              N(vs_gameplay_system_mount)) {
+            l_FunctionName = "mount";
+            l_FunctionSignature = "void mount()";
           } else if (l_NodeMetadata->get_name() ==
                      N(vs_gameplay_system_tick)) {
             l_FunctionName = "tick";
             l_FunctionSignature = "void tick(float p_Delta)";
+          } else if (l_NodeMetadata->get_name() ==
+                     N(vs_gameplay_system_unmount)) {
+            l_FunctionName = "unmount";
+            l_FunctionSignature = "void unmount()";
+          } else if (l_NodeMetadata->get_name() ==
+                     N(vs_gameplay_system_resume)) {
+            l_FunctionName = "resume";
+            l_FunctionSignature = "void resume()";
+          } else if (l_NodeMetadata->get_name() ==
+                     N(vs_gameplay_system_suspend)) {
+            l_FunctionName = "suspend";
+            l_FunctionSignature = "void suspend()";
           } else {
             continue;
           }
@@ -1463,6 +1475,11 @@ namespace Low {
       {
         Graph &p_Graph = p_Document.graph;
 
+        p_Context.main_code.append("[DisplayName=\"")
+            .append(Util::PathHelper::get_base_name_no_ext(
+                p_Document.path))
+            .append("\"]")
+            .endl();
         begin_script_class(get_class_name(p_Document),
                            "VisualScriptGameplaySystem",
                            "GameplaySystem", p_Context);
@@ -1471,7 +1488,10 @@ namespace Low {
         Util::List<CompileEntryPoint> l_EntryPoints;
         collect_entry_points(p_Graph, l_EntryPoints);
 
-        bool l_HasBeginPlay = false;
+        bool l_HasMount = false;
+        bool l_HasUnmount = false;
+        bool l_HasResume = false;
+        bool l_HasSuspend = false;
         bool l_HasTick = false;
 
         for (const CompileEntryPoint &i_Entry : l_EntryPoints) {
@@ -1479,17 +1499,38 @@ namespace Low {
             continue;
           }
 
-          if (i_Entry.function_name == "begin_play") {
-            l_HasBeginPlay = true;
+          if (i_Entry.function_name == "mount") {
+            l_HasMount = true;
           } else if (i_Entry.function_name == "tick") {
             l_HasTick = true;
+          } else if (i_Entry.function_name == "unmount") {
+            l_HasUnmount = true;
+          } else if (i_Entry.function_name == "resume") {
+            l_HasResume = true;
+          } else if (i_Entry.function_name == "suspend") {
+            l_HasSuspend = true;
           }
 
           emit_compiled_entry_point(p_Graph, i_Entry, p_Context);
         }
 
-        if (!l_HasBeginPlay) {
-          p_Context.begin_block("void begin_play()");
+        if (!l_HasMount) {
+          p_Context.begin_block("void mount()");
+          p_Context.end_block();
+          p_Context.main_code.append("\n");
+        }
+        if (!l_HasUnmount) {
+          p_Context.begin_block("void unmount()");
+          p_Context.end_block();
+          p_Context.main_code.append("\n");
+        }
+        if (!l_HasResume) {
+          p_Context.begin_block("void resume()");
+          p_Context.end_block();
+          p_Context.main_code.append("\n");
+        }
+        if (!l_HasSuspend) {
+          p_Context.begin_block("void suspend()");
           p_Context.end_block();
           p_Context.main_code.append("\n");
         }

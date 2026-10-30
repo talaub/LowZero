@@ -1381,6 +1381,9 @@ function generate_source(p_Type) {
         t += line(`*((void**)p_Data) = &l_Handle.${i_Prop.getter_name}();`);
       } else if (i_Prop.type_object.container === "enum_mask") {
         t += line(`*((void**)p_Data) = &l_Handle.${i_Prop.getter_name}();`);
+      } else if (i_Prop.plain_type.endsWith("Util::String")) {
+        t += line(`Low::Util::String& l_Data = *(Low::Util::String*)p_Data;`);
+        t += line(`l_Data = l_Handle.${i_Prop.getter_name}();`);
       } else {
         t += line(
           `*((${i_Prop.plain_type}*) p_Data) = l_Handle.${i_Prop.getter_name}();`,

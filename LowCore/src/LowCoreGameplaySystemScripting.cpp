@@ -2,6 +2,7 @@
 #include "LowCoreScriptClass.h"
 #include "LowCoreScripting.h"
 #include "LowUtilLogger.h"
+#include "LowUtilYaml.h"
 #include "angelscript.h"
 
 #include "LowUtilAssert.h"
@@ -22,9 +23,24 @@ namespace Low {
             "GameplaySystem", "void tick(float p_Delta)");
         LOW_ASSERT(r >= 0, "Failed to register GameplaySystem::tick");
         r = p_Engine->RegisterInterfaceMethod("GameplaySystem",
-                                              "void begin_play()");
+                                              "void mount()");
         LOW_ASSERT(r >= 0,
-                   "Failed to register GameplaySystem::begin_play");
+                   "Failed to register GameplaySystem::mount");
+
+        r = p_Engine->RegisterInterfaceMethod("GameplaySystem",
+                                              "void unmount()");
+        LOW_ASSERT(r >= 0,
+                   "Failed to register GameplaySystem::unmount");
+
+        r = p_Engine->RegisterInterfaceMethod("GameplaySystem",
+                                              "void resume()");
+        LOW_ASSERT(r >= 0,
+                   "Failed to register GameplaySystem::resume");
+
+        r = p_Engine->RegisterInterfaceMethod("GameplaySystem",
+                                              "void suspend()");
+        LOW_ASSERT(r >= 0,
+                   "Failed to register GameplaySystem::suspend");
       }
 
       void handle_class(ScriptClass p_Class, asITypeInfo *p_Type)
@@ -35,8 +51,15 @@ namespace Low {
           l_System = GameplaySystem::make_script(p_Class.get_name(),
                                                  p_Class);
         }
-        l_System.update_instances();
-
+        for (const Util::Serial::Node &i_Annotation :
+             p_Class.get_annotations()) {
+          if (i_Annotation.is_dict()) {
+            if (i_Annotation["DisplayName"]) {
+              l_System.set_name(
+                  i_Annotation["DisplayName"].as<Util::Name>());
+            }
+          }
+        }
         l_System.get_exposed_variables().clear();
 
         for (const auto &[i_Name, i_Field] : p_Class.get_members()) {

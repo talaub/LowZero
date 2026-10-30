@@ -57,6 +57,8 @@ namespace Low {
           l_Handle, GameMode, systems,
           Low::Util::List<GameModeSystemStorage>))
           Low::Util::List<GameModeSystemStorage>();
+      ACCESSOR_TYPE_SOA(l_Handle, GameMode, blocks_underlying, bool) =
+          false;
       ACCESSOR_TYPE_SOA(l_Handle, GameMode, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -74,7 +76,7 @@ namespace Low {
                                     l_Handle.get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
-
+      l_Handle.blocks_underlying(true);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -190,6 +192,39 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: systems
+      }
+      {
+        // Property: blocks_underlying
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(blocks_underlying);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(GameMode::Data, blocks_underlying);
+        l_PropertyInfo.size =
+            sizeof(GameMode::Data::blocks_underlying);
+        l_PropertyInfo.containerType =
+            Low::Util::RTTI::ContainerType::NONE;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          GameMode l_Handle = p_Handle.get_id();
+          l_Handle.blocks_underlying();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GameMode,
+                                            blocks_underlying, bool);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          GameMode l_Handle = p_Handle.get_id();
+          l_Handle.blocks_underlying(*(bool *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          GameMode l_Handle = p_Handle.get_id();
+          *((bool *)p_Data) = l_Handle.blocks_underlying();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: blocks_underlying
       }
       {
         // Property: unique_id
@@ -363,6 +398,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       GameMode l_Handle = make(p_Name);
+      l_Handle.blocks_underlying(blocks_underlying());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
 
@@ -388,6 +424,7 @@ namespace Low {
     {
       _LOW_ASSERT(is_alive());
 
+      p_Node["blocks_underlying"] = blocks_underlying();
       p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
       p_Node["name"] = get_name().c_str();
 
@@ -433,6 +470,10 @@ namespace Low {
       GameMode l_Handle =
           GameMode::make(N(GameMode), l_HandleUniqueId);
 
+      if (p_Node["blocks_underlying"]) {
+        l_Handle.blocks_underlying(
+            p_Node["blocks_underlying"].as<bool>());
+      }
       if (p_Node["unique_id"]) {
         l_Handle.set_unique_id(
             p_Node["unique_id"].as<Low::Util::UniqueId>());
@@ -469,6 +510,7 @@ namespace Low {
                   Util::Serial::deserialize_variant(value);
             }
           }
+          l_Handle.get_systems().push_back(i_Storage);
         }
       }
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
@@ -534,6 +576,36 @@ namespace Low {
 
       return TYPE_SOA(GameMode, systems,
                       Low::Util::List<GameModeSystemStorage>);
+    }
+
+    bool GameMode::blocks_underlying() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_blocks_underlying
+      // LOW_CODEGEN::END::CUSTOM:GETTER_blocks_underlying
+
+      return TYPE_SOA(GameMode, blocks_underlying, bool);
+    }
+    void GameMode::toggle_blocks_underlying()
+    {
+      blocks_underlying(!blocks_underlying());
+    }
+
+    void GameMode::blocks_underlying(bool p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_blocks_underlying
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_blocks_underlying
+
+      // Set new value
+      TYPE_SOA(GameMode, blocks_underlying, bool) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_blocks_underlying
+      // LOW_CODEGEN::END::CUSTOM:SETTER_blocks_underlying
+
+      broadcast_observable(N(blocks_underlying));
     }
 
     Low::Util::UniqueId GameMode::get_unique_id() const

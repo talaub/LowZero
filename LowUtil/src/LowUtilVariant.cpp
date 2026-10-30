@@ -9,6 +9,81 @@
 
 namespace Low {
   namespace Util {
+    std::size_t variant_type_size(VariantType::Enum p_Type)
+    {
+      switch (p_Type) {
+      case VariantType::Bool:
+        return sizeof(bool);
+      case VariantType::Int32:
+        return sizeof(int32_t);
+      case VariantType::UInt32:
+        return sizeof(uint32_t);
+      case VariantType::UInt64:
+        return sizeof(uint64_t);
+      case VariantType::Float:
+        return sizeof(float);
+      case VariantType::UVector2:
+        return sizeof(Math::UVector2);
+      case VariantType::Vector2:
+        return sizeof(Math::Vector2);
+      case VariantType::Vector3:
+        return sizeof(Math::Vector3);
+      case VariantType::Vector4:
+        return sizeof(Math::Vector4);
+      case VariantType::Quaternion:
+        return sizeof(Math::Quaternion);
+      case VariantType::Name:
+        return sizeof(Name);
+      case VariantType::Handle:
+        return sizeof(Handle);
+      case VariantType::String:
+        return sizeof(String);
+      default:
+        LOW_ASSERT(false, "Unknown variant type for size query");
+        return 0;
+      }
+    }
+
+    VariantType::Enum property_type_to_variant_type(
+        RTTI::PropertyType::Enum p_PropertyType)
+    {
+      switch (p_PropertyType) {
+      case RTTI::PropertyType::BOOL:
+        return VariantType::Bool;
+      case RTTI::PropertyType::INT:
+      case RTTI::PropertyType::ENUM:
+        return VariantType::Int32;
+      case RTTI::PropertyType::UINT8:
+      case RTTI::PropertyType::UINT16:
+      case RTTI::PropertyType::UINT32:
+        return VariantType::UInt32;
+      case RTTI::PropertyType::UINT64:
+        return VariantType::UInt64;
+      case RTTI::PropertyType::FLOAT:
+        return VariantType::Float;
+      case RTTI::PropertyType::VECTOR2:
+        return VariantType::Vector2;
+      case RTTI::PropertyType::COLORRGB:
+      case RTTI::PropertyType::VECTOR3:
+        return VariantType::Vector3;
+      case RTTI::PropertyType::COLOR:
+      case RTTI::PropertyType::VECTOR4:
+        return VariantType::Vector4;
+      case RTTI::PropertyType::QUATERNION:
+        return VariantType::Quaternion;
+      case RTTI::PropertyType::NAME:
+        return VariantType::Name;
+      case RTTI::PropertyType::HANDLE:
+        return VariantType::Handle;
+      case RTTI::PropertyType::STRING:
+        return VariantType::String;
+      default:
+        LOW_ASSERT(false,
+                   "Property type has no matching variant type");
+        return VariantType::Int32;
+      }
+    }
+
     namespace {
       static String *variant_string_data(List<u8> &p_Data)
       {

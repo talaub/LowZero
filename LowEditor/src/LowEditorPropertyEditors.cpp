@@ -63,6 +63,7 @@ namespace Low {
 
       Util::Array<char, VALUE_SCRATCH_BUFFER_SIZE>
           g_ValueScratchBuffer;
+      Util::String g_StringScratchBuffer;
 
       bool render_single_editor(const u32 p_SingleType, void *p_Value,
                                 const Util::TypeIdentifier p_Type);
@@ -585,6 +586,11 @@ namespace Low {
         ImVec2 l_Pos = ImGui::GetCursorScreenPos();
         float l_ButtonWidth = 34.0f;
         float l_FieldWidth = ImGui::GetContentRegionAvail().x;
+        // Auto-sized popups can have no available width while ImGui
+        // measures their contents on the opening frame.
+        if (l_FieldWidth <= 0.0f) {
+          l_FieldWidth = std::max(1.0f, ImGui::CalcItemWidth());
+        }
 
         bool l_Changed = false;
         Util::Handle l_CurrentHandle = *p_HandleId;
@@ -1097,6 +1103,11 @@ namespace Low {
 
         ImVec2 l_Pos = ImGui::GetCursorScreenPos();
         float l_FullWidth = ImGui::GetContentRegionAvail().x;
+        // InvisibleButton requires a non-zero size, including while
+        // an auto-sized popup is measuring its contents.
+        if (l_FullWidth <= 0.0f) {
+          l_FullWidth = std::max(1.0f, ImGui::CalcItemWidth());
+        }
         const float l_ButtonWidth = 34.0f;
         const float l_FieldHeight = ImGui::GetFrameHeight() + 4.0f;
 
@@ -2039,8 +2050,7 @@ namespace Low {
               render_uint32_editor(l_Label, l_Val, l_RenderLabel);
         } else if (p_SingleType == Util::RTTI::PropertyType::INT) {
           int &l_Val = *(int *)p_Value;
-          l_Result =
-              render_int_editor(l_Label, l_Val, l_RenderLabel);
+          l_Result = render_int_editor(l_Label, l_Val, l_RenderLabel);
         } else if (p_SingleType == Util::RTTI::PropertyType::SHAPE) {
           l_Result = render_shape_editor(
               l_Label, (Math::Shape *)p_Value, l_RenderLabel);
@@ -2130,6 +2140,18 @@ namespace Low {
 
                 return render_detail_editor(p_PropertyInfoBase,
                                             i_Value);
+              } else if (p_PropertyInfoBase.type ==
+                         Util::RTTI::PropertyType::STRING) {
+                p_PropertyInfoBase.get(p_Handle,
+                                       g_StringScratchBuffer.data());
+                if (render_detail_editor(
+                        p_PropertyInfoBase,
+                        g_StringScratchBuffer.data())) {
+                  p_PropertyInfoBase.set(
+                      p_Handle, g_StringScratchBuffer.data());
+                  return true;
+                }
+                return false;
               } else {
                 p_PropertyInfoBase.get(p_Handle,
                                        g_ValueScratchBuffer.data());

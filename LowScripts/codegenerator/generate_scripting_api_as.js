@@ -285,12 +285,17 @@ function generate_type_api(p_Type, db) {
     if (i_Prop.type.container) {
       continue;
     }
+    // asMETHODPR is emitted at global scope, so enum types need their C++ namespace.
+    const l_CppType =
+      i_Prop.type.reference_type === "enum"
+        ? db.enums[i_Prop.type.reference_id].full_string
+        : i_Prop.type.string;
     t += empty();
 
     if (i_Prop.getter_name == i_Prop.setter_name) {
       if (i_Prop.getter_exposed_scripting) {
         t += line(
-          `r = p_Engine->RegisterObjectMethod("${p_Type.scripting_name}", "${i_Prop.type.scripting} get_${i_PropName}() const property", asMETHODPR(${l_TypeString}, ${i_Prop.getter_name}, () const, ${i_Prop.type.string}), asCALL_THISCALL);`,
+          `r = p_Engine->RegisterObjectMethod("${p_Type.scripting_name}", "${i_Prop.type.scripting} get_${i_PropName}() const property", asMETHODPR(${l_TypeString}, ${i_Prop.getter_name}, () const, ${l_CppType}), asCALL_THISCALL);`,
         );
         t += line(
           `LOW_ASSERT(r >= 0, "Failed to expose property getter for ${i_PropName} of ${l_TypeString}.");`,
@@ -299,7 +304,7 @@ function generate_type_api(p_Type, db) {
 
       if (i_Prop.setter_exposed_scripting) {
         t += line(
-          `r = p_Engine->RegisterObjectMethod("${p_Type.scripting_name}", "void set_${i_PropName}(${i_Prop.type.scripting}) property", asMETHODPR(${l_TypeString}, ${i_Prop.setter_name}, (${i_Prop.type.string}), void), asCALL_THISCALL);`,
+          `r = p_Engine->RegisterObjectMethod("${p_Type.scripting_name}", "void set_${i_PropName}(${i_Prop.type.scripting}) property", asMETHODPR(${l_TypeString}, ${i_Prop.setter_name}, (${l_CppType}), void), asCALL_THISCALL);`,
         );
         t += line(
           `LOW_ASSERT(r >= 0, "Failed to expose property setter for ${i_PropName} of ${l_TypeString}.");`,
@@ -340,7 +345,7 @@ function generate_type_api(p_Type, db) {
           );
         } else {
           t += line(
-            `r = p_Engine->RegisterObjectMethod("${p_Type.scripting_name}", "void set_${i_PropName}(${i_Prop.type.scripting}) property", asMETHODPR(${l_TypeString}, ${i_Prop.setter_name}, (${i_Prop.type.string}), void), asCALL_THISCALL);`,
+            `r = p_Engine->RegisterObjectMethod("${p_Type.scripting_name}", "void set_${i_PropName}(${i_Prop.type.scripting}) property", asMETHODPR(${l_TypeString}, ${i_Prop.setter_name}, (${l_CppType}), void), asCALL_THISCALL);`,
           );
         }
         t += line(

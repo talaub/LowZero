@@ -8,6 +8,7 @@
 #include "LowUtilContainers.h"
 #include "LowUtilSerialization.h"
 
+#include <cstddef>
 #include <type_traits>
 
 namespace Low {
@@ -30,6 +31,14 @@ namespace Low {
         String
       };
     }
+
+    // Returns sizeof the corresponding C++ type. String excludes heap data.
+    LOW_EXPORT std::size_t variant_type_size(VariantType::Enum p_Type);
+
+    // Asserts for unsupported types. UINT8/UINT16 widen to UInt32;
+    // ENUM uses Int32.
+    LOW_EXPORT VariantType::Enum property_type_to_variant_type(
+        RTTI::PropertyType::Enum p_PropertyType);
 
     struct LOW_EXPORT Variant
     {

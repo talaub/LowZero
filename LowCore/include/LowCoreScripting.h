@@ -91,6 +91,7 @@ namespace Low {
       struct VisualScriptFunctionInfo
       {
         bool exposed = false;
+        Util::String title = "";
         Util::Name category;
         Math::ColorRGB color;
         Util::Name icon_name;
@@ -99,6 +100,7 @@ namespace Low {
       struct VisualScriptTypeInfo
       {
         bool exposed = false;
+        Util::String title = "";
         Util::Name category;
         Math::ColorRGB color;
         Util::Name icon_name;

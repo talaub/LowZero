@@ -1178,5 +1178,5 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Scripting
-  }   // namespace Core
+  } // namespace Core
 } // namespace Low

@@ -1,5 +1,7 @@
 #include "LowEditorBase.h"
 
+#include "LowUtilContainers.h"
+#include "LowUtilVariant.h"
 #include "imgui.h"
 
 #include "LowEditorGui.h"
@@ -121,6 +123,15 @@ namespace Low {
           return Vector3Edit(p_Label, &p_Variant.m_Vector3);
         case (Util::VariantType::Name):
           return NameEdit(p_Label, (Util::Name *)&p_Variant.m_Uint32);
+        case (Util::VariantType::String): {
+          Util::String l_Str = p_Variant.as_string();
+
+          if (StringEdit(p_Label, &l_Str)) {
+            p_Variant = l_Str;
+            return true;
+          }
+          return false;
+        }
         }
         return false;
       }

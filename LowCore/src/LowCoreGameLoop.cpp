@@ -56,6 +56,8 @@
 
 namespace Low {
   namespace Core {
+    void tick_gamemodes(const float p_Delta);
+
     namespace GameLoop {
       using namespace std::chrono;
 
@@ -162,13 +164,7 @@ namespace Low {
         Scripting::tick_as(p_Delta);
 
         if (get_engine_state() == Util::EngineState::PLAYING) {
-          for (u32 i = 0; i < GameplaySystemInstance::living_count();
-               ++i) {
-            GameplaySystemInstance i_Instance =
-                GameplaySystemInstance::living_instances()[i];
-
-            i_Instance.tick(p_Delta);
-          }
+          tick_gamemodes(p_Delta);
         }
 
         System::Physics::tick(p_Delta, get_engine_state());

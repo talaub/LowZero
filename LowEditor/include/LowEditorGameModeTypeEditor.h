@@ -1,5 +1,6 @@
 #pragma once
 
+#include "LowCoreGameMode.h"
 #include "LowEditorTypeEditor.h"
 
 namespace Low {
@@ -11,6 +12,9 @@ namespace Low {
       {
       }
       void render(float p_Delta) override;
+
+    private:
+      void render_storage(Core::GameModeSystemStorage &p_Storage);
     };
   } // namespace Editor
 } // namespace Low

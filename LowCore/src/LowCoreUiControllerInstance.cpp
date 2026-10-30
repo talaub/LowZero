@@ -15,7 +15,6 @@
 
 #include "LowCoreUiElement.h"
 #include "LowCoreUiController.h"
-#include "LowCoreUiWidgetInstance.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -78,7 +77,10 @@ namespace Low {
 
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-
+          Controller l_Controller = get_controller();
+          if (l_Controller.is_script_controller()) {
+            get_value().script.instance.destroy();
+          }
           // LOW_CODEGEN::END::CUSTOM:DESTROY
         }
 

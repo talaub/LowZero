@@ -68,6 +68,9 @@ types:
         type: Low::Util::Map<Low::Util::Name, Low::Core::Scripting::ClassMemberField>
       methods:
         type: Low::Util::Map<Low::Util::Name, Low::Core::Scripting::ClassMemberMethod>
+      annotations:
+        type: Low::Util::List<Low::Util::Serial::Node>
+        no_setter: true
     functions:
       needs_refresh:
         return_type: bool

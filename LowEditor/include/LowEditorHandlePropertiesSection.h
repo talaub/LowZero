@@ -17,6 +17,8 @@ namespace Low {
       void (*render_footer)(const Util::Handle,
                             Util::RTTI::TypeInfo &);
 
+      bool m_Collapsible = true;
+
     private:
       const Util::Handle m_Handle;
       TypeMetadata m_Metadata;

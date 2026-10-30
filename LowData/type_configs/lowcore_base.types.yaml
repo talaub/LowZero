@@ -191,6 +191,7 @@ types:
 
   GameMode:
     unique_id: true
+    scripting_expose: true
     name_editable: true
     editor:
       manager: true
@@ -200,6 +201,10 @@ types:
       systems:
         type: Low::Util::List<GameModeSystemStorage>
         no_setter: true
+      blocks_underlying:
+        type: bool
+        getter_name: blocks_underlying
+        setter_name: blocks_underlying
 
   GameplaySystem:
     no_auto_serialize: true
@@ -249,8 +254,6 @@ types:
         return_type: bool
         constant: true
         const: true
-      update_instances:
-        return_type: void
   GameplaySystemInstance:
     no_auto_serialize: true
     no_auto_deserialize: true
@@ -261,10 +264,40 @@ types:
       gameplay_system:
         type: uint64_t
     functions:
-      begin_play:
+      mount:
+        return_type: void
+      unmount:
+        return_type: void
+      resume:
+        return_type: void
+      suspend:
         return_type: void
       tick:
         return_type: void
         parameters:
           - name: delta
             type: float
+  GameModeInstance:
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    no_auto_duplicate: true
+    private_make: true
+    properties:
+      systems:
+        type: Low::Util::List<GameplaySystemInstance>
+        no_setter: true
+      gamemode:
+        type: Low::Core::GameMode
+        private_setter: true
+    functions:
+      make:
+        static: true
+        return_type: GameModeInstance
+        return_handle: true
+        parameters:
+          - name: gameMode
+            type: Low::Core::GameMode
+            handle: true
+      apply_values_from_gamemode:
+        return_type: void
+        private: true

@@ -63,6 +63,7 @@ namespace Low {
           Low::Util::Map<Low::Util::Name,
                          Low::Core::Scripting::ClassMemberMethod>
               methods;
+          Low::Util::List<Low::Util::Serial::Node> annotations;
           Low::Util::Name name;
 
           static size_t get_size()
@@ -201,6 +202,9 @@ namespace Low {
             Low::Util::Map<Low::Util::Name,
                            Low::Core::Scripting::ClassMemberMethod>
                 &p_Value);
+
+        Low::Util::List<Low::Util::Serial::Node> &
+        get_annotations() const;
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);

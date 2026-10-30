@@ -14,6 +14,7 @@ void register_lowcore_scripting();
 #include "LowUtilFileIO.h"
 #include "LowUtilHandle.h"
 #include "LowUtilLogger.h"
+#include "LowUtilSerialization.h"
 #include "LowUtilString.h"
 #include "angelscript.h"
 
@@ -23,6 +24,7 @@ void register_lowcore_scripting();
 
 #include <cctype>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 
 namespace Low {
@@ -120,6 +122,197 @@ namespace Low {
         }
 
         return p_Value.substr(l_Begin, l_End - l_Begin);
+      }
+
+      static Util::Serial::Node
+      parse_metadata(const Util::String &p_Metadata)
+      {
+        struct Parser
+        {
+          const Util::String &input;
+          size_t position = 0;
+
+          void skip_whitespace()
+          {
+            while (position < input.size() &&
+                   std::isspace(
+                       static_cast<unsigned char>(input[position]))) {
+              ++position;
+            }
+          }
+
+          [[noreturn]] void fail(const char *p_Message) const
+          {
+            throw std::invalid_argument(
+                std::string("Invalid scripting metadata at byte ") +
+                std::to_string(position) + ": " + p_Message);
+          }
+
+          Util::String parse_string()
+          {
+            const char l_Quote = input[position++];
+            Util::String l_Value;
+            while (position < input.size()) {
+              char l_Char = input[position++];
+              if (l_Char == l_Quote) {
+                return l_Value;
+              }
+              if (l_Char == '\\') {
+                if (position == input.size()) {
+                  fail("Unterminated escape sequence");
+                }
+                l_Char = input[position++];
+                switch (l_Char) {
+                case 'n':
+                  l_Char = '\n';
+                  break;
+                case 'r':
+                  l_Char = '\r';
+                  break;
+                case 't':
+                  l_Char = '\t';
+                  break;
+                case '\\':
+                case '\'':
+                case '"':
+                  break;
+                default:
+                  fail("Unsupported escape sequence");
+                }
+              }
+              l_Value += l_Char;
+            }
+            fail("Unterminated quoted string");
+          }
+
+          Util::String parse_token()
+          {
+            const size_t l_Begin = position;
+            while (position < input.size()) {
+              const char l_Char = input[position];
+              if (l_Char == ',' || l_Char == '=' || l_Char == '(' ||
+                  l_Char == ')' || l_Char == '"' || l_Char == '\'' ||
+                  l_Char == '[' || l_Char == ']') {
+                break;
+              }
+              ++position;
+            }
+            Util::String l_Token = trim_metadata_value(
+                input.substr(l_Begin, position - l_Begin));
+            if (l_Token.empty()) {
+              fail("Expected a key or value");
+            }
+            return l_Token;
+          }
+
+          Util::Serial::Node parse_value(size_t p_Depth)
+          {
+            skip_whitespace();
+            if (position == input.size()) {
+              fail("Expected a value");
+            }
+            if (input[position] == '(') {
+              ++position;
+              return parse_dictionary(p_Depth + 1);
+            }
+            Util::Serial::Node l_Value;
+            if (input[position] == '"' || input[position] == '\'') {
+              l_Value = parse_string();
+            } else {
+              Util::String l_Token = parse_token();
+              if (l_Token == "true" || l_Token == "false") {
+                l_Value = l_Token == "true";
+              } else {
+                l_Value = l_Token;
+              }
+            }
+            return l_Value;
+          }
+
+          Util::Serial::Node parse_arguments(size_t p_Depth)
+          {
+            if (p_Depth > 128) {
+              fail("Metadata nesting limit exceeded");
+            }
+            auto l_Result = Util::Serial::Node::sequence({});
+            skip_whitespace();
+            if (position < input.size() && input[position] == ')') {
+              ++position;
+              return l_Result;
+            }
+            while (true) {
+              l_Result.ensure_seq().push_back(parse_value(p_Depth));
+              skip_whitespace();
+              if (position == input.size()) {
+                fail("Expected closing parenthesis");
+              }
+              if (input[position] == ')') {
+                ++position;
+                return l_Result;
+              }
+              if (input[position] != ',') {
+                fail("Expected ',' between arguments");
+              }
+              ++position;
+            }
+          }
+
+          Util::Serial::Node parse_dictionary(size_t p_Depth)
+          {
+            if (p_Depth > 128) {
+              fail("Metadata nesting limit exceeded");
+            }
+            auto l_Result = Util::Serial::Node::dictionary({});
+            skip_whitespace();
+            if (position == input.size() || input[position] == ')') {
+              if (p_Depth == 0 && position < input.size()) {
+                fail("Unexpected closing parenthesis");
+              }
+              if (p_Depth != 0) {
+                if (position == input.size()) {
+                  fail("Expected closing parenthesis");
+                }
+                ++position;
+              }
+              return l_Result;
+            }
+
+            while (true) {
+              Util::String l_Key = parse_token();
+              Util::Serial::Node l_Value;
+              l_Value = true;
+              skip_whitespace();
+              if (position < input.size() && input[position] == '=') {
+                ++position;
+                l_Value = parse_value(p_Depth);
+              } else if (position < input.size() &&
+                         input[position] == '(') {
+                ++position;
+                l_Value = parse_arguments(p_Depth + 1);
+              }
+              l_Result[l_Key] = std::move(l_Value);
+              skip_whitespace();
+              if (position == input.size()) {
+                if (p_Depth != 0) {
+                  fail("Expected closing parenthesis");
+                }
+                return l_Result;
+              }
+              if (input[position] == ')' && p_Depth != 0) {
+                ++position;
+                return l_Result;
+              }
+              if (input[position] != ',') {
+                fail("Expected ',' between entries");
+              }
+              ++position;
+              skip_whitespace();
+            }
+          }
+        };
+
+        Parser l_Parser{p_Metadata};
+        return l_Parser.parse_dictionary(0);
       }
 
       static bool
@@ -648,6 +841,16 @@ namespace Low {
             i_Class = ScriptClass::make(LOW_NAME(i_Type->GetName()));
             i_Class.set_module(p_Module);
             p_Module.get_classes().push_back(i_Class.get_id());
+          }
+
+          auto i_ClassMetadata =
+              p_Builder.GetMetadataForType(i_Type->GetTypeId());
+
+          i_Class.get_annotations().clear();
+          for (const std::string &i_MetadataString :
+               i_ClassMetadata) {
+            i_Class.get_annotations().push_back(
+                parse_metadata(i_MetadataString.c_str()));
           }
 
           i_Class.set_as_class((char *)i_Type);

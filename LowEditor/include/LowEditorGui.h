@@ -54,6 +54,9 @@ namespace Low {
 
       void LOW_EDITOR_API Heading2(const char *p_Text);
 
+      void LOW_EDITOR_API SectionHeader(const char *p_Icon,
+                                        const char *p_Title);
+
       bool LOW_EDITOR_API SearchField(
           Util::String p_Label, char *p_SearchString, int p_Length,
           ImVec2 p_IconOffset = ImVec2(0.0f, 0.0f));

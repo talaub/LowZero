@@ -33,6 +33,29 @@ namespace Low {
         ImGui::PopFont();
       }
 
+      void SectionHeader(const char *p_Icon, const char *p_Title)
+      {
+        const Theme &l_Theme = theme_get_current();
+
+        ImGui::Dummy(ImVec2(0.0f, 10.0f));
+        ImGui::PushFont(Fonts::UI(12.0f, Fonts::Weight::Bold));
+        ImGui::PushStyleColor(ImGuiCol_Text,
+                              color_to_imvec4(l_Theme.subtext));
+        ImGui::TextUnformatted(p_Icon);
+        ImGui::SameLine(0.0f, 6.0f);
+        ImGui::TextUnformatted(p_Title);
+        ImGui::PopStyleColor();
+        ImGui::PopFont();
+
+        const ImVec2 l_LineStart = ImGui::GetCursorScreenPos();
+        ImGui::GetWindowDrawList()->AddLine(
+            l_LineStart,
+            ImVec2(l_LineStart.x + ImGui::GetContentRegionAvail().x,
+                   l_LineStart.y),
+            ImGui::GetColorU32(color_to_imvec4(l_Theme.border)));
+        ImGui::Dummy(ImVec2(0.0f, 6.0f));
+      }
+
       static bool drag_float(const char *label, float *value,
                              float width, float v_speed = 1.0f,
                              float v_min = 0.0f, float v_max = 0.0f)

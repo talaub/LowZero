@@ -28,6 +28,7 @@ namespace Low {
       {
       public:
         Low::Util::List<GameModeSystemStorage> systems;
+        bool blocks_underlying;
         Low::Util::UniqueId unique_id;
         Low::Util::Name name;
 
@@ -144,6 +145,10 @@ namespace Low {
       }
 
       Low::Util::List<GameModeSystemStorage> &get_systems() const;
+
+      bool blocks_underlying() const;
+      void blocks_underlying(bool p_Value);
+      void toggle_blocks_underlying();
 
       Low::Util::UniqueId get_unique_id() const;
 

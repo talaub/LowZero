@@ -121,11 +121,14 @@ namespace Low {
               if (!l_Node || (u64)l_Node->handle_type == 0) {
                 return "Break Struct";
               }
-              Util::String l_Title = "Break ";
-              l_Title +=
+              const auto &l_Struct =
                   Core::Scripting::find_registered_struct_checked(
-                      l_Node->handle_type)
-                      .bind_name.c_str();
+                      l_Node->handle_type);
+              if (!l_Struct.visual_script_info.title.empty()) {
+                return l_Struct.visual_script_info.title;
+              }
+              Util::String l_Title = "Break ";
+              l_Title += l_Struct.bind_name.c_str();
               return l_Title;
             }
 
@@ -267,9 +270,13 @@ namespace Low {
             i_SpawnEntry.category = l_Category;
             i_SpawnEntry.title =
                 Util::String("Break ") + l_StructFriendlyName;
+            if (!i_Struct.visual_script_info.title.empty()) {
+              i_SpawnEntry.title = i_Struct.visual_script_info.title;
+            }
             i_SpawnEntry.subtitle = l_StructFriendlyName;
             i_SpawnEntry.search_text =
-                Util::String("break ") + l_StructFriendlyName;
+                Util::String("break ") + l_StructFriendlyName + " " +
+                i_SpawnEntry.title;
             i_SpawnEntry.node_type = l_BreakStructNodeType;
 
             const Util::TypeIdentifier l_Identifier =

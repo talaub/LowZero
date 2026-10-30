@@ -121,6 +121,7 @@ namespace Low {
       m_Selected = p_Handle;
       m_Sections.clear();
       HandlePropertiesSection i_Section(p_Handle, true);
+      i_Section.m_Collapsible = false;
       i_Section.render_footer = &render_footer;
       m_Sections.push_back(i_Section);
     }

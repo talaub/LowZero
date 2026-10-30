@@ -166,10 +166,6 @@ types:
         dirty_flag:
           - dirty
           - world_dirty
-      mode_mask:
-        type: Util::EnumMask<LayoutSizeMode>
-        lens_enum: true
-        editor_editable: true
       fixed_size:
         type: Low::Math::Vector2
         editor_editable: true

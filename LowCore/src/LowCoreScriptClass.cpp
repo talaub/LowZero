@@ -65,6 +65,10 @@ namespace Low {
                        Low::Core::Scripting::ClassMemberMethod>)))
             Low::Util::Map<Low::Util::Name,
                            Low::Core::Scripting::ClassMemberMethod>();
+        new (ACCESSOR_TYPE_SOA_PTR(
+            l_Handle, Class, annotations,
+            Low::Util::List<Low::Util::Serial::Node>))
+            Low::Util::List<Low::Util::Serial::Node>();
         ACCESSOR_TYPE_SOA(l_Handle, Class, name, Low::Util::Name) =
             Low::Util::Name(0u);
 
@@ -338,6 +342,37 @@ namespace Low {
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: methods
+        }
+        {
+          // Property: annotations
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(annotations);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(Class::Data, annotations);
+          l_PropertyInfo.size = sizeof(Class::Data::annotations);
+          l_PropertyInfo.containerType =
+              Low::Util::RTTI::ContainerType::LIST;
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            Class l_Handle = p_Handle.get_id();
+            l_Handle.get_annotations();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Class, annotations,
+                Low::Util::List<Low::Util::Serial::Node>);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Class l_Handle = p_Handle.get_id();
+            *((void **)p_Data) = &l_Handle.get_annotations();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: annotations
         }
         {
           // Property: name
@@ -772,6 +807,18 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_methods
 
         broadcast_observable(N(methods));
+      }
+
+      Low::Util::List<Low::Util::Serial::Node> &
+      Class::get_annotations() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_annotations
+        // LOW_CODEGEN::END::CUSTOM:GETTER_annotations
+
+        return TYPE_SOA(Class, annotations,
+                        Low::Util::List<Low::Util::Serial::Node>);
       }
 
       Low::Util::Name Class::get_name() const

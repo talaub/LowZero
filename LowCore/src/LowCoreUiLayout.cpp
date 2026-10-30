@@ -71,9 +71,6 @@ namespace Low {
           new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Layout, size_mode,
                                      LayoutSizeMode))
               LayoutSizeMode();
-          new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Layout, mode_mask,
-                                     Util::EnumMask<LayoutSizeMode>))
-              Util::EnumMask<LayoutSizeMode>();
           ACCESSOR_TYPE_SOA(l_Handle, Layout, aspect_ratio, float) =
               0.0f;
           ACCESSOR_TYPE_SOA(l_Handle, Layout, world_updated, bool) =
@@ -423,42 +420,6 @@ namespace Low {
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
             // End property: size_mode
-          }
-          {
-            // Property: mode_mask
-            Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-            l_PropertyInfo.name = N(mode_mask);
-            l_PropertyInfo.editorProperty = true;
-            l_PropertyInfo.dataOffset =
-                offsetof(Layout::Data, mode_mask);
-            l_PropertyInfo.size = sizeof(Layout::Data::mode_mask);
-            l_PropertyInfo.containerType =
-                Low::Util::RTTI::ContainerType::ENUM_MASK;
-            l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
-            l_PropertyInfo.handleType =
-                LayoutSizeModeEnum::IDENTIFIER;
-            l_PropertyInfo.get_return =
-                [](Low::Util::Handle p_Handle) -> void const * {
-              Layout l_Handle = p_Handle.get_id();
-              l_Handle.get_mode_mask();
-              return (void *)&ACCESSOR_TYPE_SOA(
-                  p_Handle, Layout, mode_mask,
-                  Util::EnumMask<LayoutSizeMode>);
-            };
-            l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                    const void *p_Data) -> void {
-              Layout l_Handle = p_Handle.get_id();
-              l_Handle.set_mode_mask(
-                  *(Util::EnumMask<LayoutSizeMode> *)p_Data);
-            };
-            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
-                                    void *p_Data) {
-              Layout l_Handle = p_Handle.get_id();
-              *((void **)p_Data) = &l_Handle.get_mode_mask();
-            };
-            l_TypeInfo.properties[l_PropertyInfo.name] =
-                l_PropertyInfo;
-            // End property: mode_mask
           }
           {
             // Property: fixed_size
@@ -837,7 +798,6 @@ namespace Low {
           l_Handle.set_margin_right(get_margin_right());
           l_Handle.set_margin_bottom(get_margin_bottom());
           l_Handle.set_size_mode(get_size_mode());
-          l_Handle.set_mode_mask(get_mode_mask());
           l_Handle.set_fixed_size(get_fixed_size());
           l_Handle.set_pivot(get_pivot());
           l_Handle.set_aspect_ratio(get_aspect_ratio());
@@ -1265,34 +1225,6 @@ namespace Low {
 
             broadcast_observable(N(size_mode));
           }
-        }
-
-        Util::EnumMask<LayoutSizeMode> &Layout::get_mode_mask() const
-        {
-          _LOW_ASSERT(is_alive());
-
-          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mode_mask
-          // LOW_CODEGEN::END::CUSTOM:GETTER_mode_mask
-
-          return TYPE_SOA(Layout, mode_mask,
-                          Util::EnumMask<LayoutSizeMode>);
-        }
-        void
-        Layout::set_mode_mask(Util::EnumMask<LayoutSizeMode> &p_Value)
-        {
-          _LOW_ASSERT(is_alive());
-
-          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mode_mask
-          // LOW_CODEGEN::END::CUSTOM:PRESETTER_mode_mask
-
-          // Set new value
-          TYPE_SOA(Layout, mode_mask,
-                   Util::EnumMask<LayoutSizeMode>) = p_Value;
-
-          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mode_mask
-          // LOW_CODEGEN::END::CUSTOM:SETTER_mode_mask
-
-          broadcast_observable(N(mode_mask));
         }
 
         Low::Math::Vector2 Layout::get_fixed_size() const

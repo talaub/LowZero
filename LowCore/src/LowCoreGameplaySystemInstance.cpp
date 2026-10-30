@@ -261,13 +261,40 @@ namespace Low {
         // End property: name
       }
       {
-        // Function: begin_play
+        // Function: mount
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
-        l_FunctionInfo.name = N(begin_play);
+        l_FunctionInfo.name = N(mount);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
         l_FunctionInfo.handleType = 0;
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
-        // End function: begin_play
+        // End function: mount
+      }
+      {
+        // Function: unmount
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(unmount);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: unmount
+      }
+      {
+        // Function: resume
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(resume);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: resume
+      }
+      {
+        // Function: suspend
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(suspend);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: suspend
       }
       {
         // Function: tick
@@ -582,22 +609,76 @@ namespace Low {
       broadcast_observable(N(name));
     }
 
-    void GameplaySystemInstance::begin_play()
+    void GameplaySystemInstance::mount()
     {
-      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_begin_play
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_mount
       GameplaySystem l_System = get_gameplay_system();
       if (l_System.is_script()) {
         Scripting::ClassInstance l_ClassInstance =
             get_value().script.instance;
 
-        l_ClassInstance.call_method("void begin_play()");
+        l_ClassInstance.call_method("void mount()");
         return;
       }
 
       LOW_LOG_WARN
-          << "Gameplay system does not have valid begin_play method."
+          << "Gameplay system does not have valid mount method."
           << LOW_LOG_END;
-      // LOW_CODEGEN::END::CUSTOM:FUNCTION_begin_play
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_mount
+    }
+
+    void GameplaySystemInstance::unmount()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_unmount
+      GameplaySystem l_System = get_gameplay_system();
+      if (l_System.is_script()) {
+        Scripting::ClassInstance l_ClassInstance =
+            get_value().script.instance;
+
+        l_ClassInstance.call_method("void unmount()");
+        return;
+      }
+
+      LOW_LOG_WARN
+          << "Gameplay system does not have valid unmount method."
+          << LOW_LOG_END;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_unmount
+    }
+
+    void GameplaySystemInstance::resume()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_resume
+      GameplaySystem l_System = get_gameplay_system();
+      if (l_System.is_script()) {
+        Scripting::ClassInstance l_ClassInstance =
+            get_value().script.instance;
+
+        l_ClassInstance.call_method("void resume()");
+        return;
+      }
+
+      LOW_LOG_WARN
+          << "Gameplay system does not have valid resume method."
+          << LOW_LOG_END;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_resume
+    }
+
+    void GameplaySystemInstance::suspend()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_suspend
+      GameplaySystem l_System = get_gameplay_system();
+      if (l_System.is_script()) {
+        Scripting::ClassInstance l_ClassInstance =
+            get_value().script.instance;
+
+        l_ClassInstance.call_method("void suspend()");
+        return;
+      }
+
+      LOW_LOG_WARN
+          << "Gameplay system does not have valid suspend method."
+          << LOW_LOG_END;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_suspend
     }
 
     void GameplaySystemInstance::tick(float p_Delta)

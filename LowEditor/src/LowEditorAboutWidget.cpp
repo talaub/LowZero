@@ -98,31 +98,6 @@ namespace Low {
       ImGui::PopFont();
     }
 
-    static void render_section_header(const char *p_Icon,
-                                      const char *p_Label)
-    {
-      const Theme &l_Theme = theme_get_current();
-
-      ImGui::Dummy(ImVec2(0.0f, 10.0f));
-      ImGui::PushFont(
-          Fonts::UI(ABOUT_FONT_SECTION, Fonts::Weight::Bold));
-      ImGui::PushStyleColor(ImGuiCol_Text,
-                            color_to_imvec4(l_Theme.subtext));
-      ImGui::TextUnformatted(p_Icon);
-      ImGui::SameLine(0.0f, 6.0f);
-      ImGui::TextUnformatted(p_Label);
-      ImGui::PopStyleColor();
-      ImGui::PopFont();
-
-      const ImVec2 l_LineStart = ImGui::GetCursorScreenPos();
-      ImGui::GetWindowDrawList()->AddLine(
-          l_LineStart,
-          ImVec2(l_LineStart.x + ImGui::GetContentRegionAvail().x,
-                 l_LineStart.y),
-          ImGui::GetColorU32(color_to_imvec4(l_Theme.border)));
-      ImGui::Dummy(ImVec2(0.0f, 6.0f));
-    }
-
     static bool begin_info_table(const char *p_Id)
     {
       if (!ImGui::BeginTable(p_Id, 2, ImGuiTableFlags_None)) {
@@ -191,7 +166,7 @@ namespace Low {
     {
       const Util::Project &l_Project = Util::get_project();
 
-      render_section_header(ICON_LC_CPU, "ENGINE");
+      Gui::SectionHeader(ICON_LC_CPU, "ENGINE");
       if (begin_info_table("##AboutEngine")) {
         render_info_row("Version", LOW_VERSION_STRING);
         render_info_row("Build", LOW_ENGINE_BUILD_ID, true);
@@ -206,7 +181,7 @@ namespace Low {
     {
       const Util::Project &l_Project = Util::get_project();
 
-      render_section_header(ICON_LC_FOLDER, "PROJECT");
+      Gui::SectionHeader(ICON_LC_FOLDER, "PROJECT");
       if (begin_info_table("##AboutProject")) {
         render_info_row("Name", l_Project.name);
         render_info_row("Version", l_Project.version);
@@ -221,7 +196,7 @@ namespace Low {
       const Util::List<Util::RegisteredModuleInfo> &l_Modules =
           Util::get_module_infos();
 
-      render_section_header(ICON_LC_PUZZLE, "MODULES");
+      Gui::SectionHeader(ICON_LC_PUZZLE, "MODULES");
 
       if (l_Modules.empty()) {
         ImGui::PushStyleColor(ImGuiCol_Text,

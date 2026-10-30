@@ -26,10 +26,12 @@ namespace Low {
               if (!l_Node || (u64)l_Node->handle_type == 0) {
                 return "Enum literal";
               }
-              return prettify_name(
+              const auto &l_Enum =
                   Core::Scripting::find_registered_enum_checked(
-                      l_Node->handle_type)
-                      .bind_name);
+                      l_Node->handle_type);
+              return l_Enum.visual_script_info.title.empty()
+                         ? prettify_name(l_Enum.bind_name)
+                         : l_Enum.visual_script_info.title;
             }
 
             virtual Util::String
@@ -148,8 +150,12 @@ namespace Low {
             i_SpawnEntry.id = LOW_NAME(i_EntryId.c_str());
             i_SpawnEntry.category = l_Category;
             i_SpawnEntry.title = l_EnumFriendlyName;
+            if (!i_Enum.visual_script_info.title.empty()) {
+              i_SpawnEntry.title = i_Enum.visual_script_info.title;
+            }
             i_SpawnEntry.subtitle = "Enum";
-            i_SpawnEntry.search_text = l_EnumFriendlyName;
+            i_SpawnEntry.search_text =
+                l_EnumFriendlyName + " " + i_SpawnEntry.title;
             i_SpawnEntry.node_type = l_EnumLiteralNodeType;
 
             const Util::TypeIdentifier l_Identifier =

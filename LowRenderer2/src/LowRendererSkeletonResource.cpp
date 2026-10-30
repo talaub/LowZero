@@ -163,7 +163,8 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SkeletonResource l_Handle = p_Handle.get_id();
-          *((Util::String *)p_Data) = l_Handle.get_path();
+          Low::Util::String &l_Data = *(Low::Util::String *)p_Data;
+          l_Data = l_Handle.get_path();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: path
@@ -193,7 +194,8 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SkeletonResource l_Handle = p_Handle.get_id();
-          *((Util::String *)p_Data) = l_Handle.get_data_path();
+          Low::Util::String &l_Data = *(Low::Util::String *)p_Data;
+          l_Data = l_Handle.get_data_path();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: data_path

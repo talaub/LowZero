@@ -321,8 +321,8 @@ function generate_function_registration(p_Fn) {
   return t;
 }
 
-// Emits the `<p_VarName>.exposed/category/color/icon_name` assignments
-// from a parsed `vs = (category = "...", icon = "...")` macro arg block.
+// Emits the `<p_VarName>.exposed/title/category/color/icon_name` assignments
+// from a parsed `vs = (title = "...", category = "...", icon = "...")` macro arg block.
 // Shared by LOW_FUNCTION, LOW_ENUM and LOW_STRUCT registration.
 function generate_visual_script_info(p_Vs, p_VarName) {
   if (!p_Vs) return '';
@@ -331,6 +331,9 @@ function generate_visual_script_info(p_Vs, p_VarName) {
   t += `\n`;
   t += `    ${p_VarName}.exposed = true;\n`;
   if (typeof p_Vs === 'object') {
+    if (typeof p_Vs.title === 'string' && p_Vs.title) {
+      t += `    ${p_VarName}.title = ${JSON.stringify(p_Vs.title)};\n`;
+    }
     if (p_Vs.icon) {
       t += `    ${p_VarName}.icon_name = N(${p_Vs.icon});\n`;
     }

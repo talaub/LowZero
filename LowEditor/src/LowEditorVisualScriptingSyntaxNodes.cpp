@@ -771,7 +771,9 @@ namespace Low {
           if (function_name.empty()) {
             return "Call global C++ function";
           }
-          return prettify_name(function_info.name);
+          return function_info.visual_script_info.title.empty()
+                     ? prettify_name(function_info.name)
+                     : function_info.visual_script_info.title;
         }
 
         Util::String GlobalFunctionCallNode::get_subtitle(
@@ -984,11 +986,14 @@ namespace Low {
             i_Entry.id = LOW_NAME(i_EntryId.c_str());
             i_Entry.category =
                 i_Function.visual_script_info.category.c_str();
-            i_Entry.title = prettify_name(i_Function.name);
+            i_Entry.title = i_Function.visual_script_info.title.empty()
+                                ? prettify_name(i_Function.name)
+                                : i_Function.visual_script_info.title;
             i_Entry.subtitle =
                 i_Function.visual_script_info.category.c_str();
             i_Entry.node_type = l_GlobalFunctionCallNodeType;
-            i_Entry.search_text = i_Function.name.c_str();
+            i_Entry.search_text =
+                Util::String(i_Function.name.c_str()) + " " + i_Entry.title;
 
             i_Entry.initialize_node = [i_Function](Graph &,
                                                    Node &p_Node) {

@@ -272,7 +272,9 @@ namespace Low {
             l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                     void *p_Data) {
               Text l_Handle = p_Handle.get_id();
-              *((Low::Util::String *)p_Data) = l_Handle.get_text();
+              Low::Util::String &l_Data =
+                  *(Low::Util::String *)p_Data;
+              l_Data = l_Handle.get_text();
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;

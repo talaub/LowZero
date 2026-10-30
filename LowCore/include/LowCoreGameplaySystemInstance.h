@@ -167,7 +167,10 @@ namespace Low {
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      void begin_play();
+      void mount();
+      void unmount();
+      void resume();
+      void suspend();
       void tick(float p_Delta);
       static bool get_page_for_index(const u32 p_Index,
                                      u32 &p_PageIndex,

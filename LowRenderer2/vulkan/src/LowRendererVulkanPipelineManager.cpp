@@ -12,6 +12,7 @@
 #ifndef LOW_RENDERER_COMPILE_SHADERS
 #define LOW_RENDERER_COMPILE_SHADERS 0
 #endif
+#define LOW_RENDERER_COMPILE_SHADERS 0
 
 namespace Low {
   namespace Renderer {
@@ -102,8 +103,9 @@ namespace Low {
           Util::String l_IncludeCommand =
               "-I \"" + Util::get_project().engineDataPath +
               "/lowr_shaders/lib\"";
-          Util::String l_Command = "glslc -g -O0 " + l_IncludeCommand +
-                                   " \"" + p_SourcePath + "\"";
+          Util::String l_Command = "glslc -g -O0 " +
+                                   l_IncludeCommand + " \"" +
+                                   p_SourcePath + "\"";
 #else
           Util::String l_IncludeCommand =
               "-I\"" + Util::get_project().engineDataPath +
@@ -161,8 +163,9 @@ namespace Low {
           Util::String l_IncludeCommand =
               "-I \"" + Util::get_project().engineDataPath +
               "/lowr_shaders/lib\"";
-          Util::String l_Command = "glslc -g -O0 " + l_IncludeCommand +
-                                   " \"" + p_SourcePath + "\"";
+          Util::String l_Command = "glslc -g -O0 " +
+                                   l_IncludeCommand + " \"" +
+                                   p_SourcePath + "\"";
 #else
           Util::String l_IncludeCommand =
               "-I\"" +
@@ -189,8 +192,8 @@ namespace Low {
             }
             l_DefineString += " ";
           }
-          l_Command +=
-              " -o \"" + Util::PathHelper::normalize(p_OutPath) + "\"";
+          l_Command += " -o \"" +
+                       Util::PathHelper::normalize(p_OutPath) + "\"";
 
           Util::String l_Notice = "Compiling shader " + p_SourcePath;
 

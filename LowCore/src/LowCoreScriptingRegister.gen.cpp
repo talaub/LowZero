@@ -4,6 +4,7 @@
 #include "LowCoreAnimationPose.h"
 #include "LowCoreRegion.h"
 #include "LowCoreEntity.h"
+#include "LowCoreGameMode.h"
 #include "LowCoreTransform.h"
 #include "LowCoreAnimator.h"
 #include "LowCoreCharacterController.h"
@@ -16,6 +17,7 @@
 #include "LowCoreUiScreen.h"
 #include "LowCoreUiElement.h"
 #include "LowCoreUiDisplay.h"
+#include "LowCoreUiLayout.h"
 #include "LowCoreUiText.h"
 #include "LowRendererSkeleton.h"
 
@@ -792,6 +794,154 @@ static void expose_LowCore_Entity(asIScriptEngine *p_Engine)
   // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:ENTITY:EXPOSE
 
   // LOW_CODEGEN::END::CUSTOM:LOWCORE:ENTITY:EXPOSE
+}
+
+// --------------------------
+static void
+LowCore_GameMode_default_construct(Low::Core::GameMode *p_Memory)
+{
+  new (p_Memory) Low::Core::GameMode;
+}
+static void
+LowCore_GameMode_id_construct(u64 p_Id, Low::Core::GameMode *p_Memory)
+{
+  new (p_Memory) Low::Core::GameMode(p_Id);
+}
+static void
+LowCore_GameMode_copy_construct(const Low::Core::GameMode &p_Other,
+                                Low::Core::GameMode *p_Memory)
+{
+  new (p_Memory) Low::Core::GameMode(p_Other);
+}
+static Low::Core::GameMode &
+LowCore_GameMode_assign(const Low::Core::GameMode &p_Other,
+                        Low::Core::GameMode *p_Self)
+{
+  *p_Self = p_Other;
+  return *p_Self;
+}
+static void LowCore_GameMode_destruct(Low::Core::GameMode *p_Memory)
+{
+  using namespace Low::Core;
+  p_Memory->~GameMode();
+}
+static Low::Core::GameMode
+LowCore_GameMode_genmake(Low::Util::Name p_Name)
+{
+  return Low::Core::GameMode::make(p_Name);
+}
+static Low::Core::GameMode
+LowCore_GameMode_genfindbyname(Low::Util::Name p_Name)
+{
+  return Low::Core::GameMode::find_by_name(p_Name);
+}
+static u32 LowCore_GameMode_living_count()
+{
+  return Low::Core::GameMode::living_count();
+}
+static u16 LowCore_GameMode_type_id()
+{
+  return Low::Core::GameMode::type_id();
+}
+// LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:GAMEMODE:HELPERS
+// LOW_CODEGEN::END::CUSTOM:LOWCORE:GAMEMODE:HELPERS
+
+static void register_LowCore_GameMode(asIScriptEngine *p_Engine)
+{
+  int r = 0;
+  r = p_Engine->RegisterObjectType(
+      "GameMode", sizeof(Low::Core::GameMode),
+      asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
+  LOW_ASSERT(r >= 0, "Failed to expose Low::Core::GameMode type.");
+}
+static void expose_LowCore_GameMode(asIScriptEngine *p_Engine)
+{
+  int r = 0;
+  r = p_Engine->RegisterObjectBehaviour(
+      "GameMode", asBEHAVE_CONSTRUCT, "void f()",
+      asFUNCTION(LowCore_GameMode_default_construct),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose default constructor of Low::Core::GameMode.");
+
+  r = p_Engine->RegisterObjectBehaviour(
+      "GameMode", asBEHAVE_CONSTRUCT, "void f(u64 id)",
+      asFUNCTION(LowCore_GameMode_id_construct),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose id constructor of Low::Core::GameMode.");
+
+  r = p_Engine->RegisterObjectBehaviour(
+      "GameMode", asBEHAVE_CONSTRUCT, "void f(const GameMode& in)",
+      asFUNCTION(LowCore_GameMode_copy_construct),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose copy constructor of Low::Core::GameMode.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "GameMode", "GameMode& opAssign(const GameMode& in)",
+      asFUNCTION(LowCore_GameMode_assign), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose assignment operator of Low::Core::GameMode.");
+
+  r = p_Engine->RegisterObjectBehaviour(
+      "GameMode", asBEHAVE_DESTRUCT, "void f()",
+      asFUNCTION(LowCore_GameMode_destruct), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose destructor of Low::Core::GameMode.");
+  r = p_Engine->RegisterObjectMethod(
+      "GameMode", "bool get_is_alive() const property",
+      asMETHODPR(Low::Core::GameMode, is_alive, () const, bool),
+      asCALL_THISCALL);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose is_alive getter for Low::Core::GameMode.");
+  r = p_Engine->RegisterObjectMethod(
+      "GameMode", "void destroy()",
+      asMETHODPR(Low::Core::GameMode, destroy, (), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose destroy for Low::Core::GameMode.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "GameMode", "Name get_name() const property",
+      asMETHOD(Low::Core::GameMode, get_name), asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property getter for name of "
+                     "Low::Core::GameMode.");
+  r = p_Engine->RegisterObjectMethod(
+      "GameMode", "void set_name(Name) property",
+      asMETHODPR(Low::Core::GameMode, set_name, (Low::Util::Name),
+                 void),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property setter for name of "
+                     "Low::Core::GameMode.");
+
+  r = p_Engine->SetDefaultNamespace("GameMode");
+  LOW_ASSERT(r >= 0,
+             "Failed to set namespace for Low::Core::GameMode.");
+  r = p_Engine->RegisterGlobalFunction(
+      "u16 get_TYPE_ID() property",
+      asFUNCTION(LowCore_GameMode_type_id), asCALL_CDECL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose TYPE_ID for Low::Core::GameMode.");
+  r = p_Engine->RegisterGlobalFunction(
+      "GameMode make(Name)", asFUNCTION(LowCore_GameMode_genmake),
+      asCALL_CDECL);
+  LOW_ASSERT(r >= 0, "Failed to expose generic make function for "
+                     "Low::Core::GameMode.");
+  r = p_Engine->RegisterGlobalFunction(
+      "GameMode find_by_name(Name)",
+      asFUNCTION(LowCore_GameMode_genfindbyname), asCALL_CDECL);
+  LOW_ASSERT(r >= 0, "Failed to expose generic find by name function "
+                     "for Low::Core::GameMode.");
+  r = p_Engine->SetDefaultNamespace("");
+  LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
+  // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:GAMEMODE:EXPOSE
+  // LOW_CODEGEN::END::CUSTOM:LOWCORE:GAMEMODE:EXPOSE
 }
 
 // --------------------------
@@ -2531,6 +2681,19 @@ static void expose_LowCore_Screen(asIScriptEngine *p_Engine)
                      "pixel_size of Low::Core::UI::Screen.");
 
   r = p_Engine->RegisterObjectMethod(
+      "Screen", "float get_zoom() const property",
+      asMETHODPR(Low::Core::UI::Screen, zoom, () const, float),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property getter for zoom of "
+                     "Low::Core::UI::Screen.");
+  r = p_Engine->RegisterObjectMethod(
+      "Screen", "void set_zoom(float) property",
+      asMETHODPR(Low::Core::UI::Screen, zoom, (float), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property setter for zoom of "
+                     "Low::Core::UI::Screen.");
+
+  r = p_Engine->RegisterObjectMethod(
       "Screen", "Name get_name() const property",
       asMETHOD(Low::Core::UI::Screen, get_name), asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property getter for name of "
@@ -3054,6 +3217,288 @@ static void expose_LowCore_Display(asIScriptEngine *p_Engine)
 }
 
 // --------------------------
+static void LowCore_Layout_default_construct(
+    Low::Core::UI::Component::Layout *p_Memory)
+{
+  new (p_Memory) Low::Core::UI::Component::Layout;
+}
+static void LowCore_Layout_id_construct(
+    u64 p_Id, Low::Core::UI::Component::Layout *p_Memory)
+{
+  new (p_Memory) Low::Core::UI::Component::Layout(p_Id);
+}
+static void LowCore_Layout_copy_construct(
+    const Low::Core::UI::Component::Layout &p_Other,
+    Low::Core::UI::Component::Layout *p_Memory)
+{
+  new (p_Memory) Low::Core::UI::Component::Layout(p_Other);
+}
+static Low::Core::UI::Component::Layout &
+LowCore_Layout_assign(const Low::Core::UI::Component::Layout &p_Other,
+                      Low::Core::UI::Component::Layout *p_Self)
+{
+  *p_Self = p_Other;
+  return *p_Self;
+}
+static void
+LowCore_Layout_destruct(Low::Core::UI::Component::Layout *p_Memory)
+{
+  using namespace Low::Core::UI::Component;
+  p_Memory->~Layout();
+}
+static u32 LowCore_Layout_living_count()
+{
+  return Low::Core::UI::Component::Layout::living_count();
+}
+static u16 LowCore_Layout_type_id()
+{
+  return Low::Core::UI::Component::Layout::type_id();
+}
+// LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:LAYOUT:HELPERS
+// LOW_CODEGEN::END::CUSTOM:LOWCORE:LAYOUT:HELPERS
+
+static void register_LowCore_Layout(asIScriptEngine *p_Engine)
+{
+  int r = 0;
+  r = p_Engine->RegisterObjectType(
+      "Layout", sizeof(Low::Core::UI::Component::Layout),
+      asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose Low::Core::UI::Component::Layout type.");
+}
+static void expose_LowCore_Layout(asIScriptEngine *p_Engine)
+{
+  int r = 0;
+  r = p_Engine->RegisterObjectBehaviour(
+      "Layout", asBEHAVE_CONSTRUCT, "void f()",
+      asFUNCTION(LowCore_Layout_default_construct),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose default constructor of "
+                     "Low::Core::UI::Component::Layout.");
+
+  r = p_Engine->RegisterObjectBehaviour(
+      "Layout", asBEHAVE_CONSTRUCT, "void f(u64 id)",
+      asFUNCTION(LowCore_Layout_id_construct), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose id constructor of "
+                     "Low::Core::UI::Component::Layout.");
+
+  r = p_Engine->RegisterObjectBehaviour(
+      "Layout", asBEHAVE_CONSTRUCT, "void f(const Layout& in)",
+      asFUNCTION(LowCore_Layout_copy_construct),
+      asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose copy constructor of "
+                     "Low::Core::UI::Component::Layout.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "Layout& opAssign(const Layout& in)",
+      asFUNCTION(LowCore_Layout_assign), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose assignment operator of "
+                     "Low::Core::UI::Component::Layout.");
+
+  r = p_Engine->RegisterObjectBehaviour(
+      "Layout", asBEHAVE_DESTRUCT, "void f()",
+      asFUNCTION(LowCore_Layout_destruct), asCALL_CDECL_OBJLAST);
+  LOW_ASSERT(r >= 0, "Failed to expose destructor of "
+                     "Low::Core::UI::Component::Layout.");
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "bool get_is_alive() const property",
+      asMETHODPR(Low::Core::UI::Component::Layout, is_alive, () const,
+                 bool),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose is_alive getter for "
+                     "Low::Core::UI::Component::Layout.");
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "void destroy()",
+      asMETHODPR(Low::Core::UI::Component::Layout, destroy, (), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose destroy for "
+                     "Low::Core::UI::Component::Layout.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "Vector2 get_anchor_min() const property",
+      asMETHOD(Low::Core::UI::Component::Layout, get_anchor_min),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose property getter for anchor_min of "
+             "Low::Core::UI::Component::Layout.");
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "void set_anchor_min(Vector2) property",
+      asMETHODPR(Low::Core::UI::Component::Layout, set_anchor_min,
+                 (Low::Math::Vector2), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose property setter for anchor_min of "
+             "Low::Core::UI::Component::Layout.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "Vector2 get_anchor_max() const property",
+      asMETHOD(Low::Core::UI::Component::Layout, get_anchor_max),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose property getter for anchor_max of "
+             "Low::Core::UI::Component::Layout.");
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "void set_anchor_max(Vector2) property",
+      asMETHODPR(Low::Core::UI::Component::Layout, set_anchor_max,
+                 (Low::Math::Vector2), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose property setter for anchor_max of "
+             "Low::Core::UI::Component::Layout.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "float get_margin_left() const property",
+      asMETHOD(Low::Core::UI::Component::Layout, get_margin_left),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose property getter for margin_left of "
+             "Low::Core::UI::Component::Layout.");
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "void set_margin_left(float) property",
+      asMETHODPR(Low::Core::UI::Component::Layout, set_margin_left,
+                 (float), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose property setter for margin_left of "
+             "Low::Core::UI::Component::Layout.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "float get_margin_top() const property",
+      asMETHOD(Low::Core::UI::Component::Layout, get_margin_top),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose property getter for margin_top of "
+             "Low::Core::UI::Component::Layout.");
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "void set_margin_top(float) property",
+      asMETHODPR(Low::Core::UI::Component::Layout, set_margin_top,
+                 (float), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose property setter for margin_top of "
+             "Low::Core::UI::Component::Layout.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "float get_margin_right() const property",
+      asMETHOD(Low::Core::UI::Component::Layout, get_margin_right),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose property getter for margin_right of "
+             "Low::Core::UI::Component::Layout.");
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "void set_margin_right(float) property",
+      asMETHODPR(Low::Core::UI::Component::Layout, set_margin_right,
+                 (float), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose property setter for margin_right of "
+             "Low::Core::UI::Component::Layout.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "float get_margin_bottom() const property",
+      asMETHOD(Low::Core::UI::Component::Layout, get_margin_bottom),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose property getter for margin_bottom of "
+             "Low::Core::UI::Component::Layout.");
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "void set_margin_bottom(float) property",
+      asMETHODPR(Low::Core::UI::Component::Layout, set_margin_bottom,
+                 (float), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose property setter for margin_bottom of "
+             "Low::Core::UI::Component::Layout.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "UI::LayoutSizeMode get_size_mode() const property",
+      asMETHOD(Low::Core::UI::Component::Layout, get_size_mode),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property getter for size_mode "
+                     "of Low::Core::UI::Component::Layout.");
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "void set_size_mode(UI::LayoutSizeMode) property",
+      asMETHODPR(Low::Core::UI::Component::Layout, set_size_mode,
+                 (Low::Core::UI::Component::LayoutSizeMode), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property setter for size_mode "
+                     "of Low::Core::UI::Component::Layout.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "Vector2 get_fixed_size() const property",
+      asMETHOD(Low::Core::UI::Component::Layout, get_fixed_size),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose property getter for fixed_size of "
+             "Low::Core::UI::Component::Layout.");
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "void set_fixed_size(Vector2) property",
+      asMETHODPR(Low::Core::UI::Component::Layout, set_fixed_size,
+                 (Low::Math::Vector2), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose property setter for fixed_size of "
+             "Low::Core::UI::Component::Layout.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "Vector2 get_pivot() const property",
+      asMETHOD(Low::Core::UI::Component::Layout, get_pivot),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property getter for pivot of "
+                     "Low::Core::UI::Component::Layout.");
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "void set_pivot(Vector2) property",
+      asMETHODPR(Low::Core::UI::Component::Layout, set_pivot,
+                 (Low::Math::Vector2), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property setter for pivot of "
+                     "Low::Core::UI::Component::Layout.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "float get_aspect_ratio() const property",
+      asMETHOD(Low::Core::UI::Component::Layout, get_aspect_ratio),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose property getter for aspect_ratio of "
+             "Low::Core::UI::Component::Layout.");
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "void set_aspect_ratio(float) property",
+      asMETHODPR(Low::Core::UI::Component::Layout, set_aspect_ratio,
+                 (float), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0,
+             "Failed to expose property setter for aspect_ratio of "
+             "Low::Core::UI::Component::Layout.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "UI::Element get_element() const property",
+      asMETHOD(Low::Core::UI::Component::Layout, get_element),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property getter for element "
+                     "of Low::Core::UI::Component::Layout.");
+  r = p_Engine->RegisterObjectMethod(
+      "Layout", "void set_element(UI::Element) property",
+      asMETHOD(Low::Core::UI::Component::Layout, set_element),
+      asCALL_THISCALL);
+  LOW_ASSERT(r >= 0, "Failed to expose property setter for element "
+                     "of Low::Core::UI::Component::Layout.");
+
+  r = p_Engine->SetDefaultNamespace("Layout");
+  LOW_ASSERT(r >= 0, "Failed to set namespace for "
+                     "Low::Core::UI::Component::Layout.");
+  r = p_Engine->RegisterGlobalFunction(
+      "u16 get_TYPE_ID() property",
+      asFUNCTION(LowCore_Layout_type_id), asCALL_CDECL);
+  LOW_ASSERT(r >= 0, "Failed to expose TYPE_ID for "
+                     "Low::Core::UI::Component::Layout.");
+  r = p_Engine->SetDefaultNamespace("");
+  LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
+  // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:LAYOUT:EXPOSE
+  // LOW_CODEGEN::END::CUSTOM:LOWCORE:LAYOUT:EXPOSE
+}
+
+// --------------------------
 static void LowCore_Text_default_construct(
     Low::Core::UI::Component::Text *p_Memory)
 {
@@ -3203,6 +3648,29 @@ static void expose_LowCore_Text(asIScriptEngine *p_Engine)
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for size of "
                      "Low::Core::UI::Component::Text.");
+
+  r = p_Engine->RegisterObjectMethod(
+      "Text",
+      "TextContentFitOptions get_content_fit_approach() const "
+      "property",
+      asMETHOD(Low::Core::UI::Component::Text,
+               get_content_fit_approach),
+      asCALL_THISCALL);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose property getter for content_fit_approach of "
+      "Low::Core::UI::Component::Text.");
+  r = p_Engine->RegisterObjectMethod(
+      "Text",
+      "void set_content_fit_approach(TextContentFitOptions) property",
+      asMETHODPR(
+          Low::Core::UI::Component::Text, set_content_fit_approach,
+          (Low::Core::UI::Component::TextContentFitOptions), void),
+      asCALL_THISCALL);
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to expose property setter for content_fit_approach of "
+      "Low::Core::UI::Component::Text.");
 
   r = p_Engine->RegisterObjectMethod(
       "Text", "UI::Element get_element() const property",
@@ -3390,6 +3858,7 @@ namespace Low::Core {
     register_LowCore_Pose(p_Engine);
     register_LowCore_Region(p_Engine);
     register_LowCore_Entity(p_Engine);
+    register_LowCore_GameMode(p_Engine);
     register_LowCore_Transform(p_Engine);
     register_LowCore_Animator(p_Engine);
     register_LowCore_CharacterController(p_Engine);
@@ -3402,6 +3871,7 @@ namespace Low::Core {
     register_LowCore_Screen(p_Engine);
     register_LowCore_Element(p_Engine);
     register_LowCore_Display(p_Engine);
+    register_LowCore_Layout(p_Engine);
     register_LowCore_Text(p_Engine);
     register_LowRenderer2_Skeleton(p_Engine);
   }
@@ -3413,6 +3883,7 @@ namespace Low::Core {
     expose_LowCore_Pose(p_Engine);
     expose_LowCore_Region(p_Engine);
     expose_LowCore_Entity(p_Engine);
+    expose_LowCore_GameMode(p_Engine);
     expose_LowCore_Transform(p_Engine);
     expose_LowCore_Animator(p_Engine);
     expose_LowCore_CharacterController(p_Engine);
@@ -3425,6 +3896,7 @@ namespace Low::Core {
     expose_LowCore_Screen(p_Engine);
     expose_LowCore_Element(p_Engine);
     expose_LowCore_Display(p_Engine);
+    expose_LowCore_Layout(p_Engine);
     expose_LowCore_Text(p_Engine);
     expose_LowRenderer2_Skeleton(p_Engine);
   }
