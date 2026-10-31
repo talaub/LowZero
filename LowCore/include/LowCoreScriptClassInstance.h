@@ -159,6 +159,7 @@ namespace Low {
 
         bool needs_refresh();
         char *get_ptr();
+        char *get_stored_ptr_no_lazy_initialization();
         void set_member(Low::Util::Name p_MemberName,
                         const void *p_Value, size_t p_Size);
         void get_member(Low::Util::Name p_MemberName, void *p_Value,

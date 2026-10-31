@@ -101,6 +101,8 @@ types:
         return_type: bool
       get_ptr:
         return_type: char*
+      get_stored_ptr_no_lazy_initialization:
+        return_type: char*
       spawn:
         private: true
         return_type: char*

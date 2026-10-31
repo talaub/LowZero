@@ -322,6 +322,17 @@ namespace Low {
           // End function: get_ptr
         }
         {
+          // Function: get_stored_ptr_no_lazy_initialization
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name =
+              N(get_stored_ptr_no_lazy_initialization);
+          l_FunctionInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: get_stored_ptr_no_lazy_initialization
+        }
+        {
           // Function: spawn
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(spawn);
@@ -777,6 +788,13 @@ namespace Low {
 
         return _ptr();
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_ptr
+      }
+
+      char *ClassInstance::get_stored_ptr_no_lazy_initialization()
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_stored_ptr_no_lazy_initialization
+        return _ptr();
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_stored_ptr_no_lazy_initialization
       }
 
       char *ClassInstance::spawn()

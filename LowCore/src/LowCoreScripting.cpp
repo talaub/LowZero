@@ -16,7 +16,7 @@ void register_lowcore_scripting();
 #include "LowUtilLogger.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilString.h"
-#include "angelscript.h"
+#include "LowCoreScriptingSerializer.h"
 
 #include <angelscript.h>
 #include <imgui.h>
@@ -964,6 +964,26 @@ namespace Low {
         LOW_LOG_DEBUG << "Building module " << p_Module.get_name()
                       << LOW_LOG_END;
 
+        ScriptSerializer l_Serializer;
+        bool l_ExistedBefore = false;
+        if (p_Module.get_as_module()) {
+          register_generic_user_types(l_Serializer, g_Engine);
+          l_ExistedBefore = true;
+          ClassInstance *l_Instances =
+              ClassInstance::living_instances();
+          for (u32 i = 0; i < ClassInstance::living_count(); ++i) {
+            ClassInstance i_Instance = l_Instances[i];
+            Class i_ScriptClass = i_Instance.get_script_class();
+            if (i_ScriptClass.get_module() == p_Module) {
+              l_Serializer.AddExtraObjectToStore(
+                  (asIScriptObject *)i_Instance.get_ptr());
+            }
+          }
+          l_Serializer.Store(
+              (asIScriptModule *)p_Module.get_as_module());
+          l_Serializer.detach_extra_objects();
+        }
+
         CScriptBuilder l_Builder;
 
         int l_Result = l_Builder.StartNewModule(
@@ -1032,6 +1052,24 @@ namespace Low {
 
         fill_ticking_functions(p_Module, l_Builder);
         fill_classes(p_Module, l_Builder);
+
+        if (l_ExistedBefore) {
+          ClassInstance *l_Instances =
+              ClassInstance::living_instances();
+          for (u32 i = 0; i < ClassInstance::living_count(); ++i) {
+            ClassInstance i_Instance = l_Instances[i];
+            Class i_ScriptClass = i_Instance.get_script_class();
+            if (i_ScriptClass.get_module() == p_Module) {
+              asIScriptObject *i_OldObj =
+                  (asIScriptObject *)i_Instance
+                      .get_stored_ptr_no_lazy_initialization();
+              asIScriptObject *i_NewObj =
+                  (asIScriptObject *)i_Instance.get_ptr();
+              l_Serializer.restore_object(i_OldObj, i_NewObj);
+            }
+          }
+          l_Serializer.Restore(l_AsModule);
+        }
       }
 
       static void message_callback(const asSMessageInfo *p_Message,

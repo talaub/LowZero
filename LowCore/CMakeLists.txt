@@ -211,6 +211,7 @@ target_sources(LowCore PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/angelscript/sdk/add_on/scriptstdstring/scriptstdstring.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/angelscript/sdk/add_on/scriptarray/scriptarray.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/angelscript/sdk/add_on/scriptbuilder/scriptbuilder.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/angelscript/sdk/add_on/serializer/serializer.cpp
 )
 
 set(WIN_PLATFORM_STRING "x64")
